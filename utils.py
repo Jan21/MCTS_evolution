@@ -6,7 +6,7 @@ and game-mechanic utilities for Ricochet Robots.
 
 import sys
 import pickle
-from collections import defaultdict
+from collections import defaultdict, deque
 from pathlib import Path
 
 import networkx as nx
@@ -168,6 +168,61 @@ def compute_all_paths(grid_graph):
         for target in nodes:
             all_paths[(source, target)] = lengths.get(target, float('inf'))
     return all_paths
+
+
+def compute_shortest_path(grid_graph, start, end, support_positions=None):
+    """Compute shortest path from start to end, optionally activating dependent edges.
+
+    Builds a filtered adjacency list and runs BFS:
+    - All independent (weight=1) edges are always included.
+    - Dependent (weight=100) edges are included only if their 'dependent'
+      attribute is in support_positions. Activated dependent edges count
+      as 1 hop (same as independent).
+
+    When support_positions is None or empty, this is equivalent to
+    independent_paths[(start, end)].
+
+    Args:
+        grid_graph: nx.DiGraph with weight edge attributes. Dependent edges
+            also have a 'dependent' attribute.
+        start: (x, y) source position.
+        end: (x, y) destination position.
+        support_positions: Optional set of (x, y) positions. Dependent edges
+            whose 'dependent' attribute matches a position in this set are
+            activated.
+
+    Returns:
+        int: hop count (shortest path length), or None if unreachable.
+    """
+    if start == end:
+        return 0
+
+    if support_positions:
+        support_positions = frozenset(support_positions)
+    else:
+        support_positions = frozenset()
+
+    # Build adjacency list
+    adj = defaultdict(list)
+    for u, v, d in grid_graph.edges(data=True):
+        if d['weight'] == INDEPENDENT_WEIGHT:
+            adj[u].append(v)
+        elif (d['weight'] == DEPENDENT_WEIGHT
+              and d.get('dependent') in support_positions):
+            adj[u].append(v)
+
+    # BFS
+    visited = {start}
+    queue = deque([(start, 0)])
+    while queue:
+        node, dist = queue.popleft()
+        for neighbor in adj[node]:
+            if neighbor == end:
+                return dist + 1
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append((neighbor, dist + 1))
+    return None
 
 
 def get_subgoals(grid_graph, target_position):
