@@ -30,7 +30,7 @@ class PartialPlan:
         return [(u, v) for u, v, d in self.g.edges(data=True)
                 if d["status"] == "open"]
 
-    def is_complete(self):
+    def validate_plan(self):
         return len(self.open_edges()) == 0
 
     def cost(self):
