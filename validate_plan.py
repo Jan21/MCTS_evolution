@@ -13,8 +13,10 @@ Runs structural and semantic checks on a PartialPlan DAG:
       parent (target robot when the parent is the goal node).
   9.  All leaf nodes have `pos` and `robot` and have no children.
   10. Each leaf's (robot, pos) corresponds to an actual robot in the state.
-  11. The plan is complete (no open edges).
-  12. Every physical (non-structural) edge cost equals the exact shortest path.
+  11. A leaf's robot matches the robot on its parent (bottleneck, support, or
+      goal's target robot).
+  12. The plan is complete (no open edges).
+  13. Every physical (non-structural) edge cost equals the exact shortest path.
 
 Usage:
     from game import Game
@@ -294,6 +296,44 @@ def check_bottleneck_robot_consistency(g: nx.DiGraph, game: Game) -> list[str]:
     return errors
 
 
+def check_edge_robot_continuity(g: nx.DiGraph, game: Game) -> list[str]:
+    """The robot on a leaf must match the robot its parent expects.
+
+    For each physical edge where the child is a leaf:
+      - parent is goal       → leaf robot must be the target robot
+      - parent is bottleneck → leaf robot must match bottleneck's robot
+      - parent is support    → leaf robot must match support's robot
+    """
+    errors: list[str] = []
+    for parent, child in g.edges():
+        pt = g.nodes[parent].get("ntype")
+        ct = g.nodes[child].get("ntype")
+        if ct != "leaf":
+            continue
+
+        child_robot = g.nodes[child].get("robot")
+        if not isinstance(child_robot, Robot):
+            continue  # caught by check_node_types_and_attrs
+
+        if pt == "goal":
+            expected_name = game.state.target_robot.name
+        elif pt in ("bottleneck", "support"):
+            parent_robot = g.nodes[parent].get("robot")
+            if not isinstance(parent_robot, Robot):
+                continue
+            expected_name = parent_robot.name
+        else:
+            continue
+
+        if child_robot.name != expected_name:
+            errors.append(
+                f"Edge ('{parent}','{child}'): leaf robot "
+                f"{child_robot.name!r} != parent's robot {expected_name!r}"
+            )
+
+    return errors
+
+
 def check_completeness(g: nx.DiGraph) -> list[str]:
     """A finished plan has no open edges."""
     open_edges = [
@@ -412,6 +452,7 @@ def validate(plan, game: Game) -> ValidationResult:
         ("Edge types",                   check_edge_types(g)),
         ("Subgoal children",             check_subgoal_children(g)),
         ("Bottleneck-robot consistency", check_bottleneck_robot_consistency(g, game)),
+        ("Edge robot continuity",        check_edge_robot_continuity(g, game)),
         ("Completeness",                 check_completeness(g)),
         ("Edge costs",                   check_edge_costs(g)),
     ]
