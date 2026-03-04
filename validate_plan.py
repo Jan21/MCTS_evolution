@@ -9,21 +9,18 @@ Runs structural and semantic checks on a PartialPlan DAG:
   5.  All positions referenced by nodes are valid grid coordinates.
   6.  Every edge connects a valid (parent_type, child_type) pair.
   7.  Every subgoal has exactly one bottleneck child and one support child.
-  8.  The bottleneck child's robot matches the robot expected by the subgoal's
-      parent (target robot when the parent is the goal node).
+  8.  Robot continuity: a child's robot must match what the parent expects.
   9.  All leaf nodes have `pos` and `robot` and have no children.
   10. Each leaf's (robot, pos) corresponds to an actual robot in the state.
-  11. A leaf's robot matches the robot on its parent (bottleneck, support, or
-      goal's target robot).
-  12. The plan is complete (no open edges).
-  13. Every physical (non-structural) edge cost equals the exact shortest path.
+  11. The plan is complete (no open edges).
+  12. Every physical edge has a reachable path on the grid.
 
 Usage:
-    from game import Game
+    from GridEnv import GridEnv
     from validate_plan import validate
 
-    game   = Game.from_env(0)
-    result = validate(plan, game)
+    grid_env, state = GridEnv.from_env(0)
+    result = validate(plan, grid_env, state)
     print(result)
 """
 
@@ -33,8 +30,7 @@ from dataclasses import dataclass, field
 
 import networkx as nx
 
-from game import Game
-from robot import Robot
+from GridEnv import GridEnv, Robot_at, State
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -88,17 +84,6 @@ class ValidationResult:
         return "\n".join(lines)
 
 # ---------------------------------------------------------------------------
-# Shortest-path stub (TODO: replace with real implementation)
-# ---------------------------------------------------------------------------
-
-def compute_exact_shortest_path_length(start_pos, end_pos, support_pos=None):
-    """Compute shortest path length between two positions.
-
-    TODO: implement using the grid graph.  For now returns None (skip).
-    """
-    return None
-
-# ---------------------------------------------------------------------------
 # Individual checks – each returns a list of error strings (empty == pass)
 # ---------------------------------------------------------------------------
 
@@ -110,7 +95,7 @@ def check_is_dag(g: nx.DiGraph) -> list[str]:
 
 
 def check_node_types_and_attrs(g: nx.DiGraph) -> list[str]:
-    """Every node has a valid ``ntype``, required attributes, and Robot instances."""
+    """Every node has a valid ``ntype``, required attributes, and Robot_at instances."""
     errors: list[str] = []
     for nid, data in g.nodes(data=True):
         ntype = data.get("ntype")
@@ -124,15 +109,15 @@ def check_node_types_and_attrs(g: nx.DiGraph) -> list[str]:
             if attr not in data:
                 errors.append(f"Node '{nid}' (type={ntype}): missing '{attr}'")
         if "robot" in REQUIRED_ATTRS.get(ntype, []) and "robot" in data:
-            if not isinstance(data["robot"], Robot):
+            if not isinstance(data["robot"], Robot_at):
                 errors.append(
-                    f"Node '{nid}' (type={ntype}): 'robot' must be a Robot "
+                    f"Node '{nid}' (type={ntype}): 'robot' must be a Robot_at "
                     f"instance, got {type(data['robot']).__name__}"
                 )
     return errors
 
 
-def check_goal_node(g: nx.DiGraph, game: Game) -> list[str]:
+def check_goal_node(g: nx.DiGraph, state: State) -> list[str]:
     """Exactly one goal node; it is the root; its pos matches state target."""
     errors: list[str] = []
     goals = [
@@ -146,68 +131,63 @@ def check_goal_node(g: nx.DiGraph, game: Game) -> list[str]:
 
     goal_id, goal_data = goals[0]
 
-    # Goal must be the root (no incoming edges).
     if g.in_degree(goal_id) > 0:
         parents = list(g.predecessors(goal_id))
         errors.append(f"Goal '{goal_id}' is not root; parents={parents}")
 
-    # Goal position must match state target.
     goal_pos = goal_data.get("pos")
-    if goal_pos is not None and goal_pos != game.state.target:
+    if goal_pos is not None and goal_pos != state.target:
         errors.append(
-            f"Goal pos {goal_pos} != state target {game.state.target}"
+            f"Goal pos {goal_pos} != state target {state.target}"
         )
 
     return errors
 
 
-def check_leaf_nodes(g: nx.DiGraph, game: Game) -> list[str]:
+def check_leaf_nodes(g: nx.DiGraph, state: State) -> list[str]:
     """Leaves have pos+robot, no children, and match actual robots."""
     errors: list[str] = []
-    actual = game.state.all_robots
+    actual = state.all_robots
 
     for nid, data in g.nodes(data=True):
         if data.get("ntype") != "leaf":
             continue
 
-        # No children.
         if g.out_degree(nid) > 0:
             errors.append(
                 f"Leaf '{nid}' has children: {list(g.successors(nid))}"
             )
 
-        robot: Robot | None = data.get("robot")
+        robot: Robot_at | None = data.get("robot")
         pos = data.get("pos")
         if robot is None or pos is None:
-            continue  # already caught by check_node_types_and_attrs
-        if not isinstance(robot, Robot):
-            continue  # already caught by check_node_types_and_attrs
+            continue
+        if not isinstance(robot, Robot_at):
+            continue
 
-        # Leaf pos must equal the robot's actual current position.
-        if pos != (robot.x, robot.y):
+        if pos != robot.position:
             errors.append(
                 f"Leaf '{nid}': pos {pos} != robot position "
-                f"({robot.x}, {robot.y})"
+                f"{robot.position}"
             )
 
-        # The robot must exist in the state (matched by name and position).
         if not any(
-            r.name == robot.name and (r.x, r.y) == pos for r in actual
+            r.color == robot.color and r.position == pos for r in actual
         ):
             errors.append(
-                f"Leaf '{nid}' (robot={robot.name!r}, pos={pos}) "
+                f"Leaf '{nid}' (robot={robot.color!r}, pos={pos}) "
                 f"not found among state robots"
             )
 
     return errors
 
 
-def check_positions_on_grid(g: nx.DiGraph, game: Game) -> list[str]:
+def check_positions_on_grid(g: nx.DiGraph, grid_nodes: set) -> list[str]:
     """All node positions must be valid grid coordinates."""
     errors: list[str] = []
     for nid, data in g.nodes(data=True):
         pos = data.get("pos")
-        if pos is not None and pos not in game.grid_nodes:
+        if pos is not None and pos not in grid_nodes:
             errors.append(f"Node '{nid}': pos {pos} is not a valid grid node")
     return errors
 
@@ -245,91 +225,61 @@ def check_subgoal_children(g: nx.DiGraph) -> list[str]:
     return errors
 
 
-def check_bottleneck_robot_consistency(g: nx.DiGraph, game: Game) -> list[str]:
-    """The bottleneck child's robot must match the parent's expected robot.
+def _expected_robot_color(g: nx.DiGraph, parent_id: str, state: State) -> str | None:
+    """Return the robot color that a parent node expects its child to carry."""
+    parent_data = g.nodes[parent_id]
+    parent_type = parent_data.get("ntype")
 
-    When the subgoal's parent is the goal node the expected robot is the
-    state's target robot.  When the parent is a bottleneck or support node
-    the expected robot is that node's ``robot`` attribute.
+    if parent_type == "goal":
+        return state.target_robot.color
+    elif parent_type in ("bottleneck", "support"):
+        parent_robot = parent_data.get("robot")
+        if isinstance(parent_robot, Robot_at):
+            return parent_robot.color
+    return None
+
+
+def check_robot_continuity(g: nx.DiGraph, state: State) -> list[str]:
+    """A child's robot must match what its parent expects.
+
+    Checks two cases:
+      - Leaf nodes: the leaf's robot must match its parent's robot.
+      - Bottleneck nodes inside a subgoal: the bottleneck's robot must match
+        what the subgoal's parent expects (looking through the subgoal).
     """
     errors: list[str] = []
-    for nid, data in g.nodes(data=True):
-        if data.get("ntype") != "subgoal":
-            continue
 
-        # Find parent of this subgoal.
-        parents = list(g.predecessors(nid))
-        if not parents:
-            errors.append(f"Subgoal '{nid}' has no parent")
-            continue
-        parent_id = parents[0]
-        parent_data = g.nodes[parent_id]
-        parent_type = parent_data.get("ntype")
-
-        # Find bottleneck child.
-        bn_children = [
-            c for c in g.successors(nid)
-            if g.nodes[c].get("ntype") == "bottleneck"
-        ]
-        if not bn_children:
-            continue  # caught by check_subgoal_children
-        bn_robot: Robot | None = g.nodes[bn_children[0]].get("robot")
-        if not isinstance(bn_robot, Robot):
-            continue  # caught by check_node_types_and_attrs
-
-        if parent_type == "goal":
-            expected_name = game.state.target_robot.name
-        elif parent_type in ("bottleneck", "support"):
-            parent_robot = parent_data.get("robot")
-            if not isinstance(parent_robot, Robot):
-                continue
-            expected_name = parent_robot.name
-        else:
-            continue
-
-        if bn_robot.name != expected_name:
-            errors.append(
-                f"Subgoal '{nid}': bottleneck robot {bn_robot.name!r} "
-                f"!= expected {expected_name!r} (from parent '{parent_id}')"
-            )
-
-    return errors
-
-
-def check_edge_robot_continuity(g: nx.DiGraph, game: Game) -> list[str]:
-    """The robot on a leaf must match the robot its parent expects.
-
-    For each physical edge where the child is a leaf:
-      - parent is goal       → leaf robot must be the target robot
-      - parent is bottleneck → leaf robot must match bottleneck's robot
-      - parent is support    → leaf robot must match support's robot
-    """
-    errors: list[str] = []
     for parent, child in g.edges():
         pt = g.nodes[parent].get("ntype")
         ct = g.nodes[child].get("ntype")
-        if ct != "leaf":
-            continue
 
-        child_robot = g.nodes[child].get("robot")
-        if not isinstance(child_robot, Robot):
-            continue  # caught by check_node_types_and_attrs
-
-        if pt == "goal":
-            expected_name = game.state.target_robot.name
-        elif pt in ("bottleneck", "support"):
-            parent_robot = g.nodes[parent].get("robot")
-            if not isinstance(parent_robot, Robot):
+        # Case 1: leaf — robot must match its direct parent.
+        if ct == "leaf":
+            child_robot = g.nodes[child].get("robot")
+            if not isinstance(child_robot, Robot_at):
                 continue
-            expected_name = parent_robot.name
-        else:
-            continue
+            expected = _expected_robot_color(g, parent, state)
+            if expected is not None and child_robot.color != expected:
+                errors.append(
+                    f"Edge ('{parent}','{child}'): leaf robot "
+                    f"{child_robot.color!r} != expected {expected!r}"
+                )
 
-        if child_robot.name != expected_name:
-            errors.append(
-                f"Edge ('{parent}','{child}'): leaf robot "
-                f"{child_robot.name!r} != parent's robot {expected_name!r}"
-            )
+        # Case 2: subgoal → bottleneck — bottleneck robot must match
+        # what the subgoal's parent expects.
+        if pt == "subgoal" and ct == "bottleneck":
+            bn_robot = g.nodes[child].get("robot")
+            if not isinstance(bn_robot, Robot_at):
+                continue
+            subgoal_parents = list(g.predecessors(parent))
+            if not subgoal_parents:
+                continue
+            expected = _expected_robot_color(g, subgoal_parents[0], state)
+            if expected is not None and bn_robot.color != expected:
+                errors.append(
+                    f"Subgoal '{parent}': bottleneck robot {bn_robot.color!r} "
+                    f"!= expected {expected!r} (from parent '{subgoal_parents[0]}')"
+                )
 
     return errors
 
@@ -344,30 +294,20 @@ def check_completeness(g: nx.DiGraph) -> list[str]:
     return []
 
 
-def check_edge_costs(g: nx.DiGraph) -> list[str]:
-    """Every physical edge cost must equal the exact shortest path length.
+def check_edge_reachability(g: nx.DiGraph, grid_env: GridEnv) -> list[str]:
+    """Every physical edge must have a reachable path on the grid.
 
     Structural edges (subgoal -> bottleneck, subgoal -> support) are skipped.
-
-    For an edge whose child is a *subgoal*, the physical movement goes from
-    the subgoal's bottleneck position to the parent's position, and the
-    subgoal's support position is passed as the blocking ``support_pos``.
-
-    For edges whose child is a *leaf* or *support*, the movement goes from
-    the child position to the parent position with no support dependency.
+    If compute_exact_shortest_path_length returns None, there is no path
+    and the edge is invalid.
     """
     errors: list[str] = []
 
-    for u, v, edge_data in g.edges(data=True):
+    for u, v in g.edges():
         ut = g.nodes[u].get("ntype")
         vt = g.nodes[v].get("ntype")
 
-        # Skip structural edges.
         if (ut, vt) in STRUCTURAL_EDGE_PAIRS:
-            continue
-
-        cost = edge_data.get("cost")
-        if cost is None:
             continue
 
         start, end, support = _physical_movement(g, parent=u, child=v)
@@ -377,12 +317,11 @@ def check_edge_costs(g: nx.DiGraph) -> list[str]:
             )
             continue
 
-        expected = compute_exact_shortest_path_length(start, end, support)
-        if expected is None:
-            continue  # SPL not yet implemented, skip cost check
-        if expected != cost:
+        result = grid_env.compute_exact_shortest_path_length(start, end, support)
+        if result is None:
             errors.append(
-                f"Edge ('{u}','{v}'): cost={cost} but shortest path={expected}"
+                f"Edge ('{u}','{v}'): no path from {start} to {end}"
+                + (f" with support at {support}" if support else "")
             )
 
     return errors
@@ -406,7 +345,6 @@ def _physical_movement(
     child_type = child_data.get("ntype")
 
     if child_type == "subgoal":
-        # Robot moves from bottleneck pos -> parent pos, with support.
         bn = [
             c for c in g.successors(child)
             if g.nodes[c].get("ntype") == "bottleneck"
@@ -424,7 +362,6 @@ def _physical_movement(
         )
 
     if child_type in ("leaf", "support"):
-        # Direct independent movement: child pos -> parent pos.
         return child_data.get("pos"), parent_data.get("pos"), None
 
     return None, None, None
@@ -433,28 +370,29 @@ def _physical_movement(
 # Main entry point
 # ---------------------------------------------------------------------------
 
-def validate(plan, game: Game) -> ValidationResult:
+def validate(plan, grid_env: GridEnv, state: State) -> ValidationResult:
     """Run every validation check and return a :class:`ValidationResult`.
 
     Args:
-        plan:  A ``PartialPlan`` instance (must expose ``.g``).
-        game:  A ``Game`` instance (board + puzzle state).
+        plan:      A ``PartialPlan`` instance (must expose ``.g``).
+        grid_env:  A ``GridEnv`` instance.
+        state:     A ``State`` instance (puzzle to solve).
     """
     g = plan.g
+    grid_nodes = set(grid_env.G.nodes())
     all_errors: list[str] = []
 
     checks = [
-        ("DAG structure",                check_is_dag(g)),
-        ("Node types & attributes",      check_node_types_and_attrs(g)),
-        ("Goal node",                    check_goal_node(g, game)),
-        ("Leaf nodes",                   check_leaf_nodes(g, game)),
-        ("Positions on grid",            check_positions_on_grid(g, game)),
-        ("Edge types",                   check_edge_types(g)),
-        ("Subgoal children",             check_subgoal_children(g)),
-        ("Bottleneck-robot consistency", check_bottleneck_robot_consistency(g, game)),
-        ("Edge robot continuity",        check_edge_robot_continuity(g, game)),
-        ("Completeness",                 check_completeness(g)),
-        ("Edge costs",                   check_edge_costs(g)),
+        ("DAG structure",           check_is_dag(g)),
+        ("Node types & attributes", check_node_types_and_attrs(g)),
+        ("Goal node",               check_goal_node(g, state)),
+        ("Leaf nodes",              check_leaf_nodes(g, state)),
+        ("Positions on grid",       check_positions_on_grid(g, grid_nodes)),
+        ("Edge types",              check_edge_types(g)),
+        ("Subgoal children",        check_subgoal_children(g)),
+        ("Robot continuity",        check_robot_continuity(g, state)),
+        ("Completeness",            check_completeness(g)),
+        ("Edge reachability",       check_edge_reachability(g, grid_env)),
     ]
 
     for name, errs in checks:
