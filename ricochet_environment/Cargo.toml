@@ -1,0 +1,20 @@
+[package]
+name = "ricochet_env"
+version = "0.1.0"
+authors = ["Carl Scherer <dev@cscher.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+getset = "0.1.2"
+ndarray = "0.15.6"
+numpy = "0.20.0"
+pyo3 = { version = "0.20.2", features = ["extension-module"] }
+rand = "0.8.5"
+rand_pcg = "0.3.1"
+ricochet_board = { path = "../ricochet_board" }
+
+[package.metadata.maturin]
+requires-dist = ["gym"]
