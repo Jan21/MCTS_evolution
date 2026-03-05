@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>GridEnv Visualizer</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  display: flex; height: 100vh; overflow: hidden;
+  font-family: monospace; font-size: 13px;
+  background: #12141a; color: #ccc;
+}
+#sidebar {
+  width: 280px; min-width: 280px;
+  background: #1a1d26; border-right: 1px solid #2a2d3a;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+#sidebar-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #2a2d3a;
+  color: #7eb8f7; font-size: 15px; font-weight: bold;
+  flex-shrink: 0;
+}
+#subgoal-panel {
+  flex: 1; overflow-y: auto; padding: 8px;
+}
+#subgoal-panel::-webkit-scrollbar { width: 6px; }
+#subgoal-panel::-webkit-scrollbar-track { background: #1a1d26; }
+#subgoal-panel::-webkit-scrollbar-thumb { background: #3a3d4a; border-radius: 3px; }
+.section-title {
+  color: #666; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.08em; margin: 8px 0 4px;
+}
+.sg-item {
+  padding: 8px 10px; margin: 4px 0; border-radius: 5px;
+  border: 1px solid transparent; cursor: pointer;
+  background: #20242f; transition: background 0.1s;
+}
+.sg-item:hover { background: #262a37; }
+.sg-item.active { background: #1a2a42; border-color: #7eb8f7; }
+.sg-score { color: #7eb8f7; font-weight: bold; }
+.dot {
+  display: inline-block; width: 9px; height: 9px;
+  border-radius: 50%; vertical-align: middle; margin-right: 3px;
+  border: 1px solid rgba(255,255,255,0.4);
+}
+#main {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  overflow: auto; padding: 20px;
+}
+svg { display: block; }
+</style>
+</head>
+<body>
+<div id="sidebar">
+  <div id="sidebar-header">GridEnv Viewer</div>
+  <div id="subgoal-panel">
+    <div class="section-title" id="sg-title"></div>
+    <div id="sg-list"></div>
+  </div>
+</div>
+<div id="main"><svg id="grid"></svg></div>
+
+<script>
+const D = __DATA__;
+
+const {min_row, max_row, min_col, max_col} = D.bounds;
+const ROWS = max_row - min_row + 1;
+const COLS = max_col - min_col + 1;
+
+const CELL = Math.min(Math.floor(780 / COLS), Math.floor(620 / ROWS), 44);
+const WALL_W = Math.max(2, Math.round(CELL * 0.1));
+const LPAD = Math.round(CELL * 0.55);
+const BPAD = Math.ceil(WALL_W / 2) + 1;
+
+const W = BPAD + LPAD + COLS * CELL + BPAD;
+const H = BPAD + LPAD + ROWS * CELL + BPAD;
+
+const svg = document.getElementById('grid');
+svg.setAttribute('width', W);
+svg.setAttribute('height', H);
+svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+function lx(col) { return BPAD + LPAD + (col - min_col) * CELL; }
+function ly(row) { return BPAD + LPAD + (row - min_row) * CELL; }
+function cx(col) { return lx(col) + CELL / 2; }
+function cy(row) { return ly(row) + CELL / 2; }
+
+function ns(tag, attrs, parent) {
+  const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function grp(id) { return ns('g', id ? {id} : {}, svg); }
+
+const layerCells  = grp('cells');
+const layerWalls  = grp('walls');
+const layerHl     = grp('highlight');
+const layerRobots = grp('robots');
+const layerLabels = grp('labels');
+
+// ── Cells ──────────────────────────────────────────────────────────────────
+for (let r = min_row; r <= max_row; r++) {
+  for (let c = min_col; c <= max_col; c++) {
+    const isTarget = D.target[0] === r && D.target[1] === c;
+    ns('rect', {
+      x: lx(c), y: ly(r), width: CELL, height: CELL,
+      fill: isTarget ? '#1a3322' : '#1e2230',
+      stroke: '#2a2d3e', 'stroke-width': 0.5,
+    }, layerCells);
+  }
+}
+const [tr, tc] = D.target;
+ns('text', {
+  x: cx(tc), y: cy(tr) + 1,
+  'text-anchor': 'middle', 'dominant-baseline': 'middle',
+  'font-size': Math.round(CELL * 0.5), fill: '#4aff80',
+  style: 'pointer-events:none',
+}, layerCells).textContent = '★';
+
+// ── Coordinate labels ──────────────────────────────────────────────────────
+const LABEL_FONT = Math.max(9, Math.round(CELL * 0.28));
+const LABEL_COLOR = '#556';
+for (let c = min_col; c <= max_col; c++) {
+  ns('text', {
+    x: cx(c), y: BPAD + LPAD / 2,
+    'text-anchor': 'middle', 'dominant-baseline': 'middle',
+    'font-size': LABEL_FONT, fill: LABEL_COLOR, style: 'pointer-events:none',
+  }, layerLabels).textContent = c;
+}
+for (let r = min_row; r <= max_row; r++) {
+  ns('text', {
+    x: BPAD + LPAD / 2, y: cy(r),
+    'text-anchor': 'middle', 'dominant-baseline': 'middle',
+    'font-size': LABEL_FONT, fill: LABEL_COLOR, style: 'pointer-events:none',
+  }, layerLabels).textContent = r;
+}
+
+// ── Walls ──────────────────────────────────────────────────────────────────
+if (D.grid_data) {
+  for (let r = min_row; r <= max_row; r++) {
+    for (let c = min_col; c <= max_col; c++) {
+      const idx = (r - min_row) * COLS + (c - min_col);
+      const w = D.grid_data[idx] || 'X';
+      const x = lx(c), y = ly(r);
+      for (const ch of w) {
+        let x1, y1, x2, y2;
+        if      (ch === 'N') { x1=x;      y1=y;      x2=x+CELL; y2=y;      }
+        else if (ch === 'S') { x1=x;      y1=y+CELL; x2=x+CELL; y2=y+CELL; }
+        else if (ch === 'W') { x1=x;      y1=y;      x2=x;      y2=y+CELL; }
+        else if (ch === 'E') { x1=x+CELL; y1=y;      x2=x+CELL; y2=y+CELL; }
+        else continue;
+        ns('line', {x1, y1, x2, y2,
+          stroke: '#e05050', 'stroke-width': WALL_W, 'stroke-linecap': 'square',
+        }, layerWalls);
+      }
+    }
+  }
+}
+
+// ── Robots ─────────────────────────────────────────────────────────────────
+const R = CELL * 0.33;
+function drawRobot(parent, row, col, color, label, attrs = {}) {
+  const x = cx(col), y = cy(row);
+  ns('circle', {cx:x, cy:y, r:R, fill:color, stroke:'white', 'stroke-width':1.5, ...attrs}, parent);
+  ns('text', {
+    x, y, 'text-anchor':'middle', 'dominant-baseline':'middle',
+    fill:'white', 'font-size': Math.round(R * 0.85), 'font-weight':'bold',
+    style:'pointer-events:none',
+  }, parent).textContent = label;
+}
+
+for (const robot of D.robots) {
+  const [rr, rc] = robot.position;
+  drawRobot(layerRobots, rr, rc, robot.color, robot.role === 'target' ? 'T' : 'H');
+}
+
+// ── Subgoals ───────────────────────────────────────────────────────────────
+let activeIdx = null;
+const hlEls = [];
+
+function clearHighlight() {
+  for (const e of hlEls) e.remove();
+  hlEls.length = 0;
+}
+
+function highlightSubgoal(idx) {
+  clearHighlight();
+  if (idx === activeIdx) { activeIdx = null; renderList(); return; }
+  activeIdx = idx;
+  renderList();
+  const sg = D.subgoals[idx];
+
+  // Ghost robot at bottleneck position (target robot color)
+  const [br, bc] = sg.bottleneck;
+  const bx = cx(bc), by = cy(br);
+  hlEls.push(ns('circle', {cx:bx, cy:by, r:R, fill:sg.bottleneck_color,
+    stroke:'white', 'stroke-width':1.5, opacity:0.55,
+    'stroke-dasharray': `${R * 0.5},${R * 0.3}`}, layerHl));
+  hlEls.push(ns('text', {x:bx, y:by, 'text-anchor':'middle', 'dominant-baseline':'middle',
+    fill:'white', 'font-size': Math.round(R*0.85), 'font-weight':'bold',
+    style:'pointer-events:none'}, layerHl)).textContent = 'T';
+
+  // Ghost robot at support position (helper robot color)
+  const [sr, sc] = sg.support;
+  const sx = cx(sc), sy = cy(sr);
+  hlEls.push(ns('circle', {cx:sx, cy:sy, r:R, fill:sg.support_color,
+    stroke:'white', 'stroke-width':1.5, opacity:0.55,
+    'stroke-dasharray': `${R * 0.5},${R * 0.3}`}, layerHl));
+  hlEls.push(ns('text', {x:sx, y:sy, 'text-anchor':'middle', 'dominant-baseline':'middle',
+    fill:'white', 'font-size': Math.round(R*0.85), 'font-weight':'bold',
+    style:'pointer-events:none'}, layerHl)).textContent = 'H';
+}
+
+function renderList() {
+  const list = document.getElementById('sg-list');
+  list.innerHTML = '';
+  D.subgoals.forEach((sg, i) => {
+    const div = document.createElement('div');
+    div.className = 'sg-item' + (activeIdx === i ? ' active' : '');
+    div.innerHTML =
+      `<span class="sg-score">#${i+1} &nbsp; score: ${sg.score}</span><br>` +
+      `<span class="dot" style="background:${sg.bottleneck_color}"></span>T (${sg.bottleneck.join(',')}) &nbsp;` +
+      `<span class="dot" style="background:${sg.support_color}"></span>H (${sg.support.join(',')})`;
+    div.onclick = () => highlightSubgoal(i);
+    list.appendChild(div);
+  });
+}
+
+if (D.subgoals.length > 0) {
+  document.getElementById('sg-title').textContent = `Subgoals (${D.subgoals.length})`;
+  renderList();
+}
+</script>
+</body>
+</html>

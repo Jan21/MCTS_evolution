@@ -85,6 +85,7 @@ class GridEnv:
         path = Path(env_dir) / f"env_{env_index}.pkl"
         with open(path, "rb") as f:
             env = pickle.load(f)
+            GridEnv._process_env_pickle(env)
 
         inst = env["instances"][instance_index]
         state = State(target=inst["target"], target_robot=inst["target_robot"], helpers=inst["helper_robots"])
@@ -93,7 +94,12 @@ class GridEnv:
             independent_paths=env.get("independent_paths", {}),
             all_paths=env.get("all_paths", {}),
         )
+        grid_env._grid_data = env.get("grid_data")
         return grid_env, state
+
+    def visualize(self, state: "State", subgoals: list | None = None):
+        from visualization.render import open_in_browser
+        open_in_browser(self, state, subgoals)
 
     def _has_adjacent_wall(self, pos):
         """True if pos has at least one incoming weight=1 edge."""
@@ -134,12 +140,12 @@ class GridEnv:
 
         Returns list of (Subgoal, score).
         """
-        goal = state['goal']
-        target_robot = state['target_robot']
-        target_color = target_robot['color']
+        goal = state.target
+        target_robot = state.target_robot
+        target_color = target_robot.color
 
         if support_robot is not None:
-            support_pos, robot = support_robot['position'], support_robot['color']
+            support_pos, robot = support_robot.position, support_robot.color
             cache_key = (goal, support_pos)
         else:
             support_pos = None
@@ -155,8 +161,8 @@ class GridEnv:
             pairs = self._collect_bottleneck_support_pairs(final_component)
         results = []
         for (bottleneck_pos, support_pos) in pairs:
-            for helper_robot in state['helpers']:
-                helper_color = helper_robot['color']
+            for helper_robot in state.helpers:
+                helper_color = helper_robot.color
                 new_support_robot = Robot_at(position=support_pos, color=helper_color)
                 bottleneck_robot = Robot_at(position=bottleneck_pos, color=target_color)
                 subgoal = Subgoal(
@@ -238,3 +244,39 @@ class GridEnv:
                 return None
             return min(lengths)
 
+    def _process_env_pickle(pkl):
+        processed_instances = []
+        for instance in pkl['instances']:
+            processed_helpers = []
+            for helper in instance['helper_robots']:
+                processed_helpers.append(Robot_at(helper['position'], helper['color']))
+
+            processed_target_robot = Robot_at(instance['target_robot']['position'],
+                                              instance['target_robot']['color'])
+
+            processed_instances.append(
+                {'helper_robots': processed_helpers,
+                 'target_robot': processed_target_robot,
+                 'target': instance['target']}
+            )
+
+        pkl['instances'] = processed_instances
+
+        G = pkl['grid_graph']
+
+        independent_G = nx.DiGraph()
+        independent_G.add_nodes_from(G.nodes())
+        independent_G.add_edges_from(
+            (u, v, d) for u, v, d in G.edges(data=True) if 'dependent' not in d
+        )
+
+        def compute_matrix(graph):
+            matrix = defaultdict(lambda: None)
+            for source, lengths in nx.all_pairs_dijkstra_path_length(graph, weight='weight'):
+                for target, length in lengths.items():
+                    matrix[(source, target)] = length
+            return matrix
+
+        pkl['independent_paths'] = compute_matrix(independent_G)
+        pkl['all_paths'] = compute_matrix(G)
+            
