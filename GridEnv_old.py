@@ -1,4 +1,3 @@
-from collections import defaultdict
 from dataclasses import dataclass
 import pickle
 from pathlib import Path
@@ -43,43 +42,6 @@ class GridEnv:
         for goal in self.G.nodes():
             self.precomputed_final_components[goal] = set(nx.ancestors(self.G, goal))
 
-        self._wall_nodes = frozenset(
-            node for node in self.G.nodes()
-            if any(d['weight'] == 1 for _, _, d in self.G.in_edges(node, data=True))
-        )
-
-        grouped = defaultdict(list)
-        for u, v, d in self.G.edges(data=True):
-            if 'dependent' in d:
-                key = (v, d['dependent'])
-                grouped[key].append((u, v, d))
-
-        self._dependent_edge_cache = {}
-        for (bottleneck_pos, support_pos), edges in grouped.items():
-            ext_G = self.get_extended_graph(support_pos, bottleneck_pos)
-            ext_G_independent = self.remove_dependent_edges(ext_G)
-            final_component = set(nx.ancestors(ext_G_independent, bottleneck_pos))
-            del ext_G_independent
-            del ext_G
-            self._dependent_edge_cache[(bottleneck_pos, support_pos)] = {
-                'edges': edges,
-                'final_component': final_component,
-            }
-
-        self._bottleneck_support_pairs_cache = {}
-        for goal in self.G.nodes():
-            has_independent_in_edge = any(
-                'dependent' not in d for _, _, d in self.G.in_edges(goal, data=True)
-            )
-            if has_independent_in_edge:
-                self._bottleneck_support_pairs_cache[(goal, None)] = (
-                    self._collect_bottleneck_support_pairs(self.precomputed_final_components[goal])
-                )
-        for (bottleneck_pos, support_pos), entry in self._dependent_edge_cache.items():
-            self._bottleneck_support_pairs_cache[(bottleneck_pos, support_pos)] = (
-                self._collect_bottleneck_support_pairs(entry['final_component'])
-            )
-
     @classmethod
     def from_env(cls, env_index: int, instance_index: int = 0, env_dir: Path | str = ENV_DIR):
         path = Path(env_dir) / f"env_{env_index}.pkl"
@@ -95,21 +57,19 @@ class GridEnv:
         )
         return grid_env, state
 
+    # TODO na později, udělat více sofistikovaný check
     def _has_adjacent_wall(self, pos):
         """True if pos has at least one incoming weight=1 edge."""
-        return pos in self._wall_nodes
-
-    def remove_dependent_edges(self, G: nx.DiGraph):
-            edges_to_remove = [(u, v) for u, v, data in G.edges(data=True) if 'dependent' in data]
-            G.remove_edges_from(edges_to_remove)
-            return G
+        return any(d['weight'] == 1 for _, _, d in self.G.in_edges(pos, data=True))
 
     def _collect_bottleneck_support_pairs(self, final_component):
         """Collect (bottleneck, support_pos) pairs crossing into the final component."""
         pairs = set()
-        for node in final_component:
-            for u, v, d in self.G.in_edges(node, data=True):
-                if u not in final_component and d.get('weight') == 100 and 'dependent' in d:
+        # TODO na později, tady by se to možná trochu dalo urychlit tim, že se bude iterovat
+        # přes incomming edges do každěho prvku v final_component
+        for u, v, d in self.G.edges(data=True):
+            if d.get('weight') == 100 and 'dependent' in d:
+                if v in final_component and u not in final_component:
                     support_pos = d['dependent']
                     if self._has_adjacent_wall(support_pos):
                         pairs.add((v, support_pos))
@@ -125,11 +85,10 @@ class GridEnv:
         bottleneck_to_goal_score = self.reachability_matrix[(bottleneck_pos, goal_pos)]
         target_to_bottleneck_score = self.compute_relaxed_shortest_path_length(target_pos, bottleneck_pos, support_pos)
         helper_to_support_score = self.compute_relaxed_shortest_path_length(helper_pos, support_pos)
-        
         return bottleneck_to_goal_score + target_to_bottleneck_score + helper_to_support_score
         
 
-    def propose_subgoal_states(self, state: State, support_robot: Robot_at = None):
+    def propose_subgoal_states(self, state: State, support_robot: Robot_at):
         """Generate candidate subgoal states for an open segment.
 
         Returns list of (Subgoal, score).
@@ -140,19 +99,11 @@ class GridEnv:
 
         if support_robot is not None:
             support_pos, robot = support_robot['position'], support_robot['color']
-            cache_key = (goal, support_pos)
-        else:
-            support_pos = None
-            cache_key = (goal, None)
-
-        cached_pairs = self._bottleneck_support_pairs_cache.get(cache_key)
-        if cached_pairs is not None:
-            pairs = cached_pairs
-        else:
-            assert False, "No cached pairs found"
-            extended_G = self.get_extended_graph(support_pos, bottleneck_pos=goal)
+            extended_G = self.get_extended_graph(support_pos)
             final_component = set(nx.ancestors(extended_G, goal))
-            pairs = self._collect_bottleneck_support_pairs(final_component)
+        else:
+            final_component = self.precomputed_final_components[goal]
+        pairs = self._collect_bottleneck_support_pairs(final_component)
         results = []
         for (bottleneck_pos, support_pos) in pairs:
             for helper_robot in state['helpers']:
@@ -160,16 +111,16 @@ class GridEnv:
                 new_support_robot = Robot_at(position=support_pos, color=helper_color)
                 bottleneck_robot = Robot_at(position=bottleneck_pos, color=target_color)
                 subgoal = Subgoal(
-                    bottleneck=bottleneck_robot,
-                    support=new_support_robot,
-                    goal_pos=goal,
+                    bottleneck=bottleneck_robot, 
+                    support=new_support_robot, 
+                    goal_pos=goal, 
                     target_robot=target_robot,
                     helper=helper_robot)
                 score = self.subgoal_score(subgoal)
                 results.append((subgoal, score))
         return results
 
-    def get_extended_graph(self, support_pos, bottleneck_pos):
+    def get_extended_graph(self, support_pos, bottleneck_pos, remove_dependent: bool = True):
         new_G = self.G.copy()
         # Compute the main direction vector from support_pos to bottleneck_pos
         main_vec = (bottleneck_pos[0] - support_pos[0], bottleneck_pos[1] - support_pos[1])
@@ -201,34 +152,29 @@ class GridEnv:
         new_G.remove_edges_from(edges_to_remove_local)
         for u, v in edges_to_make_independent:
             new_G[u][v].pop('dependent')
-            new_G[u][v]['weight'] = 1 
+            new_G[u][v]['weight'] = 1
+        if remove_dependent:    
+            edges_to_remove = [(u, v) for u, v, data in new_G.edges(data=True) if 'dependent' in data]
+            new_G.remove_edges_from(edges_to_remove)
         return new_G
 
     def compute_exact_shortest_path_length(self, start, end, support_pos=None):
         if support_pos is None:
             return self.reachability_matrix[(start, end)]
         else:
-            cache_key = (end, support_pos)
-            dep_edges_to_end =self._dependent_edge_cache.get(cache_key)['edges']
-            lengths = []
-            for u, v, d in dep_edges_to_end:
-                if self.reachability_matrix[(start, u)] is not None:
-                    lengths.append(self.reachability_matrix[(start, u)] + 1)
-            if len(lengths) == 0:
+            extended_G = self.get_extended_graph(support_pos, end)
+            try:
+                return nx.shortest_path_length(extended_G, start, end)
+            except nx.NetworkXNoPath:
                 return None
-            return min(lengths) + 1
 
     def compute_relaxed_shortest_path_length(self, start, end, support_pos=None):
         if support_pos is None:
             return self.relaxed_reachability_matrix[(start, end)]
         else:
-            cache_key = (end, support_pos)
-            dep_edges_to_end =self._dependent_edge_cache.get(cache_key)['edges']
-            lengths = []
-            for u, v, d in dep_edges_to_end:
-                if self.relaxed_reachability_matrix[(start, u)] is not None:
-                    lengths.append(self.relaxed_reachability_matrix[(start, u)] + 1)
-            if len(lengths) == 0:
-                return None
-            return min(lengths) + 1
+            extended_G = self.get_extended_graph(support_pos, end, remove_dependent=False)
+            try:
+                return nx.shortest_path_length(extended_G, start, end, weight='weight')
+            except nx.NetworkXNoPath:
+                return float('inf')
 
