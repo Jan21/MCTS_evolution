@@ -45,29 +45,25 @@ def _edge_movement(g, parent: str, child: str):
     """Determine (start, end, support_pos) for a physical edge.
 
     Physical movement goes from child side to parent side.
+    support_pos is only needed when end is a bottleneck (dependent edge).
     """
     child_data = g.nodes[child]
     parent_data = g.nodes[parent]
     child_type = child_data.get("ntype")
     parent_type = parent_data.get("ntype")
 
+    # support_pos only when destination is a bottleneck
+    support_pos = (_find_sibling_support_pos(g, parent)
+                   if parent_type == "bottleneck" else None)
+
     if child_type == "subgoal":
         bn = [c for c in g.successors(child)
               if g.nodes[c].get("ntype") == "bottleneck"]
-        sp = [c for c in g.successors(child)
-              if g.nodes[c].get("ntype") == "support"]
-        if not bn or not sp:
+        if not bn:
             return None, None, None
-        return (
-            g.nodes[bn[0]].get("pos"),
-            parent_data.get("pos"),
-            g.nodes[sp[0]].get("pos"),
-        )
+        return g.nodes[bn[0]].get("pos"), parent_data.get("pos"), support_pos
 
     if child_type in ("leaf", "support"):
-        support_pos = None
-        if parent_type == "bottleneck":
-            support_pos = _find_sibling_support_pos(g, parent)
         return child_data.get("pos"), parent_data.get("pos"), support_pos
 
     return None, None, None

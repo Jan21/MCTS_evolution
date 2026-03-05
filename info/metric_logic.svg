@@ -1,0 +1,172 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 780" font-family="Segoe UI, Arial, sans-serif" font-size="13">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,1 L8,5 L0,9z" fill="#555"/>
+    </marker>
+    <marker id="a-struct" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,1 L8,5 L0,9z" fill="#aaa"/>
+    </marker>
+  </defs>
+
+  <rect width="940" height="780" rx="10" fill="#fafafa" stroke="#ddd"/>
+
+  <!-- Title -->
+  <text x="470" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#2c3e50">Metric Logic: support_pos only when end = bottleneck</text>
+  <text x="470" y="50" text-anchor="middle" font-size="12" fill="#7f8c8d">DAG edges: parent -> child. Physical movement: child -> parent. support_pos enables dependent edges INTO end.</text>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- PLAN DAG (left side) -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+
+  <text x="30" y="85" font-size="14" font-weight="bold" fill="#2c3e50">Plan DAG (nested example)</text>
+
+  <!-- GOAL node -->
+  <rect x="220" y="100" width="160" height="40" rx="8" fill="#e74c3c" fill-opacity="0.15" stroke="#e74c3c" stroke-width="2"/>
+  <text x="300" y="116" text-anchor="middle" font-weight="bold" fill="#e74c3c">goal</text>
+  <text x="300" y="132" text-anchor="middle" font-size="11" fill="#555">pos=(6,15)</text>
+
+  <!-- Edge: goal -> sg_outer (physical, no support) -->
+  <line x1="300" y1="140" x2="300" y2="180" stroke="#2980b9" stroke-width="2.5" marker-end="url(#a)"/>
+
+  <!-- SG_OUTER node -->
+  <rect x="230" y="184" width="140" height="32" rx="8" fill="#9b59b6" fill-opacity="0.15" stroke="#9b59b6" stroke-width="2"/>
+  <text x="300" y="205" text-anchor="middle" font-weight="bold" fill="#9b59b6">sg_outer</text>
+
+  <!-- Structural edges from sg_outer -->
+  <line x1="255" y1="216" x2="160" y2="256" stroke="#aaa" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#a-struct)"/>
+  <line x1="345" y1="216" x2="440" y2="256" stroke="#aaa" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#a-struct)"/>
+
+  <!-- BN_OUTER node -->
+  <rect x="70" y="260" width="180" height="40" rx="8" fill="#e67e22" fill-opacity="0.15" stroke="#e67e22" stroke-width="2"/>
+  <text x="160" y="276" text-anchor="middle" font-weight="bold" fill="#e67e22">bn_outer</text>
+  <text x="160" y="292" text-anchor="middle" font-size="11" fill="#555">pos=(5,15)  robot=yellow</text>
+
+  <!-- SP_OUTER node -->
+  <rect x="360" y="260" width="180" height="40" rx="8" fill="#27ae60" fill-opacity="0.15" stroke="#27ae60" stroke-width="2"/>
+  <text x="450" y="276" text-anchor="middle" font-weight="bold" fill="#27ae60">sp_outer</text>
+  <text x="450" y="292" text-anchor="middle" font-size="11" fill="#555">pos=(6,14)  robot=red</text>
+
+  <!-- Edge: bn_outer -> sg_inner (physical, WITH support) -->
+  <line x1="160" y1="300" x2="160" y2="350" stroke="#e67e22" stroke-width="2.5" marker-end="url(#a)"/>
+
+  <!-- Edge: sp_outer -> leaf_red (physical, no support) -->
+  <line x1="450" y1="300" x2="450" y2="350" stroke="#2980b9" stroke-width="2.5" marker-end="url(#a)"/>
+
+  <!-- SG_INNER node -->
+  <rect x="90" y="354" width="140" height="32" rx="8" fill="#9b59b6" fill-opacity="0.15" stroke="#9b59b6" stroke-width="2"/>
+  <text x="160" y="375" text-anchor="middle" font-weight="bold" fill="#9b59b6">sg_inner</text>
+
+  <!-- LEAF_RED node -->
+  <rect x="370" y="354" width="160" height="40" rx="8" fill="#95a5a6" fill-opacity="0.15" stroke="#95a5a6" stroke-width="2"/>
+  <text x="450" y="370" text-anchor="middle" font-weight="bold" fill="#7f8c8d">leaf_red</text>
+  <text x="450" y="386" text-anchor="middle" font-size="11" fill="#555">pos=(3,3)  robot=red</text>
+
+  <!-- Structural edges from sg_inner -->
+  <line x1="120" y1="386" x2="80" y2="426" stroke="#aaa" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#a-struct)"/>
+  <line x1="200" y1="386" x2="260" y2="426" stroke="#aaa" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#a-struct)"/>
+
+  <!-- BN_INNER node -->
+  <rect x="0" y="430" width="160" height="40" rx="8" fill="#e67e22" fill-opacity="0.15" stroke="#e67e22" stroke-width="2"/>
+  <text x="80" y="446" text-anchor="middle" font-weight="bold" fill="#e67e22">bn_inner</text>
+  <text x="80" y="462" text-anchor="middle" font-size="11" fill="#555">pos=(3,15)  robot=yellow</text>
+
+  <!-- SP_INNER node -->
+  <rect x="190" y="430" width="160" height="40" rx="8" fill="#27ae60" fill-opacity="0.15" stroke="#27ae60" stroke-width="2"/>
+  <text x="270" y="446" text-anchor="middle" font-weight="bold" fill="#27ae60">sp_inner</text>
+  <text x="270" y="462" text-anchor="middle" font-size="11" fill="#555">pos=(4,14)  robot=blue</text>
+
+  <!-- Edge: bn_inner -> leaf_yellow (physical, WITH support) -->
+  <line x1="80" y1="470" x2="80" y2="520" stroke="#e67e22" stroke-width="2.5" marker-end="url(#a)"/>
+
+  <!-- Edge: sp_inner -> leaf_blue (physical, no support) -->
+  <line x1="270" y1="470" x2="270" y2="520" stroke="#2980b9" stroke-width="2.5" marker-end="url(#a)"/>
+
+  <!-- LEAF_YELLOW node -->
+  <rect x="0" y="524" width="160" height="40" rx="8" fill="#95a5a6" fill-opacity="0.15" stroke="#95a5a6" stroke-width="2"/>
+  <text x="80" y="540" text-anchor="middle" font-weight="bold" fill="#7f8c8d">leaf_yellow</text>
+  <text x="80" y="556" text-anchor="middle" font-size="11" fill="#555">pos=(12,9)  robot=yellow</text>
+
+  <!-- LEAF_BLUE node -->
+  <rect x="190" y="524" width="160" height="40" rx="8" fill="#95a5a6" fill-opacity="0.15" stroke="#95a5a6" stroke-width="2"/>
+  <text x="270" y="540" text-anchor="middle" font-weight="bold" fill="#7f8c8d">leaf_blue</text>
+  <text x="270" y="556" text-anchor="middle" font-size="11" fill="#555">pos=(8,2)  robot=blue</text>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- LEGEND -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <rect x="570" y="94" width="350" height="100" rx="8" fill="white" stroke="#ddd"/>
+  <text x="590" y="115" font-weight="bold" font-size="12" fill="#2c3e50">Legend</text>
+  <line x1="590" y1="132" x2="630" y2="132" stroke="#2980b9" stroke-width="2.5"/>
+  <text x="640" y="136" font-size="11" fill="#555">Physical edge (sup = None)</text>
+  <line x1="590" y1="152" x2="630" y2="152" stroke="#e67e22" stroke-width="2.5"/>
+  <text x="640" y="156" font-size="11" fill="#555">Physical edge (sup = sibling support)</text>
+  <line x1="590" y1="172" x2="630" y2="172" stroke="#aaa" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="640" y="176" font-size="11" fill="#555">Structural edge (skipped, no cost)</text>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- EDGE COST TABLE -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <text x="570" y="225" font-size="14" font-weight="bold" fill="#2c3e50">Cost per physical edge</text>
+
+  <!-- Table header -->
+  <rect x="570" y="238" width="350" height="24" rx="4" fill="#2c3e50"/>
+  <text x="590" y="255" font-size="11" font-weight="bold" fill="white">DAG Edge</text>
+  <text x="720" y="255" font-size="11" font-weight="bold" fill="white">shortest_path(start, end, sup)</text>
+
+  <!-- Row 1: goal -> sg_outer  (no support) -->
+  <rect x="570" y="262" width="350" height="48" fill="#eaf2f8" stroke="#bbb" stroke-width="0.5"/>
+  <text x="580" y="280" font-size="11" font-weight="bold" fill="#2c3e50">goal -> sg_outer</text>
+  <text x="580" y="302" font-size="10" fill="#2980b9">end=goal (not bottleneck) -> sup=None</text>
+  <text x="720" y="280" font-size="11" fill="#2c3e50">start = (5,15)</text>
+  <text x="720" y="296" font-size="11" fill="#2c3e50">end   = (6,15), sup = None</text>
+
+  <!-- Row 2: bn_outer -> sg_inner  (WITH support) -->
+  <rect x="570" y="310" width="350" height="48" fill="#fdebd0" stroke="#bbb" stroke-width="0.5"/>
+  <text x="580" y="328" font-size="11" font-weight="bold" fill="#e67e22">bn_outer -> sg_inner</text>
+  <text x="580" y="350" font-size="10" fill="#e67e22">end=bottleneck -> sup=sp_outer</text>
+  <text x="720" y="328" font-size="11" fill="#2c3e50">start = (3,15)</text>
+  <text x="720" y="344" font-size="11" fill="#2c3e50">end   = (5,15), sup = (6,14)</text>
+
+  <!-- Row 3: bn_inner -> leaf_yellow  (WITH support) -->
+  <rect x="570" y="358" width="350" height="48" fill="#fdebd0" stroke="#bbb" stroke-width="0.5"/>
+  <text x="580" y="376" font-size="11" font-weight="bold" fill="#e67e22">bn_inner -> leaf_yellow</text>
+  <text x="580" y="398" font-size="10" fill="#e67e22">end=bottleneck -> sup=sp_inner</text>
+  <text x="720" y="376" font-size="11" fill="#2c3e50">start = (12,9)</text>
+  <text x="720" y="392" font-size="11" fill="#2c3e50">end   = (3,15), sup = (4,14)</text>
+
+  <!-- Row 4: sp_outer -> leaf_red  (no support) -->
+  <rect x="570" y="406" width="350" height="40" fill="#eaf2f8" stroke="#bbb" stroke-width="0.5"/>
+  <text x="580" y="424" font-size="11" font-weight="bold" fill="#2c3e50">sp_outer -> leaf_red</text>
+  <text x="720" y="424" font-size="11" fill="#2c3e50">start=(3,3), end=(6,14), sup=None</text>
+  <text x="580" y="440" font-size="10" fill="#2980b9">end=support (not bottleneck) -> sup=None</text>
+
+  <!-- Row 5: sp_inner -> leaf_blue  (no support) -->
+  <rect x="570" y="446" width="350" height="40" fill="#eaf2f8" stroke="#bbb" stroke-width="0.5"/>
+  <text x="580" y="464" font-size="11" font-weight="bold" fill="#2c3e50">sp_inner -> leaf_blue</text>
+  <text x="720" y="464" font-size="11" fill="#2c3e50">start=(8,2), end=(4,14), sup=None</text>
+  <text x="580" y="480" font-size="10" fill="#2980b9">end=support (not bottleneck) -> sup=None</text>
+
+  <!-- Structural (skipped) -->
+  <rect x="570" y="486" width="350" height="28" fill="#f5f5f5" stroke="#bbb" stroke-width="0.5"/>
+  <text x="580" y="505" font-size="10" fill="#aaa">sg->bn, sg->sp edges: structural, SKIPPED (no cost)</text>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- THE RULE (bottom) -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <rect x="30" y="570" width="880" height="190" rx="10" fill="white" stroke="#2980b9" stroke-width="2"/>
+  <text x="50" y="596" font-size="15" font-weight="bold" fill="#2c3e50">The Rule</text>
+
+  <text x="50" y="622" font-size="13" fill="#555">Bottlenecks are reached via dependent edges. Everything else uses independent paths.</text>
+  <text x="50" y="644" font-size="13" fill="#555">So: pass support_pos ONLY when end is a bottleneck. Otherwise sup = None.</text>
+
+  <!-- Two boxes -->
+  <rect x="50" y="665" width="380" height="50" rx="6" fill="#fdebd0" stroke="#e67e22"/>
+  <text x="70" y="685" font-size="12" font-weight="bold" fill="#e67e22">end = bottleneck</text>
+  <text x="70" y="703" font-size="11" fill="#555">sup = bottleneck's sibling support pos</text>
+
+  <rect x="460" y="665" width="380" height="50" rx="6" fill="#eaf2f8" stroke="#2980b9"/>
+  <text x="480" y="685" font-size="12" font-weight="bold" fill="#2980b9">end = anything else (goal, support, ...)</text>
+  <text x="480" y="703" font-size="11" fill="#555">sup = None (independent path)</text>
+
+  <text x="50" y="745" font-size="12" fill="#555">Sibling support: from bottleneck, go UP to parent subgoal, find its support child.</text>
+</svg>

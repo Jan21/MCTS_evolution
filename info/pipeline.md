@@ -83,44 +83,28 @@ Runs on all `n_eval` environments. The metric is the **sum of physical edge cost
 For each physical edge `(parent -> child)` in the plan, we compute
 `compute_exact_shortest_path_length(start, end, support_pos)`.
 
-The `(start, end, support_pos)` depends on the edge type:
+The rule is simple: `support_pos` is only needed when `end` is a bottleneck.
+The bottleneck is reached via a dependent edge, so we pass its sibling support.
+All other edges use independent paths (`support_pos = None`).
 
-#### Case A: child is a `subgoal`
-
-The subgoal groups a bottleneck and a support. The physical movement is from
-the bottleneck position to the parent position, using the support as a dependency.
-
-```
-start       = bottleneck child's pos
-end         = parent's pos (goal or another bottleneck)
-support_pos = support child's pos
-```
-
-Example: `goal(6,15) -> sg1 -> bn1(5,15) + sp1(6,14)`
-The physical edge `goal -> sg1` costs `shortest_path(bn1.pos, goal.pos, sp1.pos)`.
-
-#### Case B: child is `leaf`/`support`, parent is `bottleneck`
-
-The robot moves from its current position to the bottleneck. Since the bottleneck
-is reached via a dependent edge, we need the sibling support position.
+For each physical edge `(parent -> child)`:
 
 ```
-start       = child's pos
-end         = bottleneck's pos
-support_pos = sibling support's pos (found via: bottleneck -> parent subgoal -> support child)
+start = child-side position (bn.pos if child is subgoal, else child.pos)
+end   = parent.pos
+support_pos = sibling_support.pos   if parent is bottleneck
+              None                  otherwise
 ```
 
-Example: `bn1(5,15) -> leaf_y(12,9)`
-The physical edge costs `shortest_path(leaf_y.pos, bn1.pos, sp1.pos)`.
+Sibling support = go from bottleneck up to parent subgoal, find its support child.
 
-#### Case C: child is `leaf`/`support`, parent is NOT `bottleneck`
+#### Example: `goal -> sg1 -> bn1(5,15) + sp1(6,14)`, with `leaf_y(12,9)`
 
-Simple independent movement — no support needed.
-
-```
-start       = child's pos
-end         = parent's pos
-support_pos = None
+| DAG edge          | start    | end      | support_pos | why                              |
+|--------------------|----------|----------|-------------|----------------------------------|
+| `goal -> sg1`      | bn1.pos  | goal.pos | None        | bn is in goal's final component  |
+| `bn1 -> leaf_y`    | leaf.pos | bn1.pos  | sp1.pos     | bn1 reached via dependent edge   |
+| `sp1 -> leaf_r`    | leaf.pos | sp1.pos  | None        | independent movement             |
 ```
 
 Example: `sp1(6,14) -> leaf_r(3,3)`

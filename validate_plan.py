@@ -58,6 +58,7 @@ VALID_EDGE_PAIRS: set[tuple[str, str]] = {
     ("support",    "support"),
     ("subgoal",    "bottleneck"),
     ("subgoal",    "support"),
+    ("bottleneck",    "support"),
 }
 
 # Structural edges carry no physical movement cost of their own.
