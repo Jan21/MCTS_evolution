@@ -209,26 +209,32 @@ class GridEnv:
             return self.reachability_matrix[(start, end)]
         else:
             cache_key = (end, support_pos)
-            dep_edges_to_end =self._dependent_edge_cache.get(cache_key)['edges']
+            dep_entry =self._dependent_edge_cache.get(cache_key)
+            if dep_entry is None:
+                return None
+            dep_edges_to_end = dep_entry['edges']
             lengths = []
             for u, v, d in dep_edges_to_end:
                 if self.reachability_matrix[(start, u)] is not None:
                     lengths.append(self.reachability_matrix[(start, u)] + 1)
             if len(lengths) == 0:
                 return None
-            return min(lengths) + 1
+            return min(lengths)
 
     def compute_relaxed_shortest_path_length(self, start, end, support_pos=None):
         if support_pos is None:
             return self.relaxed_reachability_matrix[(start, end)]
         else:
             cache_key = (end, support_pos)
-            dep_edges_to_end =self._dependent_edge_cache.get(cache_key)['edges']
+            dep_entry =self._dependent_edge_cache.get(cache_key)
+            if dep_entry is None:
+                return None
+            dep_edges_to_end = dep_entry['edges']
             lengths = []
             for u, v, d in dep_edges_to_end:
                 if self.relaxed_reachability_matrix[(start, u)] is not None:
                     lengths.append(self.relaxed_reachability_matrix[(start, u)] + 1)
             if len(lengths) == 0:
                 return None
-            return min(lengths) + 1
+            return min(lengths)
 
