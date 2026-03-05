@@ -1,0 +1,13 @@
+[package]
+name = "ricochet-solver-cli"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+ricochet_board = { path = "ricochet_board" }
+ricochet_solver = { path = "ricochet_solver" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[patch."https://github.com/Lireer/draw-a-box"]
+draw_a_box = { path = "draw_a_box" }
