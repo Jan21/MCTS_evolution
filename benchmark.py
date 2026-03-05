@@ -1,20 +1,23 @@
 """Benchmark pipeline for Ricochet Robots partial plan algorithms.
 
 Usage:
-    from benchmark import MockAlgorithm, run
+    from benchmark import MockAlgorithm, Benchmark
 
-    algo = MockAlgorithm()
-    results = run(algo, env_indices=range(10), n_val=3, n_eval=10)
+    bench = Benchmark(env_indices=range(10), n_val=3, n_eval=10)
+    results = bench.run(MockAlgorithm())
 """
 
 from __future__ import annotations
 
 import argparse
+import pickle
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 from GridEnv import GridEnv, State, Robot_at
 from partial_plan import PartialPlan
-from validate_plan import validate, STRUCTURAL_EDGE_PAIRS
+from validate_plan import validate
+from evaluate_plan import evaluate_plan
 
 
 # ── Algorithm interface ──────────────────────────────────────────────────
@@ -26,139 +29,98 @@ class Algorithm(ABC):
         ...
 
 
-# ── Metric computation ──────────────────────────────────────────────────
+# ── Benchmark ────────────────────────────────────────────────────────────
 
-def _find_sibling_support_pos(g, bottleneck_id: str):
-    """Find the support position that is sibling to a bottleneck node.
+class Benchmark:
+    """Loads environments once at init, then runs algorithms against them."""
 
-    Traverses: bottleneck → parent subgoal → support child → pos.
-    """
-    for parent in g.predecessors(bottleneck_id):
-        if g.nodes[parent].get("ntype") == "subgoal":
-            for child in g.successors(parent):
-                if g.nodes[child].get("ntype") == "support":
-                    return g.nodes[child].get("pos")
-    return None
+    CACHE_DIR = Path("environments/cache")
 
+    def __init__(
+        self,
+        env_indices: list[int],
+        n_val: int = 10,
+        n_eval: int = 100,
+        use_cache: bool = True,
+    ):
+        self.n_val = n_val
+        self.n_eval = n_eval
+        self.val_indices = env_indices[:n_val]
+        self.eval_indices = env_indices[:n_eval]
+        self.use_cache = use_cache
 
-def _edge_movement(g, parent: str, child: str):
-    """Determine (start, end, support_pos) for a physical edge.
+        if use_cache:
+            self.CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-    Physical movement goes from child side to parent side.
-    support_pos is only needed when end is a bottleneck (dependent edge).
-    """
-    child_data = g.nodes[child]
-    parent_data = g.nodes[parent]
-    child_type = child_data.get("ntype")
-    parent_type = parent_data.get("ntype")
+        # Pre-load all environments
+        self.envs: dict[int, tuple[GridEnv, State]] = {}
+        for idx in self.eval_indices:
+            self.envs[idx] = self._load_env(idx)
 
-    # support_pos only when destination is a bottleneck
-    support_pos = (_find_sibling_support_pos(g, parent)
-                   if parent_type == "bottleneck" else None)
+    def _load_env(self, idx: int) -> tuple[GridEnv, State]:
+        cache_path = self.CACHE_DIR / f"env_{idx}.pkl"
 
-    if child_type == "subgoal":
-        bn = [c for c in g.successors(child)
-              if g.nodes[c].get("ntype") == "bottleneck"]
-        if not bn:
-            return None, None, None
-        return g.nodes[bn[0]].get("pos"), parent_data.get("pos"), support_pos
+        if self.use_cache and cache_path.exists():
+            with open(cache_path, "rb") as f:
+                return pickle.load(f)
 
-    if child_type in ("leaf", "support"):
-        return child_data.get("pos"), parent_data.get("pos"), support_pos
+        grid_env, state = GridEnv.from_env(idx)
 
-    return None, None, None
+        if self.use_cache:
+            with open(cache_path, "wb") as f:
+                pickle.dump((grid_env, state), f)
 
+        return grid_env, state
 
-def evaluate_plan(plan: PartialPlan, grid_env: GridEnv) -> float | None:
-    """Compute total cost: sum of exact shortest path lengths over physical edges.
+    def solve(self, algorithm: Algorithm, grid_env: GridEnv, state: State):
+        """Run algorithm, validate, and evaluate a single instance.
 
-    Returns None if any physical edge is unreachable.
-    """
-    g = plan.g
-    total = 0
-
-    for parent, child in g.edges():
-        parent_type = g.nodes[parent].get("ntype")
-        child_type = g.nodes[child].get("ntype")
-
-        if (parent_type, child_type) in STRUCTURAL_EDGE_PAIRS:
-            continue
-
-        start, end, support_pos = _edge_movement(g, parent, child)
-        if start is None or end is None:
-            return None
-
-        cost = grid_env.compute_exact_shortest_path_length(start, end, support_pos)
-        if cost is None:
-            return None
-
-        total += cost
-
-    return total
-
-
-# ── Pipeline ─────────────────────────────────────────────────────────────
-
-def solve(algorithm: Algorithm, grid_env: GridEnv, state: State):
-    """Run algorithm, validate, and evaluate a single instance.
-
-    Returns (plan, metric) where metric is None if validation fails
-    or an edge is unreachable.
-    """
-    plan = algorithm.solve(grid_env, state)
-
-    result = validate(plan, grid_env, state)
-    if not result.passed:
-        return plan, None
-
-    metric = evaluate_plan(plan, grid_env)
-    return plan, metric
-
-
-def run(
-    algorithm: Algorithm,
-    env_indices: list[int],
-    n_val: int = 10,
-    n_eval: int = 100,
-) -> dict[int, tuple[PartialPlan, float | None]]:
-    """Run the benchmark pipeline.
-
-    Args:
-        algorithm:   Algorithm instance to benchmark.
-        env_indices: Pool of environment indices to draw from.
-        n_val:       Number of envs for validation pre-check (drawn first).
-        n_eval:      Total number of envs to evaluate (includes the n_val envs).
-
-    Returns:
-        {env_index: (plan, metric)}  —  metric is None on failure.
-    """
-    val_indices = env_indices[:n_val]
-    eval_indices = env_indices[:n_eval]
-    results: dict[int, tuple[PartialPlan, float | None]] = {}
-
-    # Phase 1: validation pre-check
-    for env_idx in val_indices:
-        grid_env, state = GridEnv.from_env(env_idx)
+        Returns (plan, metric) where metric is None if validation fails
+        or an edge is unreachable.
+        """
         plan = algorithm.solve(grid_env, state)
-        val_result = validate(plan, grid_env, state)
-        if not val_result.passed:
-            print(f"[validation] env_{env_idx}: FAILED")
-            for err in val_result.errors:
-                print(f"  {err}")
-            return {}
-        metric = evaluate_plan(plan, grid_env)
-        results[env_idx] = (plan, metric)
 
-    # Phase 2: evaluation only (skip already-processed envs)
-    for env_idx in eval_indices:
-        if env_idx in results:
-            continue
-        grid_env, state = GridEnv.from_env(env_idx)
-        plan = algorithm.solve(grid_env, state)
-        metric = evaluate_plan(plan, grid_env)
-        results[env_idx] = (plan, metric)
+        result = validate(plan, grid_env, state)
+        if not result.passed:
+            return plan, None
 
-    return results
+        metric = evaluate_plan(plan, grid_env)
+        return plan, metric
+
+    def run(
+        self,
+        algorithm: Algorithm,
+    ) -> dict[int, tuple[PartialPlan, float | None]]:
+        """Run the benchmark pipeline.
+
+        Returns:
+            {env_index: (plan, metric)}  —  metric is None on failure.
+        """
+        results: dict[int, tuple[PartialPlan, float | None]] = {}
+
+        # Phase 1: validation pre-check
+        for env_idx in self.val_indices:
+            grid_env, state = self.envs[env_idx]
+            plan = algorithm.solve(grid_env, state)
+            val_result = validate(plan, grid_env, state)
+            if not val_result.passed:
+                print(f"[validation] env_{env_idx}: FAILED")
+                for err in val_result.errors:
+                    print(f"  {err}")
+                return {}
+            metric = evaluate_plan(plan, grid_env)
+            results[env_idx] = (plan, metric)
+
+        # Phase 2: evaluation only (skip already-processed envs)
+        for env_idx in self.eval_indices:
+            if env_idx in results:
+                continue
+            grid_env, state = self.envs[env_idx]
+            plan = algorithm.solve(grid_env, state)
+            metric = evaluate_plan(plan, grid_env)
+            results[env_idx] = (plan, metric)
+
+        return results
 
 
 # ── Mock algorithm ───────────────────────────────────────────────────────
@@ -193,10 +155,17 @@ if __name__ == "__main__":
                         help="Number of envs for validation pre-check.")
     parser.add_argument("--n_eval", type=int, default=10,
                         help="Total number of envs to evaluate.")
+    parser.add_argument("--no-cache", action="store_true",
+                        help="Disable environment caching.")
     args = parser.parse_args()
 
     algo = MockAlgorithm()
-    results = run(algo, env_indices=list(range(args.n_eval)), n_val=args.n_val, n_eval=args.n_eval)
+    bench = Benchmark(
+        env_indices=list(range(args.n_eval)),
+        n_val=args.n_val, n_eval=args.n_eval,
+        use_cache=not args.no_cache,
+    )
+    results = bench.run(algo)
 
     if not results:
         print("Benchmark aborted: validation failed.")
