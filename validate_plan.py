@@ -350,20 +350,38 @@ def _physical_movement(
             c for c in g.successors(child)
             if g.nodes[c].get("ntype") == "bottleneck"
         ]
-        sp = [
-            c for c in g.successors(child)
-            if g.nodes[c].get("ntype") == "support"
-        ]
-        if not bn or not sp:
+        if not bn:
             return None, None, None
+        # Use stored parent_support_pos if available
+        support_pos = child_data.get("parent_support_pos")
+        if support_pos is None and parent_data.get("ntype") == "bottleneck":
+            # Fallback: look up parent's sibling support
+            for sg_parent in g.predecessors(parent):
+                if g.nodes[sg_parent].get("ntype") == "subgoal":
+                    for sib in g.successors(sg_parent):
+                        if g.nodes[sib].get("ntype") == "support":
+                            support_pos = g.nodes[sib].get("pos")
+                            break
+                    break
         return (
             g.nodes[bn[0]].get("pos"),
             parent_data.get("pos"),
-            g.nodes[sp[0]].get("pos"),
+            support_pos,
         )
 
     if child_type in ("leaf", "support"):
-        return child_data.get("pos"), parent_data.get("pos"), None
+        support_pos = None
+        if parent_data.get("ntype") == "bottleneck":
+            # Physical movement to a bottleneck may use a dependent edge
+            # through the sibling support position.
+            for sg_parent in g.predecessors(parent):
+                if g.nodes[sg_parent].get("ntype") == "subgoal":
+                    for sib in g.successors(sg_parent):
+                        if g.nodes[sib].get("ntype") == "support":
+                            support_pos = g.nodes[sib].get("pos")
+                            break
+                    break
+        return child_data.get("pos"), parent_data.get("pos"), support_pos
 
     return None, None, None
 

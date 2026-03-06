@@ -125,7 +125,15 @@ class GridEnv:
         bottleneck_to_goal_score = self.reachability_matrix[(bottleneck_pos, goal_pos)]
         target_to_bottleneck_score = self.compute_relaxed_shortest_path_length(target_pos, bottleneck_pos, support_pos)
         helper_to_support_score = self.compute_relaxed_shortest_path_length(helper_pos, support_pos)
-        
+
+        INF = 10_000
+        if bottleneck_to_goal_score is None:
+            bottleneck_to_goal_score = INF
+        if target_to_bottleneck_score is None:
+            target_to_bottleneck_score = INF
+        if helper_to_support_score is None:
+            helper_to_support_score = INF
+
         return bottleneck_to_goal_score + target_to_bottleneck_score + helper_to_support_score
         
 
@@ -134,12 +142,12 @@ class GridEnv:
 
         Returns list of (Subgoal, score).
         """
-        goal = state['goal']
-        target_robot = state['target_robot']
-        target_color = target_robot['color']
+        goal = state.target
+        target_robot = state.target_robot
+        target_color = target_robot.color
 
         if support_robot is not None:
-            support_pos, robot = support_robot['position'], support_robot['color']
+            support_pos, robot = support_robot.position, support_robot.color
             cache_key = (goal, support_pos)
         else:
             support_pos = None
@@ -155,8 +163,8 @@ class GridEnv:
             pairs = self._collect_bottleneck_support_pairs(final_component)
         results = []
         for (bottleneck_pos, support_pos) in pairs:
-            for helper_robot in state['helpers']:
-                helper_color = helper_robot['color']
+            for helper_robot in state.helpers:
+                helper_color = helper_robot.color
                 new_support_robot = Robot_at(position=support_pos, color=helper_color)
                 bottleneck_robot = Robot_at(position=bottleneck_pos, color=target_color)
                 subgoal = Subgoal(

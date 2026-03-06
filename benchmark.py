@@ -1,7 +1,8 @@
 """Benchmark pipeline for Ricochet Robots partial plan algorithms.
 
 Usage:
-    from benchmark import MockAlgorithm, Benchmark
+    from MCTS import MockAlgorithm
+    from benchmark import Benchmark
 
     bench = Benchmark(env_indices=range(10), n_val=3, n_eval=10)
     results = bench.run(MockAlgorithm())
@@ -11,22 +12,13 @@ from __future__ import annotations
 
 import argparse
 import pickle
-from abc import ABC, abstractmethod
 from pathlib import Path
 
 from GridEnv import GridEnv, State, Robot_at
 from partial_plan import PartialPlan
 from validate_plan import validate
 from evaluate_plan import evaluate_plan
-
-
-# ── Algorithm interface ──────────────────────────────────────────────────
-
-class Algorithm(ABC):
-    @abstractmethod
-    def solve(self, grid_env: GridEnv, state: State) -> PartialPlan:
-        """Return a PartialPlan for the given environment and puzzle state."""
-        ...
+from MCTS import MCTS, MCTS1
 
 
 # ── Benchmark ────────────────────────────────────────────────────────────
@@ -72,7 +64,7 @@ class Benchmark:
 
         return grid_env, state
 
-    def solve(self, algorithm: Algorithm, grid_env: GridEnv, state: State):
+    def solve(self, algorithm: MCTS, grid_env: GridEnv, state: State):
         """Run algorithm, validate, and evaluate a single instance.
 
         Returns (plan, metric) where metric is None if validation fails
@@ -89,7 +81,7 @@ class Benchmark:
 
     def run(
         self,
-        algorithm: Algorithm,
+        algorithm: MCTS,
     ) -> dict[int, tuple[PartialPlan, float | None]]:
         """Run the benchmark pipeline.
 
@@ -123,30 +115,6 @@ class Benchmark:
         return results
 
 
-# ── Mock algorithm ───────────────────────────────────────────────────────
-
-class MockAlgorithm(Algorithm):
-    """Trivial algorithm: direct goal → leaf plan.
-
-    Works when the target robot can independently reach the goal.
-    Otherwise validation will fail.
-    """
-
-    def solve(self, grid_env: GridEnv, state: State) -> PartialPlan:
-        plan = PartialPlan()
-
-        plan.add_node("goal", "goal", pos=state.target)
-        plan.add_node("leaf_target", "leaf",
-                      pos=state.target_robot.position,
-                      robot=state.target_robot)
-
-        cost = grid_env.compute_exact_shortest_path_length(
-            state.target_robot.position, state.target,
-        )
-        plan.add_edge("goal", "leaf_target", status="fixed", cost=cost)
-        return plan
-
-
 # ── Entry point ──────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -159,7 +127,7 @@ if __name__ == "__main__":
                         help="Disable environment caching.")
     args = parser.parse_args()
 
-    algo = MockAlgorithm()
+    algo = MCTS1()
     bench = Benchmark(
         env_indices=list(range(args.n_eval)),
         n_val=args.n_val, n_eval=args.n_eval,
