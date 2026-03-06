@@ -1,0 +1,2 @@
+Please implement the algorithm described in prompts/algorithms/v1_contextual_plan_refinement.md 
+You should need to make it is conceptually simple and efficient. If the specification describes something which is not very efficient you can diverge from it and do it in a more efficient way.

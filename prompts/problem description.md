@@ -45,37 +45,16 @@ Plan cost - is is a sum of costs of all segments in the plan.
 The MCTS algorithm will work by proposing subgoal states for open segments. It starts from the open segment which goes from the goal position to the position of the target robot. Each subgoal state creates two new open segments, one for the bottleneck position and one for the bottlenect support.
 The subgoal state can also rewire the plan because if a subgoal requires a helper robot that is already used in another subgoal state then the plan needs to be rewired by introducing relocation edge. There could be multiple ways how this MCTS algorithm can be realized. In any case we will also use pruning to prune partial plans whose cost is higher than the best complete plan found so far.
 
-Goal is to produce complete plan with the lowest cost. We do not care if the plan is realizable. The only thing which we need to check is whether all segments in the plan correspond to paths which do not traverse any "dependent" edges. The plan may not be realizable because some robots may block paths of other robots but we do not care about it.
+Goal is to produce complete plan with the lowest cost. We do not care if the plan is realizable. The only thing which we need to check is whether all segments in the plan correspond to paths which do not traverse any "dependent" edges. The plan may not be realizable because some robots may block paths of other robots but we do not care about it. We will use the function validate in validate_plan.py
+
+The algorithms should be implemented in MCTS.py in the solve function
+
+The algorithm will get the instance of the game as an input and it can use the methods of that instance. Most importantly, it will use "propose_subgoal_states",  "subgoal_score", "compute_exact_shortest_path_length", "compute_relaxed_shortest_path_length".
 
 
-## Available functions:
-- propose_subgoal_states(goal, target_robot, helper_robots):
-    - goal: the goal position
-    - target_robot: the target robot
-    - helper_robots: the helper robots
-    - returns: a list of subgoal states
+# Benchmarking
+There is already a benchmarking setup in benchmark.py
+You can use it to debug the MCTS algorithm and compare different version of it. It test the algorithm on N instances, validates whether the plan is correct and evaluate its cost.
 
-- validate_plan(plan):
-    - plan: the plan to validate
-    - returns: True if the plan is valid, False otherwise
 
-- evaluate_plan(plan):
-    - plan: the plan to evaluate
-    - returns: the cost of the plan
 
-- compute_exact_shortest_path_length(pos1, pos2):
-    - pos1: the starting position
-    - pos2: the ending position
-    - returns: the exact shortest path length
-    - it's precomputed for all pairs of positions in the graph of the instance
-
-- compute_relaxed_shortest_path_length(pos1, pos2):
-    - pos1: the starting position
-    - pos2: the ending position
-    - returns: the relaxed shortest path length
-    - it's precomputed for all pairs of positions in the graph of the instance
-
-- run_benchmark(algorithm, num_instances):
-    - algorithm: the algorithm to run
-    - num_instance: the number of instances to run
-    - returns: the average cost of the plans
