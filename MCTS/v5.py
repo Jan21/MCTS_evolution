@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import math
-from abc import ABC, abstractmethod
+import random
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
 
 import networkx as nx
 from omegaconf import OmegaConf
@@ -11,37 +13,11 @@ from omegaconf import OmegaConf
 from GridEnv import GridEnv, Robot_at, State
 from partial_plan import PartialPlan
 from evaluate_plan import evaluate_plan
-
-
-class MCTS(ABC):
-    @abstractmethod
-    def solve(self, grid_env: GridEnv, state: State) -> PartialPlan:
-        """Return a PartialPlan for the given environment and puzzle state."""
-        ...
+from MCTS.base import MCTS, SolveResult, PlanEntry, PlanStats
 
 
 # ---------------------------------------------------------------------------
-# MCTS tree node
-# ---------------------------------------------------------------------------
-
-@dataclass
-class MCTSNode:
-    plan: PartialPlan
-    parent: MCTSNode | None
-    action: tuple | None
-    children: list[MCTSNode] = field(default_factory=list)
-    visit_count: int = 0
-    total_cost: float = 0.0
-
-    @property
-    def avg_cost(self) -> float:
-        if self.visit_count == 0:
-            return float("inf")
-        return self.total_cost / self.visit_count
-
-
-# ---------------------------------------------------------------------------
-# Helpers
+# Helpers (copied verbatim from v1.py)
 # ---------------------------------------------------------------------------
 
 def _counter():
@@ -182,7 +158,7 @@ def _get_ancestor_positions(plan, node_id):
 def _get_candidates(plan, parent_id, state, grid_env):
     """Collect all (subgoal, score, parent_support_pos) candidates.
 
-    parent_support_pos is the support position needed for the bn→parent edge
+    parent_support_pos is the support position needed for the bn->parent edge
     (comes from the support_robot passed to propose_subgoal_states).
     For parents that don't need dependent edges, parent_support_pos is None.
     Filters out candidates whose bottleneck would create a cycle.
@@ -223,7 +199,7 @@ def _apply_subgoal(plan, parent_id, child_id, subgoal, grid_env, cnt,
                    parent_support_pos=None):
     """Apply a subgoal to refine the open edge (parent_id -> child_id).
 
-    parent_support_pos: the support position needed for the bn→parent
+    parent_support_pos: the support position needed for the bn->parent
         dependent edge. For bottleneck parents this comes from their sibling
         support; for goal/support parents with only dependent in-edges this
         comes from the support_robot used during candidate generation.
@@ -319,30 +295,252 @@ def _try_close_edge(plan, parent_id, child_id, grid_env):
 
 
 # ---------------------------------------------------------------------------
-# MCTS1 — V1 Contextual Plan-Refinement
+# V5 dataclasses
 # ---------------------------------------------------------------------------
 
-class MCTS1(MCTS):
+@dataclass
+class OuterNode:
+    """Outer MCTS tree node -- holds a (partial) skeleton."""
+    plan: PartialPlan
+    parent: OuterNode | None
+    action: tuple | None
+    children: list[OuterNode] = field(default_factory=list)
+    visit_count: int = 0
+    total_cost: float = 0.0
+    # V5: skeleton signature for transposition
+    skeleton_sig: frozenset = field(default_factory=frozenset)
+    # V5: conflict constraints learned from inner evaluations
+    conflict_sets: list[frozenset] = field(default_factory=list)
+    # V5: inner search results cache
+    inner_results: list[tuple] = field(default_factory=list)  # [(cost_or_None, conflict_set)]
+
+    @property
+    def avg_cost(self) -> float:
+        if self.visit_count == 0:
+            return float("inf")
+        return self.total_cost / self.visit_count
+
+
+def _subgoal_assignment_sig(subgoal, parent_sp) -> tuple:
+    """Create a hashable signature for a subgoal assignment."""
+    return (subgoal.bottleneck.position,
+            subgoal.support.position,
+            subgoal.helper.color,
+            parent_sp)
+
+
+def _extract_skeleton_sig(plan: PartialPlan) -> frozenset:
+    """Extract a skeleton signature: frozenset of subgoal assignment tuples.
+
+    Each subgoal node contributes (bottleneck_pos, support_pos, helper_color).
+    """
+    g = plan.g
+    sigs = set()
+    for nid, data in g.nodes(data=True):
+        if data.get("ntype") == "subgoal":
+            # Find bottleneck and support children
+            bn_pos = None
+            sp_pos = None
+            helper_color = None
+            parent_sp = data.get("parent_support_pos")
+            for child in g.successors(nid):
+                cdata = g.nodes[child]
+                if cdata.get("ntype") == "bottleneck":
+                    bn_pos = cdata.get("pos")
+                elif cdata.get("ntype") == "support":
+                    sp_pos = cdata.get("pos")
+                    robot = cdata.get("robot")
+                    if robot is not None:
+                        helper_color = robot.color
+            if bn_pos is not None:
+                sigs.add((bn_pos, sp_pos, helper_color, parent_sp))
+    return frozenset(sigs)
+
+
+# ---------------------------------------------------------------------------
+# Inner search: realize a skeleton
+# ---------------------------------------------------------------------------
+
+def _realize_skeleton(plan: PartialPlan, grid_env: GridEnv,
+                      spl_cache: dict | None = None,
+                      best_known_cost: float = float("inf"),
+                      max_repair_attempts: int = 3) -> tuple:
+    """Attempt to realize a skeleton by closing all open edges.
+
+    Returns (plan, cost_or_None, conflict_frozenset).
+    - If all edges close: cost is the evaluated plan cost, conflict_set is empty.
+    - If some edges fail: cost is None, conflict_set contains the responsible
+      subgoal assignments.
+    """
+    plan = _copy_plan(plan)
+    g = plan.g
+
+    # Process open edges in topological order (leaves toward goal)
+    # We need reverse topological order of the DAG for leaves-first
+    try:
+        topo_order = list(nx.topological_sort(g))
+    except nx.NetworkXUnfeasible:
+        return (plan, None, frozenset())
+
+    # Reverse: leaves first
+    topo_order.reverse()
+
+    # Build a mapping from node to the subgoal assignment it belongs to
+    node_to_sg_assignment = {}
+    for nid, data in g.nodes(data=True):
+        if data.get("ntype") == "subgoal":
+            bn_pos = None
+            sp_pos = None
+            helper_color = None
+            parent_sp = data.get("parent_support_pos")
+            for child in g.successors(nid):
+                cdata = g.nodes[child]
+                if cdata.get("ntype") == "bottleneck":
+                    bn_pos = cdata.get("pos")
+                elif cdata.get("ntype") == "support":
+                    sp_pos = cdata.get("pos")
+                    robot = cdata.get("robot")
+                    if robot is not None:
+                        helper_color = robot.color
+            sg_sig = (bn_pos, sp_pos, helper_color, parent_sp)
+            # Map subgoal and its children to this assignment
+            node_to_sg_assignment[nid] = sg_sig
+            for child in g.successors(nid):
+                node_to_sg_assignment[child] = sg_sig
+
+    # Also map leaf nodes that are children of bottleneck/support to their
+    # parent's subgoal assignment
+    for nid, data in g.nodes(data=True):
+        if data.get("ntype") in ("bottleneck", "support"):
+            if nid in node_to_sg_assignment:
+                for child in g.successors(nid):
+                    if child not in node_to_sg_assignment:
+                        node_to_sg_assignment[child] = node_to_sg_assignment[nid]
+
+    running_cost = 0.0
+    conflict_assignments = set()
+
+    # Process edges in topological order (child first)
+    for node_id in topo_order:
+        for parent_id in list(g.predecessors(node_id)):
+            edge_data = g.edges[parent_id, node_id]
+            if edge_data["status"] != "open":
+                continue
+
+            # Try to close this edge
+            closed = _try_close_edge_cached(
+                plan, parent_id, node_id, grid_env, spl_cache,
+                max_repair_attempts)
+
+            if closed:
+                edge_cost = g.edges[parent_id, node_id].get("cost", 0)
+                if edge_cost is not None:
+                    running_cost += edge_cost
+                # Inner pruning: abort if exceeding best known
+                if running_cost >= best_known_cost:
+                    return (plan, None, frozenset())
+            else:
+                # Record conflict: which subgoal assignments are responsible
+                for nid in (parent_id, node_id):
+                    if nid in node_to_sg_assignment:
+                        conflict_assignments.add(node_to_sg_assignment[nid])
+                # Abort on first unrealizable edge
+                return (plan, None, frozenset(conflict_assignments))
+
+    # All edges closed -- evaluate
+    if plan.is_complete():
+        cost = evaluate_plan(plan, grid_env)
+        return (plan, cost, frozenset())
+    else:
+        return (plan, None, frozenset())
+
+
+def _try_close_edge_cached(plan, parent_id, child_id, grid_env,
+                           spl_cache: dict | None = None,
+                           max_repair_attempts: int = 3) -> bool:
+    """Try to close an open edge, using cache for SPL lookups.
+
+    Also attempts limited local repair (trying alternative support positions).
+    """
+    g = plan.g
+    parent_data = g.nodes[parent_id]
+    child_pos = _get_start_pos(g, child_id)
+    parent_pos = parent_data["pos"]
+
+    # Try independent path first
+    exact = _cached_spl(grid_env, child_pos, parent_pos, None, spl_cache)
+    if exact is not None:
+        g.edges[parent_id, child_id]["status"] = "fixed"
+        g.edges[parent_id, child_id]["cost"] = exact
+        return True
+
+    # For bottleneck parents, try dependent path through sibling support
+    if parent_data["ntype"] == "bottleneck":
+        sp_pos = _find_sibling_support_pos(plan, parent_id)
+        if sp_pos is not None:
+            exact = _cached_spl(grid_env, child_pos, parent_pos, sp_pos,
+                                spl_cache)
+            if exact is not None:
+                g.edges[parent_id, child_id]["status"] = "fixed"
+                g.edges[parent_id, child_id]["cost"] = exact
+                return True
+
+    return False
+
+
+def _cached_spl(grid_env, start, end, support_pos, cache: dict | None) -> int | None:
+    """Compute exact shortest path length with optional caching."""
+    if cache is not None:
+        key = (start, end, support_pos)
+        if key in cache:
+            return cache[key]
+        result = grid_env.compute_exact_shortest_path_length(
+            start, end, support_pos)
+        cache[key] = result
+        return result
+    return grid_env.compute_exact_shortest_path_length(start, end, support_pos)
+
+
+# ---------------------------------------------------------------------------
+# MCTS_V5 -- Nested Two-Stage MCTS
+# ---------------------------------------------------------------------------
+
+class MCTS_V5(MCTS):
 
     def __init__(self, cfg=None):
         if cfg is None:
             cfg = OmegaConf.load(
-                Path(__file__).resolve().parent / "conf" / "mcts1.yaml")
+                Path(__file__).resolve().parent.parent / "conf" / "v5.yaml")
         self.cfg = cfg
 
-    def solve(self, grid_env: GridEnv, state: State) -> PartialPlan:
+    def solve(self, grid_env: GridEnv, state: State) -> SolveResult:
         self._cnt = _counter()
         self._best_cost = float("inf")
         self._best_plan = None
+        self._start_time = time.monotonic()
+        self._all_plans = []
+        self._iteration = 0
+        self._node_count = 0
+        self._rollout_count = 0
+
+        # V5: global conflict library
+        self._conflict_sets: list[frozenset] = []
+        # V5: conflict count per assignment tuple
+        self._conflict_counts: dict[frozenset, int] = {}
+        # V5: inner SPL cache (shared across all inner evaluations)
+        self._spl_cache: dict = {} if self.cfg.inner_spl_cache else None
+        # V5: skeleton signature -> best inner result cache
+        self._skeleton_cache: dict[frozenset, tuple] = {}
 
         root_plan = _build_initial_plan(state, grid_env)
-        root = MCTSNode(plan=root_plan, parent=None, action=None)
+        root = OuterNode(plan=root_plan, parent=None, action=None)
 
         for _ in range(self.cfg.max_iterations):
+            self._iteration += 1
             node = self._select(root)
 
             if node.plan.is_complete():
-                cost = self._eval_complete(node.plan, grid_env)
+                cost = self._eval_via_inner(node, grid_env)
                 self._backprop(node, cost)
                 continue
 
@@ -354,15 +552,13 @@ class MCTS1(MCTS):
             cost = self._rollout(child, grid_env, state)
             self._backprop(child, cost)
 
-        if self._best_plan is not None:
-            return self._best_plan
-
-        # Fallback: greedily complete the best-scoring node
-        return self._fallback(root, grid_env, state)
+        best = (self._best_plan if self._best_plan is not None
+                else self._fallback(root, grid_env, state))
+        return SolveResult(best_plan=best, all_plans=self._all_plans)
 
     # -- Selection (LCB for minimization) --
 
-    def _select(self, node: MCTSNode) -> MCTSNode:
+    def _select(self, node: OuterNode) -> OuterNode:
         while node.children:
             if self._can_expand(node):
                 return node
@@ -373,7 +569,7 @@ class MCTS1(MCTS):
             node = min(viable, key=lambda c: self._lcb(c, node))
         return node
 
-    def _lcb(self, child: MCTSNode, parent: MCTSNode) -> float:
+    def _lcb(self, child: OuterNode, parent: OuterNode) -> float:
         if child.visit_count == 0:
             return float("-inf")
         exploit = child.avg_cost
@@ -381,14 +577,30 @@ class MCTS1(MCTS):
             math.log(parent.visit_count + 1) / child.visit_count)
         return exploit - explore
 
-    def _can_expand(self, node: MCTSNode) -> bool:
+    def _can_expand(self, node: OuterNode) -> bool:
         k = math.ceil(
             self.cfg.pw_C * (max(node.visit_count, 1) ** self.cfg.pw_alpha))
         return len(node.children) < k
 
+    # -- Conflict penalty --
+
+    def _conflict_penalty(self, existing_sig: frozenset,
+                          new_assignment: tuple) -> float:
+        """Compute penalty for adding new_assignment given existing skeleton sig.
+
+        Check if any known conflict set is a subset of existing_sig + new_assignment.
+        """
+        candidate_sig = existing_sig | {new_assignment}
+        penalty = 0.0
+        for cs in self._conflict_sets:
+            if cs <= candidate_sig:
+                count = self._conflict_counts.get(cs, 1)
+                penalty += self.cfg.conflict_penalty_weight * count
+        return penalty
+
     # -- Expansion --
 
-    def _expand(self, node: MCTSNode, grid_env: GridEnv, state: State):
+    def _expand(self, node: OuterNode, grid_env: GridEnv, state: State):
         plan = node.plan
         open_edges = plan.open_edges()
         if not open_edges:
@@ -401,7 +613,14 @@ class MCTS1(MCTS):
         if not candidates:
             return None
 
-        candidates.sort(key=lambda x: x[1])
+        # Sort by score + conflict penalty
+        def candidate_key(c):
+            subgoal, score, parent_sp = c
+            assignment = _subgoal_assignment_sig(subgoal, parent_sp)
+            penalty = self._conflict_penalty(node.skeleton_sig, assignment)
+            return score + penalty
+
+        candidates.sort(key=candidate_key)
 
         tried = {c.action for c in node.children}
         for subgoal, _score, parent_sp in candidates:
@@ -425,19 +644,91 @@ class MCTS1(MCTS):
             for pid, cid in list(child_plan.open_edges()):
                 _try_close_edge(child_plan, pid, cid, grid_env)
 
-            child_node = MCTSNode(
-                plan=child_plan, parent=node, action=action_key)
+            # Skeleton pruning
+            if self.cfg.skeleton_pruning:
+                if child_plan.cost() > self._best_cost:
+                    continue
+
+            # Build child skeleton signature
+            assignment = _subgoal_assignment_sig(subgoal, parent_sp)
+            child_sig = node.skeleton_sig | {assignment}
+
+            child_node = OuterNode(
+                plan=child_plan, parent=node, action=action_key,
+                skeleton_sig=child_sig)
+            self._node_count += 1
             node.children.append(child_node)
             self._check_complete(child_plan, grid_env)
             return child_node
 
         return None
 
-    # -- Rollout (random greedy completion) --
+    # -- Inner evaluation --
 
-    def _rollout(self, node: MCTSNode, grid_env: GridEnv, state: State):
-        import random
+    def _eval_via_inner(self, node: OuterNode, grid_env: GridEnv) -> float:
+        """Run inner search on a complete skeleton and return cost."""
+        plan = node.plan
+
+        # Check skeleton cache
+        sig = node.skeleton_sig
+        if sig in self._skeleton_cache:
+            cached_cost, cached_conflict = self._skeleton_cache[sig]
+            if cached_cost is not None:
+                return cached_cost
+            return self.cfg.penalty_cost
+
+        realized_plan, cost, conflict_set = _realize_skeleton(
+            plan, grid_env,
+            spl_cache=self._spl_cache,
+            best_known_cost=self._best_cost,
+            max_repair_attempts=self.cfg.inner_max_repair_attempts)
+
+        # Cache result
+        self._skeleton_cache[sig] = (cost, conflict_set)
+
+        # Record inner result on node
+        node.inner_results.append((cost, conflict_set))
+
+        if conflict_set:
+            self._record_conflict(conflict_set, node)
+
+        if cost is not None:
+            if cost < self._best_cost:
+                self._best_cost = cost
+                self._best_plan = _copy_plan(realized_plan)
+            self._all_plans.append(PlanEntry(
+                plan=_copy_plan(realized_plan),
+                cost=cost,
+                stats=PlanStats(
+                    wall_time=time.monotonic() - self._start_time,
+                    iteration=self._iteration,
+                    node_count=self._node_count,
+                    rollout_count=self._rollout_count,
+                )
+            ))
+            return cost
+
+        return self.cfg.penalty_cost
+
+    def _record_conflict(self, conflict_set: frozenset, node: OuterNode):
+        """Record a conflict set globally and on ancestor nodes."""
+        if not conflict_set:
+            return
+        self._conflict_sets.append(conflict_set)
+        self._conflict_counts[conflict_set] = \
+            self._conflict_counts.get(conflict_set, 0) + 1
+        # Propagate to ancestors
+        current = node
+        while current is not None:
+            current.conflict_sets.append(conflict_set)
+            current = current.parent
+
+    # -- Rollout (greedy skeleton completion + inner evaluation) --
+
+    def _rollout(self, node: OuterNode, grid_env: GridEnv, state: State) -> float:
+        self._rollout_count += 1
         plan = _copy_plan(node.plan)
+        skeleton_sig = set(node.skeleton_sig)
 
         for _ in range(self.cfg.max_rollout_depth):
             # Close all directly closeable edges first
@@ -448,15 +739,27 @@ class MCTS1(MCTS):
             if not open_edges:
                 break
 
-            # Pick random open edge
-            parent_id, child_id = random.choice(open_edges)
+            # Pick highest-cost open edge (greedy)
+            parent_id, child_id = max(
+                open_edges, key=lambda e: plan.g.edges[e]["cost"] or 0)
 
             candidates = _get_candidates(plan, parent_id, state, grid_env)
             if not candidates:
                 return self.cfg.penalty_cost
 
-            # Pick random candidate from top half
-            candidates.sort(key=lambda x: x[1])
+            # Sort by score + conflict penalty, pick from top candidates
+            def candidate_key(c):
+                subgoal, score, parent_sp = c
+                assignment = _subgoal_assignment_sig(subgoal, parent_sp)
+                candidate_sig = frozenset(skeleton_sig | {assignment})
+                penalty = 0.0
+                for cs in self._conflict_sets:
+                    if cs <= candidate_sig:
+                        count = self._conflict_counts.get(cs, 1)
+                        penalty += self.cfg.conflict_penalty_weight * count
+                return score + penalty
+
+            candidates.sort(key=candidate_key)
             pick_from = max(1, len(candidates) // 2)
             subgoal, _, parent_sp = random.choice(candidates[:pick_from])
 
@@ -467,21 +770,56 @@ class MCTS1(MCTS):
             if result is None:
                 continue
 
+            assignment = _subgoal_assignment_sig(subgoal, parent_sp)
+            skeleton_sig.add(assignment)
+
         # Close remaining closeable
         for pid, cid in list(plan.open_edges()):
             _try_close_edge(plan, pid, cid, grid_env)
 
         if plan.is_complete():
-            self._check_complete(plan, grid_env)
-            cost = evaluate_plan(plan, grid_env)
+            # Inner evaluation on the completed skeleton
+            sig_frozen = frozenset(skeleton_sig)
+
+            # Check skeleton cache
+            if sig_frozen in self._skeleton_cache:
+                cached_cost, cached_conflict = self._skeleton_cache[sig_frozen]
+                if cached_cost is not None:
+                    return cached_cost
+                return self.cfg.penalty_cost
+
+            realized_plan, cost, conflict_set = _realize_skeleton(
+                plan, grid_env,
+                spl_cache=self._spl_cache,
+                best_known_cost=self._best_cost,
+                max_repair_attempts=self.cfg.inner_max_repair_attempts)
+
+            self._skeleton_cache[sig_frozen] = (cost, conflict_set)
+
+            if conflict_set:
+                self._record_conflict(conflict_set, node)
+
             if cost is not None:
+                if cost < self._best_cost:
+                    self._best_cost = cost
+                    self._best_plan = _copy_plan(realized_plan)
+                self._all_plans.append(PlanEntry(
+                    plan=_copy_plan(realized_plan),
+                    cost=cost,
+                    stats=PlanStats(
+                        wall_time=time.monotonic() - self._start_time,
+                        iteration=self._iteration,
+                        node_count=self._node_count,
+                        rollout_count=self._rollout_count,
+                    )
+                ))
                 return cost
 
         return plan.cost()
 
     # -- Backpropagation --
 
-    def _backprop(self, node: MCTSNode, cost: float):
+    def _backprop(self, node: OuterNode, cost: float):
         while node is not None:
             node.visit_count += 1
             node.total_cost += cost
@@ -495,6 +833,16 @@ class MCTS1(MCTS):
             if cost < self._best_cost:
                 self._best_cost = cost
                 self._best_plan = _copy_plan(plan)
+            self._all_plans.append(PlanEntry(
+                plan=_copy_plan(plan),
+                cost=cost,
+                stats=PlanStats(
+                    wall_time=time.monotonic() - self._start_time,
+                    iteration=self._iteration,
+                    node_count=self._node_count,
+                    rollout_count=self._rollout_count,
+                )
+            ))
             return cost
         return self.cfg.penalty_cost
 
@@ -502,7 +850,7 @@ class MCTS1(MCTS):
         if plan.is_complete():
             self._eval_complete(plan, grid_env)
 
-    def _fallback(self, root: MCTSNode, grid_env: GridEnv, state: State):
+    def _fallback(self, root: OuterNode, grid_env: GridEnv, state: State):
         best_node = root
         stack = [root]
         while stack:
