@@ -1,0 +1,2 @@
+# What needs to be done
+Read the prompts/chat.md file, at the end there is a list of 5 versions of how this algorithm could work. Please write a detailed specification how it would work for this case and store each version as a markdown file in prompts/algorithms

@@ -37,35 +37,20 @@ class Benchmark:
         n_val: int = 10,
         n_eval: int = 100,
         use_cache: bool = True,
+        dependent_edge_weight: float = 2,
     ):
         self.n_val = n_val
         self.n_eval = n_eval
         self.val_indices = env_indices[:n_val]
         self.eval_indices = env_indices[:n_eval]
         self.use_cache = use_cache
+        self.dependent_edge_weight = dependent_edge_weight
 
-        if use_cache:
-            self.CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
-        # Pre-load all environments
+        # Pre-load all environments (caching handled by GridEnv.from_env)
         self.envs: dict[int, tuple[GridEnv, State]] = {}
         for idx in self.eval_indices:
-            self.envs[idx] = self._load_env(idx)
-
-    def _load_env(self, idx: int) -> tuple[GridEnv, State]:
-        cache_path = self.CACHE_DIR / f"env_{idx}.pkl"
-
-        if self.use_cache and cache_path.exists():
-            with open(cache_path, "rb") as f:
-                return pickle.load(f)
-
-        grid_env, state = GridEnv.from_env(idx)
-
-        if self.use_cache:
-            with open(cache_path, "wb") as f:
-                pickle.dump((grid_env, state), f)
-
-        return grid_env, state
+            self.envs[idx] = GridEnv.from_env(
+                idx, dependent_edge_weight=self.dependent_edge_weight)
 
     def solve(self, algorithm: MCTS, grid_env: GridEnv, state: State):
         """Run algorithm, validate, and evaluate a single instance.
@@ -129,7 +114,7 @@ if __name__ == "__main__":
         description="Benchmark partial plan algorithms.")
     parser.add_argument("--n_val", type=int, default=3,
                         help="Number of envs for validation pre-check.")
-    parser.add_argument("--n_eval", type=int, default=10,
+    parser.add_argument("--n_eval", type=int, default=20,
                         help="Total number of envs to evaluate.")
     parser.add_argument("--no-cache", action="store_true",
                         help="Disable environment caching.")

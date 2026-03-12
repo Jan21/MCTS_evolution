@@ -6,6 +6,7 @@ from pathlib import Path
 import networkx as nx
 
 ENV_DIR = Path(__file__).resolve().parent / "environments"
+CACHE_DIR = ENV_DIR / "cache"
 
 @dataclass
 class Robot_at:
@@ -81,18 +82,52 @@ class GridEnv:
             )
 
     @classmethod
-    def from_env(cls, env_index: int, instance_index: int = 0, env_dir: Path | str = ENV_DIR):
-        path = Path(env_dir) / f"env_{env_index}.pkl"
+    def from_env(cls, env_index: int, instance_index: int = 0,
+                 env_dir: Path | str = ENV_DIR,
+                 dependent_edge_weight: float = 2):
+        env_dir = Path(env_dir)
+        cache_dir = env_dir / "cache"
+        cache_path = cache_dir / f"env_{env_index}_w{dependent_edge_weight}.pkl"
+
+        if cache_path.exists():
+            with open(cache_path, "rb") as f:
+                cached = pickle.load(f)
+            return cached["grid_env"], cached["state"]
+
+        path = env_dir / f"env_{env_index}.pkl"
         with open(path, "rb") as f:
             env = pickle.load(f)
+
+        g = env["grid_graph"]
+
+        # Set dependent edge weights to the configured value
+        for u, v, d in g.edges(data=True):
+            if "dependent" in d:
+                d["weight"] = dependent_edge_weight
+
+        # Recompute all_paths with the configured weight
+        all_paths = {}
+        nodes = sorted(g.nodes())
+        lengths = dict(nx.all_pairs_dijkstra_path_length(g, weight="weight"))
+        for src in nodes:
+            src_lengths = lengths.get(src, {})
+            for dst in nodes:
+                all_paths[(src, dst)] = src_lengths.get(dst, None)
 
         inst = env["instances"][instance_index]
         state = State(target=inst["target"], target_robot=inst["target_robot"], helpers=inst["helper_robots"])
         grid_env = cls(
-            grid_graph=env["grid_graph"],
+            grid_graph=g,
             independent_paths=env.get("independent_paths", {}),
-            all_paths=env.get("all_paths", {}),
+            all_paths=all_paths,
         )
+        grid_env.grid_data = env.get("grid_data")
+
+        # Cache for future loads
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        with open(cache_path, "wb") as f:
+            pickle.dump({"grid_env": grid_env, "state": state}, f)
+
         return grid_env, state
 
     def _has_adjacent_wall(self, pos):
@@ -109,7 +144,7 @@ class GridEnv:
         pairs = set()
         for node in final_component:
             for u, v, d in self.G.in_edges(node, data=True):
-                if u not in final_component and d.get('weight') == 100 and 'dependent' in d:
+                if u not in final_component and 'dependent' in d:
                     support_pos = d['dependent']
                     if self._has_adjacent_wall(support_pos):
                         pairs.add((v, support_pos))
