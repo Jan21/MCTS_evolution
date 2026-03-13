@@ -247,7 +247,7 @@
       if (step.target_robot) {
         robots.push(normalizeRobot(step.target_robot));
       }
-      for (const h of (step.helper_robots || [])) {
+      for (const h of (step.helper_robots || step.helpers || [])) {
         robots.push(normalizeRobot(h));
       }
 
@@ -296,7 +296,8 @@
       }
 
       // --- Bottleneck-support pairs ---
-      const bsPairs = step['bottleneck-support_pairs'] || [];
+      // support both old hyphenated key and new underscore key (Python kwargs can't use hyphens)
+      const bsPairs = step['bottleneck_support_pairs'] || step['bottleneck-support_pairs'] || [];
       const bsColors = ['#e6550d', '#31a354', '#3182bd', '#756bb1', '#e7298a', '#66a61e'];
       for (let i = 0; i < bsPairs.length; i++) {
         const pair = bsPairs[i];
@@ -356,7 +357,7 @@
     function normalizePos(pos) {
       if (!pos) return null;
       if (Array.isArray(pos)) return [pos[0], pos[1]];
-      if (typeof pos === 'object') return [pos.row ?? pos[0], pos.col ?? pos[1]];
+      if (typeof pos === 'object') return [pos.x ?? pos.col ?? pos[0], pos.y ?? pos.row ?? pos[1]];
       return null;
     }
 
