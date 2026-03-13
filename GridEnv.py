@@ -34,14 +34,17 @@ class Subgoal:
 
 
 class GridEnv:
-    def __init__(self, grid_graph: nx.DiGraph, independent_paths: dict, all_paths: dict):
+    def __init__(self, grid_graph: nx.DiGraph, independent_paths: dict, all_paths: dict, grid_data=None, grid_size=(16, 16)):
         self.G = grid_graph
         self.reachability_matrix = independent_paths
         self.relaxed_reachability_matrix = all_paths
+        self.grid_data = grid_data
+        self.grid_size = grid_size
 
         self.precomputed_final_components = {}
+        independent_G = self.remove_dependent_edges(self.G.copy())
         for goal in self.G.nodes():
-            self.precomputed_final_components[goal] = set(nx.ancestors(self.G, goal))
+            self.precomputed_final_components[goal] = set(nx.ancestors(independent_G, goal))
 
         self._wall_nodes = frozenset(
             node for node in self.G.nodes()
@@ -87,11 +90,16 @@ class GridEnv:
             env = pickle.load(f)
 
         inst = env["instances"][instance_index]
-        state = State(target=inst["target"], target_robot=inst["target_robot"], helpers=inst["helper_robots"])
+
+        parsed_helpers = [Robot_at(r['position'], r['color']) for r in inst['helper_robots']]
+        parsed_target_robot = Robot_at(inst['target_robot']['position'], inst['target_robot']['color'])
+
+        state = State(target=inst["target"], target_robot=parsed_target_robot, helpers=parsed_helpers)
         grid_env = cls(
             grid_graph=env["grid_graph"],
             independent_paths=env.get("independent_paths", {}),
             all_paths=env.get("all_paths", {}),
+            grid_data=env.get("grid_data", None)
         )
         return grid_env, state
 
@@ -134,12 +142,12 @@ class GridEnv:
 
         Returns list of (Subgoal, score).
         """
-        goal = state['goal']
-        target_robot = state['target_robot']
-        target_color = target_robot['color']
+        goal = state.target
+        target_robot = state.target_robot
+        target_color = target_robot.color
 
         if support_robot is not None:
-            support_pos, robot = support_robot['position'], support_robot['color']
+            support_pos, robot = support_robot.position, support_robot.color
             cache_key = (goal, support_pos)
         else:
             support_pos = None
@@ -155,8 +163,8 @@ class GridEnv:
             pairs = self._collect_bottleneck_support_pairs(final_component)
         results = []
         for (bottleneck_pos, support_pos) in pairs:
-            for helper_robot in state['helpers']:
-                helper_color = helper_robot['color']
+            for helper_robot in state.helpers:
+                helper_color = helper_robot.color
                 new_support_robot = Robot_at(position=support_pos, color=helper_color)
                 bottleneck_robot = Robot_at(position=bottleneck_pos, color=target_color)
                 subgoal = Subgoal(
@@ -165,7 +173,8 @@ class GridEnv:
                     goal_pos=goal,
                     target_robot=target_robot,
                     helper=helper_robot)
-                score = self.subgoal_score(subgoal)
+                # score = self.subgoal_score(subgoal)
+                score = 1
                 results.append((subgoal, score))
         return results
 
