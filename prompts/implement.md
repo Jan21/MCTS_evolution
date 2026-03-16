@@ -1,2 +1,2 @@
-Please implement the algorithm described in prompts/algorithms/v2_lazy_coupling.md 
-You should need to make it is conceptually simple and efficient. If the specification describes something which is not very efficient you can diverge from it and do it in a more efficient way. There is another version in the MCTS1.py we don't want to copy it, we want to stick to the specification in the .md file
+Please implement the algorithm described in prompts/algorithms/a_star.md 
+You should make it is conceptually simple and efficient. If the specification describes something which is not very efficient you can diverge from it and do it in a more efficient way.

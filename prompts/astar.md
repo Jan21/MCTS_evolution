@@ -1,1 +1,0 @@
-I would like to try A* version of the algorithm instead of the MCTS version so we can compare number of expanded node

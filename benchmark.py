@@ -1,11 +1,11 @@
 """Benchmark pipeline for Ricochet Robots partial plan algorithms.
 
 Usage:
-    from MCTS import MCTS_V1, MCTS_V2
+    from A_star import A_star_V1, A_star_V2
     from benchmark import Benchmark
 
     bench = Benchmark(env_indices=range(10), n_val=3, n_eval=10)
-    results = bench.run(MCTS_V1())
+    results = bench.run(A_star_V1())
 """
 
 from __future__ import annotations
@@ -17,7 +17,9 @@ from pathlib import Path
 from GridEnv import GridEnv, State
 from validate_plan import validate
 from evaluate_plan import evaluate_plan
-from MCTS import MCTS, SolveResult, MCTS_V1, MCTS_V2, MCTS_V3, MCTS_V4, MCTS_V5
+from A_star import (A_star, SolveResult, A_star_V1, A_star_V2, A_star_V3,
+                     A_star_V4, A_star_V5, A_star_V6, A_star_V7, A_star_V8,
+                     A_star_V9, A_star_V10, A_star_V11, A_star_V12)
 from visualize_results import (
     format_comparison_table, format_discovery_stats,
     build_json_data, save_json, generate_html,
@@ -52,7 +54,7 @@ class Benchmark:
             self.envs[idx] = GridEnv.from_env(
                 idx, dependent_edge_weight=self.dependent_edge_weight)
 
-    def solve(self, algorithm: MCTS, grid_env: GridEnv, state: State):
+    def solve(self, algorithm: A_star, grid_env: GridEnv, state: State):
         """Run algorithm, validate, and evaluate a single instance.
 
         Returns (result, metric) where result is a SolveResult and metric is
@@ -70,7 +72,7 @@ class Benchmark:
 
     def run(
         self,
-        algorithm: MCTS,
+        algorithm: A_star,
     ) -> dict[int, tuple[SolveResult, float | None]]:
         """Run the benchmark pipeline.
 
@@ -118,18 +120,25 @@ if __name__ == "__main__":
                         help="Total number of envs to evaluate.")
     parser.add_argument("--no-cache", action="store_true",
                         help="Disable environment caching.")
-    parser.add_argument("--algorithms", type=str, default="V1,V2,V3,V4,V5",
+    parser.add_argument("--algorithms", type=str, default="V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12",
                         help="Comma-separated list of algorithm versions to "
                              "run (default: V1,V2,V3,V4,V5).")
     args = parser.parse_args()
 
     # Available algorithms
     algorithms = [
-        ("V1", MCTS_V1()),
-        ("V2", MCTS_V2()),
-        ("V3", MCTS_V3()),
-        ("V4", MCTS_V4()),
-        ("V5", MCTS_V5()),
+        ("V1", A_star_V1()),
+        ("V2", A_star_V2()),
+        ("V3", A_star_V3()),
+        ("V4", A_star_V4()),
+        ("V5", A_star_V5()),
+        ("V6", A_star_V6()),
+        ("V7", A_star_V7()),
+        ("V8", A_star_V8()),
+        ("V9", A_star_V9()),
+        ("V10", A_star_V10()),
+        ("V11", A_star_V11()),
+        ("V12", A_star_V12()),
     ]
 
     # Filter by --algorithms flag
@@ -138,7 +147,7 @@ if __name__ == "__main__":
 
     if not algorithms:
         print(f"No matching algorithms for: {args.algorithms}")
-        print("Available: V1, V2, V3, V4, V5")
+        print("Available: V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12")
         raise SystemExit(1)
 
     bench = Benchmark(

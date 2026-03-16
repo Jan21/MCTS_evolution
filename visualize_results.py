@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from MCTS import SolveResult
+from A_star import SolveResult
 
 
 # -- Console display -----------------------------------------------------------
@@ -166,7 +166,7 @@ def generate_html(data: dict, path: str = "benchmark_results.html"):
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MCTS Benchmark Results</title>
+<title>A* Benchmark Results</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
   * {{ margin: 0; padding: 0; box-sizing: border-box; }}
@@ -197,7 +197,7 @@ def generate_html(data: dict, path: str = "benchmark_results.html"):
 </style>
 </head>
 <body>
-<h1>MCTS Benchmark Results</h1>
+<h1>A* Benchmark Results</h1>
 <p class="subtitle">{len(env_indices)} environments, {len(algo_names)} algorithms: {', '.join(algo_names)}</p>
 
 <div class="summary-cards">

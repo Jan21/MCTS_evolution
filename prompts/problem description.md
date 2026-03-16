@@ -1,4 +1,4 @@
-You are an algorithm design expert and your goal is to propose MCTS algorithm which will find a promising plan for a given instance of the game called Ricochet Robots.
+You are an algorithm design expert and your goal is to propose A* algorithm which will find a promising plan for a given instance of the game called Ricochet Robots.
 
 ## Game description:
 Ricochet Robots is a puzzle game played on a grid board with walls on some cell edges. There is one target robot that must reach a designated target cell, and N helper robots that serve as obstacles. All robots slide in a chosen cardinal direction until they hit a wall or another robot — they cannot stop mid-slide. The goal is to find a sequence of moves (of any robot) that brings the target robot to the target cell, ideally in as few moves as possible.
@@ -41,20 +41,20 @@ Complete Plan - is a Partial Plan which has no open segments.
 Plan cost - is is a sum of costs of all segments in the plan.
 
 
-## MCTS algorithm:
-The MCTS algorithm will work by proposing subgoal states for open segments. It starts from the open segment which goes from the goal position to the position of the target robot. Each subgoal state creates two new open segments, one for the bottleneck position and one for the bottlenect support.
-The subgoal state can also rewire the plan because if a subgoal requires a helper robot that is already used in another subgoal state then the plan needs to be rewired by introducing relocation edge. There could be multiple ways how this MCTS algorithm can be realized. In any case we will also use pruning to prune partial plans whose cost is higher than the best complete plan found so far.
+## A* algorithm:
+The A* algorithm will work by proposing subgoal states for open segments. It starts from the open segment which goes from the goal position to the position of the target robot. Each subgoal state creates two new open segments, one for the bottleneck position and one for the bottleneck support.
+The subgoal state can also rewire the plan because if a subgoal requires a helper robot that is already used in another subgoal state then the plan needs to be rewired by introducing relocation edge. There could be multiple ways how this A* algorithm can be realized. In any case we will also use pruning to prune partial plans whose cost is higher than the best complete plan found so far.
 
 Goal is to produce complete plan with the lowest cost. We do not care if the plan is realizable. The only thing which we need to check is whether all segments in the plan correspond to paths which do not traverse any "dependent" edges. The plan may not be realizable because some robots may block paths of other robots but we do not care about it. We will use the function validate in validate_plan.py
 
-The algorithms should be implemented in MCTS.py in the solve function
+The algorithms should be implemented in A_star/Astar.py in the solve function
 
-The algorithm will get the instance of the game as an input and it can use the methods of that instance. Most importantly, it will use "propose_subgoal_states",  "subgoal_score", "compute_exact_shortest_path_length", "compute_relaxed_shortest_path_length".
+The algorithm will get the instance of the game and a state as an input and it can use the methods of that instance. Most importantly, it will use "propose_subgoal_states",  "subgoal_score", "compute_exact_shortest_path_length", "compute_relaxed_shortest_path_length".
 
 
 # Benchmarking
 There is already a benchmarking setup in benchmark.py
-You can use it to debug the MCTS algorithm and compare different version of it. It test the algorithm on N instances, validates whether the plan is correct and evaluate its cost.
+You can use it to debug the A* algorithm and compare different version of it. It test the algorithm on N instances, validates whether the plan is correct and evaluate its cost.
 
 
 

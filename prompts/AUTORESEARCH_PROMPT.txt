@@ -1,0 +1,254 @@
+You are an autonomous algorithm researcher. Your task: build a COMPARATIVE MAP of
+A* algorithm variants for solving Ricochet Robots partial plans. Work in this folder.
+
+════════════════════════════════════════════════════════════════════════════════
+ GOAL — EXPLORATION FIRST, PERFORMANCE SECOND
+════════════════════════════════════════════════════════════════════════════════
+You are NOT trying to find one single best algorithm.
+
+The PRIMARY deliverable is: documented A_star/vN.py files + docs/variants/*.md
+files that DESCRIBE THE LANDSCAPE — what works, what doesn't, and why.
+Finding the best version is a secondary side goal.
+
+For each variant try to squeeze a maximum out of it. First try the obvious choices
+and then you can try to be more creative to reach the maximum possible from the
+given method. If you reach performance similar to the best known performance it
+doesn't mean you should stop. Try hard to find the optimal version of the given idea.
+You can try to change different hyperparameters and the number of iterations.
+For each hyperparameter search create a script which will test multiple variations
+so that you are not trying them yourself one by one.
+
+Do not spend more than ~15 minutes total on any single variant (explore + tune +
+document). Then move on.
+
+════════════════════════════════════════════════════════════════════════════════
+ STEP 0 — SETUP (DO THIS FIRST, BEFORE ANY EXPERIMENTS)
+════════════════════════════════════════════════════════════════════════════════
+Read these files completely — they are short and critical:
+  prompts/problem description.md    ← full problem definition, READ FIRST
+  A_star/base.py                    ← interface contract, MUST follow
+  A_star/stub.py                    ← template for creating new versions
+  GridEnv.py                        ← core environment: graph, reachability, subgoals
+  partial_plan.py                   ← PartialPlan DAG representation
+  validate_plan.py                  ← plan validation (12 checks)
+  evaluate_plan.py                  ← plan cost computation
+  benchmark.py                      ← benchmarking pipeline
+
+Understand the key APIs before writing any code:
+  GridEnv.propose_subgoal_states(state, support_robot=None)
+    → returns list of (Subgoal, score) candidates for an open segment
+  GridEnv.subgoal_score(subgoal)
+    → heuristic: sum of 3 shortest path components
+  GridEnv.compute_exact_shortest_path_length(start, end, support_pos=None)
+    → exact SPL without dependent edges (used for fixed segments)
+  GridEnv.compute_relaxed_shortest_path_length(start, end, support_pos=None)
+    → relaxed SPL with dependent edges (used for open segment cost estimates)
+  PartialPlan.open_edges()   → list of open (unresolved) segments
+  PartialPlan.is_complete()  → True when no open segments remain
+  PartialPlan.cost()         → sum of all segment costs
+
+Your first variant (V1) is the baseline. There are no pre-existing baselines to run.
+
+════════════════════════════════════════════════════════════════════════════════
+ HOW TO EVALUATE
+════════════════════════════════════════════════════════════════════════════════
+# Evaluate a single variant:
+  python3 benchmark.py --algorithms V1 --n_eval 20
+
+# Evaluate multiple variants for comparison:
+  python3 benchmark.py --algorithms V1,V2,V3 --n_eval 20
+
+# Quick smoke test (3 envs only):
+  python3 benchmark.py --algorithms V1 --n_eval 3 --n_val 1
+
+Each run:
+  - Validates plans via validate_plan.py (must pass)
+  - Computes plan cost via evaluate_plan.py
+  - Prints comparison table to console
+  - Exports benchmark_results.json and benchmark_results.html
+
+Key metrics to watch:
+  avg_cost     — average plan cost across environments (LOWER is better)
+  solved_count — how many environments produced a valid plan
+  wall_time    — total time (if > 5 min for 20 envs, algorithm is too slow)
+
+════════════════════════════════════════════════════════════════════════════════
+ HOW TO CREATE A NEW VARIANT
+════════════════════════════════════════════════════════════════════════════════
+1. Copy A_star/stub.py → A_star/vN.py
+2. Rename class A_star_VX → A_star_VN
+3. Implement solve() — must return SolveResult with a valid PartialPlan
+4. Add to A_star/__init__.py:
+     from A_star.vN import A_star_VN
+5. Register in benchmark.py's algorithms list:
+     ("VN", A_star_VN()),
+6. Create conf/a_starN.yaml if you need configurable hyperparameters
+
+════════════════════════════════════════════════════════════════════════════════
+ DOCUMENTATION — docs/variants/<variant_name>.md
+════════════════════════════════════════════════════════════════════════════════
+Fill in for EVERY variant you keep:
+  1. Algorithm description: how does the A* search work? What is the open list
+     ordering? How are subgoals selected and expanded?
+  2. Heuristic formula: what cost estimate drives the search?
+  3. Best hyperparameters found and what each controls
+  4. Per-environment behaviour: which environments does it solve well/poorly? Why?
+  5. Comparison to other variants: cost and solved-count differences
+  6. Intuition: why does this variant work or fail on this problem?
+
+This is the research deliverable. Code alone is not enough.
+
+════════════════════════════════════════════════════════════════════════════════
+ FAILURE HANDLING
+════════════════════════════════════════════════════════════════════════════════
+If a variant fails (exception, validation error, absurdly high cost):
+
+Before calling it a failure, think:
+  • Does solve() return a SolveResult with a valid PartialPlan?
+  • Are all segments fixed (no open edges) in the final plan?
+  • Does the plan pass validate_plan.py? Check the 12 validation checks.
+  • Are node types correct? (goal, subgoal, bottleneck, support, leaf)
+  • Are edge statuses correct? ("open" vs "fixed")
+  • Is the cost finite? (None from exact_shortest_path means unreachable)
+
+Log failures with the variant name, error, and what you tried to fix.
+
+════════════════════════════════════════════════════════════════════════════════
+ PER-VARIANT WORKFLOW (time budget: ~15 min per variant)
+════════════════════════════════════════════════════════════════════════════════
+1. IMPLEMENT
+   Create A_star/vN.py from the stub template.
+   - Must subclass A_star and implement solve()
+   - Must return SolveResult (see A_star/base.py)
+   - Use grid_env methods for subgoal proposals and path lengths
+   - Write the algorithm logic in the docstring — this becomes documentation
+
+2. SMOKE TEST
+   python3 benchmark.py --algorithms VN --n_eval 3 --n_val 1
+   Check: does it run? Does validation pass? Is cost reasonable?
+
+3. FULL EVALUATION
+   python3 benchmark.py --algorithms VN --n_eval 20
+   Record: avg_cost, solved_count, wall_time
+
+4. OPTIMIZE (max 5 runs)
+   Tune the 1–2 most impactful parameters.
+   Stop when improvement < 2% across 2 consecutive runs.
+
+5. DOCUMENT
+   Write docs/variants/<name>.md with findings.
+
+6. NEXT VARIANT
+
+════════════════════════════════════════════════════════════════════════════════
+ VARIANTS TO EXPLORE — STARTING IDEAS (NOT EXHAUSTIVE)
+════════════════════════════════════════════════════════════════════════════════
+The ideas below are STARTING POINTS. Once through these, you MUST continue:
+search for new strategies, think of combinations, or invent new ones. The goal
+is a broad landscape, not just these few.
+
+── 1. GREEDY BEST-FIRST ──────────────────────────────────────────────────────
+The simplest A* baseline. Use a priority queue of partial plans ordered by
+total plan cost. At each step:
+  1. Pop the lowest-cost partial plan
+  2. Pick an open segment
+  3. Call propose_subgoal_states() to get candidate subgoals
+  4. For each candidate, create a new partial plan with the subgoal applied
+  5. If the plan is complete, record it; otherwise push back to queue
+  6. Prune any partial plan whose cost exceeds the best complete plan
+
+Key decisions: how to pick WHICH open segment to expand first, how to score
+candidates (use subgoal_score? raw relaxed SPL? weighted combination?).
+Explore: different open-segment selection strategies (deepest-first,
+cheapest-segment-first, most-constrained-first).
+
+── 2. MULTI-HEURISTIC A* ─────────────────────────────────────────────────────
+Try different heuristic formulations for ordering the open list:
+  h1: sum of relaxed SPL for all open segments (current subgoal_score)
+  h2: max of relaxed SPL across open segments (bottleneck heuristic)
+  h3: weighted sum with plan depth penalty: cost + α * depth
+  h4: number of open segments as tiebreaker
+
+Compare h1-h4 on the same environments to see which heuristic matters most.
+The heuristic doesn't just affect speed — it affects which complete plan is
+found first, and thus the quality of the pruning bound.
+
+── 3. BEAM SEARCH ─────────────────────────────────────────────────────────────
+Keep only top-K partial plans at each expansion level:
+  - Expand all plans at current depth
+  - Score all resulting children
+  - Keep only the K best
+  - Repeat until a complete plan is found
+
+Explore: beam width K (5, 10, 50, 100), scoring function, whether to keep
+completed plans outside the beam.
+
+── 4. ITERATIVE DEEPENING / BOUNDED A* ────────────────────────────────────────
+Set a cost bound. Run A* but prune any plan exceeding the bound. If no
+complete plan is found, increase the bound and restart. This controls memory
+usage and can find solutions faster for easy instances.
+
+Explore: initial bound (relaxed cost of root), bound increment strategy,
+combining with different heuristics from variant 2.
+
+── 5+ BEYOND THE LIST — REQUIRED ──────────────────────────────────────────────
+After working through the starting ideas, CONTINUE exploring. Do not stop.
+Ideas to pursue:
+
+  SUBGOAL ORDERING: Different strategies for which open segment to resolve
+    first — most constrained, cheapest, random.
+  LOOKAHEAD: Before committing to a subgoal, estimate the cost of the
+    sub-problems it creates (two-level lookahead).
+  RESTARTS: Run the search multiple times with different random tiebreaking
+    and take the best result.
+  HYBRID: Combine beam search with A* pruning. Or use greedy for initial
+    bound, then run full A* with that bound.
+  ENVIRONMENT-ADAPTIVE: If you notice some environments are easy (few
+    subgoals needed) and others hard (many dependencies), try a variant
+    that adapts its strategy based on problem structure.
+  SUBGOAL FILTERING: Before expanding, filter candidate subgoals more
+    aggressively (e.g., skip subgoals with unreachable segments).
+
+The starting list is a scaffold. The research session is not complete until
+you have gone meaningfully beyond it.
+
+════════════════════════════════════════════════════════════════════════════════
+ RULES — DO NOT VIOLATE
+════════════════════════════════════════════════════════════════════════════════
+NEVER modify:
+  GridEnv.py           validate_plan.py     evaluate_plan.py
+  benchmark.py         visualize_results.py
+  A_star/base.py       A_star/stub.py       environments/
+
+Write new algorithms in: A_star/vN.py (class A_star_VN, subclassing A_star)
+Each variant gets its own file — do NOT overwrite previous variants.
+Must return SolveResult with a PartialPlan that passes validate_plan.py.
+If a run exceeds 5 minutes wall clock → kill it, log the issue, simplify.
+Never post-process completed plans. Only the A* search result counts —
+no local-search improvement of the final plan after the search ends.
+
+════════════════════════════════════════════════════════════════════════════════
+ REPRODUCIBILITY
+════════════════════════════════════════════════════════════════════════════════
+Everything is reproducible from the saved artifacts:
+  A_star/vN.py               — exact code for each variant
+  benchmark_results.json     — per-environment data for every run
+  benchmark_results.html     — interactive comparison visualization
+  docs/variants/<name>.md    — research notes and findings
+
+To compare variants later:
+  python3 benchmark.py --algorithms V1,V2,V3 --n_eval 20
+
+════════════════════════════════════════════════════════════════════════════════
+ RUN LOOP — NEVER STOP, NEVER ASK
+════════════════════════════════════════════════════════════════════════════════
+Start → STEP 0 (read all files) → implement V1 → evaluate → document →
+implement V2 → evaluate → document → ... → when stuck on a variant, skip
+and return later.
+NEVER stop to ask for input. If a variant fails 3 times, move to the next.
+The session ends when interrupted externally or all reasonable variants are
+documented.
+
+At the end: run benchmark.py with all variants and confirm the comparison
+table and HTML report are generated.
+  python3 benchmark.py --algorithms V1,V2,V3,... --n_eval 20
