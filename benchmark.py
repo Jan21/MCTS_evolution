@@ -128,17 +128,17 @@ if __name__ == "__main__":
     # Available algorithms
     algorithms = [
         ("V1", A_star_V1()),
-        ("V2", A_star_V2()),
-        ("V3", A_star_V3()),
-        ("V4", A_star_V4()),
-        ("V5", A_star_V5()),
-        ("V6", A_star_V6()),
-        ("V7", A_star_V7()),
-        ("V8", A_star_V8()),
-        ("V9", A_star_V9()),
-        ("V10", A_star_V10()),
-        ("V11", A_star_V11()),
-        ("V12", A_star_V12()),
+        # ("V2", A_star_V2()),
+        # ("V3", A_star_V3()),
+        # ("V4", A_star_V4()),
+        # ("V5", A_star_V5()),
+        # ("V6", A_star_V6()),
+        # ("V7", A_star_V7()),
+        # ("V8", A_star_V8()),
+        # ("V9", A_star_V9()),
+        # ("V10", A_star_V10()),
+        # ("V11", A_star_V11()),
+        # ("V12", A_star_V12()),
     ]
 
     # Filter by --algorithms flag
