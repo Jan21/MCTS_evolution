@@ -1,0 +1,12 @@
+[package]
+name = "ricochet_solver_py"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.20.2", features = ["extension-module"] }
+ricochet_board = { path = "../ricochet-robot-solver/ricochet_board" }
+ricochet_solver = { path = "../ricochet-robot-solver/ricochet_solver" }
