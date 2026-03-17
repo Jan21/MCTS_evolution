@@ -4,6 +4,7 @@ import pickle
 from pathlib import Path
 
 import networkx as nx
+import ricochet_solver_py
 
 ENV_DIR = Path(__file__).resolve().parent / "environments"
 
@@ -246,4 +247,51 @@ class GridEnv:
             if len(lengths) == 0:
                 return None
             return min(lengths)
+
+    def solve(self, state: "State") -> dict:
+        """Solve the puzzle using the Rust BFS solver.
+
+        Returns dict with "moves", "move_count", "start_positions", "end_positions".
+        """
+        size = self.grid_size[0]
+        grid_data = self.grid_data
+
+        walls_right_set = set()
+        walls_down_set = set()
+        for idx, cell in enumerate(grid_data):
+            col = idx % size
+            row = idx // size
+            if 'E' in cell:
+                walls_right_set.add((col, row))
+            if 'S' in cell:
+                walls_down_set.add((col, row))
+            if 'W' in cell and col > 0:
+                walls_right_set.add((col - 1, row))
+            if 'N' in cell and row > 0:
+                walls_down_set.add((col, row - 1))
+        walls_right = list(walls_right_set)
+        walls_down = list(walls_down_set)
+
+        # Build robot_positions as [red, blue, green, yellow]
+        color_order = {"red": 0, "blue": 1, "green": 2, "yellow": 3}
+        robot_positions = [None] * 4
+        for robot in state.all_robots:
+            idx = color_order[robot.color.lower()]
+            robot_positions[idx] = robot.position
+        # Fill missing robots with an out-of-the-way position
+        for i in range(4):
+            if robot_positions[i] is None:
+                robot_positions[i] = (size - 1, size - 1)
+
+        target_robot = state.target_robot.color.lower()
+        target_pos = state.target
+
+        return ricochet_solver_py.solve_with_walls(
+            walls_right=walls_right,
+            walls_down=walls_down,
+            board_size=size,
+            target_pos=target_pos,
+            target_robot=target_robot,
+            robot_positions=robot_positions,
+        )
 
