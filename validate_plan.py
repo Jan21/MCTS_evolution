@@ -2,7 +2,7 @@
 
 Runs structural and semantic checks on a PartialPlan DAG:
 
-  1.  The graph is a valid DAG (no cycles).
+  1.  The plan skeleton is a valid DAG (cross-branch edges excluded).
   2.  Exactly one goal node with a `pos` attribute; goal is the root (in-degree 0).
   3.  Goal position matches state target.
   4.  Every node has a valid type with its required attributes.
@@ -89,9 +89,24 @@ class ValidationResult:
 # ---------------------------------------------------------------------------
 
 def check_is_dag(g: nx.DiGraph) -> list[str]:
-    """The graph must be a directed acyclic graph."""
-    if not nx.is_directed_acyclic_graph(g):
-        return ["Graph contains a cycle (not a DAG)"]
+    """The plan skeleton (excluding cross-branch edges) must be acyclic.
+
+    Cross-branch edges (support→support, bottleneck→support) can create
+    valid cycles when the same position is reused across plan branches
+    at different time steps.  Only the skeleton without these edges must
+    be a DAG.
+    """
+    cross_edge_types = {("support", "support"), ("bottleneck", "support")}
+    skeleton = g.copy()
+    cross_edges = [
+        (u, v) for u, v in skeleton.edges()
+        if (skeleton.nodes[u].get("ntype"), skeleton.nodes[v].get("ntype"))
+        in cross_edge_types
+    ]
+    skeleton.remove_edges_from(cross_edges)
+
+    if not nx.is_directed_acyclic_graph(skeleton):
+        return ["Plan skeleton contains a cycle (excluding cross-branch edges)"]
     return []
 
 
