@@ -295,3 +295,73 @@ class GridEnv:
             robot_positions=robot_positions,
         )
 
+    def _get_wall_sets(self):
+        """Return (walls_right, walls_down) as sets of (x, y) tuples."""
+        size = self.grid_size[0]
+        walls_right = set()
+        walls_down = set()
+        for idx, cell in enumerate(self.grid_data):
+            col = idx % size
+            row = idx // size
+            if 'E' in cell:
+                walls_right.add((col, row))
+            if 'S' in cell:
+                walls_down.add((col, row))
+            if 'W' in cell and col > 0:
+                walls_right.add((col - 1, row))
+            if 'N' in cell and row > 0:
+                walls_down.add((col, row - 1))
+        return walls_right, walls_down
+
+    def simulate_slide(self, positions: dict, robot_color: str, direction: str):
+        """Simulate a robot sliding in direction. Returns (new_pos, blocker).
+
+        positions: {color: (x, y), ...}
+        blocker: color string of the robot that stopped it, or "wall".
+        """
+        walls_right, walls_down = self._get_wall_sets()
+        size = self.grid_size[0]
+        x, y = positions[robot_color]
+
+        occupied = {}
+        for color, pos in positions.items():
+            if color != robot_color:
+                occupied[pos] = color
+
+        d = direction.lower()
+        # deltas and wall-check per direction
+        # walls_right(x,y) = wall on right edge of (x,y), between (x,y) and (x+1,y)
+        # walls_down(x,y) = wall on bottom edge of (x,y), between (x,y) and (x,y+1)
+        while True:
+            can_leave = True
+            if d == 'up':
+                if y == 0:
+                    can_leave = False
+                elif (x, y - 1) in walls_down:  # wall between (x,y-1) and (x,y)
+                    can_leave = False
+                nx_, ny_ = x, y - 1
+            elif d == 'down':
+                if y == size - 1:
+                    can_leave = False
+                elif (x, y) in walls_down:  # wall between (x,y) and (x,y+1)
+                    can_leave = False
+                nx_, ny_ = x, y + 1
+            elif d == 'left':
+                if x == 0:
+                    can_leave = False
+                elif (x - 1, y) in walls_right:  # wall between (x-1,y) and (x,y)
+                    can_leave = False
+                nx_, ny_ = x - 1, y
+            elif d == 'right':
+                if x == size - 1:
+                    can_leave = False
+                elif (x, y) in walls_right:  # wall between (x,y) and (x+1,y)
+                    can_leave = False
+                nx_, ny_ = x + 1, y
+
+            if not can_leave:
+                return (x, y), "wall"
+            if (nx_, ny_) in occupied:
+                return (x, y), occupied[(nx_, ny_)]
+            x, y = nx_, ny_
+

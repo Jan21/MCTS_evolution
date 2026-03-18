@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Partial Plan Visualizer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: monospace; background: #1a1a1a; color: #eee; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
+    h1 { margin-bottom: 16px; font-size: 1.2rem; color: #aaa; }
+    #controls { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; justify-content: center; }
+    button {
+      padding: 8px 18px; border: 1px solid #555; background: #2a2a2a; color: #eee;
+      cursor: pointer; border-radius: 4px; font-family: monospace; font-size: 0.9rem;
+    }
+    button:hover { background: #3a3a3a; }
+    button:disabled { opacity: 0.4; cursor: default; }
+    #plan-info { color: #aaa; font-size: 0.9rem; min-width: 80px; text-align: center; }
+    canvas { border: 1px solid #444; background: #222; display: block; }
+    #status { margin-top: 10px; color: #888; font-size: 0.8rem; min-height: 1.2em; }
+    #legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; justify-content: center; font-size: 0.8rem; color: #aaa; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-swatch { width: 16px; height: 16px; border-radius: 2px; border: 1px solid #555; }
+    .legend-swatch.circle { border-radius: 50%; }
+    input[type=file] { display: none; }
+    label.file-btn {
+      padding: 8px 18px; border: 1px solid #555; background: #2a2a2a; color: #eee;
+      cursor: pointer; border-radius: 4px; font-size: 0.9rem;
+    }
+    label.file-btn:hover { background: #3a3a3a; }
+  </style>
+</head>
+<body>
+  <h1>Partial Plan Visualizer</h1>
+  <div id="controls">
+    <label class="file-btn" for="file-input">Load JSON</label>
+    <input type="file" id="file-input" accept=".json">
+    <button id="btn-prev" disabled>&#8592; Prev</button>
+    <span id="plan-info">no data</span>
+    <button id="btn-next" disabled>Next &#8594;</button>
+  </div>
+  <canvas id="canvas" width="900" height="600"></canvas>
+  <div id="status">Load a JSON file to begin.</div>
+  <div id="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background:#e74c3c"></div>Goal</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#9b59b6"></div>Subgoal</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#e67e22"></div>Bottleneck</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#3498db"></div>Support</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#2ecc71"></div>Leaf</div>
+    <div class="legend-item" style="margin-left:12px"><span style="border-top:2px solid #ccc;width:20px;display:inline-block"></span>&nbsp;Fixed</div>
+    <div class="legend-item"><span style="border-top:2px dashed #888;width:20px;display:inline-block"></span>&nbsp;Open</div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    const planInfo = document.getElementById('plan-info');
+    const statusEl = document.getElementById('status');
+
+    let data = null;
+    let plans = [];
+    let currentPlan = 0;
+
+    const NODE_COLORS = {
+      goal: '#e74c3c',
+      subgoal: '#9b59b6',
+      bottleneck: '#e67e22',
+      support: '#3498db',
+      leaf: '#2ecc71',
+    };
+
+    const NODE_RADIUS = 28;
+    const LAYER_HEIGHT = 100;
+    const MIN_NODE_SPACING = 90;
+
+    document.getElementById('file-input').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parsed = JSON.parse(ev.target.result);
+          loadData(parsed);
+          statusEl.textContent = `Loaded: ${file.name}`;
+        } catch (err) {
+          statusEl.textContent = `Error parsing JSON: ${err.message}`;
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    function loadData(parsed) {
+      data = parsed;
+      if (Array.isArray(parsed)) {
+        plans = parsed;
+      } else if (parsed.plans) {
+        plans = parsed.plans;
+      } else {
+        plans = [parsed];
+      }
+      currentPlan = 0;
+      updateButtons();
+      render();
+    }
+
+    function updateButtons() {
+      const n = plans.length;
+      btnPrev.disabled = currentPlan <= 0;
+      btnNext.disabled = currentPlan >= n - 1;
+      planInfo.textContent = n === 0 ? 'no data' : `Plan ${currentPlan + 1} / ${n}`;
+    }
+
+    btnPrev.addEventListener('click', () => { if (currentPlan > 0) { currentPlan--; updateButtons(); render(); } });
+    btnNext.addEventListener('click', () => { if (currentPlan < plans.length - 1) { currentPlan++; updateButtons(); render(); } });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') btnPrev.click();
+      if (e.key === 'ArrowRight') btnNext.click();
+    });
+
+    function render() {
+      if (!plans.length) return;
+      const plan = plans[currentPlan];
+      const { nodes, edges } = plan;
+
+      // Build adjacency and compute layers via longest path from roots
+      const children = {};
+      const parents = {};
+      const nodeMap = {};
+      for (const n of nodes) {
+        nodeMap[n.id] = n;
+        children[n.id] = [];
+        parents[n.id] = [];
+      }
+      for (const e of edges) {
+        children[e.from].push(e.to);
+        parents[e.to].push(e.from);
+      }
+
+      // Roots = nodes with no parents
+      const roots = nodes.filter(n => parents[n.id].length === 0).map(n => n.id);
+
+      // Assign layers via BFS longest path
+      const layer = {};
+      const queue = [...roots];
+      for (const r of roots) layer[r] = 0;
+
+      while (queue.length) {
+        const u = queue.shift();
+        for (const v of children[u]) {
+          const newLayer = layer[u] + 1;
+          if (layer[v] === undefined || newLayer > layer[v]) {
+            layer[v] = newLayer;
+            queue.push(v);
+          }
+        }
+      }
+
+      // Group nodes by layer
+      const layers = {};
+      let maxLayer = 0;
+      for (const n of nodes) {
+        const l = layer[n.id] || 0;
+        if (!layers[l]) layers[l] = [];
+        layers[l].push(n.id);
+        maxLayer = Math.max(maxLayer, l);
+      }
+
+      // Order nodes within each layer: sort by average parent x position
+      const pos = {};
+
+      // First pass: assign initial x positions
+      for (let l = 0; l <= maxLayer; l++) {
+        const layerNodes = layers[l] || [];
+        if (l === 0) {
+          // Roots: center them
+          for (let i = 0; i < layerNodes.length; i++) {
+            pos[layerNodes[i]] = { x: i, y: l };
+          }
+        } else {
+          // Sort by average parent x
+          layerNodes.sort((a, b) => {
+            const avgA = parents[a].reduce((s, p) => s + (pos[p]?.x || 0), 0) / (parents[a].length || 1);
+            const avgB = parents[b].reduce((s, p) => s + (pos[p]?.x || 0), 0) / (parents[b].length || 1);
+            return avgA - avgB;
+          });
+          for (let i = 0; i < layerNodes.length; i++) {
+            pos[layerNodes[i]] = { x: i, y: l };
+          }
+        }
+      }
+
+      // Center each layer around 0
+      for (let l = 0; l <= maxLayer; l++) {
+        const layerNodes = layers[l] || [];
+        const n = layerNodes.length;
+        const offset = (n - 1) / 2;
+        for (const nid of layerNodes) {
+          pos[nid].x -= offset;
+        }
+      }
+
+      // Convert to pixel coordinates
+      const totalHeight = (maxLayer + 1) * LAYER_HEIGHT + 80;
+      const maxWidth = Math.max(...Object.values(layers).map(l => l.length));
+      const totalWidth = Math.max(maxWidth * MIN_NODE_SPACING + 80, 400);
+
+      canvas.width = Math.max(totalWidth, 900);
+      canvas.height = Math.max(totalHeight, 300);
+      const centerX = canvas.width / 2;
+      const topY = 50;
+
+      const pixelPos = {};
+      for (const nid of Object.keys(pos)) {
+        pixelPos[nid] = {
+          x: centerX + pos[nid].x * MIN_NODE_SPACING,
+          y: topY + pos[nid].y * LAYER_HEIGHT,
+        };
+      }
+
+      // Clear
+      ctx.fillStyle = '#222';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw edges
+      for (const e of edges) {
+        const from = pixelPos[e.from];
+        const to = pixelPos[e.to];
+        if (!from || !to) continue;
+
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y + NODE_RADIUS);
+        ctx.lineTo(to.x, to.y - NODE_RADIUS);
+
+        if (e.status === 'fixed') {
+          ctx.strokeStyle = '#ccc';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([]);
+        } else {
+          ctx.strokeStyle = '#666';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 4]);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Arrow head
+        const angle = Math.atan2(to.y - NODE_RADIUS - (from.y + NODE_RADIUS), to.x - from.x);
+        const ax = to.x - NODE_RADIUS * Math.cos(angle) * 0.3;
+        const ay = to.y - NODE_RADIUS - NODE_RADIUS * Math.sin(angle) * 0.3;
+        const arrowSize = 8;
+        ctx.beginPath();
+        ctx.moveTo(to.x, to.y - NODE_RADIUS);
+        ctx.lineTo(to.x - arrowSize * Math.cos(angle - 0.4), to.y - NODE_RADIUS - arrowSize * Math.sin(angle - 0.4));
+        ctx.moveTo(to.x, to.y - NODE_RADIUS);
+        ctx.lineTo(to.x - arrowSize * Math.cos(angle + 0.4), to.y - NODE_RADIUS - arrowSize * Math.sin(angle + 0.4));
+        ctx.strokeStyle = e.status === 'fixed' ? '#ccc' : '#666';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Cost label
+        if (e.cost != null) {
+          const mx = (from.x + to.x) / 2 + 12;
+          const my = (from.y + NODE_RADIUS + to.y - NODE_RADIUS) / 2;
+          ctx.font = 'bold 11px monospace';
+          ctx.fillStyle = e.status === 'fixed' ? '#f1c40f' : '#888';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`c=${e.cost}`, mx, my);
+        }
+      }
+
+      // Draw nodes
+      for (const n of nodes) {
+        const p = pixelPos[n.id];
+        if (!p) continue;
+        const color = NODE_COLORS[n.type] || '#777';
+
+        // Shadow
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 6;
+
+        // Node circle
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, NODE_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, NODE_RADIUS, 0, Math.PI * 2);
+        ctx.strokeStyle = darken(color, 0.3);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Label: type abbreviation
+        ctx.font = 'bold 11px monospace';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const typeLabel = {goal: 'GOAL', subgoal: 'SUB', bottleneck: 'BN', support: 'SUP', leaf: 'LEAF'}[n.type] || n.type;
+        ctx.fillText(typeLabel, p.x, p.y - 8);
+
+        // Position / robot info
+        ctx.font = '10px monospace';
+        ctx.fillStyle = '#ddd';
+        const details = [];
+        if (n.pos) details.push(`(${n.pos[0]},${n.pos[1]})`);
+        if (n.robot) details.push(n.robot);
+        if (details.length) {
+          ctx.fillText(details.join(' '), p.x, p.y + 7);
+        }
+      }
+    }
+
+    function darken(color, amount) {
+      const tmp = document.createElement('canvas');
+      tmp.width = tmp.height = 1;
+      const c = tmp.getContext('2d');
+      c.fillStyle = color;
+      c.fillRect(0, 0, 1, 1);
+      const d = c.getImageData(0, 0, 1, 1).data;
+      return `rgb(${Math.floor(d[0]*(1-amount))},${Math.floor(d[1]*(1-amount))},${Math.floor(d[2]*(1-amount))})`;
+    }
+
+    // Placeholder
+    ctx.fillStyle = '#222';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#aaa';
+    ctx.font = '16px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Load a JSON file to visualize', canvas.width/2, canvas.height/2);
+  </script>
+</body>
+</html>

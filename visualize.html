@@ -7,14 +7,26 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: monospace; background: #1a1a1a; color: #eee; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
     h1 { margin-bottom: 16px; font-size: 1.2rem; color: #aaa; }
-    #controls { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; justify-content: center; }
+
+    #tabs { display: flex; gap: 0; margin-bottom: 16px; }
+    .tab {
+      padding: 8px 24px; border: 1px solid #555; background: #2a2a2a; color: #aaa;
+      cursor: pointer; font-family: monospace; font-size: 0.9rem;
+    }
+    .tab:first-child { border-radius: 4px 0 0 4px; }
+    .tab:last-child { border-radius: 0 4px 4px 0; }
+    .tab.active { background: #444; color: #eee; border-color: #777; }
+    .tab:hover:not(.active) { background: #3a3a3a; }
+
+    #controls, #solver-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; justify-content: center; }
     button {
       padding: 8px 18px; border: 1px solid #555; background: #2a2a2a; color: #eee;
       cursor: pointer; border-radius: 4px; font-family: monospace; font-size: 0.9rem;
     }
     button:hover { background: #3a3a3a; }
     button:disabled { opacity: 0.4; cursor: default; }
-    #step-info { color: #aaa; font-size: 0.9rem; min-width: 80px; text-align: center; }
+    #step-info, #move-info { color: #aaa; font-size: 0.9rem; min-width: 80px; text-align: center; }
+    #move-desc { color: #ccc; font-size: 0.9rem; min-width: 120px; text-align: center; }
     #canvas-container { position: relative; }
     canvas { border: 1px solid #444; background: white; display: block; }
     #status { margin-top: 10px; color: #888; font-size: 0.8rem; min-height: 1.2em; }
@@ -28,10 +40,17 @@
       cursor: pointer; border-radius: 4px; font-size: 0.9rem;
     }
     label.file-btn:hover { background: #3a3a3a; }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
   <h1>Grid Visualizer</h1>
+
+  <div id="tabs">
+    <div class="tab active" data-tab="board">Board</div>
+    <div class="tab" data-tab="solver">Solver</div>
+  </div>
+
   <div id="controls">
     <label class="file-btn" for="file-input">Load JSON</label>
     <input type="file" id="file-input" accept=".json">
@@ -39,6 +58,21 @@
     <span id="step-info">no data</span>
     <button id="btn-next" disabled>Next &#8594;</button>
   </div>
+
+  <div id="solver-controls" class="hidden">
+    <label class="file-btn" for="file-input-solver">Load JSON</label>
+    <input type="file" id="file-input-solver" accept=".json">
+    <button id="btn-scene-prev" disabled>&#8592; Scene</button>
+    <span id="scene-info">no data</span>
+    <button id="btn-scene-next" disabled>Scene &#8594;</button>
+    <span style="color:#555">|</span>
+    <button id="btn-move-prev" disabled>&#8592; Move</button>
+    <span id="move-info">-</span>
+    <button id="btn-move-next" disabled>Move &#8594;</button>
+    <button id="btn-move-reset">Reset</button>
+    <span id="move-desc"></span>
+  </div>
+
   <div id="canvas-container">
     <canvas id="canvas" width="640" height="640"></canvas>
   </div>
@@ -48,15 +82,33 @@
   <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
+    const statusEl = document.getElementById('status');
+    const legendEl = document.getElementById('legend');
+
+    // Board tab elements
     const btnPrev = document.getElementById('btn-prev');
     const btnNext = document.getElementById('btn-next');
     const stepInfo = document.getElementById('step-info');
-    const statusEl = document.getElementById('status');
-    const legendEl = document.getElementById('legend');
+
+    // Solver tab elements
+    const btnScenePrev = document.getElementById('btn-scene-prev');
+    const btnSceneNext = document.getElementById('btn-scene-next');
+    const sceneInfo = document.getElementById('scene-info');
+    const btnMovePrev = document.getElementById('btn-move-prev');
+    const btnMoveNext = document.getElementById('btn-move-next');
+    const btnMoveReset = document.getElementById('btn-move-reset');
+    const moveInfo = document.getElementById('move-info');
+    const moveDesc = document.getElementById('move-desc');
 
     let data = null;
     let steps = [];
     let currentStep = 0;
+    let activeTab = 'board';
+
+    // Solver state
+    let solverScene = 0;
+    let solverMoveIdx = 0; // 0 = initial state, 1 = after move 0, etc.
+    let solverPositions = {}; // current robot positions {color: [x, y]}
 
     const DEFAULT_SETTINGS = {
       grid_lines_width: 1,
@@ -69,74 +121,264 @@
       final_component_color: 'lightblue',
     };
 
+    // --- Tab switching ---
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        activeTab = tab.dataset.tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('controls').classList.toggle('hidden', activeTab !== 'board');
+        document.getElementById('solver-controls').classList.toggle('hidden', activeTab !== 'solver');
+        render();
+      });
+    });
+
+    // --- File loading ---
+    function handleFileLoad(ev) {
+      try {
+        const parsed = JSON.parse(ev.target.result);
+        loadData(parsed);
+        statusEl.textContent = `Loaded file`;
+      } catch (err) {
+        statusEl.textContent = `Error parsing JSON: ${err.message}`;
+      }
+    }
+
     document.getElementById('file-input').addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = (ev) => {
-        try {
-          const parsed = JSON.parse(ev.target.result);
-          loadData(parsed);
-          statusEl.textContent = `Loaded: ${file.name}`;
-        } catch (err) {
-          statusEl.textContent = `Error parsing JSON: ${err.message}`;
-        }
-      };
+      reader.onload = handleFileLoad;
+      reader.readAsText(file);
+    });
+    document.getElementById('file-input-solver').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = handleFileLoad;
       reader.readAsText(file);
     });
 
     function loadData(parsed) {
       data = parsed;
-      // Collect numeric step keys, sorted
       steps = Object.keys(parsed)
         .filter(k => !isNaN(parseInt(k)))
         .sort((a, b) => parseInt(a) - parseInt(b));
       currentStep = 0;
-      updateButtons();
-      renderStep();
-      updateLegend();
+      solverScene = 0;
+      solverMoveIdx = 0;
+      initSolverPositions();
+      render();
     }
 
     function getSettings() {
       return Object.assign({}, DEFAULT_SETTINGS, (data && data.settings) || {});
     }
 
-    function updateButtons() {
-      const n = steps.length;
-      btnPrev.disabled = currentStep <= 0;
-      btnNext.disabled = currentStep >= n - 1;
-      if (n === 0) {
-        stepInfo.textContent = 'no data';
+    function render() {
+      if (activeTab === 'board') {
+        updateBoardButtons();
+        renderBoardStep();
+        updateLegend();
       } else {
-        stepInfo.textContent = `Step ${currentStep + 1} / ${n}`;
+        updateSolverButtons();
+        renderSolverStep();
+        updateSolverLegend();
       }
     }
 
+    // ===================== BOARD TAB =====================
+
+    function updateBoardButtons() {
+      const n = steps.length;
+      btnPrev.disabled = currentStep <= 0;
+      btnNext.disabled = currentStep >= n - 1;
+      stepInfo.textContent = n === 0 ? 'no data' : `Step ${currentStep + 1} / ${n}`;
+    }
+
     btnPrev.addEventListener('click', () => {
-      if (currentStep > 0) { currentStep--; updateButtons(); renderStep(); }
+      if (currentStep > 0) { currentStep--; render(); }
     });
     btnNext.addEventListener('click', () => {
-      if (currentStep < steps.length - 1) { currentStep++; updateButtons(); renderStep(); }
+      if (currentStep < steps.length - 1) { currentStep++; render(); }
+    });
+
+    // ===================== SOLVER TAB =====================
+
+    function getSolverStep() {
+      if (!data || steps.length === 0) return null;
+      return data[steps[solverScene]];
+    }
+
+    function getSolverMoves() {
+      const step = getSolverStep();
+      if (!step || !step.solution) return [];
+      return step.solution.moves || [];
+    }
+
+    function initSolverPositions() {
+      const step = getSolverStep();
+      if (!step || !step.solution) { solverPositions = {}; return; }
+      const sp = step.solution.start_positions;
+      solverPositions = {};
+      for (const color of Object.keys(sp)) {
+        solverPositions[color] = [...sp[color]];
+      }
+      solverMoveIdx = 0;
+    }
+
+    function updateSolverButtons() {
+      const n = steps.length;
+      btnScenePrev.disabled = solverScene <= 0;
+      btnSceneNext.disabled = solverScene >= n - 1;
+      sceneInfo.textContent = n === 0 ? 'no data' : `Scene ${solverScene + 1} / ${n}`;
+
+      const moves = getSolverMoves();
+      const total = moves.length;
+      btnMovePrev.disabled = solverMoveIdx <= 0;
+      btnMoveNext.disabled = solverMoveIdx >= total;
+
+      if (total === 0) {
+        moveInfo.textContent = 'no solution';
+        moveDesc.textContent = '';
+      } else if (solverMoveIdx === 0) {
+        moveInfo.textContent = `Start (${total} moves)`;
+        moveDesc.textContent = '';
+      } else {
+        const [robot, dir] = moves[solverMoveIdx - 1];
+        moveInfo.textContent = `Move ${solverMoveIdx} / ${total}`;
+        moveDesc.textContent = `${robot} ${dir}`;
+      }
+    }
+
+    btnScenePrev.addEventListener('click', () => {
+      if (solverScene > 0) { solverScene--; initSolverPositions(); render(); }
+    });
+    btnSceneNext.addEventListener('click', () => {
+      if (solverScene < steps.length - 1) { solverScene++; initSolverPositions(); render(); }
+    });
+
+    btnMoveNext.addEventListener('click', () => {
+      const moves = getSolverMoves();
+      if (solverMoveIdx < moves.length) {
+        const step = getSolverStep();
+        const [robot, dir] = moves[solverMoveIdx];
+        const wallLookup = buildWallLookup(step);
+        const [cols, rows] = step.grid_size || [16, 16];
+        const newPos = simulateSlide(solverPositions, robot.toLowerCase(), dir, wallLookup, cols, rows);
+        solverPositions[robot.toLowerCase()] = newPos;
+        solverMoveIdx++;
+        render();
+      }
+    });
+
+    btnMovePrev.addEventListener('click', () => {
+      if (solverMoveIdx > 0) {
+        // Replay from start up to solverMoveIdx - 1
+        const targetIdx = solverMoveIdx - 1;
+        initSolverPositions();
+        const step = getSolverStep();
+        const moves = getSolverMoves();
+        const wallLookup = buildWallLookup(step);
+        const [cols, rows] = step.grid_size || [16, 16];
+        for (let i = 0; i < targetIdx; i++) {
+          const [robot, dir] = moves[i];
+          solverPositions[robot.toLowerCase()] = simulateSlide(solverPositions, robot.toLowerCase(), dir, wallLookup, cols, rows);
+        }
+        solverMoveIdx = targetIdx;
+        render();
+      }
+    });
+
+    btnMoveReset.addEventListener('click', () => {
+      initSolverPositions();
+      render();
     });
 
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') btnPrev.click();
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') btnNext.click();
+      if (activeTab === 'board') {
+        if (e.key === 'ArrowLeft') btnPrev.click();
+        if (e.key === 'ArrowRight') btnNext.click();
+      } else {
+        if (e.key === 'ArrowLeft') btnMovePrev.click();
+        if (e.key === 'ArrowRight') btnMoveNext.click();
+        if (e.key === 'r') btnMoveReset.click();
+      }
     });
 
-    function renderStep() {
-      if (!data || steps.length === 0) return;
-      const key = steps[currentStep];
-      const step = data[key];
-      if (!step) return;
+    // ===================== WALL SIMULATION =====================
 
-      const settings = getSettings();
-
-      // grid_size: [width, height] = [cols, rows] in x,y terms
+    function buildWallLookup(step) {
+      // Build sets: wallN, wallS, wallE, wallW keyed by "x,y"
+      const wallN = new Set(), wallS = new Set(), wallE = new Set(), wallW = new Set();
       const [cols, rows] = step.grid_size || [16, 16];
 
-      // Canvas sizing: leave margin for coords + padding around edges
+      // Border walls
+      for (let c = 0; c < cols; c++) {
+        wallN.add(`${c},0`);
+        wallS.add(`${c},${rows - 1}`);
+      }
+      for (let r = 0; r < rows; r++) {
+        wallW.add(`0,${r}`);
+        wallE.add(`${cols - 1},${r}`);
+      }
+
+      // Interior walls from data
+      for (const wall of (step.walls || [])) {
+        const [wc, wr, sides] = wall;
+        const s = (sides || '').toUpperCase();
+        if (s.includes('N')) wallN.add(`${wc},${wr}`);
+        if (s.includes('S')) wallS.add(`${wc},${wr}`);
+        if (s.includes('E')) wallE.add(`${wc},${wr}`);
+        if (s.includes('W')) wallW.add(`${wc},${wr}`);
+      }
+
+      return { wallN, wallS, wallE, wallW };
+    }
+
+    function simulateSlide(positions, robotColor, direction, wallLookup, cols, rows) {
+      let [x, y] = positions[robotColor];
+      const { wallN, wallS, wallE, wallW } = wallLookup;
+
+      // Build set of occupied positions (other robots)
+      const occupied = new Set();
+      for (const [color, pos] of Object.entries(positions)) {
+        if (color !== robotColor) occupied.add(`${pos[0]},${pos[1]}`);
+      }
+
+      const dir = direction.toLowerCase();
+      while (true) {
+        let nx = x, ny = y;
+        if (dir === 'up') {
+          if (wallN.has(`${x},${y}`)) break;
+          ny = y - 1;
+          if (wallS.has(`${x},${ny}`)) break;
+        } else if (dir === 'down') {
+          if (wallS.has(`${x},${y}`)) break;
+          ny = y + 1;
+          if (wallN.has(`${x},${ny}`)) break;
+        } else if (dir === 'left') {
+          if (wallW.has(`${x},${y}`)) break;
+          nx = x - 1;
+          if (wallE.has(`${nx},${y}`)) break;
+        } else if (dir === 'right') {
+          if (wallE.has(`${x},${y}`)) break;
+          nx = x + 1;
+          if (wallW.has(`${nx},${y}`)) break;
+        }
+        if (occupied.has(`${nx},${ny}`)) break;
+        x = nx;
+        y = ny;
+      }
+      return [x, y];
+    }
+
+    // ===================== RENDERING =====================
+
+    function renderBoard(step, robotList, targetPos, settings) {
+      const [cols, rows] = step.grid_size || [16, 16];
+
       const coordMargin = settings.coordinates_shown ? 22 : 0;
       const edgePadding = 16;
       const canvasSize = 640;
@@ -151,74 +393,59 @@
       const offsetX = coordMargin + edgePadding;
       const offsetY = edgePadding;
 
-      // Helper: cell top-left pixel (row, col)
       const cx = (col) => offsetX + col * cellW;
       const cy = (row) => offsetY + row * cellH;
-      // Cell center pixel
       const ccx = (col) => offsetX + (col + 0.5) * cellW;
       const ccy = (row) => offsetY + (row + 0.5) * cellH;
 
-      // --- Background ---
+      // Background
       ctx.fillStyle = settings.grid_square_color;
       ctx.fillRect(offsetX, offsetY, gridW, gridH);
 
-      // --- Final components ---
-      // positions are (col, row): [0]=col=x, [1]=row=y
-      const finalComponents = (step.final_components || []).map(normalizePos);
-      for (const [c, r] of finalComponents) {
+      // Final components
+      for (const pos of (step.final_components || []).map(normalizePos)) {
+        if (!pos) continue;
         ctx.fillStyle = settings.final_component_color;
-        ctx.fillRect(cx(c), cy(r), cellW, cellH);
+        ctx.fillRect(cx(pos[0]), cy(pos[1]), cellW, cellH);
       }
 
-      // --- Target cell ---
-      const target = normalizePos(step.target);
+      // Target cell
+      const target = targetPos || normalizePos(step.target);
       if (target) {
-        const [tc, tr] = target;  // tc=col=x, tr=row=y
+        const [tc, tr] = target;
         ctx.fillStyle = hexWithAlpha(settings.target_color, 0.25);
         ctx.fillRect(cx(tc), cy(tr), cellW, cellH);
-        // Draw target crosshair
         ctx.strokeStyle = settings.target_color;
         ctx.lineWidth = 2;
         const margin = cellW * 0.15;
         ctx.strokeRect(cx(tc) + margin, cy(tr) + margin, cellW - 2*margin, cellH - 2*margin);
-        // Circle in center
         ctx.beginPath();
         ctx.arc(ccx(tc), ccy(tr), Math.min(cellW, cellH) * 0.18, 0, Math.PI * 2);
-        ctx.strokeStyle = settings.target_color;
-        ctx.lineWidth = 2;
         ctx.stroke();
       }
 
-      // --- Grid lines ---
+      // Grid lines
       ctx.strokeStyle = '#ccc';
       ctx.lineWidth = settings.grid_lines_width;
       for (let r = 0; r <= rows; r++) {
-        ctx.beginPath();
-        ctx.moveTo(offsetX, cy(r));
-        ctx.lineTo(offsetX + gridW, cy(r));
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(offsetX, cy(r)); ctx.lineTo(offsetX + gridW, cy(r)); ctx.stroke();
       }
       for (let c = 0; c <= cols; c++) {
-        ctx.beginPath();
-        ctx.moveTo(cx(c), offsetY);
-        ctx.lineTo(cx(c), offsetY + gridH);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx(c), offsetY); ctx.lineTo(cx(c), offsetY + gridH); ctx.stroke();
       }
 
-      // --- Outer border ---
+      // Outer border
       ctx.strokeStyle = settings.wall_color;
       ctx.lineWidth = settings.wall_width;
       ctx.strokeRect(offsetX, offsetY, gridW, gridH);
 
-      // --- Walls (drawn after grid lines so they render on top) ---
-      // step.walls: array of [col, row, sides] where sides is a string of N/S/E/W characters
-      // e.g. [4, 0, "SE"] draws walls on the south and east sides of cell at col=4, row=0
+      // Walls
       if (step.walls) {
         ctx.strokeStyle = settings.wall_color;
         ctx.lineWidth = settings.wall_width;
         ctx.lineCap = 'square';
         for (const wall of step.walls) {
-          const [wc, wr, sides] = wall;  // wc=col=x, wr=row=y
+          const [wc, wr, sides] = wall;
           const s = (sides || '').toUpperCase();
           if (s.includes('N')) { ctx.beginPath(); ctx.moveTo(cx(wc), cy(wr));     ctx.lineTo(cx(wc+1), cy(wr));     ctx.stroke(); }
           if (s.includes('S')) { ctx.beginPath(); ctx.moveTo(cx(wc), cy(wr+1));   ctx.lineTo(cx(wc+1), cy(wr+1));   ctx.stroke(); }
@@ -227,76 +454,73 @@
         }
       }
 
-      // --- Coordinates ---
-      // col (x-axis) labels across the bottom, row (y-axis) labels down the left
+      // Coordinates
       if (settings.coordinates_shown) {
         ctx.fillStyle = '#666';
         ctx.font = `${Math.max(8, Math.min(11, cellW * 0.45))}px monospace`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        for (let c = 0; c < cols; c++) {
-          ctx.fillText(c, ccx(c), offsetY + gridH + coordMargin / 2);  // col numbers across bottom
-        }
-        for (let r = 0; r < rows; r++) {
-          ctx.fillText(r, edgePadding + coordMargin / 2, ccy(r));  // row numbers down left
-        }
+        for (let c = 0; c < cols; c++) ctx.fillText(c, ccx(c), offsetY + gridH + coordMargin / 2);
+        for (let r = 0; r < rows; r++) ctx.fillText(r, edgePadding + coordMargin / 2, ccy(r));
       }
 
-      // --- Robots ---
-      const robots = [];
-      if (step.target_robot) {
-        robots.push(normalizeRobot(step.target_robot));
-      }
-      for (const h of (step.helper_robots || step.helpers || [])) {
-        robots.push(normalizeRobot(h));
-      }
+      // Robots
+      const targetRobotColor = step.solution
+        ? (step.solution.target_robot || '').toLowerCase()
+        : (step.target_robot ? (step.target_robot.color || '').toLowerCase() : '');
 
-      for (const robot of robots) {
-        const [rc, rr] = robot.position;  // rc=col=x, rr=row=y
+      for (const robot of robotList) {
+        const [rc, rr] = robot.position;
         const radius = Math.min(cellW, cellH) * settings.robot_radius;
         const px = ccx(rc), py = ccy(rr);
 
-        // Shadow
         ctx.shadowColor = 'rgba(0,0,0,0.3)';
         ctx.shadowBlur = 4;
-
-        // Body
         ctx.beginPath();
         ctx.arc(px, py, radius, 0, Math.PI * 2);
         ctx.fillStyle = robot.color;
         ctx.fill();
-
         ctx.shadowBlur = 0;
 
-        // Outline
         ctx.beginPath();
         ctx.arc(px, py, radius, 0, Math.PI * 2);
         ctx.strokeStyle = darken(robot.color, 0.4);
         ctx.lineWidth = Math.max(1.5, radius * 0.12);
         ctx.stroke();
 
-        // Highlight
         ctx.beginPath();
         ctx.arc(px - radius * 0.28, py - radius * 0.28, radius * 0.28, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(255,255,255,0.45)';
         ctx.fill();
+
+        // "T" label on target robot
+        if (robot.color.toLowerCase() === targetRobotColor) {
+          ctx.font = `bold ${Math.max(9, radius * 0.7)}px monospace`;
+          ctx.fillStyle = 'white';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('T', px, py);
+        }
       }
 
-      // --- Target robot marker on target (star/arrow if not already there) ---
-      // Draw a small label "T" on target robot
-      if (step.target_robot) {
-        const robot = normalizeRobot(step.target_robot);
-        const [rc, rr] = robot.position;  // rc=col=x, rr=row=y
-        const radius = Math.min(cellW, cellH) * settings.robot_radius;
-        ctx.font = `bold ${Math.max(9, radius * 0.7)}px monospace`;
-        ctx.fillStyle = 'white';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('T', ccx(rc), ccy(rr));
-      }
+      return { cx, cy, ccx, ccy, cellW, cellH };
+    }
 
-      // --- Bottleneck-support pairs ---
-      // support both old hyphenated key and new underscore key (Python kwargs can't use hyphens)
+    // ===================== BOARD TAB RENDER =====================
+
+    function renderBoardStep() {
+      if (!data || steps.length === 0) return;
+      const step = data[steps[currentStep]];
+      if (!step) return;
+      const settings = getSettings();
+
+      const robots = [];
+      if (step.target_robot) robots.push(normalizeRobot(step.target_robot));
+      for (const h of (step.helper_robots || step.helpers || [])) robots.push(normalizeRobot(h));
+
+      const layout = renderBoard(step, robots, null, settings);
+
+      // Bottleneck-support pairs
       const bsPairs = step['bottleneck_support_pairs'] || step['bottleneck-support_pairs'] || [];
       const bsColors = ['#e6550d', '#31a354', '#3182bd', '#756bb1', '#e7298a', '#66a61e'];
       for (let i = 0; i < bsPairs.length; i++) {
@@ -306,53 +530,63 @@
         if (!bn || !sp) continue;
         const color = bsColors[i % bsColors.length];
 
-        // Draw line connecting bottleneck to support
         ctx.beginPath();
-        ctx.moveTo(ccx(bn[0]), ccy(bn[1]));
-        ctx.lineTo(ccx(sp[0]), ccy(sp[1]));
+        ctx.moveTo(layout.ccx(bn[0]), layout.ccy(bn[1]));
+        ctx.lineTo(layout.ccx(sp[0]), layout.ccy(sp[1]));
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.setLineDash([4, 3]);
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Draw bottleneck as diamond
-        const dSize = Math.min(cellW, cellH) * 0.22;
-        const bx = ccx(bn[0]), by = ccy(bn[1]);
+        const dSize = Math.min(layout.cellW, layout.cellH) * 0.22;
+        const bx = layout.ccx(bn[0]), by = layout.ccy(bn[1]);
         ctx.beginPath();
-        ctx.moveTo(bx, by - dSize);
-        ctx.lineTo(bx + dSize, by);
-        ctx.lineTo(bx, by + dSize);
-        ctx.lineTo(bx - dSize, by);
+        ctx.moveTo(bx, by - dSize); ctx.lineTo(bx + dSize, by); ctx.lineTo(bx, by + dSize); ctx.lineTo(bx - dSize, by);
         ctx.closePath();
-        ctx.fillStyle = color;
-        ctx.fill();
-        ctx.strokeStyle = darken(color, 0.3);
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        // Label "B"
+        ctx.fillStyle = color; ctx.fill();
+        ctx.strokeStyle = darken(color, 0.3); ctx.lineWidth = 1.5; ctx.stroke();
         ctx.font = `bold ${Math.max(7, dSize * 0.8)}px monospace`;
-        ctx.fillStyle = 'white';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText('B', bx, by);
 
-        // Draw support as small square
-        const sSize = Math.min(cellW, cellH) * 0.18;
-        const sx = ccx(sp[0]), sy = ccy(sp[1]);
+        const sSize = Math.min(layout.cellW, layout.cellH) * 0.18;
+        const sx = layout.ccx(sp[0]), sy = layout.ccy(sp[1]);
         ctx.fillStyle = color;
         ctx.fillRect(sx - sSize, sy - sSize, sSize * 2, sSize * 2);
-        ctx.strokeStyle = darken(color, 0.3);
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = darken(color, 0.3); ctx.lineWidth = 1.5;
         ctx.strokeRect(sx - sSize, sy - sSize, sSize * 2, sSize * 2);
-        // Label "S"
         ctx.font = `bold ${Math.max(7, sSize * 0.8)}px monospace`;
-        ctx.fillStyle = 'white';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText('S', sx, sy);
       }
     }
+
+    // ===================== SOLVER TAB RENDER =====================
+
+    function renderSolverStep() {
+      const step = getSolverStep();
+      if (!step) return;
+      const settings = getSettings();
+
+      // Build robot list from current solver positions
+      const robots = [];
+      for (const [color, pos] of Object.entries(solverPositions)) {
+        robots.push({ position: pos, color });
+      }
+
+      const targetPos = step.solution ? normalizePos(step.solution.target_pos || step.target) : normalizePos(step.target);
+
+      // Override target_color in settings to match solution target robot
+      const solverSettings = { ...settings };
+      if (step.solution && step.solution.target_robot) {
+        solverSettings.target_color = step.solution.target_robot;
+      }
+
+      renderBoard(step, robots, targetPos, solverSettings);
+    }
+
+    // ===================== HELPERS =====================
 
     function normalizePos(pos) {
       if (!pos) return null;
@@ -368,7 +602,6 @@
     }
 
     function hexWithAlpha(color, alpha) {
-      // Returns rgba for named or hex colors
       const tmp = document.createElement('canvas');
       tmp.width = tmp.height = 1;
       const c = tmp.getContext('2d');
@@ -401,7 +634,18 @@
       `;
     }
 
-    // Draw empty grid placeholder
+    function updateSolverLegend() {
+      if (!data) { legendEl.innerHTML = ''; return; }
+      legendEl.innerHTML = `
+        <div class="legend-item"><div class="legend-swatch" style="background:red"></div>Red</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:blue"></div>Blue</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:green"></div>Green</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:yellow;border-color:#aa0"></div>Yellow</div>
+        <div class="legend-item" style="color:#888">&#8592;/&#8594; step moves &nbsp; R = reset</div>
+      `;
+    }
+
+    // Init placeholder
     (function initCanvas() {
       ctx.fillStyle = '#f5f5f5';
       ctx.fillRect(0, 0, canvas.width, canvas.height);

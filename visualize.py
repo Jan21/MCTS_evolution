@@ -1,10 +1,11 @@
 import GridEnv
+from GridEnv import State
 import json
 import copy
 from dataclasses import asdict, is_dataclass
 
 class VisualizationScene:
-    def __init__(self, grid_env: GridEnv, **elements):
+    def __init__(self, grid_env: GridEnv.GridEnv, **elements):
         self.grid_env = grid_env
         self.elements = elements  # e.g. target=(11,5), robots=[...], highlight=[...]
 
@@ -46,9 +47,26 @@ class Visualizer:
         self.scenes: list[VisualizationScene] = []
         self.settings = {**self.DEFAULT_SETTINGS, **(settings or {})}
 
-    def add_scene(self, grid_env, **elements) -> "Visualizer":
+    def add_scene(self, grid_env, state: State = None, **elements) -> "Visualizer":
+        """Add a scene. If state is provided, auto-solves and attaches solution for the Solver tab."""
+        if state is not None:
+            result = grid_env.solve(state)
+            color_order = ["red", "blue", "green", "yellow"]
+            start_positions = {
+                color: list(result["start_positions"][i])
+                for i, color in enumerate(color_order)
+            }
+            elements.setdefault("target", state.target)
+            elements.setdefault("target_robot", state.target_robot)
+            elements.setdefault("helper_robots", state.helpers)
+            elements["solution"] = {
+                "moves": result["moves"],
+                "start_positions": start_positions,
+                "target_robot": state.target_robot.color.lower(),
+                "target_pos": list(state.target),
+            }
         self.scenes.append(VisualizationScene(grid_env, **elements))
-        return self  # fluent — chainable
+        return self
 
     def to_dict(self) -> dict:
         result = {"settings": self.settings}
