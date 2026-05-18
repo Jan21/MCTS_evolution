@@ -1,0 +1,139 @@
+{
+  "nodes": [
+    {
+      "id": "goal",
+      "type": "goal",
+      "pos": [
+        10,
+        10
+      ]
+    },
+    {
+      "id": "sg1",
+      "type": "subgoal"
+    },
+    {
+      "id": "bn1",
+      "type": "bottleneck",
+      "pos": [
+        10,
+        10
+      ],
+      "robot": "red"
+    },
+    {
+      "id": "sp1",
+      "type": "support",
+      "pos": [
+        10,
+        11
+      ],
+      "robot": "blue"
+    },
+    {
+      "id": "leaf_blue_1",
+      "type": "leaf",
+      "pos": [
+        10,
+        11
+      ],
+      "robot": "blue"
+    },
+    {
+      "id": "sg2",
+      "type": "subgoal"
+    },
+    {
+      "id": "bn2",
+      "type": "bottleneck",
+      "pos": [
+        10,
+        9
+      ],
+      "robot": "red"
+    },
+    {
+      "id": "sp2",
+      "type": "support",
+      "pos": [
+        9,
+        9
+      ],
+      "robot": "green"
+    },
+    {
+      "id": "leaf_green_2",
+      "type": "leaf",
+      "pos": [
+        12,
+        1
+      ],
+      "robot": "green"
+    },
+    {
+      "id": "leaf_red",
+      "type": "leaf",
+      "pos": [
+        4,
+        9
+      ],
+      "robot": "red"
+    }
+  ],
+  "edges": [
+    {
+      "from": "goal",
+      "to": "sg1",
+      "status": "fixed",
+      "cost": 1
+    },
+    {
+      "from": "sg1",
+      "to": "bn1",
+      "status": "fixed",
+      "cost": null
+    },
+    {
+      "from": "sg1",
+      "to": "sp1",
+      "status": "fixed",
+      "cost": null
+    },
+    {
+      "from": "bn1",
+      "to": "sg2",
+      "status": "fixed",
+      "cost": 1
+    },
+    {
+      "from": "sp1",
+      "to": "leaf_blue_1",
+      "status": "fixed",
+      "cost": 0
+    },
+    {
+      "from": "sg2",
+      "to": "bn2",
+      "status": "fixed",
+      "cost": null
+    },
+    {
+      "from": "sg2",
+      "to": "sp2",
+      "status": "fixed",
+      "cost": null
+    },
+    {
+      "from": "bn2",
+      "to": "leaf_red",
+      "status": "fixed",
+      "cost": 1
+    },
+    {
+      "from": "sp2",
+      "to": "leaf_green_2",
+      "status": "fixed",
+      "cost": 4
+    }
+  ]
+}

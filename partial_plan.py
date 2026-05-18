@@ -67,6 +67,161 @@ class PartialPlan:
         with open(path, "w") as f:
             json.dump([p.to_dict() for p in plans], f, indent=2)
 
+    def save_decomposed(self, path="plan_data.json"):
+        """Save the full plan and its decomposed sub-plans as a scene."""
+        sub_plans = self.decompose()
+        scene = {
+            "full_plan": self.to_dict(),
+            "sub_plans": [sp.to_dict() for sp in sub_plans],
+        }
+        with open(path, "w") as f:
+            json.dump([scene], f, indent=2)
+
+    @staticmethod
+    def save_scenes(plans, path="plan_data.json"):
+        """Save multiple plans, each auto-decomposed into sub-plans.
+
+        Args:
+            plans: list of PartialPlan instances
+        """
+        scenes = []
+        for plan in plans:
+            sub_plans = plan.decompose()
+            scenes.append({
+                "full_plan": plan.to_dict(),
+                "sub_plans": [sp.to_dict() for sp in sub_plans],
+            })
+        with open(path, "w") as f:
+            json.dump(scenes, f, indent=2)
+
+    def decompose(self):
+        """Split a chained plan into individual sub-plans, ordered by execution.
+
+        Returns a list of PartialPlans, one per subgoal, ordered from the
+        deepest (first to execute) to the shallowest (closest to goal, last
+        to execute). Plans with no subgoals return [self].
+        """
+        # Find subgoal nodes
+        subgoals = [nid for nid, d in self.g.nodes(data=True) if d["ntype"] == "subgoal"]
+        if not subgoals:
+            return [self]
+
+        # Walk the main chain: goal → sg → bn → sg → bn → ... → leaf
+        # Collect (subgoal_id, bottleneck_id, support_id, support_leaf, bn_child)
+        # in order from goal downward
+        goal_nodes = [nid for nid, d in self.g.nodes(data=True) if d["ntype"] == "goal"]
+        if not goal_nodes:
+            return [self]
+
+        segments = []  # list of (sg_id, bn_id, sp_id, sp_leaves, bn_leaf_or_next_sg)
+        node = goal_nodes[0]
+        while True:
+            children = list(self.g.successors(node))
+            # Find the subgoal child
+            sg = None
+            for c in children:
+                if self.g.nodes[c]["ntype"] == "subgoal":
+                    sg = c
+                    break
+            if sg is None:
+                # Reached a leaf or no more subgoals
+                break
+
+            sg_data = self.g.nodes[sg]
+            sg_children = list(self.g.successors(sg))
+            bn_id = sp_id = None
+            for c in sg_children:
+                ntype = self.g.nodes[c]["ntype"]
+                if ntype == "bottleneck":
+                    bn_id = c
+                elif ntype == "support":
+                    sp_id = c
+
+            # Collect support's subtree (leaves)
+            sp_leaves = list(self.g.successors(sp_id)) if sp_id else []
+
+            # The bottleneck's child is either another subgoal or a leaf
+            bn_children = list(self.g.successors(bn_id)) if bn_id else []
+
+            segments.append({
+                "parent": node,
+                "parent_to_sg_edge": self.g.edges[node, sg],
+                "sg": sg,
+                "bn": bn_id,
+                "sp": sp_id,
+                "sp_leaves": sp_leaves,
+                "bn_children": bn_children,
+            })
+
+            # Continue down the bottleneck chain
+            node = bn_id
+
+        # Build individual plans, reversed so deepest is first
+        result = []
+        for seg in reversed(segments):
+            p = PartialPlan()
+
+            # Bottleneck becomes the goal of this sub-plan
+            bn_attrs = dict(self.g.nodes[seg["bn"]])
+            bn_ntype = bn_attrs.pop("ntype")
+            p.add_node("goal", "goal", pos=bn_attrs["pos"])
+
+            # Subgoal
+            p.add_node("sg", "subgoal")
+            p.add_edge("goal", "sg", **dict(seg["parent_to_sg_edge"]))
+
+            # Bottleneck node (the target robot reaching this position)
+            p.add_node("bn", "bottleneck", **bn_attrs)
+            p.add_edge("sg", "bn", **dict(self.g.edges[seg["sg"], seg["bn"]]))
+
+            # Bottleneck's children (leaf for target robot)
+            for child in seg["bn_children"]:
+                child_attrs = dict(self.g.nodes[child])
+                child_ntype = child_attrs.pop("ntype")
+                edge_data = dict(self.g.edges[seg["bn"], child])
+                if child_ntype == "leaf":
+                    child_id = f"leaf_{child_attrs.get('robot', 'target')}"
+                    p.add_node(child_id, "leaf", **child_attrs)
+                    p.add_edge("bn", child_id, **edge_data)
+                else:
+                    # Child is a subgoal (chained) — the target robot starts
+                    # at the previous bottleneck position (from the deeper sub-plan)
+                    prev_bn = self._find_bottleneck_under(child)
+                    if prev_bn:
+                        prev_attrs = dict(self.g.nodes[prev_bn])
+                        prev_attrs.pop("ntype")
+                        child_id = f"leaf_{prev_attrs.get('robot', 'target')}"
+                        p.add_node(child_id, "leaf", **prev_attrs)
+                    else:
+                        child_id = f"leaf_target"
+                        p.add_node(child_id, "leaf")
+                    p.add_edge("bn", child_id, **edge_data)
+
+            # Support
+            if seg["sp"]:
+                sp_attrs = dict(self.g.nodes[seg["sp"]])
+                sp_ntype = sp_attrs.pop("ntype")
+                p.add_node("sp", "support", **sp_attrs)
+                p.add_edge("sg", "sp", **dict(self.g.edges[seg["sg"], seg["sp"]]))
+
+                for leaf in seg["sp_leaves"]:
+                    leaf_attrs = dict(self.g.nodes[leaf])
+                    leaf_ntype = leaf_attrs.pop("ntype")
+                    leaf_id = f"leaf_{leaf_attrs.get('robot', 'helper')}"
+                    p.add_node(leaf_id, leaf_ntype, **leaf_attrs)
+                    p.add_edge("sp", leaf_id, **dict(self.g.edges[seg["sp"], leaf]))
+
+            result.append(p)
+
+        return result
+
+    def _find_bottleneck_under(self, sg_id):
+        """Find the bottleneck node that is a child of the given subgoal."""
+        for child in self.g.successors(sg_id):
+            if self.g.nodes[child]["ntype"] == "bottleneck":
+                return child
+        return None
+
     @classmethod
     def from_moves(cls, grid_env, state, moves):
         """Build a PartialPlan from a sequence of (robot, direction) moves.

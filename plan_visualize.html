@@ -14,13 +14,13 @@
     }
     button:hover { background: #3a3a3a; }
     button:disabled { opacity: 0.4; cursor: default; }
-    #plan-info { color: #aaa; font-size: 0.9rem; min-width: 80px; text-align: center; }
+    .info-label { color: #aaa; font-size: 0.9rem; min-width: 80px; text-align: center; }
+    .separator { color: #555; }
     canvas { border: 1px solid #444; background: #222; display: block; }
     #status { margin-top: 10px; color: #888; font-size: 0.8rem; min-height: 1.2em; }
     #legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; justify-content: center; font-size: 0.8rem; color: #aaa; }
     .legend-item { display: flex; align-items: center; gap: 6px; }
     .legend-swatch { width: 16px; height: 16px; border-radius: 2px; border: 1px solid #555; }
-    .legend-swatch.circle { border-radius: 50%; }
     input[type=file] { display: none; }
     label.file-btn {
       padding: 8px 18px; border: 1px solid #555; background: #2a2a2a; color: #eee;
@@ -34,9 +34,13 @@
   <div id="controls">
     <label class="file-btn" for="file-input">Load JSON</label>
     <input type="file" id="file-input" accept=".json">
-    <button id="btn-prev" disabled>&#8592; Prev</button>
-    <span id="plan-info">no data</span>
-    <button id="btn-next" disabled>Next &#8594;</button>
+    <button id="btn-scene-prev" disabled>&#8592; Scene</button>
+    <span id="scene-info" class="info-label">no data</span>
+    <button id="btn-scene-next" disabled>Scene &#8594;</button>
+    <span class="separator">|</span>
+    <button id="btn-step-prev" disabled>&#8592; Step</button>
+    <span id="step-info" class="info-label">-</span>
+    <button id="btn-step-next" disabled>Step &#8594;</button>
   </div>
   <canvas id="canvas" width="900" height="600"></canvas>
   <div id="status">Load a JSON file to begin.</div>
@@ -48,19 +52,23 @@
     <div class="legend-item"><div class="legend-swatch" style="background:#2ecc71"></div>Leaf</div>
     <div class="legend-item" style="margin-left:12px"><span style="border-top:2px solid #ccc;width:20px;display:inline-block"></span>&nbsp;Fixed</div>
     <div class="legend-item"><span style="border-top:2px dashed #888;width:20px;display:inline-block"></span>&nbsp;Open</div>
+    <div class="legend-item" style="margin-left:12px;color:#888">&#8592;/&#8594; step sub-plans</div>
   </div>
 
   <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const btnPrev = document.getElementById('btn-prev');
-    const btnNext = document.getElementById('btn-next');
-    const planInfo = document.getElementById('plan-info');
+    const btnScenePrev = document.getElementById('btn-scene-prev');
+    const btnSceneNext = document.getElementById('btn-scene-next');
+    const sceneInfo = document.getElementById('scene-info');
+    const btnStepPrev = document.getElementById('btn-step-prev');
+    const btnStepNext = document.getElementById('btn-step-next');
+    const stepInfo = document.getElementById('step-info');
     const statusEl = document.getElementById('status');
 
-    let data = null;
-    let plans = [];
-    let currentPlan = 0;
+    let scenes = [];    // each: { full_plan, sub_plans[] } or just a plain plan
+    let currentScene = 0;
+    let currentStep = 0; // 0 = full plan, 1..N = sub-plans
 
     const NODE_COLORS = {
       goal: '#e74c3c',
@@ -91,39 +99,113 @@
     });
 
     function loadData(parsed) {
-      data = parsed;
+      // Support multiple formats:
+      // 1. Array of scenes: [{full_plan, sub_plans}, ...]
+      // 2. Array of plain plans: [{nodes, edges}, ...]
+      // 3. Single scene: {full_plan, sub_plans}
+      // 4. Single plan: {nodes, edges}
       if (Array.isArray(parsed)) {
-        plans = parsed;
+        scenes = parsed.map(normalizeScene);
+      } else if (parsed.full_plan) {
+        scenes = [normalizeScene(parsed)];
+      } else if (parsed.nodes) {
+        scenes = [normalizeScene(parsed)];
       } else if (parsed.plans) {
-        plans = parsed.plans;
+        scenes = parsed.plans.map(normalizeScene);
       } else {
-        plans = [parsed];
+        scenes = [normalizeScene(parsed)];
       }
-      currentPlan = 0;
+      currentScene = 0;
+      currentStep = 0;
+      update();
+    }
+
+    function normalizeScene(item) {
+      if (item.full_plan && item.sub_plans) {
+        return item; // already structured
+      }
+      // Plain plan — wrap it
+      return { full_plan: item, sub_plans: [] };
+    }
+
+    function getScene() {
+      return scenes[currentScene] || null;
+    }
+
+    function getSubPlanCount() {
+      const scene = getScene();
+      if (!scene) return 0;
+      return scene.sub_plans ? scene.sub_plans.length : 0;
+    }
+
+    function getCurrentPlan() {
+      const scene = getScene();
+      if (!scene) return null;
+      if (currentStep === 0) return scene.full_plan;
+      return scene.sub_plans[currentStep - 1] || scene.full_plan;
+    }
+
+    function update() {
       updateButtons();
       render();
     }
 
     function updateButtons() {
-      const n = plans.length;
-      btnPrev.disabled = currentPlan <= 0;
-      btnNext.disabled = currentPlan >= n - 1;
-      planInfo.textContent = n === 0 ? 'no data' : `Plan ${currentPlan + 1} / ${n}`;
+      const n = scenes.length;
+      btnScenePrev.disabled = currentScene <= 0;
+      btnSceneNext.disabled = currentScene >= n - 1;
+      sceneInfo.textContent = n === 0 ? 'no data' : `Scene ${currentScene + 1} / ${n}`;
+
+      const subCount = getSubPlanCount();
+      const totalSteps = subCount + 1; // full plan + sub-plans
+      btnStepPrev.disabled = currentStep <= 0;
+      btnStepNext.disabled = currentStep >= totalSteps - 1;
+
+      if (subCount === 0) {
+        stepInfo.textContent = 'Full plan';
+      } else if (currentStep === 0) {
+        stepInfo.textContent = `Full plan (${subCount} steps)`;
+      } else {
+        stepInfo.textContent = `Step ${currentStep} / ${subCount}`;
+      }
     }
 
-    btnPrev.addEventListener('click', () => { if (currentPlan > 0) { currentPlan--; updateButtons(); render(); } });
-    btnNext.addEventListener('click', () => { if (currentPlan < plans.length - 1) { currentPlan++; updateButtons(); render(); } });
+    btnScenePrev.addEventListener('click', () => {
+      if (currentScene > 0) { currentScene--; currentStep = 0; update(); }
+    });
+    btnSceneNext.addEventListener('click', () => {
+      if (currentScene < scenes.length - 1) { currentScene++; currentStep = 0; update(); }
+    });
+    btnStepPrev.addEventListener('click', () => {
+      if (currentStep > 0) { currentStep--; update(); }
+    });
+    btnStepNext.addEventListener('click', () => {
+      if (currentStep < getSubPlanCount()) { currentStep++; update(); }
+    });
+
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowLeft') btnPrev.click();
-      if (e.key === 'ArrowRight') btnNext.click();
+      if (e.key === 'ArrowLeft') btnStepPrev.click();
+      if (e.key === 'ArrowRight') btnStepNext.click();
+      if (e.key === 'ArrowUp') btnScenePrev.click();
+      if (e.key === 'ArrowDown') btnSceneNext.click();
     });
 
     function render() {
-      if (!plans.length) return;
-      const plan = plans[currentPlan];
+      const plan = getCurrentPlan();
+      if (!plan) {
+        ctx.fillStyle = '#222';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#aaa';
+        ctx.font = '16px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Load a JSON file to visualize', canvas.width/2, canvas.height/2);
+        return;
+      }
+
       const { nodes, edges } = plan;
 
-      // Build adjacency and compute layers via longest path from roots
+      // Build adjacency
       const children = {};
       const parents = {};
       const nodeMap = {};
@@ -137,14 +219,13 @@
         parents[e.to].push(e.from);
       }
 
-      // Roots = nodes with no parents
+      // Roots
       const roots = nodes.filter(n => parents[n.id].length === 0).map(n => n.id);
 
-      // Assign layers via BFS longest path
+      // Layers via BFS longest path
       const layer = {};
       const queue = [...roots];
       for (const r of roots) layer[r] = 0;
-
       while (queue.length) {
         const u = queue.shift();
         for (const v of children[u]) {
@@ -156,7 +237,7 @@
         }
       }
 
-      // Group nodes by layer
+      // Group by layer
       const layers = {};
       let maxLayer = 0;
       for (const n of nodes) {
@@ -166,41 +247,30 @@
         maxLayer = Math.max(maxLayer, l);
       }
 
-      // Order nodes within each layer: sort by average parent x position
+      // Position nodes
       const pos = {};
-
-      // First pass: assign initial x positions
       for (let l = 0; l <= maxLayer; l++) {
         const layerNodes = layers[l] || [];
-        if (l === 0) {
-          // Roots: center them
-          for (let i = 0; i < layerNodes.length; i++) {
-            pos[layerNodes[i]] = { x: i, y: l };
-          }
-        } else {
-          // Sort by average parent x
+        if (l > 0) {
           layerNodes.sort((a, b) => {
             const avgA = parents[a].reduce((s, p) => s + (pos[p]?.x || 0), 0) / (parents[a].length || 1);
             const avgB = parents[b].reduce((s, p) => s + (pos[p]?.x || 0), 0) / (parents[b].length || 1);
             return avgA - avgB;
           });
-          for (let i = 0; i < layerNodes.length; i++) {
-            pos[layerNodes[i]] = { x: i, y: l };
-          }
+        }
+        for (let i = 0; i < layerNodes.length; i++) {
+          pos[layerNodes[i]] = { x: i, y: l };
         }
       }
 
-      // Center each layer around 0
+      // Center each layer
       for (let l = 0; l <= maxLayer; l++) {
         const layerNodes = layers[l] || [];
-        const n = layerNodes.length;
-        const offset = (n - 1) / 2;
-        for (const nid of layerNodes) {
-          pos[nid].x -= offset;
-        }
+        const offset = (layerNodes.length - 1) / 2;
+        for (const nid of layerNodes) pos[nid].x -= offset;
       }
 
-      // Convert to pixel coordinates
+      // Pixel coords
       const totalHeight = (maxLayer + 1) * LAYER_HEIGHT + 80;
       const maxWidth = Math.max(...Object.values(layers).map(l => l.length));
       const totalWidth = Math.max(maxWidth * MIN_NODE_SPACING + 80, 400);
@@ -221,6 +291,15 @@
       // Clear
       ctx.fillStyle = '#222';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Title for sub-plan steps
+      if (currentStep > 0) {
+        ctx.font = 'bold 13px monospace';
+        ctx.fillStyle = '#888';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(`Sub-plan ${currentStep} of ${getSubPlanCount()}`, canvas.width / 2, 10);
+      }
 
       // Draw edges
       for (const e of edges) {
@@ -246,8 +325,6 @@
 
         // Arrow head
         const angle = Math.atan2(to.y - NODE_RADIUS - (from.y + NODE_RADIUS), to.x - from.x);
-        const ax = to.x - NODE_RADIUS * Math.cos(angle) * 0.3;
-        const ay = to.y - NODE_RADIUS - NODE_RADIUS * Math.sin(angle) * 0.3;
         const arrowSize = 8;
         ctx.beginPath();
         ctx.moveTo(to.x, to.y - NODE_RADIUS);
@@ -276,11 +353,8 @@
         if (!p) continue;
         const color = NODE_COLORS[n.type] || '#777';
 
-        // Shadow
         ctx.shadowColor = 'rgba(0,0,0,0.5)';
         ctx.shadowBlur = 6;
-
-        // Node circle
         ctx.beginPath();
         ctx.arc(p.x, p.y, NODE_RADIUS, 0, Math.PI * 2);
         ctx.fillStyle = color;
@@ -293,24 +367,21 @@
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Label: type abbreviation
+        // Label
         ctx.font = 'bold 11px monospace';
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-
         const typeLabel = {goal: 'GOAL', subgoal: 'SUB', bottleneck: 'BN', support: 'SUP', leaf: 'LEAF'}[n.type] || n.type;
         ctx.fillText(typeLabel, p.x, p.y - 8);
 
-        // Position / robot info
+        // Details
         ctx.font = '10px monospace';
         ctx.fillStyle = '#ddd';
         const details = [];
         if (n.pos) details.push(`(${n.pos[0]},${n.pos[1]})`);
         if (n.robot) details.push(n.robot);
-        if (details.length) {
-          ctx.fillText(details.join(' '), p.x, p.y + 7);
-        }
+        if (details.length) ctx.fillText(details.join(' '), p.x, p.y + 7);
       }
     }
 
@@ -325,13 +396,7 @@
     }
 
     // Placeholder
-    ctx.fillStyle = '#222';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#aaa';
-    ctx.font = '16px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Load a JSON file to visualize', canvas.width/2, canvas.height/2);
+    render();
   </script>
 </body>
 </html>
