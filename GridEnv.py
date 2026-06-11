@@ -35,14 +35,21 @@ class Subgoal:
 
 
 class GridEnv:
-    def __init__(self, grid_graph: nx.DiGraph, independent_paths: dict, all_paths: dict):
+    def __init__(self, grid_graph: nx.DiGraph, independent_paths: dict, all_paths: dict,
+                 max_final_component_distance=None):
         self.G = grid_graph
         self.reachability_matrix = independent_paths
         self.relaxed_reachability_matrix = all_paths
+        self.max_final_component_distance = max_final_component_distance
 
+        # Final component = cells that can reach the goal WITHOUT any helper,
+        # so it must be computed on the dependent-edge-free graph. Computing it
+        # on self.G (with dependent edges) makes nearly every cell an ancestor.
         self.precomputed_final_components = {}
+        independent_G = self.remove_dependent_edges(self.G.copy())
         for goal in self.G.nodes():
-            self.precomputed_final_components[goal] = set(nx.ancestors(self.G, goal))
+            self.precomputed_final_components[goal] = self._compute_final_component(
+                independent_G, goal)
 
         self._wall_nodes = frozenset(
             node for node in self.G.nodes()
@@ -59,7 +66,9 @@ class GridEnv:
         for (bottleneck_pos, support_pos), edges in grouped.items():
             ext_G = self.get_extended_graph(support_pos, bottleneck_pos)
             ext_G_independent = self.remove_dependent_edges(ext_G)
-            final_component = set(nx.ancestors(ext_G_independent, bottleneck_pos))
+            final_component = self._compute_final_component(
+                ext_G_independent, bottleneck_pos,
+                is_extended_graph=True, blocker_pos=support_pos)
             del ext_G_independent
             del ext_G
             self._dependent_edge_cache[(bottleneck_pos, support_pos)] = {
@@ -73,21 +82,29 @@ class GridEnv:
                 'dependent' not in d for _, _, d in self.G.in_edges(goal, data=True)
             )
             if has_independent_in_edge:
+                # Include the goal itself: a bottleneck may stop *directly* at the
+                # goal via a support (the goal's own dependent in-edges), not only
+                # at cells inside its final component.
                 self._bottleneck_support_pairs_cache[(goal, None)] = (
-                    self._collect_bottleneck_support_pairs(self.precomputed_final_components[goal])
+                    self._collect_bottleneck_support_pairs(
+                        self.precomputed_final_components[goal] | {goal})
                 )
         for (bottleneck_pos, support_pos), entry in self._dependent_edge_cache.items():
             self._bottleneck_support_pairs_cache[(bottleneck_pos, support_pos)] = (
-                self._collect_bottleneck_support_pairs(entry['final_component'])
+                self._collect_bottleneck_support_pairs(
+                    entry['final_component'] | {bottleneck_pos})
             )
 
     @classmethod
     def from_env(cls, env_index: int, instance_index: int = 0,
                  env_dir: Path | str = ENV_DIR,
-                 dependent_edge_weight: float = 2):
+                 dependent_edge_weight: float = 2,
+                 max_final_component_distance=None):
         env_dir = Path(env_dir)
         cache_dir = env_dir / "cache"
-        cache_path = cache_dir / f"env_{env_index}_w{dependent_edge_weight}.pkl"
+        cache_path = cache_dir / (
+            f"env_{env_index}_w{dependent_edge_weight}"
+            f"_d{max_final_component_distance}.pkl")
 
         if cache_path.exists():
             with open(cache_path, "rb") as f:
@@ -120,6 +137,7 @@ class GridEnv:
             grid_graph=g,
             independent_paths=env.get("independent_paths", {}),
             all_paths=all_paths,
+            max_final_component_distance=max_final_component_distance,
         )
         grid_env.grid_data = env.get("grid_data")
 
@@ -129,6 +147,54 @@ class GridEnv:
             pickle.dump({"grid_env": grid_env, "state": state}, f)
 
         return grid_env, state
+
+    def _compute_final_component(self, G: nx.DiGraph, goal,
+                                 is_extended_graph=False, blocker_pos=None):
+        """Cells from which the goal is reachable without a helper.
+
+        Args:
+            G: graph to take ancestors on (already dependent-edge-free).
+            goal: target position.
+            is_extended_graph: True when G is an extended graph, so distances
+                must be measured on G itself rather than the reachability matrix.
+            blocker_pos: a support-robot position that acts as a wall. The node
+                and every cell beyond it in the same row/column are dropped.
+
+        When self.max_final_component_distance is set, only cells within that
+        many moves of the goal are kept (caps the number of proposed subgoals).
+        """
+        if blocker_pos is not None and blocker_pos in G.nodes():
+            G = G.copy()
+            G.remove_node(blocker_pos)
+            bx, by = blocker_pos
+            gx, gy = goal
+            nodes_to_remove = []
+            # Same row as goal: drop cells past the blocker horizontally.
+            if by == gy:
+                if bx > gx:
+                    nodes_to_remove = [n for n in G.nodes() if n[0] > bx and n[1] == by]
+                elif bx < gx:
+                    nodes_to_remove = [n for n in G.nodes() if n[0] < bx and n[1] == by]
+            # Same column as goal: drop cells past the blocker vertically.
+            if bx == gx:
+                if by > gy:
+                    nodes_to_remove = [n for n in G.nodes() if n[1] > by and n[0] == bx]
+                elif by < gy:
+                    nodes_to_remove = [n for n in G.nodes() if n[1] < by and n[0] == bx]
+            G.remove_nodes_from(nodes_to_remove)
+
+        ancestors = set(nx.ancestors(G, goal))
+        if self.max_final_component_distance is None:
+            return ancestors
+        if is_extended_graph:
+            distances = nx.single_source_shortest_path_length(
+                G.reverse(), goal, cutoff=self.max_final_component_distance)
+            return ancestors & distances.keys()
+        return {
+            node for node in ancestors
+            if self.reachability_matrix.get((node, goal)) is not None
+            and self.reachability_matrix[(node, goal)] <= self.max_final_component_distance
+        }
 
     def _has_adjacent_wall(self, pos):
         """True if pos has at least one incoming weight=1 edge."""
@@ -192,10 +258,17 @@ class GridEnv:
         if cached_pairs is not None:
             pairs = cached_pairs
         else:
-            assert False, "No cached pairs found"
-            extended_G = self.get_extended_graph(support_pos, bottleneck_pos=goal)
-            final_component = set(nx.ancestors(extended_G, goal))
-            pairs = self._collect_bottleneck_support_pairs(final_component)
+            if support_pos is None:
+                final_component = self.precomputed_final_components[goal]
+            else:
+                extended_G = self.get_extended_graph(support_pos, bottleneck_pos=goal)
+                extended_G_independent = self.remove_dependent_edges(extended_G)
+                final_component = self._compute_final_component(
+                    extended_G_independent, goal,
+                    is_extended_graph=True, blocker_pos=support_pos)
+                del extended_G
+                del extended_G_independent
+            pairs = self._collect_bottleneck_support_pairs(final_component | {goal})
         results = []
         for (bottleneck_pos, support_pos) in pairs:
             for helper_robot in state.helpers:
