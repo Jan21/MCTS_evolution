@@ -7,13 +7,14 @@ Usage:
     python validate_example.py
 """
 
+from math import isqrt
+
 import networkx as nx
 
 from GridEnv import GridEnv, Robot_at, State
 from partial_plan import PartialPlan
 from validate_plan import validate
 
-GRID_SIZE = 16
 N_ENVIRONMENTS = 10
 
 # ── Helper to run and print a test ────────────────────────────────────────
@@ -43,12 +44,15 @@ for i in range(N_ENVIRONMENTS):
     if not isinstance(grid_env.G, nx.DiGraph):
         errors.append("grid_graph is not a nx.DiGraph")
     grid_nodes = set(grid_env.G.nodes())
-    if len(grid_nodes) != GRID_SIZE * GRID_SIZE:
-        errors.append(f"grid_nodes has {len(grid_nodes)} nodes, expected {GRID_SIZE**2}")
+    # Infer the board side length from the grid: a full NxN board has N*N cells.
+    grid_size = isqrt(len(grid_nodes))
+    if grid_size * grid_size != len(grid_nodes):
+        errors.append(f"grid_nodes has {len(grid_nodes)} nodes, "
+                      f"which is not a perfect square (NxN) board")
 
     for pos in grid_nodes:
         if (not isinstance(pos, tuple) or len(pos) != 2
-                or not (0 <= pos[0] < GRID_SIZE and 0 <= pos[1] < GRID_SIZE)):
+                or not (0 <= pos[0] < grid_size and 0 <= pos[1] < grid_size)):
             errors.append(f"invalid grid node {pos}")
             break
 

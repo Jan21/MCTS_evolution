@@ -1,7 +1,7 @@
 """Canonical representation V2 — partial plan encoded into grid features.
 
 Converts (GridEnv, State, PartialPlan, open_edge) into:
-  - encoder input:  (256, FEATURE_DIM) per-cell feature matrix
+  - encoder input:  (N*N, FEATURE_DIM) per-cell feature matrix (N = board size)
   - decoder target:  3 tokens [bn_pos, sp_pos, robot_cell_or_TARGET]
 
 Symmetries eliminated:
@@ -16,24 +16,32 @@ part of the feature vector.
 from __future__ import annotations
 
 import copy
+from math import isqrt
+
 import numpy as np
 import networkx as nx
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-GRID_SIZE = 16
-NUM_CELLS = GRID_SIZE * GRID_SIZE  # 256
+# Default board side length, used when a size cannot be inferred from the
+# environment (and as the default for the position helpers below). The encoder
+# is fully board-size agnostic: every size-dependent value (cell count, robot
+# vocabulary, feature matrix shape) is derived from the actual board, so 32x32
+# or any NxN board works without changing these constants.
+DEFAULT_GRID_SIZE = 16
+GRID_SIZE = DEFAULT_GRID_SIZE          # backward-compatible alias
+NUM_CELLS = GRID_SIZE * GRID_SIZE      # 256 for the default 16x16 board
 
 # Output vocabulary for the 3rd token (robot identification)
-#   0–255 : helper identified by its current cell position
-#   256   : target robot
-TOKEN_TARGET = 256
-VOCAB_SIZE = 257
+#   0 .. N*N-1 : helper identified by its current cell position
+#   N*N        : target robot
+TOKEN_TARGET = NUM_CELLS               # 256 for the default 16x16 board
+VOCAB_SIZE = NUM_CELLS + 1             # 257 for the default 16x16 board
 
 # Feature vector layout (per cell)
-#   0    : x coordinate (0–15)
-#   1    : y coordinate (0–15)
+#   0    : x coordinate (0..N-1)
+#   1    : y coordinate (0..N-1)
 #   2–5  : wall N, S, W, E
 #   6    : is_goal
 #   7    : is_target_robot  (the robot that must move for the open edge)
@@ -55,14 +63,46 @@ FEATURE_DIM = 19
 # Position helpers
 # ---------------------------------------------------------------------------
 
-def pos_to_index(x: int, y: int) -> int:
-    """(x, y) -> flat cell index (row-major: y * 16 + x)."""
-    return y * GRID_SIZE + x
+def pos_to_index(x: int, y: int, grid_size: int = GRID_SIZE) -> int:
+    """(x, y) -> flat cell index (row-major: y * grid_size + x)."""
+    return y * grid_size + x
 
 
-def index_to_pos(idx: int) -> tuple[int, int]:
+def index_to_pos(idx: int, grid_size: int = GRID_SIZE) -> tuple[int, int]:
     """Flat cell index -> (x, y)."""
-    return idx % GRID_SIZE, idx // GRID_SIZE
+    return idx % grid_size, idx // grid_size
+
+
+def token_target(grid_size: int = GRID_SIZE) -> int:
+    """Vocabulary token marking "the support robot is the target robot".
+
+    It is the index one past the last valid cell (grid_size * grid_size), so it
+    never collides with a real cell index regardless of board size.
+    """
+    return grid_size * grid_size
+
+
+def infer_grid_size(grid_env) -> int:
+    """Infer the board side length N (for an NxN board) from a GridEnv.
+
+    Tries, in order:
+      1. ``len(grid_env.grid_data)`` -> sqrt, when it is a perfect square,
+      2. the largest node coordinate in the grid graph, plus one,
+      3. ``DEFAULT_GRID_SIZE`` as a last resort.
+
+    This keeps the encoder board-size agnostic: a 16x16, 32x32 or any other
+    square board is handled without configuration.
+    """
+    grid_data = getattr(grid_env, "grid_data", None)
+    if grid_data:
+        n = isqrt(len(grid_data))
+        if n * n == len(grid_data):
+            return n
+    graph = getattr(grid_env, "G", None)
+    if graph is not None and graph.number_of_nodes() > 0:
+        max_coord = max(max(int(x), int(y)) for x, y in graph.nodes())
+        return max_coord + 1
+    return DEFAULT_GRID_SIZE
 
 
 # ---------------------------------------------------------------------------
@@ -299,34 +339,41 @@ def compute_edge_encoding(plan) -> dict[str, dict]:
 # Feature extraction
 # ---------------------------------------------------------------------------
 
-def extract_features(grid_env, state, plan, open_edge: tuple[str, str]
-                     ) -> np.ndarray:
-    """Build per-cell feature matrix (256, FEATURE_DIM).
+def extract_features(grid_env, state, plan, open_edge: tuple[str, str],
+                     grid_size: int | None = None) -> np.ndarray:
+    """Build per-cell feature matrix (grid_size**2, FEATURE_DIM).
 
     Encodes board, robot roles, and partial plan state into grid cells.
     Robot colors are NOT encoded — only target/helper distinction.
+
+    The board size is inferred from ``grid_env`` unless ``grid_size`` is given,
+    so any NxN board (16x16, 32x32, ...) is supported transparently.
     """
+    if grid_size is None:
+        grid_size = infer_grid_size(grid_env)
+    num_cells = grid_size * grid_size
+
     g = plan.g
-    features = np.zeros((NUM_CELLS, FEATURE_DIM), dtype=np.float32)
+    features = np.zeros((num_cells, FEATURE_DIM), dtype=np.float32)
     grid_data = grid_env.grid_data
 
     parent_id, child_id = open_edge
 
     # --- Board features (dims 0–6) ---
-    for y in range(GRID_SIZE):
-        for x in range(GRID_SIZE):
-            idx = y * GRID_SIZE + x
+    for y in range(grid_size):
+        for x in range(grid_size):
+            idx = y * grid_size + x
             cell = grid_data[idx] if grid_data and idx < len(grid_data) else 'X'
             features[idx, 0] = x
             features[idx, 1] = y
             features[idx, 2] = float('N' in cell or y == 0)
-            features[idx, 3] = float('S' in cell or y == GRID_SIZE - 1)
+            features[idx, 3] = float('S' in cell or y == grid_size - 1)
             features[idx, 4] = float('W' in cell or x == 0)
-            features[idx, 5] = float('E' in cell or x == GRID_SIZE - 1)
+            features[idx, 5] = float('E' in cell or x == grid_size - 1)
 
     # Goal
     gx, gy = state.target
-    features[pos_to_index(gx, gy), 6] = 1.0
+    features[pos_to_index(gx, gy, grid_size), 6] = 1.0
 
     # --- Robot identification (dims 7–8) ---
     # Determine the "target robot" for this open edge (by color/role)
@@ -350,7 +397,7 @@ def extract_features(grid_env, state, plan, open_edge: tuple[str, str]
 
     # Mark target robot at its initial board position
     tx, ty = moving_initial_pos
-    features[pos_to_index(int(tx), int(ty)), 7] = 1.0
+    features[pos_to_index(int(tx), int(ty), grid_size), 7] = 1.0
 
     # Mark helper positions (all robots that are not the moving robot)
     seen = set()
@@ -361,7 +408,7 @@ def extract_features(grid_env, state, plan, open_edge: tuple[str, str]
         seen.add(pos_key)
         if robot.color != moving_robot.color:
             hx, hy = robot.position
-            features[pos_to_index(int(hx), int(hy)), 8] = 1.0
+            features[pos_to_index(int(hx), int(hy), grid_size), 8] = 1.0
 
     # --- Temporal classification (dims 9–10) ---
     temporal = classify_temporal(plan, open_edge)
@@ -372,12 +419,12 @@ def extract_features(grid_env, state, plan, open_edge: tuple[str, str]
     # target_start = child node position
     if 'pos' in child_data:
         cx, cy = child_data['pos']
-        features[pos_to_index(int(cx), int(cy)), 11] = 1.0
+        features[pos_to_index(int(cx), int(cy), grid_size), 11] = 1.0
 
     # target_end = parent node position
     if 'pos' in parent_data:
         px, py = parent_data['pos']
-        features[pos_to_index(int(px), int(py)), 12] = 1.0
+        features[pos_to_index(int(px), int(py), grid_size), 12] = 1.0
 
     # --- Plan node features (dims 13–18) ---
     edge_encoding = compute_edge_encoding(plan)
@@ -388,7 +435,7 @@ def extract_features(grid_env, state, plan, open_edge: tuple[str, str]
             continue  # subgoal nodes have no position
 
         pos = data['pos']
-        idx = pos_to_index(int(pos[0]), int(pos[1]))
+        idx = pos_to_index(int(pos[0]), int(pos[1]), grid_size)
 
         # Temporal (dims 9–10)
         # When multiple nodes share a cell, 'after' takes priority
@@ -422,13 +469,13 @@ def extract_features(grid_env, state, plan, open_edge: tuple[str, str]
 # Target extraction
 # ---------------------------------------------------------------------------
 
-def extract_target(plan, state, subgoal_id: str, open_edge: tuple[str, str]
-                   ) -> tuple[int, int, int]:
+def extract_target(plan, state, subgoal_id: str, open_edge: tuple[str, str],
+                   grid_size: int = GRID_SIZE) -> tuple[int, int, int]:
     """Extract the 3 target tokens for a subgoal being added.
 
     Returns (bn_cell_index, sp_cell_index, robot_token) where robot_token
-    is either TOKEN_TARGET or the cell index of the helper robot's
-    current (initial) position.
+    is either the target-robot token (``token_target(grid_size)``) or the cell
+    index of the helper robot's current (initial) position.
     """
     g = plan.g
     parent_id, _ = open_edge
@@ -445,8 +492,8 @@ def extract_target(plan, state, subgoal_id: str, open_edge: tuple[str, str]
     if bn_data is None or sp_data is None:
         raise ValueError(f"Subgoal {subgoal_id} missing bottleneck or support")
 
-    bn_idx = pos_to_index(int(bn_data['pos'][0]), int(bn_data['pos'][1]))
-    sp_idx = pos_to_index(int(sp_data['pos'][0]), int(sp_data['pos'][1]))
+    bn_idx = pos_to_index(int(bn_data['pos'][0]), int(bn_data['pos'][1]), grid_size)
+    sp_idx = pos_to_index(int(sp_data['pos'][0]), int(sp_data['pos'][1]), grid_size)
 
     # Determine robot token
     parent_data = g.nodes[parent_id]
@@ -458,46 +505,51 @@ def extract_target(plan, state, subgoal_id: str, open_edge: tuple[str, str]
 
     support_robot = sp_data['robot']
     if support_robot.color == moving_robot.color:
-        robot_token = TOKEN_TARGET
+        robot_token = token_target(grid_size)
     else:
         # Identify helper by its initial (leaf) cell position
         # Find the leaf node for this robot in the complete plan
-        robot_token = _find_robot_initial_pos_index(g, support_robot)
+        robot_token = _find_robot_initial_pos_index(g, support_robot, grid_size)
 
     return bn_idx, sp_idx, robot_token
 
 
-def _find_robot_initial_pos_index(g, robot) -> int:
+def _find_robot_initial_pos_index(g, robot, grid_size: int = GRID_SIZE) -> int:
     """Find the cell index of a robot's initial position (leaf node)."""
     for nid, data in g.nodes(data=True):
         if (data['ntype'] == 'leaf' and
                 data.get('robot') is not None and
                 data['robot'].color == robot.color):
             pos = data['pos']
-            return pos_to_index(int(pos[0]), int(pos[1]))
+            return pos_to_index(int(pos[0]), int(pos[1]), grid_size)
     # Fallback: use the robot's position attribute directly
-    return pos_to_index(int(robot.position[0]), int(robot.position[1]))
+    return pos_to_index(int(robot.position[0]), int(robot.position[1]), grid_size)
 
 
 # ---------------------------------------------------------------------------
 # Training data generation from complete plans
 # ---------------------------------------------------------------------------
 
-def generate_training_examples(grid_env, state, complete_plan
-                               ) -> list[dict]:
+def generate_training_examples(grid_env, state, complete_plan,
+                               grid_size: int | None = None) -> list[dict]:
     """Generate training examples by peeling back subgoals from a complete plan.
 
     For a plan with K subgoals, generates K examples. Each example is created
     by removing one subgoal (and restoring the open edge it resolved),
     then using the removed subgoal as the supervision target.
 
+    The board size is inferred from ``grid_env`` unless ``grid_size`` is given.
+
     Returns list of dicts with keys:
-        'features': np.ndarray (256, FEATURE_DIM)
+        'features': np.ndarray (grid_size**2, FEATURE_DIM)
         'target':   tuple (bn_idx, sp_idx, robot_token)
         'open_edge': tuple (parent_id, child_id)
         'subgoal_id': str
         'robot_colors': dict with robot color info for visualization
     """
+    if grid_size is None:
+        grid_size = infer_grid_size(grid_env)
+
     g = complete_plan.g
 
     # Find all subgoal nodes
@@ -507,7 +559,8 @@ def generate_training_examples(grid_env, state, complete_plan
     # Collect robot color metadata for visualization
     robot_colors = {}
     for robot in [state.target_robot] + list(state.helpers):
-        idx = pos_to_index(int(robot.position[0]), int(robot.position[1]))
+        idx = pos_to_index(int(robot.position[0]), int(robot.position[1]),
+                           grid_size)
         robot_colors[idx] = robot.color
 
     examples = []
@@ -542,10 +595,12 @@ def generate_training_examples(grid_env, state, complete_plan
         open_edge = (sg_parent, bn_leaf)
 
         # Extract features from the partial plan
-        features = extract_features(grid_env, state, partial, open_edge)
+        features = extract_features(grid_env, state, partial, open_edge,
+                                    grid_size)
 
         # Extract target from the complete plan
-        target = extract_target(complete_plan, state, sg_id, open_edge)
+        target = extract_target(complete_plan, state, sg_id, open_edge,
+                                grid_size)
 
         examples.append({
             'features': features,

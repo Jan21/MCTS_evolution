@@ -3,6 +3,8 @@
 import sys
 import os
 import pickle
+from types import SimpleNamespace
+
 import pytest
 import numpy as np
 
@@ -11,8 +13,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from partial_plan import PartialPlan
 from GridEnv import GridEnv, State, Robot_at
 from data_gen.canonical_v2 import (
-    FEATURE_DIM, NUM_CELLS, GRID_SIZE, TOKEN_TARGET,
-    pos_to_index, index_to_pos,
+    FEATURE_DIM, NUM_CELLS, GRID_SIZE, DEFAULT_GRID_SIZE, TOKEN_TARGET,
+    pos_to_index, index_to_pos, token_target, infer_grid_size,
     classify_temporal, compute_edge_encoding,
     extract_features, extract_target,
     generate_training_examples,
@@ -633,6 +635,124 @@ class TestIntegrationEnv44:
                     parts.append("SP/LEAF")
                 if parts:
                     print(f"    cell {index_to_pos(idx)}: {', '.join(parts)}")
+
+
+# ---------------------------------------------------------------------------
+# Board-size generalization (boards larger than 16x16, any NxN)
+# ---------------------------------------------------------------------------
+
+def make_fake_grid_env(grid_size):
+    """A minimal stand-in for GridEnv with just what the encoder reads.
+
+    Provides ``grid_data`` (grid_size**2 empty cells, only border walls implied)
+    and ``G`` (a graph with one node per cell) so both inference paths work.
+    """
+    import networkx as nx
+    grid_data = ['' for _ in range(grid_size * grid_size)]
+    g = nx.DiGraph()
+    g.add_nodes_from((x, y) for y in range(grid_size) for x in range(grid_size))
+    return SimpleNamespace(grid_data=grid_data, G=g)
+
+
+class TestBoardSizeGeneralization:
+    def test_pos_roundtrip_arbitrary_size(self):
+        for n in (8, 16, 32, 9):
+            for x in range(n):
+                for y in range(n):
+                    idx = pos_to_index(x, y, n)
+                    assert index_to_pos(idx, n) == (x, y)
+                    assert 0 <= idx < n * n
+
+    def test_token_target_scales_with_size(self):
+        assert token_target(16) == 256
+        assert token_target(32) == 1024
+        assert token_target(9) == 81
+        # Default keeps the legacy 16x16 value.
+        assert token_target() == TOKEN_TARGET == NUM_CELLS
+
+    def test_defaults_are_legacy_16x16(self):
+        assert DEFAULT_GRID_SIZE == 16
+        assert GRID_SIZE == 16
+        assert NUM_CELLS == 256
+        assert pos_to_index(15, 15) == 255  # default arg path unchanged
+
+    def test_infer_from_grid_data(self):
+        assert infer_grid_size(make_fake_grid_env(32)) == 32
+        assert infer_grid_size(make_fake_grid_env(9)) == 9
+
+    def test_infer_from_graph_when_no_grid_data(self):
+        import networkx as nx
+        g = nx.DiGraph()
+        g.add_nodes_from((x, y) for y in range(32) for x in range(32))
+        env = SimpleNamespace(grid_data=None, G=g)
+        assert infer_grid_size(env) == 32
+
+    def test_extract_features_shape_32(self):
+        grid_env = make_fake_grid_env(32)
+        state = State(
+            target=(31, 20),
+            target_robot=Robot_at(position=(25, 30), color='Red'),
+            helpers=[Robot_at(position=(4, 13), color='Blue')],
+        )
+        partial = PartialPlan()
+        partial.add_node("goal", "goal", pos=(31, 20))
+        partial.add_node("leaf_0", "leaf", pos=(25, 30),
+                         robot=Robot_at(position=(25, 30), color='Red'))
+        partial.add_edge("goal", "leaf_0", status="open", cost=None)
+
+        features = extract_features(grid_env, state, partial, ("goal", "leaf_0"))
+
+        # Matrix grows with the board; size is inferred, not hardcoded.
+        assert features.shape == (32 * 32, FEATURE_DIM)
+        # Goal marker lands at a cell index that only exists on a >16 board.
+        goal_idx = pos_to_index(31, 20, 32)
+        assert goal_idx >= NUM_CELLS  # beyond the 16x16 range
+        assert features[goal_idx, 6] == 1.0
+        # Target robot marked at its (high) coordinate.
+        assert features[pos_to_index(25, 30, 32), 7] == 1.0
+        # Far corner has S and E border walls.
+        corner = pos_to_index(31, 31, 32)
+        assert features[corner, 3] == 1.0  # S wall at y == N-1
+        assert features[corner, 5] == 1.0  # E wall at x == N-1
+
+    def test_generate_training_examples_indices_in_range_32(self):
+        grid_env = make_fake_grid_env(32)
+        state = State(
+            target=(31, 20),
+            target_robot=Robot_at(position=(25, 30), color='Red'),
+            helpers=[Robot_at(position=(4, 13), color='Blue'),
+                     Robot_at(position=(28, 28), color='Green')],
+        )
+        # Plan whose nodes use coordinates only valid on a 32x32 board.
+        p = PartialPlan()
+        p.add_node("goal", "goal", pos=(31, 20))
+        p.add_node("sg_1", "subgoal", parent_support_pos=(31, 21))
+        p.add_node("bn_1", "bottleneck", pos=(31, 22),
+                   robot=Robot_at(position=(31, 22), color='Red'))
+        p.add_node("sp_1", "support", pos=(31, 23),
+                   robot=Robot_at(position=(31, 23), color='Green'))
+        p.add_node("leaf_0", "leaf", pos=(25, 30),
+                   robot=Robot_at(position=(25, 30), color='Red'))
+        p.add_node("leaf_1", "leaf", pos=(28, 28),
+                   robot=Robot_at(position=(28, 28), color='Green'))
+        p.add_edge("goal", "sg_1", status="fixed", cost=2)
+        p.add_edge("sg_1", "bn_1", status="fixed", cost=0)
+        p.add_edge("sg_1", "sp_1", status="fixed", cost=0)
+        p.add_edge("bn_1", "leaf_0", status="fixed", cost=3)
+        p.add_edge("sp_1", "leaf_1", status="fixed", cost=1)
+
+        examples = generate_training_examples(grid_env, state, p)
+        assert len(examples) == 1
+        ex = examples[0]
+        assert ex['features'].shape == (32 * 32, FEATURE_DIM)
+        bn_idx, sp_idx, robot_token = ex['target']
+        assert 0 <= bn_idx < 32 * 32
+        assert 0 <= sp_idx < 32 * 32
+        assert robot_token == token_target(32) or 0 <= robot_token < 32 * 32
+        # bottleneck (31,22) and support (31,23) exceed the 16x16 index range,
+        # proving the encoding is not capped at 256.
+        assert bn_idx == pos_to_index(31, 22, 32) >= NUM_CELLS
+        assert sp_idx == pos_to_index(31, 23, 32) >= NUM_CELLS
 
 
 if __name__ == '__main__':

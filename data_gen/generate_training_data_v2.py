@@ -5,11 +5,12 @@ which include pre-computed best subgoal proposals for each open edge.
 
 For each intermediate plan, for each open edge with a valid proposal,
 creates one training example:
-  - Input:  extract_features(grid_env, state, plan, open_edge) → (256, 19)
+  - Input:  extract_features(grid_env, state, plan, open_edge) → (N*N, 19)
   - Target: (bn_pos, sp_pos, robot_token) → 3 ints
 
 Output: data_gen/output_v2/
-  - example_{idx}.npz: 'features' (256,19) float32, 'target' (3,) int64
+  - example_{idx}.npz: 'features' (N*N,19) float32, 'target' (3,) int64
+    (N is the board side length, inferred per environment)
   - metadata.pkl: list of per-example metadata dicts
 
 Usage:
@@ -26,24 +27,27 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from GridEnv import GridEnv
 from data_gen.canonical_v2 import (
-    extract_features, pos_to_index, TOKEN_TARGET, index_to_pos,
+    extract_features, pos_to_index, index_to_pos,
+    GRID_SIZE, infer_grid_size, token_target,
 )
 
 
-def proposal_to_target(proposal: dict, state) -> tuple[int, int, int]:
+def proposal_to_target(proposal: dict, state,
+                       grid_size: int = GRID_SIZE) -> tuple[int, int, int]:
     """Convert a saved proposal dict to 3 target tokens.
 
     The support robot is identified by its INITIAL position on the board
-    (from state), not its planned support position.
+    (from state), not its planned support position. ``grid_size`` is the board
+    side length so the tokens are correct for any NxN board.
     """
-    bn_idx = pos_to_index(*proposal['bn_pos'])
-    sp_idx = pos_to_index(*proposal['sp_pos'])
+    bn_idx = pos_to_index(*proposal['bn_pos'], grid_size)
+    sp_idx = pos_to_index(*proposal['sp_pos'], grid_size)
 
     support_robot = proposal['support_robot']
     moving_robot = proposal['moving_robot']
 
     if support_robot.color == moving_robot.color:
-        robot_token = TOKEN_TARGET
+        robot_token = token_target(grid_size)
     else:
         # Find the robot's initial position from state
         initial_pos = None
@@ -53,7 +57,8 @@ def proposal_to_target(proposal: dict, state) -> tuple[int, int, int]:
                 break
         if initial_pos is None:
             raise ValueError(f"Robot {support_robot.color} not found in state")
-        robot_token = pos_to_index(int(initial_pos[0]), int(initial_pos[1]))
+        robot_token = pos_to_index(int(initial_pos[0]), int(initial_pos[1]),
+                                   grid_size)
 
     return bn_idx, sp_idx, robot_token
 
@@ -92,11 +97,14 @@ def main():
             errors.append((env_id, f'env load: {e}'))
             continue
 
+        # Board side length for this env (supports any NxN board)
+        grid_size = infer_grid_size(grid_env)
+
         # Robot colors for visualization
         robot_colors = {}
         for robot in [state.target_robot] + list(state.helpers):
             idx = pos_to_index(int(robot.position[0]),
-                               int(robot.position[1]))
+                               int(robot.position[1]), grid_size)
             robot_colors[idx] = robot.color
 
         env_count = 0
@@ -117,8 +125,9 @@ def main():
 
                 try:
                     features = extract_features(
-                        grid_env, state, plan, (parent_id, child_id))
-                    target = proposal_to_target(proposal, state)
+                        grid_env, state, plan, (parent_id, child_id),
+                        grid_size)
+                    target = proposal_to_target(proposal, state, grid_size)
                 except Exception as e:
                     errors.append((env_id, f'extract: {e}'))
                     continue
@@ -132,6 +141,7 @@ def main():
                 all_metadata.append({
                     'global_idx': global_idx,
                     'env_id': env_id,
+                    'grid_size': grid_size,
                     'open_edge': (parent_id, child_id),
                     'iteration': plan_data['iteration'],
                     'score': proposal['score'],
@@ -156,9 +166,9 @@ def main():
         for env_id, msg in errors:
             print(f'  env_{env_id}: {msg}')
 
-    # Stats
+    # Stats — the target-robot token depends on each env's board size
     target_count = sum(1 for m in all_metadata
-                       if m['target'][2] == TOKEN_TARGET)
+                       if m['target'][2] == token_target(m['grid_size']))
     print(f'Target-as-support: {target_count}, '
           f'Helper-as-support: {global_idx - target_count}')
 
