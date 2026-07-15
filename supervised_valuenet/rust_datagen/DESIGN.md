@@ -91,6 +91,15 @@ Board description, either inline or by sidecar reference:
 The engine compiles boards on first use and caches by (env_id, SHA-256 of
 grid_data, dependent_edge_weight) within a run.
 
+Schema tolerance (adjudicated; unknown fields remain an error per §7): the
+engine ACCEPTS and ignores exactly THREE documented auxiliary fields that the
+pyref dumps carry, each explicitly modeled in the work-item structs —
+`max_candidates` on `replay_backward_decision` (informational: the dumped
+candidate list is already stable-sorted and truncated; the engine never
+re-truncates it), and `full_policy_max_ctg` + `python_labels` on the
+forward/backward replay items (differ-side data). Any other unlisted field
+is malformed input.
+
 ### task: "board" — precompute + optional table export
 
 ```json
