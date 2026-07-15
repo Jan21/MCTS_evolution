@@ -298,8 +298,9 @@ wall-stop ray tables + O(R) nearest-blocker scan instead of cell-by-cell
 slide walks; one reusable search context (heap/g/came buffers) per work
 item; (f,g) packed into one u64 heap-priority word (order-identical, both
 < 2^31 by the pruning rule + a hard `max_expansions < 2^30` assert); u64
-state keys when 2*coord_bits*R <= 64 (all five configs; u128 kept and
-unit/gate-covered for larger envelopes, e.g. g24r8); compact `came`
+state keys when 2*coord_bits*R <= 64 (all five configs; u128 kept for
+larger envelopes, e.g. g24r8 — covered by the smoke g24r8 cell and a
+u64-vs-u128 search-equality unit test); compact `came`
 entries; h-prune evaluated before the g-map probe (side-effect-free filter
 reorder); memoized uncapped candidate-child solves within an item
 (duplicates still emit records exactly as before).
@@ -366,8 +367,10 @@ work/results/manifest; log + `.t0/.t1` under
   pre-change engine at --threads 1 (`cmp`) and identical line multisets at
   --threads 8/16, re-checked after EVERY optimization step.
 - All six of E1's committed gate corpora replayed ALL GREEN on the final
-  binary (8,876 forward units + 7,593 backward units; gate_f24/f64 also
-  exercise the u128-key path with 8 robots on n>=24).
+  binary (8,876 forward units + 7,593 backward units). NOTE: all three
+  forward corpora are 4-robot (verified from the dumps), so they exercise
+  the u64-key path; the u128-key path's coverage is the smoke g24r8 cell
+  (ALL GREEN) plus the u64-vs-u128 search-equality unit test.
 - `pyref/smoke.py --engine rust --workers 8`: see the matrix line appended
   below.
 - Documented envelope edge (fail-loud, not silent): forward work items with

@@ -545,9 +545,11 @@ mod tests {
     /// The Dial (bucket queue) path must produce EXACTLY the heap Dijkstra's
     /// distances on real board adjacencies — including weight = DIAL_MAX_W
     /// (largest bucket window) and the dependent-free independent subgraph.
+    /// The DIAL_MAX_W + 1 row exercises the heap-fallback dispatch arm of
+    /// `par_all_sources_dijkstra` (row-chunked output vs per-source rows).
     #[test]
     fn dial_matches_heap_dijkstra_on_board_adjacency() {
-        for weight in [1i64, 2, DIAL_MAX_W] {
+        for weight in [1i64, 2, DIAL_MAX_W, DIAL_MAX_W + 1] {
             let g: Vec<String> = [
                 "NW", "NS", "N", "NE", //
                 "W", "", "", "E", //
