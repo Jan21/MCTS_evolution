@@ -152,6 +152,17 @@ leg (§5) and the regression corpus (§3): 22,274 contexts / 276,868 units,
 zero diffs. Backward instance-timeout drops during dumping (18 across the
 r8 cells) affect corpus size only, not comparisons.
 
+One reading note: this zero is an EMPIRICAL zero, not structural
+immunity. Pinning the candidate list (with its `parent_support`) in the
+replay item removes the enumeration-order surfaces of candidate
+GENERATION, but each engine still runs its own inner plan search, whose
+tie order can change the returned `cost_to_go` under the §4
+non-admissible-estimate corner — the committed §4 repro
+(`golden/s511_evidence/repro_e910_replay.jsonl`) diverges through this
+very replay path (Python 11 vs Rust 10). At the measured rate of that
+shape (about 1 per 19,000 record labels on rebuilt boards) the sampled
+gate-3 corpora simply did not contain such a case.
+
 ## 3. Gate 5 — the three fixes and the 12-instance regression corpus
 
 The two six-instance residual-defect classes come from
@@ -297,9 +308,12 @@ label: `cost_to_go`/`is_optimal` are functions of CPython's set-iteration
 order, not of the decision alone. No amount of faithful porting can make
 an independent enumerator reproduce them exactly; the only exact-match
 options are (a) bit-matching CPython's set order inside Rust, or (b)
-making the reference order-free (a full deterministic tie-break on the
-candidate sort and the plan-search heap; this changes Python's own outputs
-and would require regenerating reference data). Choosing between them —
+making the reference order-free: a full deterministic content-based
+tie-break on the candidate sort AND the plan-search heap AND a
+deterministic dependent-support resolution order for `parent_support`
+(so no `set` iteration order remains anywhere labels can see). This
+changes Python's own outputs and would require regenerating reference
+data. Choosing between them —
 or explicitly accepting a measured divergence class — is a design
 adjudication, not a verification call. Per the gate's escalation clause
 this is recorded as a **BLOCKER**: threshold ZERO, measured nonzero.
