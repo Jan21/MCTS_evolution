@@ -15,7 +15,7 @@ PY ?= /home/p23131/.conda/envs/ph_main/bin/python3
 CARGO ?= cargo
 THREADS ?= 16
 
-.PHONY: build test smoke verify bench
+.PHONY: build test smoke verify bench regression
 
 build:
 	$(CARGO) build --release -j 16
@@ -26,7 +26,12 @@ test:
 smoke: build
 	$(PY) pyref/smoke.py --engine rust --workers $(THREADS)
 
-verify: test smoke
+# gate 5: the 12-instance residual-defect regression, three-way
+# (python replay + rust replay + defect-candidate rejection assertions)
+regression: build
+	$(PY) pyref/verify_regression.py
+
+verify: test smoke regression
 	./target/release/datagen selftest
 
 bench: build

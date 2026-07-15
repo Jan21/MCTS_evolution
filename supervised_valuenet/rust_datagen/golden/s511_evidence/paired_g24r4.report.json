@@ -1,0 +1,55 @@
+{
+ "config": "g24r4",
+ "counts": {
+  "instances_compared": 400,
+  "decisions_aligned": 622,
+  "records_matched": 3225,
+  "decisions_with_support_ctx": 222,
+  "decisions_depth_ge1": 222,
+  "decisions_set_divergent": 112,
+  "VIOLATION_min_ctg_set_divergent": 14,
+  "instances_both_empty": 300,
+  "instances_full_length": 370,
+  "tie_truncation_boundary": 98,
+  "boundary_tie_continued_same_advance": 92,
+  "fork_optimal_tie": 15,
+  "VIOLATION_trajectory_length": 1
+ },
+ "ps_rate": 0.0,
+ "examples": {
+  "VIOLATION_min_ctg_set_divergent": [
+   "e900:i0 d2: py min=9 rust min=13, py-only=[((20, 23), (21, 23), ((21, 7), 'Yellow'))] rust-only=[]",
+   "e904:i13 d1: py min=23 rust min=20, py-only=[((15, 11), (16, 11), ((5, 13), 'Green'))] rust-only=[((4, 2), (4, 3), ((5, 13), 'Green'))]",
+   "e905:i18 d2: py min=12 rust min=13, py-only=[((16, 4), (16, 3), ((2, 20), 'Blue'))] rust-only=[]",
+   "e911:i7 d2: py min=11 rust min=10, py-only=[] rust-only=[((12, 13), (12, 12), ((9, 16), 'Green'))]",
+   "e914:i4 d1: py min=13 rust min=12, py-only=[((10, 10), (9, 10), ((16, 17), 'Green'))] rust-only=[((13, 0), (14, 0), ((16, 17), 'Green')), ((15, 0), (14, 0), ((3, 18), 'Blue'))]",
+   "e915:i9 d1: py min=24 rust min=22, py-only=[] rust-only=[((15, 12), (15, 13), ((3, 5), 'Blue'))]",
+   "e918:i2 d1: py min=16 rust min=19, py-only=[((21, 21), (20, 21), ((9, 14), 'Green'))] rust-only=[]",
+   "e918:i20 d0: py min=11 rust min=9, py-only=[] rust-only=[((2, 1), (2, 0), ((1, 1), 'Green')), ((2, 1), (2, 0), ((8, 19), 'Blue')), ((2, 1), (2, 0), ((15, 15), 'Yellow'))]"
+  ],
+  "tie_truncation_boundary": [
+   "e900:i10 d0: boundary score 9, 3+3 one-sided records, min ctg 4 both sides",
+   "e900:i11 d0: boundary score 8, 1+1 one-sided records, min ctg 5 both sides",
+   "e901:i3 d2: boundary score 8, 1+0 one-sided records, min ctg 7 both sides",
+   "e901:i13 d0: boundary score 10, 1+1 one-sided records, min ctg 13 both sides",
+   "e902:i0 d0: boundary score 10, 3+2 one-sided records, min ctg 11 both sides",
+   "e902:i1 d0: boundary score 11, 2+2 one-sided records, min ctg 8 both sides",
+   "e902:i3 d2: boundary score 8, 1+0 one-sided records, min ctg 8 both sides",
+   "e902:i9 d0: boundary score 9, 2+3 one-sided records, min ctg 5 both sides"
+  ],
+  "fork_optimal_tie": [
+   "e901:i1 d0: advance py=((2, 7), (3, 7), ((10, 0), 'Blue')) rust=((10, 0), (11, 0), ((10, 0), 'Blue')), shared min ctg 11, 3 distinct optimal candidates",
+   "e905:i2 d0: advance py=((22, 22), (22, 21), ((15, 21), 'Green')) rust=((22, 22), (22, 23), ((15, 21), 'Green')), shared min ctg 4, 2 distinct optimal candidates",
+   "e908:i2 d1: advance py=((4, 5), (4, 4), ((23, 19), 'Green')) rust=((4, 5), (4, 6), ((23, 19), 'Green')), shared min ctg 13, 2 distinct optimal candidates",
+   "e914:i5 d1: advance py=((23, 9), (23, 10), ((21, 20), 'Blue')) rust=((6, 7), (6, 6), ((13, 13), 'Yellow')), shared min ctg 6, 2 distinct optimal candidates",
+   "e915:i15 d0: advance py=((23, 15), (23, 14), ((6, 9), 'Yellow')) rust=((23, 15), (23, 16), ((6, 9), 'Yellow')), shared min ctg 6, 2 distinct optimal candidates",
+   "e916:i3 d0: advance py=((22, 22), (22, 21), ((9, 17), 'Yellow')) rust=((22, 22), (22, 23), ((9, 17), 'Yellow')), shared min ctg 11, 2 distinct optimal candidates",
+   "e916:i13 d0: advance py=((0, 17), (0, 16), ((8, 11), 'Blue')) rust=((0, 17), (0, 18), ((8, 11), 'Blue')), shared min ctg 6, 3 distinct optimal candidates",
+   "e917:i4 d0: advance py=((19, 20), (19, 19), ((19, 19), 'Green')) rust=((19, 20), (19, 21), ((19, 19), 'Green')), shared min ctg 12, 2 distinct optimal candidates"
+  ],
+  "VIOLATION_trajectory_length": [
+   "e917:i18: rust stream ends at depth 2, other side continues"
+  ],
+  "ps_field_divergence": []
+ }
+}
