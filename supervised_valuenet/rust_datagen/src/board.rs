@@ -122,23 +122,26 @@ impl CompiledBoard {
             .map(|es| es.iter().any(|e| e.weight == 1))
             .collect();
 
-        // Weighted adjacency (target idx, weight) for the Dijkstra sweeps.
-        let adj_all: Vec<Vec<(u32, i64)>> = out_edges
-            .iter()
-            .map(|es| es.iter().map(|e| (idx(e.v) as u32, e.weight)).collect())
-            .collect();
-        let adj_ind: Vec<Vec<(u32, i64)>> = out_edges
-            .iter()
-            .map(|es| {
-                es.iter()
-                    .filter(|e| e.dependent.is_none())
-                    .map(|e| (idx(e.v) as u32, e.weight))
-                    .collect()
-            })
-            .collect();
-
-        let all_pairs = par_all_sources_dijkstra(&adj_all, nn);
-        let independent = par_all_sources_dijkstra(&adj_ind, nn);
+        // CSR adjacency (target idx, weight) for the Dijkstra sweeps, built
+        // straight from the out-edge lists (no per-node Vec intermediate).
+        let mut offs_all: Vec<u32> = Vec::with_capacity(nn + 1);
+        let mut csr_all: Vec<(u32, i64)> = Vec::with_capacity(n_edges);
+        let mut offs_ind: Vec<u32> = Vec::with_capacity(nn + 1);
+        let mut csr_ind: Vec<(u32, i64)> = Vec::new();
+        offs_all.push(0);
+        offs_ind.push(0);
+        for es in &out_edges {
+            for e in es {
+                csr_all.push((idx(e.v) as u32, e.weight));
+                if e.dependent.is_none() {
+                    csr_ind.push((idx(e.v) as u32, e.weight));
+                }
+            }
+            offs_all.push(csr_all.len() as u32);
+            offs_ind.push(csr_ind.len() as u32);
+        }
+        let all_pairs = par_all_sources_dijkstra(&offs_all, &csr_all, nn);
+        let independent = par_all_sources_dijkstra(&offs_ind, &csr_ind, nn);
 
         CompiledBoard {
             n,
@@ -324,23 +327,98 @@ fn hex_string(bytes: &[u8]) -> String {
     s
 }
 
-/// Dijkstra (binary heap) from every source over `adj`; row `s` of the result
-/// is the distance vector from source `s`. Sources run in parallel via rayon;
-/// the output is order-independent (indexed collect, distances are unique per
-/// pair regardless of pop tie-breaking).
-fn par_all_sources_dijkstra(adj: &[Vec<(u32, i64)>], nn: usize) -> Vec<Option<i64>> {
-    let rows: Vec<Vec<Option<i64>>> = (0..nn)
-        .into_par_iter()
-        .map(|s| dijkstra(adj, nn, s))
-        .collect();
-    let mut flat = Vec::with_capacity(nn * nn);
-    for row in rows {
-        flat.extend(row);
+/// Largest edge weight the Dial (bucket-queue) Dijkstra handles; datagen
+/// weights are only 1 and `dependent_edge_weight` (2 in practice).
+const DIAL_MAX_W: i64 = 8;
+
+/// Shortest paths from every source over the CSR adjacency (`offs`/`edges`);
+/// row `s` of the result is the distance vector from source `s`. Sources run
+/// in parallel via rayon (still capped by the engine's pinned pool); the
+/// output is order-independent (each source writes its own disjoint chunk,
+/// and shortest-path DISTANCES are unique regardless of settle order).
+///
+/// When every weight is in `1..=DIAL_MAX_W` (the datagen case: weights 1 and
+/// dependent_edge_weight = 2) a Dial/bucket queue over a CSR adjacency
+/// replaces the binary heap — same metric, identical distances (gate 2's
+/// golden table hashes prove it), ~2-4x faster per source. Any other weight
+/// (a nonstandard `dependent_edge_weight` in a work item) falls back to the
+/// original binary-heap Dijkstra.
+fn par_all_sources_dijkstra(
+    offs: &[u32],
+    edges: &[(u32, i64)],
+    nn: usize,
+) -> Vec<Option<i64>> {
+    let mut flat: Vec<Option<i64>> = vec![None; nn * nn];
+    let maxw = edges.iter().map(|&(_, w)| w).max().unwrap_or(1);
+    let minw = edges.iter().map(|&(_, w)| w).min().unwrap_or(1);
+    if minw >= 1 && maxw <= DIAL_MAX_W {
+        let nb = maxw as usize + 1; // bucket window: distances live in [d, d+maxw]
+        // 8-byte edge records halve the sweep's memory traffic (the edge
+        // array is re-read once per source).
+        let edges32: Vec<(u32, u32)> = edges.iter().map(|&(v, w)| (v, w as u32)).collect();
+        flat.par_chunks_mut(nn).enumerate().for_each_init(
+            || (vec![i32::MAX; nn], vec![Vec::<u32>::new(); nb]),
+            |(dist, buckets), (s, out)| {
+                dial_into(offs, &edges32, s, nb, dist, buckets, out);
+            },
+        );
+    } else {
+        flat.par_chunks_mut(nn)
+            .enumerate()
+            .for_each(|(s, out)| out.copy_from_slice(&dijkstra(offs, edges, nn, s)));
     }
     flat
 }
 
-fn dijkstra(adj: &[Vec<(u32, i64)>], nn: usize, src: usize) -> Vec<Option<i64>> {
+/// One Dial (bucket queue) single-source pass, writing `out[v] = dist(src,v)`.
+/// `dist`/`buckets` are reusable per-thread scratch (rayon `for_each_init`);
+/// buckets are fully drained on return. Correctness of the circular window:
+/// a relaxation from distance `d` pushes `nd <= d + maxw < d + nb`, so the
+/// bucket being drained (`d % nb`) is never pushed into, and every entry in
+/// flight lives in `[d, d + maxw]`. Stale entries (node re-pushed with a
+/// smaller tentative distance) are skipped via the `dist[u] == d` check —
+/// the same lazy-deletion rule as the heap version.
+fn dial_into(
+    offs: &[u32],
+    edges: &[(u32, u32)],
+    src: usize,
+    nb: usize,
+    dist: &mut [i32],
+    buckets: &mut [Vec<u32>],
+    out: &mut [Option<i64>],
+) {
+    for d in dist.iter_mut() {
+        *d = i32::MAX;
+    }
+    dist[src] = 0;
+    buckets[0].push(src as u32);
+    let mut remaining = 1usize;
+    let mut d = 0i32;
+    while remaining > 0 {
+        let b = d as usize % nb;
+        while let Some(u) = buckets[b].pop() {
+            remaining -= 1;
+            let u = u as usize;
+            if dist[u] != d {
+                continue; // stale entry
+            }
+            for &(v, w) in &edges[offs[u] as usize..offs[u + 1] as usize] {
+                let nd = d + w as i32;
+                if nd < dist[v as usize] {
+                    dist[v as usize] = nd;
+                    buckets[nd as usize % nb].push(v);
+                    remaining += 1;
+                }
+            }
+        }
+        d += 1;
+    }
+    for (o, &dv) in out.iter_mut().zip(dist.iter()) {
+        *o = if dv == i32::MAX { None } else { Some(dv as i64) };
+    }
+}
+
+fn dijkstra(offs: &[u32], edges: &[(u32, i64)], nn: usize, src: usize) -> Vec<Option<i64>> {
     let mut dist: Vec<Option<i64>> = vec![None; nn];
     let mut heap: BinaryHeap<Reverse<(i64, u32)>> = BinaryHeap::new();
     dist[src] = Some(0);
@@ -349,7 +427,7 @@ fn dijkstra(adj: &[Vec<(u32, i64)>], nn: usize, src: usize) -> Vec<Option<i64>> 
         if dist[u as usize] != Some(d) {
             continue; // stale entry
         }
-        for &(v, w) in &adj[u as usize] {
+        for &(v, w) in &edges[offs[u as usize] as usize..offs[u as usize + 1] as usize] {
             let nd = d + w;
             if dist[v as usize].is_none_or(|cur| nd < cur) {
                 dist[v as usize] = Some(nd);
@@ -462,6 +540,49 @@ mod tests {
         let count1 = (0..16).filter(|&i| b1.wall_nodes[i]).count();
         let count2 = (0..16).filter(|&i| b2.wall_nodes[i]).count();
         assert!(count1 > count2, "weight-1 wall nodes {count1} !> {count2}");
+    }
+
+    /// The Dial (bucket queue) path must produce EXACTLY the heap Dijkstra's
+    /// distances on real board adjacencies — including weight = DIAL_MAX_W
+    /// (largest bucket window) and the dependent-free independent subgraph.
+    #[test]
+    fn dial_matches_heap_dijkstra_on_board_adjacency() {
+        for weight in [1i64, 2, DIAL_MAX_W] {
+            let g: Vec<String> = [
+                "NW", "NS", "N", "NE", //
+                "W", "", "", "E", //
+                "W", "", "E", "E", //
+                "SW", "S", "S", "SE",
+            ]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+            let b = CompiledBoard::compile(4, &g, weight);
+            let nn = 16usize;
+            let idx = |c: Cell| c.1 as usize * 4 + c.0 as usize;
+            for dependent_only in [false, true] {
+                let mut offs: Vec<u32> = vec![0];
+                let mut csr: Vec<(u32, i64)> = Vec::new();
+                for i in 0..nn {
+                    for e in b.out_edges[i]
+                        .iter()
+                        .filter(|e| !dependent_only || e.dependent.is_none())
+                    {
+                        csr.push((idx(e.v) as u32, e.weight));
+                    }
+                    offs.push(csr.len() as u32);
+                }
+                let flat = par_all_sources_dijkstra(&offs, &csr, nn); // dial path
+                for s in 0..nn {
+                    let row = dijkstra(&offs, &csr, nn, s); // heap reference
+                    assert_eq!(
+                        &flat[s * nn..(s + 1) * nn],
+                        &row[..],
+                        "weight {weight} dependent_only {dependent_only} src {s}"
+                    );
+                }
+            }
+        }
     }
 
     #[test]

@@ -265,3 +265,118 @@ stage totals 7.8 s across all 12 cells vs 422.8 s for `--engine python`
 on the same cells in E1's reference run). Logs: `pyref/out/smoke/rust/`.
 Every diff stage ALL GREEN: zero label divergence on 12 cells x both task
 types, including 64x64.
+
+## Post-optimization (Agent P)
+
+Date: 2026-07-15, same box (`uptime` load 37-42 throughout; 32 threads used
+only for the §4-style regen rerun). Engine changes are confined to
+`src/move_oracle.rs` (forward A* internals) and `src/board.rs` (all-pairs
+Dijkstra); every change is bit-exact — no search-order, budget or output
+change (proofs below). Same commands, same bench_compare battery, same
+instance workloads (seed 0 reproduces the identical attempt sets: 18/14/13/
+34/31 attempts per config, matching §3's table).
+
+### Forward labeling rerun (gate: >= 50x per core) — GATE MET
+
+`python3 rust_datagen/pyref/bench_compare.py --stages forward --configs
+g16r4,g16r6,g16r8,g24r4,g32r4` -> logs `pyref/cache/bench/<cfg>_forward.log`,
+rows in `pyref/cache/bench/results.jsonl` (latest per config).
+
+| config | attempts | Python 1-core label | Rust --threads 1 | Rust --threads 16 | per-core ratio | was (§3) |
+|---|---|---|---|---|---|---|
+| g16r4 | 18 | 102.10 s | 1.467 s | 0.470 s | **69.6x** | 32.1x |
+| g16r6 | 14 | 213.58 s | 2.682 s | 0.707 s | **79.6x** | 26.3x |
+| g16r8 | 13 | 256.65 s | 4.396 s | 1.273 s | **58.4x** | 25.5x |
+| g24r4 | 34 | 138.22 s | 1.924 s | 0.592 s | **71.8x** | 33.7x |
+| g32r4 | 31 | 135.66 s | 1.697 s | 0.490 s | **79.9x** | 34.3x |
+
+Outcome agreement N/N on every row (110/110 attempts). Python-side times
+match §3's runs within load variance (102-257 s vs 100-248 s), so the
+improvement is real engine speedup (2.1-2.9x on rust t1), not numerator
+drift. What changed (all in move_oracle.rs, per-item semantics identical):
+wall-stop ray tables + O(R) nearest-blocker scan instead of cell-by-cell
+slide walks; one reusable search context (heap/g/came buffers) per work
+item; (f,g) packed into one u64 heap-priority word (order-identical, both
+< 2^31 by the pruning rule + a hard `max_expansions < 2^30` assert); u64
+state keys when 2*coord_bits*R <= 64 (all five configs; u128 kept and
+unit/gate-covered for larger envelopes, e.g. g24r8); compact `came`
+entries; h-prune evaluated before the g-map probe (side-effect-free filter
+reorder); memoized uncapped candidate-child solves within an item
+(duplicates still emit records exactly as before).
+
+### Board precompute rerun (all-pairs bucket queue in board.rs)
+
+`python3 rust_datagen/pyref/bench_compare.py --stages precompute --configs
+g16r6,g24r4,g32r4` -> logs `pyref/cache/bench/<cfg>_precompute.log`. The
+binary-heap Dijkstra is replaced by a Dial/bucket queue over a CSR
+adjacency whenever every edge weight is in 1..=8 (datagen: 1 and
+dependent_edge_weight=2); any other weight falls back to the original heap
+code. Distances identical (gate12 golden hashes + a dial-vs-heap unit test
+across weights 1/2/8 and both table subgraphs).
+
+| config | n | Python tables alone | Rust full compile | tables ratio | was (§1) | from_env ratio |
+|---|---|---|---|---|---|---|
+| g16r6 | 16 | 0.429 s | 0.0057 s | 75.5x | 48x | 1549x |
+| g24r4 | 24 | 4.146 s | 0.0314 s | **132.2x** | 61x | 2184x |
+| g32r4 | 32 | 12.251 s | 0.0762 s | **160.7x** | 78x | 3831x |
+
+Amortized cross-check (20/20/10-board work files, warm, threads 1 — same
+methodology as §1's `compile_amortized.log`): 4.5 / 23.5 / 73 ms per board
+= ratios ~95x / ~176x / ~168x. HONEST GATE READING: >= 100x is MET at
+n=24 and n=32 (both methodologies); n=16 lands at 75-95x depending on how
+much process startup the denominator carries. The residual n=16 gap is
+irreducible within this algorithm class, not sloppiness: the in-process
+compile is ~4.4 ms of which the all_pairs Dial sweep is 2.9 ms — 256
+sources x ~7.7k edge relaxations = ~2M relaxations at ~1.5 ns each,
+i.e. the O(E)-per-source arithmetic floor — while the Python numerator is
+only 0.43 s at n=16 (the nx overhead Python pays per edge does not scale
+down with board size as fast as the rust side does). Everything above the
+sweep (graph build 0.5 ms, CSR 0.1 ms, independent-table sweep 0.9 ms) is
+already thinner than the sweep itself.
+
+### End-to-end g16r6 forward regen rerun (§4 comparison)
+
+Same command family as §4 (`scaling.rust_bridge --config g16r6 --system
+forward --per-graph 10 --seed 0 --score-candidates --threads 32`, wave
+scheduling default), output to NEW files
+`scaling/data/g16r6/rust_work/p_forward_regen.jsonl` (+ `p_fwd_regen.*`
+work/results/manifest; log + `.t0/.t1` under
+`scaling/data/g16r6/rust_work/bench_logs/p_forward_regen.*`):
+
+- **194.2 s wall** at 32 threads (was 432 s in §4 — 2.2x) for all 1050
+  boards; 10,500 instances, 1,038,827 records; waves computed the same
+  25,860 of 52,500 budgeted attempts.
+- Output **byte-identical** (`cmp`) to §4's `forward.rust.jsonl` — the file
+  already proven to match the shipped production `forward.jsonl` on
+  1050/1050 boards (§5) — so the whole-config byte-identity carries over
+  to the optimized engine verbatim.
+- With §4's backward regen unchanged (141 s; backward/subgoal code
+  untouched), the total config wall-clock story becomes ~141 + ~194 =
+  **~335 s ≈ 5.6 min** (target < 10 min).
+
+### Zero-semantic-change evidence (Agent P)
+
+- `cargo test --release` full tree green after all changes: lib 41 (5 new
+  tests: packed-priority order vs tuple, ray/fast-slide fuzz vs
+  physics::slide, u64-vs-u128 key search equality, u64 key roundtrips,
+  dial-vs-heap equality), backward_fixtures 5, backward_units 12, gate12 1,
+  gate3_forward 1, io_determinism 7; `RUSTFLAGS="-D warnings"` clean;
+  clippy --all-targets 0 warnings. `datagen selftest` PASS.
+- The five trimmed forward work files produce byte-identical outputs to the
+  pre-change engine at --threads 1 (`cmp`) and identical line multisets at
+  --threads 8/16, re-checked after EVERY optimization step.
+- All six of E1's committed gate corpora replayed ALL GREEN on the final
+  binary (8,876 forward units + 7,593 backward units; gate_f24/f64 also
+  exercise the u128-key path with 8 robots on n>=24).
+- `pyref/smoke.py --engine rust --workers 8`: see the matrix line appended
+  below.
+- Documented envelope edge (fail-loud, not silent): forward work items with
+  `max_expansions >= 2^30` now abort with a named assert instead of
+  running (production uses 40,000; the backward `budget.solver_iters`
+  path is untouched subgoal code); `dependent_edge_weight` outside 1..=8
+  compiles boards via the original heap Dijkstra fallback.
+- Smoke matrix on the final binary: `pyref/smoke.py --engine rust
+  --workers 8` -> **12/12 cells PASS**, exit 0, total 519 s (Python dump
+  stage dominates as before; the engine stage now totals 4.4 s across the
+  12 cells vs 7.8 s pre-optimization). Per-cell logs:
+  `pyref/out/smoke/rust/` (regenerated by this run).

@@ -23,6 +23,25 @@
 //! packed joint state, used ONLY for keyed lookups — nothing ever iterates
 //! them, so their ordering cannot leak into any output. All output orders
 //! come from the heap (total order) and the successor enumeration (fixed).
+//!
+//! Performance notes (Agent P — all bit-exact, DESIGN §5.16 unchanged):
+//! - Slides inside the A* use per-(board,dir) wall-stop ray tables
+//!   ([`Rays`]) + an O(R) nearest-blocker scan instead of walking cell by
+//!   cell with a linear `blockers.contains` per step. Provably the same stop
+//!   cell as `physics::slide` (unit-fuzzed against it).
+//! - The heap priority packs `(f, g)` into one `u64` word: both are
+//!   non-negative and < 2^31 (`h < ORACLE_INF = 2^30` is enforced by the
+//!   pruning rule, `g <= expansions + 1 <= max_expansions + 1`, and
+//!   `max_expansions < 2^30` is hard-asserted), so the u64 compare is
+//!   EXACTLY the `(f, g)` lexicographic tuple compare; `cnt` is unique per
+//!   push, so the trailing state key still never decides an ordering.
+//! - One [`SearchCtx`] per work item reuses the heap / `g` / `came`
+//!   allocations across the item's many child solves and holds the hdist
+//!   field as a flat `i64` vec (`ORACLE_INF` = the Python dict-miss).
+//! - `label_instance` memoizes uncapped candidate-child solves by packed
+//!   state within the item (same board, target, hdist and expansion budget
+//!   -> identical result by determinism; duplicates still emit their own
+//!   records exactly as before).
 
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, VecDeque};
@@ -30,52 +49,101 @@ use std::collections::{BinaryHeap, VecDeque};
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 
-use crate::physics::{apply_move, slide, successors, Walls};
+use crate::physics::{apply_move, successors, Walls};
 use crate::types::{Cell, Dir, DIRECTIONS, ORACLE_INF};
 
 // ---------------------------------------------------------------------------
-// joint-state packing (private): cell index in 12 bits, robot slots side by
-// side in a u128. Invertible given (n, robot count); supports n <= 64, R <= 10.
+// joint-state packing (private): each cell as (x | y << cb) with
+// cb = coord_bits(n) bits per coordinate, robot slots side by side in one
+// integer. u64 when 2*cb*R <= 64 (every production config: 16x16 R8 = 64
+// bits, 32x32 R4 = 40, 64x64 R4 = 48), u128 otherwise. Keys are INTERNAL:
+// they never decide any ordering (the heap push counter is unique) and the
+// maps keyed by them are never iterated, so the key type/encoding cannot
+// leak into any output (DESIGN §8). Envelope: n <= 64, R <= 10, as before.
 // ---------------------------------------------------------------------------
 
-const CELL_BITS: u32 = 12;
-const CELL_MASK: u128 = (1 << CELL_BITS) - 1;
+const CELL_BITS: u32 = 12; // 2 * max coord_bits — defines the R <= 10 envelope
 
+/// Max robots the u128 packing supports; also the fixed size of the stack
+/// buffers used inside the search (no per-node heap allocation).
+const MAX_ROBOTS: usize = 128 / CELL_BITS as usize;
+
+/// Bits per coordinate in a packed cell (x and y each).
 #[inline]
-fn pack(positions: &[Cell], n: u16) -> u128 {
-    // Hard asserts (release too): every search enters through pack() exactly
-    // once (patch() only rewrites pack-built keys), so an out-of-envelope
-    // work item fails loudly instead of silently corrupting packed keys
-    // (DESIGN §7 fail-loud). Cost: one call per solve, not per node.
+fn coord_bits(n: u16) -> u32 {
+    if n <= 16 {
+        4
+    } else if n <= 32 {
+        5
+    } else {
+        6
+    }
+}
+
+/// Whether the joint state of `r` robots on an n x n board fits a u64 key.
+#[inline]
+fn key_fits_u64(n: u16, r: usize) -> bool {
+    2 * coord_bits(n) as usize * r <= 64
+}
+
+/// Hard asserts (release too): every search enters through Key::pack exactly
+/// once (patch only rewrites pack-built keys), so an out-of-envelope work
+/// item fails loudly instead of silently corrupting packed keys (DESIGN §7
+/// fail-loud). Cost: one call per solve, not per node.
+#[inline]
+fn assert_envelope(n: u16, r: usize) {
     assert!(n <= 64, "state packing supports n <= 64, got n = {n}");
     assert!(
-        positions.len() as u32 * CELL_BITS <= 128,
+        r as u32 * CELL_BITS <= 128,
         "state packing supports at most {} robots, got {}",
         128 / CELL_BITS,
-        positions.len()
+        r
     );
-    let mut key = 0u128;
-    for (i, &(x, y)) in positions.iter().enumerate() {
-        key |= ((y as u128 * n as u128) + x as u128) << (CELL_BITS * i as u32);
-    }
-    key
 }
 
-#[inline]
-fn unpack(key: u128, r: usize, n: u16, out: &mut Vec<Cell>) {
-    out.clear();
-    for i in 0..r {
-        let idx = ((key >> (CELL_BITS * i as u32)) & CELL_MASK) as u32;
-        out.push(((idx % n as u32) as u16, (idx / n as u32) as u16));
-    }
+/// Packed joint-state key (see module header note). Implemented for u64 and
+/// u128; the search is monomorphized over the two.
+trait Key: Copy + Eq + Ord + std::hash::Hash {
+    fn pack(positions: &[Cell], n: u16, cb: u32) -> Self;
+    fn patch(self, i: usize, cell: Cell, cb: u32) -> Self;
+    fn unpack(self, r: usize, cb: u32, out: &mut [Cell]);
 }
 
-/// Replace slot `i`'s cell in a packed key.
-#[inline]
-fn patch(key: u128, i: usize, cell: Cell, n: u16) -> u128 {
-    let shift = CELL_BITS * i as u32;
-    (key & !(CELL_MASK << shift)) | (((cell.1 as u128 * n as u128) + cell.0 as u128) << shift)
+macro_rules! impl_key {
+    ($t:ty) => {
+        impl Key for $t {
+            #[inline]
+            fn pack(positions: &[Cell], n: u16, cb: u32) -> $t {
+                assert_envelope(n, positions.len());
+                debug_assert!(positions.len() as u32 * 2 * cb <= <$t>::BITS);
+                let mut key: $t = 0;
+                for (i, &(x, y)) in positions.iter().enumerate() {
+                    key |= (((y as $t) << cb) | x as $t) << (2 * cb * i as u32);
+                }
+                key
+            }
+
+            #[inline]
+            fn patch(self, i: usize, cell: Cell, cb: u32) -> $t {
+                let shift = 2 * cb * i as u32;
+                let mask: $t = ((1 as $t) << (2 * cb)) - 1;
+                (self & !(mask << shift))
+                    | ((((cell.1 as $t) << cb) | cell.0 as $t) << shift)
+            }
+
+            #[inline]
+            fn unpack(self, r: usize, cb: u32, out: &mut [Cell]) {
+                let cmask: $t = ((1 as $t) << cb) - 1;
+                for (i, slot) in out.iter_mut().enumerate().take(r) {
+                    let v = self >> (2 * cb * i as u32);
+                    *slot = ((v & cmask) as u16, ((v >> cb) & cmask) as u16);
+                }
+            }
+        }
+    };
 }
+impl_key!(u64);
+impl_key!(u128);
 
 // ---------------------------------------------------------------------------
 // relaxed_target_dist (oracle.py::relaxed_target_dist)
@@ -138,6 +206,375 @@ pub struct PathEntry {
     pub action: Option<Action>,
 }
 
+/// Wall-stop ray tables: for every cell, the coordinate a blocker-free slide
+/// stops at. `up`/`down` hold the stop Y for the cell's column, `left`/`right`
+/// the stop X for its row. Built with the exact `can_leave` rule of
+/// `physics::slide` (one recurrence per direction), so
+/// `slide(c, d, &[], walls) == ray stop` by construction — unit-fuzzed too.
+struct Rays {
+    up: Vec<u16>,
+    down: Vec<u16>,
+    left: Vec<u16>,
+    right: Vec<u16>,
+}
+
+impl Rays {
+    fn new(walls: &Walls) -> Rays {
+        let n = walls.n();
+        let nu = n as usize;
+        let mut up = vec![0u16; nu * nu];
+        let mut down = vec![0u16; nu * nu];
+        let mut left = vec![0u16; nu * nu];
+        let mut right = vec![0u16; nu * nu];
+        for x in 0..n {
+            for y in 0..n {
+                // can_leave up from (x,y): y > 0 && no wall between y-1 and y
+                up[y as usize * nu + x as usize] = if y > 0 && !walls.has_down(x, y - 1) {
+                    up[(y - 1) as usize * nu + x as usize]
+                } else {
+                    y
+                };
+                let yd = n - 1 - y; // descending for down
+                down[yd as usize * nu + x as usize] = if yd < n - 1 && !walls.has_down(x, yd) {
+                    down[(yd + 1) as usize * nu + x as usize]
+                } else {
+                    yd
+                };
+            }
+        }
+        for y in 0..n {
+            for x in 0..n {
+                left[y as usize * nu + x as usize] = if x > 0 && !walls.has_right(x - 1, y) {
+                    left[y as usize * nu + (x - 1) as usize]
+                } else {
+                    x
+                };
+                let xd = n - 1 - x;
+                right[y as usize * nu + xd as usize] = if xd < n - 1 && !walls.has_right(xd, y) {
+                    right[y as usize * nu + (xd + 1) as usize]
+                } else {
+                    xd
+                };
+            }
+        }
+        Rays { up, down, left, right }
+    }
+}
+
+/// Nearest-blocker scans, one per direction: `wall` is the blocker-free stop
+/// coordinate from the ray table; the slices hold the OTHER robots'
+/// coordinates on the mover's column (`ys`) / row (`xs`). A robot strictly
+/// inside the ray segment shortens the slide to the cell just before it —
+/// exactly where the cell-by-cell walk of `physics::slide` stops (a robot
+/// beyond the wall stop is never reached by the walk). A robot adjacent to
+/// the mover yields the mover's own coordinate = no-op, like the walk.
+#[inline]
+fn stop_up(wall: u16, py: u16, ys: &[u16]) -> u16 {
+    let mut sy = wall;
+    for &by in ys {
+        if by < py && by >= sy {
+            sy = by + 1; // nearest-so-far blocker: stop just below it
+        }
+    }
+    sy
+}
+
+#[inline]
+fn stop_down(wall: u16, py: u16, ys: &[u16]) -> u16 {
+    let mut sy = wall;
+    for &by in ys {
+        if by > py && by <= sy {
+            sy = by - 1;
+        }
+    }
+    sy
+}
+
+#[inline]
+fn stop_left(wall: u16, px: u16, xs: &[u16]) -> u16 {
+    let mut sx = wall;
+    for &bx in xs {
+        if bx < px && bx >= sx {
+            sx = bx + 1;
+        }
+    }
+    sx
+}
+
+#[inline]
+fn stop_right(wall: u16, px: u16, xs: &[u16]) -> u16 {
+    let mut sx = wall;
+    for &bx in xs {
+        if bx > px && bx <= sx {
+            sx = bx - 1;
+        }
+    }
+    sx
+}
+
+/// Slide `robots[skip]` from `pos` in direction `d` — identical result to
+/// `physics::slide(pos, d, blockers, walls)` with `blockers` = all robots
+/// except slot `skip` (unit-fuzzed against it). The search loop inlines the
+/// same [`stop_up`]/... helpers with the column/row classification hoisted
+/// out of the per-direction loop; this composed form exists so the fuzz test
+/// exercises exactly those helpers.
+#[cfg(test)]
+fn fast_slide(rays: &Rays, n: u16, pos: Cell, d: Dir, robots: &[Cell], skip: usize) -> Cell {
+    let (px, py) = pos;
+    let i0 = py as usize * n as usize + px as usize;
+    let mut col_ys = [0u16; MAX_ROBOTS];
+    let mut ncol = 0usize;
+    let mut row_xs = [0u16; MAX_ROBOTS];
+    let mut nrow = 0usize;
+    for (j, &(bx, by)) in robots.iter().enumerate() {
+        if j != skip {
+            if bx == px {
+                col_ys[ncol] = by;
+                ncol += 1;
+            }
+            if by == py {
+                row_xs[nrow] = bx;
+                nrow += 1;
+            }
+        }
+    }
+    match d {
+        Dir::Up => (px, stop_up(rays.up[i0], py, &col_ys[..ncol])),
+        Dir::Down => (px, stop_down(rays.down[i0], py, &col_ys[..ncol])),
+        Dir::Left => (stop_left(rays.left[i0], px, &row_xs[..nrow]), py),
+        Dir::Right => (stop_right(rays.right[i0], px, &row_xs[..nrow]), py),
+    }
+}
+
+/// Pack the A* priority `(f, g)` into one u64 whose integer order equals the
+/// `(f, g)` tuple order. Sound because both are non-negative and < 2^31:
+/// `h < ORACLE_INF = 2^30` (pruned otherwise), `g <= expansions + 1` and
+/// `max_expansions < 2^30` (hard-asserted at search entry), so
+/// `f = g + h < 2^31`.
+#[inline]
+fn pack_prio(f: i64, g: i64) -> u64 {
+    ((f as u64) << 32) | (g as u64)
+}
+
+/// Per-(board, target) search context: ray tables + flat hdist + reusable
+/// search buffers, so one work item's many `solve` calls share allocations.
+/// Building one per public `solve` call keeps the old API cheap too.
+struct SearchCtx<K: Key> {
+    n: u16,
+    cb: u32,
+    rays: Rays,
+    /// `hdist[y*n + x]`; `ORACLE_INF` = unreachable (the Python dict-miss).
+    hdist: Vec<i64>,
+    // Heap entry: (packed (f,g), push counter, state key). The counter is
+    // unique per push, so the order is total and the trailing key never
+    // compares — identical pop sequence to Python heapq on (f, g, cnt, ...).
+    pq: BinaryHeap<Reverse<(u64, u64, K)>>,
+    g: FxHashMap<K, i64>,
+    // came: child -> (parent, action as (slot << 2) | dir); the start entry
+    // is its own parent (action ignored). Only needed for path reconstruction
+    // (Python fills it unconditionally, but it never influences the search).
+    came: FxHashMap<K, (K, u8)>,
+}
+
+impl<K: Key> SearchCtx<K> {
+    fn new(walls: &Walls, hdist: &[Option<i64>]) -> SearchCtx<K> {
+        SearchCtx {
+            n: walls.n(),
+            cb: coord_bits(walls.n()),
+            rays: Rays::new(walls),
+            hdist: hdist.iter().map(|d| d.unwrap_or(ORACLE_INF)).collect(),
+            pq: BinaryHeap::new(),
+            g: FxHashMap::default(),
+            came: FxHashMap::default(),
+        }
+    }
+
+    fn solve(
+        &mut self,
+        positions: &[Cell],
+        target_idx: usize,
+        target: Cell,
+        max_expansions: i64,
+        cost_cap: i64,
+    ) -> Option<i64> {
+        self.solve_inner(positions, target_idx, target, max_expansions, cost_cap, false)
+            .map(|(cost, _)| cost)
+    }
+
+    fn solve_with_path(
+        &mut self,
+        positions: &[Cell],
+        target_idx: usize,
+        target: Cell,
+        max_expansions: i64,
+        cost_cap: i64,
+    ) -> Option<(i64, Vec<PathEntry>)> {
+        self.solve_inner(positions, target_idx, target, max_expansions, cost_cap, true)
+            .map(|(cost, path)| (cost, path.expect("want_path")))
+    }
+
+    fn solve_inner(
+        &mut self,
+        positions: &[Cell],
+        target_idx: usize,
+        target: Cell,
+        max_expansions: i64,
+        cost_cap: i64,
+        want_path: bool,
+    ) -> Option<(i64, Option<Vec<PathEntry>>)> {
+        let n = self.n;
+        let nu = n as usize;
+        let r = positions.len();
+        let hd = &self.hdist;
+        let h_of = |hd: &[i64], c: Cell| hd[c.1 as usize * nu + c.0 as usize];
+
+        let h0 = h_of(hd, positions[target_idx]);
+        if h0 >= ORACLE_INF || h0 > cost_cap {
+            return None;
+        }
+        if positions[target_idx] == target {
+            let path = want_path.then(|| {
+                vec![PathEntry { positions: positions.to_vec(), action: None }]
+            });
+            return Some((0, path));
+        }
+        // Envelope guard for the packed (f, g) priority (see pack_prio): out
+        // of range fails loudly instead of silently mis-ordering the heap.
+        assert!(
+            max_expansions < (1 << 30),
+            "solve supports max_expansions < 2^30, got {max_expansions}"
+        );
+
+        let start = K::pack(positions, n, self.cb);
+        let mut cnt: u64 = 0;
+        self.pq.clear();
+        self.g.clear();
+        self.came.clear();
+        self.pq.push(Reverse((pack_prio(h0, 0), cnt, start)));
+        self.g.insert(start, 0);
+        if want_path {
+            self.came.insert(start, (start, 0)); // self-parent = start marker
+        }
+        let mut expansions: i64 = 0;
+
+        let mut pos_arr = [(0u16, 0u16); MAX_ROBOTS];
+
+        while let Some(Reverse((prio, _c, cur))) = self.pq.pop() {
+            let gc = (prio & 0xFFFF_FFFF) as i64;
+            if gc != *self.g.get(&cur).unwrap_or(&ORACLE_INF) {
+                continue; // stale
+            }
+            let pos_buf = &mut pos_arr[..r];
+            cur.unpack(r, self.cb, pos_buf);
+            if pos_buf[target_idx] == target {
+                if !want_path {
+                    return Some((gc, None));
+                }
+                let mut path: Vec<PathEntry> = Vec::new();
+                let mut sk = cur;
+                let mut sbuf = [(0u16, 0u16); MAX_ROBOTS];
+                loop {
+                    let (ps, code) = self.came[&sk];
+                    sk.unpack(r, self.cb, &mut sbuf[..r]);
+                    let is_start = ps == sk;
+                    path.push(PathEntry {
+                        positions: sbuf[..r].to_vec(),
+                        action: if is_start {
+                            None // start entry (Python's came[start] = None)
+                        } else {
+                            Some(((code >> 2) as usize, DIRECTIONS[(code & 3) as usize]))
+                        },
+                    });
+                    if is_start {
+                        break;
+                    }
+                    sk = ps;
+                }
+                path.reverse();
+                return Some((gc, Some(path)));
+            }
+            expansions += 1;
+            if expansions > max_expansions {
+                return None;
+            }
+            let ng = gc + 1;
+            // h of the target robot's cell changes only when the target robot
+            // itself moves — hoist the "some other robot moved" value.
+            let h_stay = h_of(&self.hdist, pos_buf[target_idx]);
+            // Successor enumeration: robot slot-major, then Dir order — the
+            // exact order of physics::successors / state.py::legal_moves,
+            // inlined on packed keys to avoid per-child Vec allocations.
+            //
+            // Python evaluates `ng < g.get(child)` first and the h/cost_cap
+            // prune second; both are side-effect-free filters and the state
+            // is only mutated when BOTH pass, so evaluating the cheap h-prune
+            // before the hash lookup accepts the identical child set with
+            // identical priorities — bit-exact, just fewer map probes.
+            for i in 0..r {
+                let (px, py) = pos_buf[i];
+                let i0 = py as usize * nu + px as usize;
+                // same-column / same-row robots of the mover, classified once
+                // for all four directions (see fast_slide).
+                let mut col_ys = [0u16; MAX_ROBOTS];
+                let mut ncol = 0usize;
+                let mut row_xs = [0u16; MAX_ROBOTS];
+                let mut nrow = 0usize;
+                for (j, &(bx, by)) in pos_buf.iter().enumerate() {
+                    if j != i {
+                        if bx == px {
+                            col_ys[ncol] = by;
+                            ncol += 1;
+                        }
+                        if by == py {
+                            row_xs[nrow] = bx;
+                            nrow += 1;
+                        }
+                    }
+                }
+                for &d in DIRECTIONS.iter() {
+                    let nxt = match d {
+                        Dir::Up => (px, stop_up(self.rays.up[i0], py, &col_ys[..ncol])),
+                        Dir::Down => (px, stop_down(self.rays.down[i0], py, &col_ys[..ncol])),
+                        Dir::Left => (stop_left(self.rays.left[i0], px, &row_xs[..nrow]), py),
+                        Dir::Right => {
+                            (stop_right(self.rays.right[i0], px, &row_xs[..nrow]), py)
+                        }
+                    };
+                    if nxt == pos_buf[i] {
+                        continue; // no-op -> illegal
+                    }
+                    let h = if i == target_idx { h_of(&self.hdist, nxt) } else { h_stay };
+                    if h >= ORACLE_INF || ng + h > cost_cap {
+                        continue;
+                    }
+                    let child = cur.patch(i, nxt, self.cb);
+                    match self.g.entry(child) {
+                        std::collections::hash_map::Entry::Occupied(mut e) => {
+                            if ng < *e.get() {
+                                e.insert(ng);
+                                cnt += 1;
+                                if want_path {
+                                    self.came.insert(child, (cur, ((i as u8) << 2) | d as u8));
+                                }
+                                self.pq.push(Reverse((pack_prio(ng + h, ng), cnt, child)));
+                            }
+                        }
+                        std::collections::hash_map::Entry::Vacant(e) => {
+                            e.insert(ng);
+                            cnt += 1;
+                            if want_path {
+                                self.came.insert(child, (cur, ((i as u8) << 2) | d as u8));
+                            }
+                            self.pq.push(Reverse((pack_prio(ng + h, ng), cnt, child)));
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+}
+
 /// A* optimal move count (no path). `None` = unsolvable, cost-capped away, or
 /// `max_expansions` exceeded — exactly oracle.py::solve's `None`.
 /// Pass `cost_cap = ORACLE_INF` for the Python default.
@@ -150,8 +587,13 @@ pub fn solve(
     max_expansions: i64,
     cost_cap: i64,
 ) -> Option<i64> {
-    solve_inner(positions, target_idx, target, walls, hdist, max_expansions, cost_cap, false)
-        .map(|(cost, _)| cost)
+    if key_fits_u64(walls.n(), positions.len()) {
+        SearchCtx::<u64>::new(walls, hdist)
+            .solve(positions, target_idx, target, max_expansions, cost_cap)
+    } else {
+        SearchCtx::<u128>::new(walls, hdist)
+            .solve(positions, target_idx, target, max_expansions, cost_cap)
+    }
 }
 
 /// A* with path reconstruction (oracle.py::solve with `want_path=True`).
@@ -166,119 +608,13 @@ pub fn solve_with_path(
     max_expansions: i64,
     cost_cap: i64,
 ) -> Option<(i64, Vec<PathEntry>)> {
-    solve_inner(positions, target_idx, target, walls, hdist, max_expansions, cost_cap, true)
-        .map(|(cost, path)| (cost, path.expect("want_path")))
-}
-
-#[allow(clippy::too_many_arguments)]
-fn solve_inner(
-    positions: &[Cell],
-    target_idx: usize,
-    target: Cell,
-    walls: &Walls,
-    hdist: &[Option<i64>],
-    max_expansions: i64,
-    cost_cap: i64,
-    want_path: bool,
-) -> Option<(i64, Option<Vec<PathEntry>>)> {
-    let n = walls.n();
-    let nu = n as usize;
-    let r = positions.len();
-    let h_of = |c: Cell| hdist[c.1 as usize * nu + c.0 as usize].unwrap_or(ORACLE_INF);
-
-    let h0 = h_of(positions[target_idx]);
-    if h0 >= ORACLE_INF || h0 > cost_cap {
-        return None;
+    if key_fits_u64(walls.n(), positions.len()) {
+        SearchCtx::<u64>::new(walls, hdist)
+            .solve_with_path(positions, target_idx, target, max_expansions, cost_cap)
+    } else {
+        SearchCtx::<u128>::new(walls, hdist)
+            .solve_with_path(positions, target_idx, target, max_expansions, cost_cap)
     }
-    if positions[target_idx] == target {
-        let path = want_path.then(|| {
-            vec![PathEntry { positions: positions.to_vec(), action: None }]
-        });
-        return Some((0, path));
-    }
-
-    let start = pack(positions, n);
-    let mut cnt: u64 = 0;
-    // Priority tuple (f, g, push-counter, state-key): the counter is unique
-    // per push, so the order is total and the trailing key never compares —
-    // identical pop sequence to Python heapq on (f, g, cnt, positions).
-    let mut pq: BinaryHeap<Reverse<(i64, i64, u64, u128)>> = BinaryHeap::new();
-    pq.push(Reverse((h0, 0, cnt, start)));
-    let mut g: FxHashMap<u128, i64> = FxHashMap::default();
-    g.insert(start, 0);
-    // came: child -> (parent, action); only needed for path reconstruction
-    // (Python fills it unconditionally, but it never influences the search).
-    let mut came: FxHashMap<u128, (Option<u128>, Option<Action>)> = FxHashMap::default();
-    if want_path {
-        came.insert(start, (None, None));
-    }
-    let mut expansions: i64 = 0;
-
-    let mut pos_buf: Vec<Cell> = Vec::with_capacity(r);
-    let mut blockers: Vec<Cell> = Vec::with_capacity(r.saturating_sub(1));
-
-    while let Some(Reverse((_f, gc, _c, cur))) = pq.pop() {
-        if gc != *g.get(&cur).unwrap_or(&ORACLE_INF) {
-            continue; // stale
-        }
-        unpack(cur, r, n, &mut pos_buf);
-        if pos_buf[target_idx] == target {
-            if !want_path {
-                return Some((gc, None));
-            }
-            let mut path: Vec<PathEntry> = Vec::new();
-            let mut s = Some(cur);
-            let mut sbuf: Vec<Cell> = Vec::with_capacity(r);
-            while let Some(sk) = s {
-                let (ps, act) = came[&sk];
-                unpack(sk, r, n, &mut sbuf);
-                path.push(PathEntry {
-                    positions: sbuf.clone(),
-                    action: if ps.is_none() { None } else { act },
-                });
-                s = ps;
-            }
-            path.reverse();
-            return Some((gc, Some(path)));
-        }
-        expansions += 1;
-        if expansions > max_expansions {
-            return None;
-        }
-        let ng = gc + 1;
-        // Successor enumeration: robot slot-major, then Dir order — the exact
-        // order of physics::successors / state.py::legal_moves, inlined on
-        // packed keys to avoid per-child Vec allocations.
-        for i in 0..r {
-            blockers.clear();
-            for (j, &p) in pos_buf.iter().enumerate() {
-                if j != i {
-                    blockers.push(p);
-                }
-            }
-            for &d in DIRECTIONS.iter() {
-                let nxt = slide(pos_buf[i], d, &blockers, walls);
-                if nxt == pos_buf[i] {
-                    continue; // no-op -> illegal
-                }
-                let child = patch(cur, i, nxt, n);
-                if ng < *g.get(&child).unwrap_or(&ORACLE_INF) {
-                    let tcell = if i == target_idx { nxt } else { pos_buf[target_idx] };
-                    let h = h_of(tcell);
-                    if h >= ORACLE_INF || ng + h > cost_cap {
-                        continue;
-                    }
-                    g.insert(child, ng);
-                    cnt += 1;
-                    if want_path {
-                        came.insert(child, (Some(cur), Some((i, d))));
-                    }
-                    pq.push(Reverse((ng + h, ng, cnt, child)));
-                }
-            }
-        }
-    }
-    None
 }
 
 // ---------------------------------------------------------------------------
@@ -298,19 +634,18 @@ pub struct TrajRecord {
 
 /// True iff `child` lies on an optimal solution from a state whose exact
 /// cost-to-go is `here` (oracle.py::label_trajectory::is_optimal_child).
-fn is_optimal_child(
+fn is_optimal_child<K: Key>(
+    ctx: &mut SearchCtx<K>,
     child: &[Cell],
     target_idx: usize,
     target: Cell,
-    walls: &Walls,
-    hdist: &[Option<i64>],
     max_expansions: i64,
     here: i64,
 ) -> bool {
     if child[target_idx] == target {
         return here == 1;
     }
-    solve(child, target_idx, target, walls, hdist, max_expansions, here - 1) == Some(here - 1)
+    ctx.solve(child, target_idx, target, max_expansions, here - 1) == Some(here - 1)
 }
 
 /// One optimal rollout with per-decision labels: `(d_star, records)`, records
@@ -327,9 +662,35 @@ pub fn label_trajectory(
     full_policy: bool,
     full_policy_max_ctg: Option<i64>,
 ) -> Option<(i64, Vec<TrajRecord>)> {
-    let (d_star, path) = solve_with_path(
-        positions, target_idx, target, walls, hdist, max_expansions, ORACLE_INF,
-    )?;
+    if key_fits_u64(walls.n(), positions.len()) {
+        let mut ctx = SearchCtx::<u64>::new(walls, hdist);
+        label_trajectory_ctx(
+            &mut ctx, positions, target_idx, target, walls, max_expansions,
+            full_policy, full_policy_max_ctg,
+        )
+    } else {
+        let mut ctx = SearchCtx::<u128>::new(walls, hdist);
+        label_trajectory_ctx(
+            &mut ctx, positions, target_idx, target, walls, max_expansions,
+            full_policy, full_policy_max_ctg,
+        )
+    }
+}
+
+/// [`label_trajectory`] on an existing context (buffer reuse across an item).
+#[allow(clippy::too_many_arguments)]
+fn label_trajectory_ctx<K: Key>(
+    ctx: &mut SearchCtx<K>,
+    positions: &[Cell],
+    target_idx: usize,
+    target: Cell,
+    walls: &Walls,
+    max_expansions: i64,
+    full_policy: bool,
+    full_policy_max_ctg: Option<i64>,
+) -> Option<(i64, Vec<TrajRecord>)> {
+    let (d_star, path) =
+        ctx.solve_with_path(positions, target_idx, target, max_expansions, ORACLE_INF)?;
     let mut records: Vec<TrajRecord> = Vec::new();
     for (depth, entry) in path.iter().enumerate() {
         let state = &entry.positions;
@@ -345,7 +706,7 @@ pub fn label_trajectory(
         let best: Vec<Action> = if do_full {
             succ.iter()
                 .filter(|(_, _, child)| {
-                    is_optimal_child(child, target_idx, target, walls, hdist, max_expansions, here)
+                    is_optimal_child(ctx, child, target_idx, target, max_expansions, here)
                 })
                 .map(|&(i, d, _)| (i, d))
                 .collect()
@@ -449,12 +810,45 @@ pub fn label_instance(
     if hdist[start_t.1 as usize * nu + start_t.0 as usize].unwrap_or(ORACLE_INF) >= ORACLE_INF {
         return LabelOutcome::RelaxedUnreachable;
     }
-    let Some((d_star, recs)) = label_trajectory(
-        positions, target_idx, target, walls, &hdist, max_expansions,
+    if key_fits_u64(walls.n(), positions.len()) {
+        label_instance_inner::<u64>(
+            env_id, positions, target_idx, target, walls, &hdist, max_expansions,
+            full_policy, full_policy_max_ctg, score_candidates,
+        )
+    } else {
+        label_instance_inner::<u128>(
+            env_id, positions, target_idx, target, walls, &hdist, max_expansions,
+            full_policy, full_policy_max_ctg, score_candidates,
+        )
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn label_instance_inner<K: Key>(
+    env_id: i64,
+    positions: &[Cell],
+    target_idx: usize,
+    target: Cell,
+    walls: &Walls,
+    hdist: &[Option<i64>],
+    max_expansions: i64,
+    full_policy: bool,
+    full_policy_max_ctg: Option<i64>,
+    score_candidates: bool,
+) -> LabelOutcome {
+    let mut ctx = SearchCtx::<K>::new(walls, hdist);
+    let Some((d_star, recs)) = label_trajectory_ctx(
+        &mut ctx, positions, target_idx, target, walls, max_expansions,
         full_policy, full_policy_max_ctg,
     ) else {
         return LabelOutcome::Unsolved;
     };
+    // Uncapped candidate-child solves memoized by packed state: within this
+    // item the board, target, hdist and expansion budget are all fixed, and
+    // solve() is deterministic, so a repeated child state MUST produce the
+    // same result — the duplicate's record is still emitted exactly as
+    // before, only the recomputation is skipped.
+    let mut cand_memo: FxHashMap<K, Option<i64>> = FxHashMap::default();
     let mut out: Vec<MoveRecord> = Vec::new();
     for r in &recs {
         out.push(make_rec(
@@ -472,8 +866,17 @@ pub fn label_instance(
             let c_ctg = if child[target_idx] == target {
                 0
             } else {
-                match solve(&child, target_idx, target, walls, &hdist, max_expansions, ORACLE_INF)
-                {
+                let key = K::pack(&child, walls.n(), ctx.cb);
+                let solved = match cand_memo.get(&key) {
+                    Some(&v) => v,
+                    None => {
+                        let v =
+                            ctx.solve(&child, target_idx, target, max_expansions, ORACLE_INF);
+                        cand_memo.insert(key, v);
+                        v
+                    }
+                };
+                match solved {
                     Some(c) => c,
                     None => continue, // child unsolvable within budget -> skip
                 }
@@ -504,14 +907,30 @@ pub fn replay_forward_state(
     max_expansions: i64,
 ) -> (Option<i64>, Vec<Action>, Vec<Action>) {
     let hdist = relaxed_target_dist(target, walls);
+    if key_fits_u64(walls.n(), positions.len()) {
+        replay_forward_state_inner::<u64>(positions, target_idx, target, walls, &hdist, max_expansions)
+    } else {
+        replay_forward_state_inner::<u128>(positions, target_idx, target, walls, &hdist, max_expansions)
+    }
+}
+
+fn replay_forward_state_inner<K: Key>(
+    positions: &[Cell],
+    target_idx: usize,
+    target: Cell,
+    walls: &Walls,
+    hdist: &[Option<i64>],
+    max_expansions: i64,
+) -> (Option<i64>, Vec<Action>, Vec<Action>) {
+    let mut ctx = SearchCtx::<K>::new(walls, hdist);
     let succ = successors(positions, walls);
     let legal: Vec<Action> = succ.iter().map(|&(i, d, _)| (i, d)).collect();
-    let ctg = solve(positions, target_idx, target, walls, &hdist, max_expansions, ORACLE_INF);
+    let ctg = ctx.solve(positions, target_idx, target, max_expansions, ORACLE_INF);
     let optimal: Vec<Action> = match ctg {
         Some(here) if here > 0 => succ
             .iter()
             .filter(|(_, _, child)| {
-                is_optimal_child(child, target_idx, target, walls, &hdist, max_expansions, here)
+                is_optimal_child(&mut ctx, child, target_idx, target, max_expansions, here)
             })
             .map(|&(i, d, _)| (i, d))
             .collect(),
@@ -640,6 +1059,7 @@ pub fn run_replay_forward_state(item: &ReplayForwardStateItem) -> ReplayForwardS
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::physics::slide;
 
     fn grid(rows: &[&str]) -> Vec<String> {
         rows.iter().map(|s| s.to_string()).collect()
@@ -822,17 +1242,142 @@ mod tests {
 
     #[test]
     fn pack_patch_unpack_roundtrip_64() {
+        // 64x64 with 8 robots needs 12 bits/cell x 8 = 96 -> u128 key.
         let n = 64u16;
+        assert!(!key_fits_u64(n, 8));
+        let cb = coord_bits(n);
         let pos: Vec<Cell> = vec![(0, 0), (63, 63), (17, 42), (63, 0), (0, 63), (31, 31), (1, 62), (62, 1)];
-        let key = pack(&pos, n);
-        let mut back = Vec::new();
-        unpack(key, pos.len(), n, &mut back);
-        assert_eq!(back, pos);
-        let key2 = patch(key, 2, (5, 7), n);
-        unpack(key2, pos.len(), n, &mut back);
+        let key = <u128 as Key>::pack(&pos, n, cb);
+        let mut back = [(0u16, 0u16); MAX_ROBOTS];
+        key.unpack(pos.len(), cb, &mut back[..pos.len()]);
+        assert_eq!(&back[..pos.len()], &pos[..]);
+        let key2 = key.patch(2, (5, 7), cb);
+        key2.unpack(pos.len(), cb, &mut back[..pos.len()]);
         assert_eq!(back[2], (5, 7));
         assert_eq!(back[0], (0, 0));
         assert_eq!(back[7], (62, 1));
+    }
+
+    #[test]
+    fn pack_patch_unpack_roundtrip_u64_key() {
+        // 16x16 with 8 robots fits exactly: 8 bits/cell x 8 = 64.
+        let n = 16u16;
+        assert!(key_fits_u64(n, 8));
+        let cb = coord_bits(n);
+        let pos: Vec<Cell> = vec![(0, 0), (15, 15), (7, 12), (15, 0), (0, 15), (8, 8), (1, 14), (14, 1)];
+        let key = <u64 as Key>::pack(&pos, n, cb);
+        let mut back = [(0u16, 0u16); MAX_ROBOTS];
+        key.unpack(pos.len(), cb, &mut back[..pos.len()]);
+        assert_eq!(&back[..pos.len()], &pos[..]);
+        let key2 = key.patch(5, (3, 9), cb);
+        key2.unpack(pos.len(), cb, &mut back[..pos.len()]);
+        assert_eq!(back[5], (3, 9));
+        assert_eq!(back[0], (0, 0));
+        assert_eq!(back[7], (14, 1));
+        // wider boards: 24x24 (5-bit coords) and 64x64 (6-bit) with 4 robots
+        for &(nn, robots) in &[(24u16, 4usize), (33, 4), (64, 5)] {
+            let cb = coord_bits(nn);
+            assert!(key_fits_u64(nn, robots));
+            let pos: Vec<Cell> = (0..robots)
+                .map(|i| ((i as u16 * 7) % nn, (nn - 1) - (i as u16 * 5) % nn))
+                .collect();
+            let key = <u64 as Key>::pack(&pos, nn, cb);
+            let mut back = [(0u16, 0u16); MAX_ROBOTS];
+            key.unpack(robots, cb, &mut back[..robots]);
+            assert_eq!(&back[..robots], &pos[..], "n={nn} r={robots}");
+        }
+    }
+
+    /// The packed u64 priority must order EXACTLY like the (f, g) tuple for
+    /// all in-envelope values, so the pop sequence is unchanged.
+    #[test]
+    fn packed_priority_orders_like_tuple() {
+        let vals: [i64; 7] = [0, 1, 2, 999, 10_000, (1 << 30) - 1, (1 << 31) - 1];
+        for &f1 in &vals {
+            for &g1 in &vals {
+                for &f2 in &vals {
+                    for &g2 in &vals {
+                        assert_eq!(
+                            pack_prio(f1, g1).cmp(&pack_prio(f2, g2)),
+                            (f1, g1).cmp(&(f2, g2)),
+                            "(f,g) order mismatch at ({f1},{g1}) vs ({f2},{g2})"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /// The u64 and u128 key paths must run the IDENTICAL search: same cost,
+    /// same reconstructed path, same capped behaviour (keys are opaque — only
+    /// the counter orders ties, so the packing width cannot leak).
+    #[test]
+    fn u64_and_u128_key_searches_agree() {
+        let walls = border3();
+        let (pos, tgt, hd) = d2_instance();
+        assert!(key_fits_u64(3, pos.len()));
+        for cap in [ORACLE_INF, 2, 1] {
+            for max_exp in [40_000i64, 3, 2, 1] {
+                let a = SearchCtx::<u64>::new(&walls, &hd)
+                    .solve_with_path(&pos, 0, tgt, max_exp, cap);
+                let b = SearchCtx::<u128>::new(&walls, &hd)
+                    .solve_with_path(&pos, 0, tgt, max_exp, cap);
+                assert_eq!(a, b, "cap {cap} max_exp {max_exp}");
+                let a = SearchCtx::<u64>::new(&walls, &hd).solve(&pos, 0, tgt, max_exp, cap);
+                let b = SearchCtx::<u128>::new(&walls, &hd).solve(&pos, 0, tgt, max_exp, cap);
+                assert_eq!(a, b, "(no path) cap {cap} max_exp {max_exp}");
+            }
+        }
+    }
+
+    /// Rays + fast_slide must reproduce physics::slide exactly: exhaustive
+    /// over every (cell, dir) blocker-free, plus a deterministic pseudo-random
+    /// fuzz with robot sets on a walled board.
+    #[test]
+    fn fast_slide_matches_physics_slide() {
+        // interior walls in all four directions + border
+        let g = grid(&[
+            "NW", "N", "NS", "NE", //
+            "W", "E", "", "E", //
+            "WS", "", "NW", "E", //
+            "SW", "S", "SE", "SE",
+        ]);
+        let walls = Walls::from_grid_data(&g, 4);
+        let rays = Rays::new(&walls);
+        // blocker-free: ray table == slide for every cell and direction
+        for y in 0..4u16 {
+            for x in 0..4u16 {
+                for &d in DIRECTIONS.iter() {
+                    let expect = slide((x, y), d, &[], &walls);
+                    let got = fast_slide(&rays, 4, (x, y), d, &[(x, y)], 0);
+                    assert_eq!(got, expect, "blocker-free at ({x},{y}) {d:?}");
+                }
+            }
+        }
+        // fuzz: 4 robots, every position mix from a deterministic LCG
+        let mut s: u64 = 42;
+        let mut rnd = move || {
+            s = s.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            ((s >> 33) % 16) as u16
+        };
+        for _ in 0..2000 {
+            let mut pos: Vec<Cell> = Vec::new();
+            while pos.len() < 4 {
+                let c = (rnd() % 4, rnd() % 4);
+                if !pos.contains(&c) {
+                    pos.push(c);
+                }
+            }
+            for i in 0..4 {
+                let blockers: Vec<Cell> =
+                    pos.iter().enumerate().filter(|&(j, _)| j != i).map(|(_, &c)| c).collect();
+                for &d in DIRECTIONS.iter() {
+                    let expect = slide(pos[i], d, &blockers, &walls);
+                    let got = fast_slide(&rays, 4, pos[i], d, &pos, i);
+                    assert_eq!(got, expect, "at {:?} slot {i} {d:?} of {:?}", pos[i], pos);
+                }
+            }
+        }
     }
 
     #[test]
