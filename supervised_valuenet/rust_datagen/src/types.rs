@@ -39,3 +39,28 @@ pub const PALETTE: [&str; 8] = [
 pub const SUBGOAL_INF: i64 = 10_000;
 /// Forward-oracle infinity (`move_planner/oracle.py` INF = 1<<30).
 pub const ORACLE_INF: i64 = 1 << 30;
+
+// ---- appended by Agent A (DESIGN §2: extend by appending only) ----
+
+impl Dir {
+    /// Python name (`simulate.DIRECTIONS` spelling).
+    pub fn name(self) -> &'static str {
+        match self {
+            Dir::Up => "up",
+            Dir::Down => "down",
+            Dir::Left => "left",
+            Dir::Right => "right",
+        }
+    }
+
+    /// Inverse of [`Dir::name`]; `None` for anything not in DIRECTIONS.
+    pub fn from_name(s: &str) -> Option<Dir> {
+        match s {
+            "up" => Some(Dir::Up),
+            "down" => Some(Dir::Down),
+            "left" => Some(Dir::Left),
+            "right" => Some(Dir::Right),
+            _ => None,
+        }
+    }
+}
