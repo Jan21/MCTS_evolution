@@ -43,8 +43,17 @@ const CELL_MASK: u128 = (1 << CELL_BITS) - 1;
 
 #[inline]
 fn pack(positions: &[Cell], n: u16) -> u128 {
-    debug_assert!(n <= 64, "cell packing supports n <= 64");
-    debug_assert!(positions.len() as u32 * CELL_BITS <= 128, "too many robots to pack");
+    // Hard asserts (release too): every search enters through pack() exactly
+    // once (patch() only rewrites pack-built keys), so an out-of-envelope
+    // work item fails loudly instead of silently corrupting packed keys
+    // (DESIGN §7 fail-loud). Cost: one call per solve, not per node.
+    assert!(n <= 64, "state packing supports n <= 64, got n = {n}");
+    assert!(
+        positions.len() as u32 * CELL_BITS <= 128,
+        "state packing supports at most {} robots, got {}",
+        128 / CELL_BITS,
+        positions.len()
+    );
     let mut key = 0u128;
     for (i, &(x, y)) in positions.iter().enumerate() {
         key |= ((y as u128 * n as u128) + x as u128) << (CELL_BITS * i as u32);
@@ -784,6 +793,31 @@ mod tests {
              \"target_idx\":1,\"cost_to_go\":7,\"best_moves\":[[0,1]],\
              \"legal_moves\":[[0,1],[1,2]],\"depth\":2,\"full\":true}"
         );
+    }
+
+    /// Out-of-envelope boards must fail LOUDLY in release too (the asserts in
+    /// pack() are hard, not debug): n = 65 would silently corrupt packed keys.
+    #[test]
+    #[should_panic(expected = "state packing supports n <= 64")]
+    fn solve_panics_loudly_on_board_larger_than_64() {
+        let n = 65u16;
+        let grid: Vec<String> = vec![String::new(); n as usize * n as usize];
+        let walls = Walls::from_grid_data(&grid, n); // physics itself is unbounded
+        let hd = relaxed_target_dist((1, 0), &walls);
+        // start not on target and relaxed-reachable, so the pre-checks pass
+        // and the search reaches pack() -> must panic, never truncate.
+        let _ = solve(&[(0, 0), (2, 2)], 0, (1, 0), &walls, &hd, 40_000, ORACLE_INF);
+    }
+
+    /// 11 robots exceed the 128-bit key (12 bits x 11): loud failure, release too.
+    #[test]
+    #[should_panic(expected = "state packing supports at most 10 robots")]
+    fn solve_panics_loudly_on_more_than_ten_robots() {
+        let walls = border3();
+        // 11 in-bounds cells (duplicates are irrelevant; pack asserts first)
+        let pos: Vec<Cell> = (0..11u16).map(|i| (i % 3, (i / 3) % 3)).collect();
+        let hd = relaxed_target_dist((1, 0), &walls);
+        let _ = solve(&pos, 0, (1, 0), &walls, &hd, 40_000, ORACLE_INF);
     }
 
     #[test]
