@@ -308,6 +308,23 @@ by move** on the real board.
    machine-independent; wall-clock seconds are not comparable to
    origin-machine rows.
 
+   **At 6 robots the same extension ends all proven impossibility.** The B2
+   probe on the 14 instances B1 had not recovered
+   (`scaling/results/g16r6/ceiling_probe_b2.json`): the two puzzles B1 had
+   PROVEN impossible both flipped — (gra,115), the two-robot-clearing case,
+   is solved at exactly its 4-move optimum with two scheduled step-asides,
+   and (gra,251), the two-slide-park case, in 8 moves — and 3 of the 12
+   frontier-bound beyond-oracle instances also resolved to playable ((bey,53)
+   31 moves, (bey,69) 11, (bey,126) 16). The remaining 9 (all beyond-oracle)
+   stay INCONCLUSIVE at 2M-frontier/900 s caps. Ceiling at 6 robots: 84.2%
+   (original) → ≥96.9% (B1) → **≥98.0%** (B2, conservative), with
+   **proven-impossible now 0** (originally 71, then 2 after B1). The two base
+   unresolved instances (idx 405, 427) were also re-probed on a 1 TB node at
+   a 5M-plan frontier and 30-minute caps and remain INCONCLUSIVE
+   (`analysis/artifacts/ceiling_probe_results_b2_deep.json`) — deciding them
+   needs the memory-shaped (depth-bounded) probe redesign already scoped in
+   the B1 notes, not more wall-clock.
+
 ## Verdict so far against the goal
 
 **One-paragraph summary of where the thesis stands.** On puzzles easy enough for exact
