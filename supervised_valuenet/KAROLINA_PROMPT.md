@@ -152,19 +152,53 @@ is ever missing or corrupt, `GridEnv` rebuilds it automatically on first use
 
 ## 5. Work queue, in order
 
-0. **Read `MANIFEST.md` (bundle top level) first**: it records which of the two
-   final scaling lanes (g32r4 graded+beyond-oracle, g24r8 beyond-oracle;
-   g24r8 graded already landed: backward 144/161 = 89.4% at 44 steps vs
-   forward control 157/161 = 97.5% at 152 steps) made it into the bundle.
-1. **Log what landed**: append every result JSON present in
-   `scaling/results/g24r8/` and `scaling/results/g32r4/` but absent from
-   `FINDINGS.md` §9 to FINDINGS (numbers from the JSONs only), and commit the
-   result files.
-2. **Rerun what did not land**: adapt `launcher_patterns/final_lanes.sh` (fix
-   its absolute paths; drop its scratch-cache scan) into `jobs/eval_template.pbs`
-   lanes. Env vars per lane are inside the script (g32r4: RR_GRID=32
-   RR_ROBOTS=4 RR_WALLS=192; g24r8: RR_GRID=24 RR_ROBOTS=8 RR_WALLS=108; each
-   with its own RR_ENV_DIR).
+1. **FIRST — rerun the two unfinished scaling comparisons.** They were too slow
+   to finish on the old shared CPU box (g32r4 graded was at 150/161 after ~20 h);
+   they run trivially here (one `eval.compare` per lane on a GPU node, or a
+   packed CPU node). All data + checkpoints are in the bundle. Run from
+   `supervised_valuenet/` with `PYTHONPATH=. CUDA_VISIBLE_DEVICES="" OMP_NUM_THREADS=8`
+   (backward ckpt paths use a glob — resolve with `ls`, there is one epoch ckpt each):
+
+   **g32r4** (32×32, 4 robots) — BOTH graded and beyond-oracle are missing:
+   ```
+   export RR_GRID=32 RR_ROBOTS=4 RR_WALLS=192
+   export RR_ENV_DIR=$PWD/environments_g32r4
+   BP=$(ls scaling/runs/g32r4/backward-policy/lightning_logs/*/checkpoints/epoch*.ckpt | head -1)
+   BV=$(ls scaling/runs/g32r4/backward-value/lightning_logs/*/checkpoints/epoch*.ckpt | head -1)
+   FWD=lightning_logs/version_45/checkpoints/epoch=3-step=158564.ckpt
+   # graded:
+   python3 -m eval.compare --instances scaling/data/g32r4/bench.solved.jsonl \
+       --expansions 1200 --k 5 --backward-policy $BP --backward-value $BV \
+       --forward-ckpts $FWD --backward-prefix-check --device cpu \
+       --out scaling/results/g32r4/comparison.json --md scaling/results/g32r4/COMPARISON.md
+   # beyond-oracle:
+   python3 -m eval.compare --instances scaling/data/g32r4/bench.unsolved.jsonl \
+       --expansions 1200 --k 5 --backward-policy $BP --backward-value $BV \
+       --forward-ckpts $FWD --backward-prefix-check --device cpu \
+       --out scaling/results/g32r4/comparison_ungraded.json --md /dev/null
+   ```
+
+   **g24r8** (24×24, 8 robots) — ONLY beyond-oracle is missing (graded already
+   landed at `scaling/results/g24r8/comparison.json`: backward 144/161 = 89.4%
+   at 44 steps, forward control 157/161 = 97.5% at 152 steps — do NOT rerun it):
+   ```
+   export RR_GRID=24 RR_ROBOTS=8 RR_WALLS=108
+   export RR_ENV_DIR=$PWD/environments_g24r8
+   BP=$(ls scaling/runs/g24r8/backward-policy/lightning_logs/*/checkpoints/epoch*.ckpt | head -1)
+   BV=$(ls scaling/runs/g24r8/backward-value/lightning_logs/*/checkpoints/epoch*.ckpt | head -1)
+   FWD=lightning_logs/version_47/checkpoints/epoch=3-step=115144.ckpt
+   # bench.unsolved.jsonl already built and in the bundle:
+   python3 -m eval.compare --instances scaling/data/g24r8/bench.unsolved.jsonl \
+       --expansions 1200 --k 5 --backward-policy $BP --backward-value $BV \
+       --forward-ckpts $FWD --backward-prefix-check --device cpu \
+       --out scaling/results/g24r8/comparison_ungraded.json --md /dev/null
+   ```
+   `launcher_patterns/final_lanes.sh` is the original two-lane script if you want
+   to run them together (fix its absolute paths, drop its scratch-cache scan).
+2. **Log all landed results**: append every result JSON under
+   `scaling/results/g24r8/` and `scaling/results/g32r4/` — the pre-existing ones
+   AND the two just produced — that is absent from `FINDINGS.md` §9 to FINDINGS
+   (numbers from the JSONs only), then commit the result files.
 3. **Quality-focused B1 self-play** — the open weakness: frontier solutions run
    long (mean ~16.9 moves at 6-robot beyond-oracle). Self-play on the B1 stack
    (`subgoal_selfplay/`, flags `--prefix-check --gen-realize-check`, base
