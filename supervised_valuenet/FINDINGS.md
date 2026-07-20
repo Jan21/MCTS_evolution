@@ -269,6 +269,45 @@ by move** on the real board.
    `scaling/results/g16r6/comparison_ungraded_b1.json`,
    `checkpoints_backward/{policy_b1,value_b1}.ckpt`.
 
+16. **The second language extension (B2) removes nearly all of what remained of
+   the ceiling (2026-07-20; first results produced on Karolina).** B1 left 11
+   base-benchmark puzzles (2.4%) with no playable plan in the language. B2 adds
+   no new vocabulary — it lets a plan *reuse* a robot it has already placed
+   (the same parked robot stopping two different sliders; the target robot
+   itself serving as a stopper mid-route; a placed helper sliding on to a
+   second post, costed as ordinary moves) and generalizes the step-aside
+   repair (clearing two robots at once; two-slide step-asides). Everything is
+   opt-in (`--b2` on the probe, `--backward-b2` on the benchmark driver;
+   `AStar(by_reference=True)`), with the same zero-regression burden as B1,
+   all green: default probe per-row identical
+   (`analysis/artifacts/ceiling_probe_default_recheck_post_b2.json`, 49/49),
+   B1 probe per-row identical (`ceiling_probe_b1_recheck_post_b2.json`,
+   49/49), all 249 stored realizations identical
+   (`eval/results/realizer_b2_ab.json`). Measured with the exhaustive probe on
+   the 11 residual puzzles (`analysis/artifacts/ceiling_probe_results_b2.json`):
+   **9 of 11 now have legal, played-out solutions** (idx 156 at exactly its
+   8-move optimum; idx 76 — the known two-robot-clearing case — via two
+   scheduled step-asides; the other 7 via reuse of placed robots),
+   **0 proven impossible**, 2 unresolved with the probe out of search memory
+   (idx 405, 427 — an open search-budget question, not a proven wall).
+   Base-scale ceiling: 90.7% (original) → 97.6% (B1) → **99.6%** (B2,
+   counting the unresolved probes as failures). Superset check: 39/40 of the
+   solved sample re-proven under B2; the 40th is expressible by construction
+   (B2 is a strict superset of B1's language; the busier search did not
+   re-find its plan within caps; `analysis/artifacts/b2_solved40_results.json`).
+   The learned planner (unchanged B1-trained nets, zero-shot ranking of the
+   new candidate type) with the B2 machinery on the pinned 450:
+   **430/450 = 95.6% at 9.7 search steps**
+   (`eval/results/final450_backward_b2.json`) — exactly one puzzle above the
+   B1 row (idx 76, recovered by the deterministic repair step), no
+   regressions. Stated plainly: the language now permits ~99.6%; the achieved
+   95.6% is a training gap (the nets have never seen by-reference
+   candidates), and label regeneration + retraining is the scoped next step,
+   as it was for B1. Machine note: measured on Karolina (CPU lanes on the
+   A100 nodes' EPYC 7763, torch 2.13); solve rates, step and move counts are
+   machine-independent; wall-clock seconds are not comparable to
+   origin-machine rows.
+
 ## Verdict so far against the goal
 
 **One-paragraph summary of where the thesis stands.** On puzzles easy enough for exact
@@ -280,8 +319,10 @@ is dying (0% → 29.8% → 48.4% failures); the subgoal planner's self-play keep
 where that solver is gone; and on the hardest puzzles beyond the solver's reach the
 subgoal planner now solves more, faster. The move-by-move planner's remaining
 advantages are solution quality and its solve-rate lead inside the oracle's shrinking
-domain; the subgoal planner's remaining handicaps are its ~90.7% expressiveness ceiling
-(fix scoped: the vacate-and-return stopper) and longer solutions on the frontier.
+domain; the subgoal planner's remaining handicaps are longer solutions on the frontier
+and a residual gap between what its language now permits (99.6% after the B1+B2
+extensions, §§13/16) and what its current networks achieve (95.6%; retraining on the
+extended vocabulary is the scoped fix).
 
 - **Efficiency: established.** Same puzzles, same rules: subgoals plan in a handful of
   search steps where move-by-move needs hundreds; at tiny budgets the gap is 79% vs
@@ -290,13 +331,18 @@ domain; the subgoal planner's remaining handicaps are its ~90.7% expressiveness 
   training collapses at 6+ robots while the backward pipeline keeps working, and
   forward's small-scale solve-rate lead is gone by 6 robots.
 - **Honest weaknesses, stated plainly:** on small puzzles forward still produces
-  shorter solutions and a perfect solve rate; the backward planner's 90.7% ceiling
-  stands until the plan language is extended; the 6-robot forward baseline needs its
-  training-stability control before the tie is called final.
+  shorter solutions and a perfect solve rate; frontier solutions run long (mean ~16.9
+  moves at the 6-robot frontier); the extended language's ceiling is realized by the
+  exhaustive probe, not yet by the trained networks (95.6% achieved vs 99.6%
+  permitted).
 
 ## Still open
 
-- 24×24 head-to-head (running).
-- Forward training-stability control at 6 robots (running).
-- Full-benchmark score of the self-play-improved backward networks (running).
-- The plan-language extension (vacate/return stopper) and the re-measured ceiling.
+- The three final scaling cells — 32×32 graded + beyond-oracle, 24×24/8-robot
+  beyond-oracle (sharded lanes queued on Karolina; FINDINGS §9 updates when they land).
+- The 6-robot B2 re-probe (the 14 not-yet-recovered instances; running) and the
+  escalated probe of the 2 base unresolved instances (idx 405, 427; queued).
+- Retraining the backward networks on B2-vocabulary labels (the 95.6%→ceiling gap);
+  quality-focused self-play on the extended stack (frontier solution length).
+- Rust datagen support for the extended vocabulary; `validate_plan.py` and the `park`
+  node type.
