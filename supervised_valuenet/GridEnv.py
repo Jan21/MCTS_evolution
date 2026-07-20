@@ -116,9 +116,14 @@ class GridEnv:
             f"_d{max_final_component_distance}.pkl")
 
         if cache_path.exists():
-            with open(cache_path, "rb") as f:
-                cached = pickle.load(f)
-            return cached["grid_env"], cached["state"]
+            # A truncated/corrupt cache entry (e.g. a reader racing a writer on
+            # a shared filesystem) must fall through to a rebuild, not crash.
+            try:
+                with open(cache_path, "rb") as f:
+                    cached = pickle.load(f)
+                return cached["grid_env"], cached["state"]
+            except (pickle.UnpicklingError, EOFError, AttributeError, KeyError):
+                pass
 
         path = env_dir / f"env_{env_index}.pkl"
         with open(path, "rb") as f:
@@ -150,10 +155,13 @@ class GridEnv:
         )
         grid_env.grid_data = env.get("grid_data")
 
-        # Cache for future loads
+        # Cache for future loads. Write via a per-process temp file and an
+        # atomic rename so concurrent builders/readers never see a partial file.
         cache_dir.mkdir(parents=True, exist_ok=True)
-        with open(cache_path, "wb") as f:
+        tmp_path = cache_path.with_suffix(f".tmp.{os.getpid()}")
+        with open(tmp_path, "wb") as f:
             pickle.dump({"grid_env": grid_env, "state": state}, f)
+        os.replace(tmp_path, cache_path)
 
         return grid_env, state
 
