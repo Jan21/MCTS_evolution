@@ -28,13 +28,20 @@ INF = 10_000
 
 class AStar(A_star):
     def __init__(self, propose=heuristics.propose, score=heuristics.score,
-                 max_iters=20_000, beam=None, max_open=None, max_frontier=100_000):
+                 max_iters=20_000, beam=None, max_open=None, max_frontier=100_000,
+                 by_reference=False):
         self.propose = propose
         self.score = score
         self.max_iters = max_iters
         self.beam = beam       # keep only `beam` cheapest children per expansion
         self.max_open = max_open  # drop plans with more open segments (runaway guard)
         self.max_frontier = max_frontier  # bail if the heap grows past this (memory guard)
+        # Lever B2 (supports-by-reference, analysis/b1_extension_notes.md):
+        # additionally offer robots the plan has ALREADY placed as candidate
+        # helpers, standing at their planned cells, so a proposal may reference
+        # an existing plan node as its support instead of recruiting the robot
+        # a second time. Default False keeps every existing behavior identical.
+        self.by_reference = by_reference
 
     # -- public API ---------------------------------------------------------
 
@@ -95,9 +102,12 @@ class AStar(A_star):
         # 2. Otherwise expand via proposed subgoals, best-evaluated first.
         # `propose` is heuristic #1 (which subgoals); `score` is heuristic #2
         # (how promising each is). Both are the neural-network swap points.
+        if self.by_reference:
+            seg.helpers = seg.helpers + _reference_helpers(plan, seg.mover.color)
         cands = self.propose(env, seg.end, seg.mover, seg.helpers, seg.support)
         cands.sort(key=lambda c: self.score(env, c))
-        children = [p for p in (_apply(env, plan, parent, child, seg, c)
+        children = [p for p in (_apply(env, plan, parent, child, seg, c,
+                                       by_reference=self.by_reference)
                                 for c in cands) if p is not None]
         return children
 
@@ -145,7 +155,67 @@ def _sibling_support(plan: PartialPlan, bottleneck: str) -> Robot_at | None:
             for sib in plan.g.successors(sg):
                 if plan.g.nodes[sib].get("ntype") == "support":
                     return plan.g.nodes[sib]["robot"]
+            # Lever B2: the subgoal's support may be a REFERENCED node (a
+            # mid-chain bottleneck serving as the stopper), marked by the
+            # byref edge attribute. Only b2 plans contain such edges.
+            for sib in plan.g.successors(sg):
+                if (plan.g.edges[sg, sib].get("byref")
+                        and plan.g.nodes[sib].get("ntype") == "bottleneck"):
+                    return plan.g.nodes[sib]["robot"]
     return None
+
+
+def _reaches(g, src, dst) -> bool:
+    """True when `dst` is reachable from `src` along plan edges (goal->leaf
+    direction). Plans are small; a plain DFS suffices."""
+    if src == dst:
+        return True
+    seen = {src}
+    stack = [src]
+    while stack:
+        u = stack.pop()
+        for v in g.successors(u):
+            if v == dst:
+                return True
+            if v not in seen:
+                seen.add(v)
+                stack.append(v)
+    return False
+
+
+def _terminal_support(g, node) -> bool:
+    """True when `node` is the LAST support cell its robot stands on: no
+    relocation (support-typed) or park predecessor moves it away later."""
+    return not any(g.nodes[u].get("ntype") in ("support", "park")
+                   for u in g.predecessors(node))
+
+
+def _reference_helpers(plan: PartialPlan, mover_color) -> list[Robot_at]:
+    """Lever B2 phantom helpers: robots the plan already places, offered at
+    their PLANNED cells — the terminal support node they are delivered to, or
+    a mid-chain bottleneck they pass through — so `propose` can generate
+    candidates whose support is an existing plan node (shared supports, the
+    target robot serving as a stopper) or a relocation from one. The mover
+    itself and park-holding robots are excluded."""
+    g = plan.g
+    parked = {d["robot"].color for _, d in g.nodes(data=True)
+              if d.get("ntype") == "park"}
+    out, seen = [], set()
+    for n, d in g.nodes(data=True):
+        nt = d.get("ntype")
+        if nt not in ("support", "bottleneck"):
+            continue
+        color = d["robot"].color
+        if color == mover_color or color in parked:
+            continue
+        if nt == "support" and not _terminal_support(g, n):
+            continue
+        key = (color, tuple(d["pos"]))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(Robot_at(position=tuple(d["pos"]), color=color))
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +240,8 @@ def _initial_plan(env: GridEnv, state: State) -> PartialPlan:
     return plan
 
 
-def _apply(env, plan, parent, child, seg, cand) -> PartialPlan | None:
+def _apply(env, plan, parent, child, seg, cand,
+           by_reference: bool = False) -> PartialPlan | None:
     """Attach `cand`'s subgoal between `parent` and `child`, return new plan."""
     bn_pos = cand.subgoal.bottleneck.position
     sp_pos = cand.subgoal.support.position
@@ -180,10 +251,40 @@ def _apply(env, plan, parent, child, seg, cand) -> PartialPlan | None:
     # as a FRESH leaf (at its original cell) schedules the single real robot
     # in two places at once. Compare by COLOR, not dataclass equality, per the
     # helper-identity precedent in _segment.
+    # Lever B2 (by_reference=True): such a robot may instead serve BY
+    # REFERENCE — the candidate helper stands at the robot's planned cell
+    # (see _reference_helpers), and the subgoal wires to the existing plan
+    # node instead of recruiting a second leaf. Three shapes: shared support
+    # (support cell IS the robot's terminal support cell — zero extra moves),
+    # target-as-stopper (support cell is a mid-chain bottleneck of the
+    # robot), and relocation (a costed slide from the terminal support cell
+    # to a new support cell).
     helper_color = cand.subgoal.helper.color
+    ref_node = None
     if any(d.get("ntype") == "leaf" and d["robot"].color == helper_color
            for _, d in plan.g.nodes(data=True)):
-        return None
+        if not by_reference:
+            return None
+        hp = tuple(cand.subgoal.helper.position)
+        for n2, d2 in plan.g.nodes(data=True):
+            nt2 = d2.get("ntype")
+            if (nt2 in ("support", "bottleneck")
+                    and d2["robot"].color == helper_color
+                    and tuple(d2["pos"]) == hp
+                    and (nt2 == "bottleneck"
+                         or _terminal_support(plan.g, n2))):
+                ref_node = n2
+                break
+        if ref_node is None:
+            return None            # candidate not at a planned cell: stale
+        if (plan.g.nodes[ref_node]["ntype"] == "bottleneck"
+                and tuple(sp_pos) != hp):
+            return None            # a robot mid-chain can only serve in place
+        if _reaches(plan.g, ref_node, parent):
+            # The referenced placement depends (via the DAG) on the very
+            # segment that would consume it -- a circular timing requirement
+            # no schedule can satisfy. Wiring it would create a cycle.
+            return None
 
     # Invariant: a supported (dependent-edge) route cost may only be claimed
     # when the plan assigns a robot to stand on the stopper cell. A
@@ -191,11 +292,16 @@ def _apply(env, plan, parent, child, seg, cand) -> PartialPlan | None:
     # robot; accept it only when a support node already occupies that cell or
     # this candidate's own support is that cell -- otherwise the plan counts
     # as complete with a declared stopper that no plan node ever places.
+    # Under B2 a referenced mid-chain bottleneck node also counts as placed.
     ps = cand.parent_support
     if (ps is not None and tuple(ps) != tuple(sp_pos)
             and not any(d.get("ntype") == "support"
                         and tuple(d["pos"]) == tuple(ps)
-                        for _, d in plan.g.nodes(data=True))):
+                        for _, d in plan.g.nodes(data=True))
+            and not (by_reference
+                     and any(d.get("ntype") == "bottleneck"
+                             and tuple(d["pos"]) == tuple(ps)
+                             for _, d in plan.g.nodes(data=True)))):
         return None
 
     parent_cost = env.compute_exact_shortest_path_length(
@@ -211,18 +317,36 @@ def _apply(env, plan, parent, child, seg, cand) -> PartialPlan | None:
 
     out.add_node(sg, "subgoal", parent_support_pos=cand.parent_support)
     out.add_node(bn, "bottleneck", pos=bn_pos, robot=cand.subgoal.bottleneck)
-    out.add_node(sp, "support", pos=sp_pos, robot=cand.subgoal.support)
     out.add_edge(parent, sg, status="fixed", cost=parent_cost)
     out.add_edge(sg, bn, status="fixed", cost=0)
-    out.add_edge(sg, sp, status="fixed", cost=0)
 
     # mover travels (child pos) -> bottleneck, stopping via the segment support.
     _attach_move(env, out, bn, child, start=seg.start, end=bn_pos, support=sp_pos)
-    # helper travels to the support cell.
-    out.add_node(leaf, "leaf", pos=cand.subgoal.helper.position,
-                 robot=cand.subgoal.helper)
-    _attach_move(env, out, sp, leaf,
-                 start=cand.subgoal.helper.position, end=sp_pos, support=None)
+
+    if ref_node is None:
+        # Fresh recruitment (the only pre-B2 path, unchanged): a new support
+        # node delivered from the helper's own leaf.
+        out.add_node(sp, "support", pos=sp_pos, robot=cand.subgoal.support)
+        out.add_edge(sg, sp, status="fixed", cost=0)
+        out.add_node(leaf, "leaf", pos=cand.subgoal.helper.position,
+                     robot=cand.subgoal.helper)
+        _attach_move(env, out, sp, leaf,
+                     start=cand.subgoal.helper.position, end=sp_pos,
+                     support=None)
+    elif tuple(sp_pos) == tuple(out.g.nodes[ref_node]["pos"]):
+        # Shared support / target-as-stopper: reference the existing node.
+        # Zero extra moves; the realizer orders every bounce consuming the
+        # node before its robot departs (per-bounce rule).
+        out.g.add_edge(sg, ref_node, status="fixed", cost=0, byref=True)
+    else:
+        # Relocation: the robot slides from its terminal support cell to a
+        # new support cell — an ordinary costed plan edge hung off the
+        # existing node (the departs-after-bounce rule orders it correctly).
+        out.add_node(sp, "support", pos=sp_pos, robot=cand.subgoal.support)
+        out.add_edge(sg, sp, status="fixed", cost=0)
+        _attach_move(env, out, sp, ref_node,
+                     start=tuple(out.g.nodes[ref_node]["pos"]), end=sp_pos,
+                     support=None)
     return out
 
 
@@ -252,11 +376,14 @@ def _attach_move(env, plan, parent, child, start, end, support):
 
 
 def robot_plan_node(plan, color):
-    """Node where the plan leaves robot `color`: its support node if placed,
-    else its leaf, else None (robot not in the plan)."""
+    """Node where the plan leaves robot `color`: its TERMINAL support node
+    (the one no relocation or park moves it off — for pre-B2 plans every
+    support node is terminal, so this is the historical behavior), else its
+    leaf, else None (robot not in the plan)."""
     sup = leaf = None
     for n, d in plan.g.nodes(data=True):
-        if d.get("ntype") == "support" and d["robot"].color == color:
+        if (d.get("ntype") == "support" and d["robot"].color == color
+                and _terminal_support(plan.g, n)):
             sup = n
         elif d.get("ntype") == "leaf" and d["robot"].color == color:
             leaf = n
@@ -298,17 +425,47 @@ def apply_park(env, plan, robot, park_pos, before_edge):
     return out
 
 
-def park_repairs(env, state, plan, fail_info, wr, wd, size, max_parks=1):
+def _park_dests(xpos, wr, wd, size, multi_slide=False):
+    """Walls-only slide destinations for a parking robot: the <= 4 one-slide
+    cells and, with `multi_slide`, the cells one further slide away.
+    Deterministic order (direction order, then first-layer order)."""
+    from simulate import slide, DIRECTIONS
+    layer1 = []
+    for d in DIRECTIONS:
+        dest = slide(xpos, d, frozenset(), wr, wd, size)
+        if dest != xpos and dest not in layer1:
+            layer1.append(dest)
+    if not multi_slide:
+        return layer1
+    seen = set(layer1) | {xpos}
+    layer2 = []
+    for c in layer1:
+        for d in DIRECTIONS:
+            dest = slide(c, d, frozenset(), wr, wd, size)
+            if dest not in seen:
+                seen.add(dest)
+                layer2.append(dest)
+    return layer1 + layer2
+
+
+def park_repairs(env, state, plan, fail_info, wr, wd, size, max_parks=1,
+                 pairwise=False, multi_slide=False):
     """Park-augmented variants of a complete plan whose strict realization
     failed. `fail_info` is the dict filled by `eval.realize.strict_moves`.
 
     Proposal rule, deterministic: for the failing segment, find every robot
     whose one-robot removal unblocks the mover's slide-BFS at the recorded
-    failure positions; for each, try its <= 4 walls-only slide destinations
-    and keep those under which the blocked segment becomes passable. Each
+    failure positions; for each, try its walls-only slide destinations and
+    keep those under which the blocked segment becomes passable. Each
     surviving (robot, cell) yields one `apply_park` child. Plans already
-    carrying `max_parks` park nodes return no children (bounded repair)."""
-    from simulate import slide, DIRECTIONS
+    carrying `max_parks` park nodes return no children (bounded repair).
+
+    Lever B2 generalizations, both default-off so B1 behavior is unchanged:
+    `multi_slide` extends a robot's destinations to two-slide cells, tried
+    only when none of its one-slide cells clears the segment; `pairwise`
+    additionally clears TWO robots at once (each parked, both parks ordered
+    before the failing segment), tried only when no single-robot repair
+    exists at all. Both need `max_parks` >= 2 to take effect."""
     from eval.realize import _slide_bfs
 
     n_parks = sum(1 for _, d in plan.g.nodes(data=True)
@@ -324,27 +481,57 @@ def park_repairs(env, state, plan, fail_info, wr, wd, size, max_parks=1):
     mover_color = fs["color"]
     mover_cur = tuple(pos.get(mover_color, fs["start"]))
     by_color = {r.color: r for r in state.all_robots}
+    parked = {d["robot"].color for _, d in plan.g.nodes(data=True)
+              if d.get("ntype") == "park"}
     out = []
-    for x_color, xp in sorted(pos.items()):
-        if x_color == mover_color or x_color not in by_color:
-            continue
-        xpos = tuple(xp)
+    movable = [c for c, _ in sorted(pos.items())
+               if c != mover_color and c in by_color and c not in parked]
+    for x_color in movable:
+        xpos = tuple(pos[x_color])
         # would X stepping fully aside unblock the failing slide?
         bl = frozenset(tuple(p) for c, p in pos.items()
                        if c not in (mover_color, x_color))
         if _slide_bfs(mover_cur, end, bl, wr, wd, size) is None:
             continue
-        dests = []
-        for d in DIRECTIONS:               # walls-only slide destinations
-            dest = slide(xpos, d, frozenset(), wr, wd, size)
-            if dest != xpos and dest not in dests:
-                dests.append(dest)
-        for dest in dests:
-            if _slide_bfs(mover_cur, end, bl | {dest}, wr, wd, size) is None:
-                continue                    # X parked there still blocks
+        dests1 = _park_dests(xpos, wr, wd, size)
+        survivors = [dest for dest in dests1
+                     if _slide_bfs(mover_cur, end, bl | {dest},
+                                   wr, wd, size) is not None]
+        if not survivors and multi_slide:
+            survivors = [dest for dest in _park_dests(xpos, wr, wd, size,
+                                                      multi_slide=True)
+                         if dest not in dests1
+                         and _slide_bfs(mover_cur, end, bl | {dest},
+                                        wr, wd, size) is not None]
+        for dest in survivors:
             child = apply_park(env, plan, by_color[x_color], dest, fs["edge"])
             if child is not None:
                 out.append(child)
+    if out or not pairwise or n_parks + 2 > max_parks:
+        return out
+    # No single-robot repair exists: try clearing two robots at once.
+    for a in range(len(movable)):
+        for b in range(a + 1, len(movable)):
+            xc, yc = movable[a], movable[b]
+            xpos, ypos = tuple(pos[xc]), tuple(pos[yc])
+            bl2 = frozenset(tuple(p) for c, p in pos.items()
+                            if c not in (mover_color, xc, yc))
+            if _slide_bfs(mover_cur, end, bl2, wr, wd, size) is None:
+                continue
+            for dx in _park_dests(xpos, wr, wd, size, multi_slide=multi_slide):
+                for dy in _park_dests(ypos, wr, wd, size,
+                                      multi_slide=multi_slide):
+                    if dx == dy:
+                        continue
+                    if _slide_bfs(mover_cur, end, bl2 | {dx, dy},
+                                  wr, wd, size) is None:
+                        continue
+                    c1 = apply_park(env, plan, by_color[xc], dx, fs["edge"])
+                    if c1 is None:
+                        continue
+                    c2 = apply_park(env, c1, by_color[yc], dy, fs["edge"])
+                    if c2 is not None:
+                        out.append(c2)
     return out
 
 

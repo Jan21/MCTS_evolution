@@ -190,7 +190,8 @@ def _nn_astar_backward(env, state, solver, policy, value, env_id, dev,
 
 
 def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
-                 log=print, anytime=False, prefix_check=False, b1=False):
+                 log=print, anytime=False, prefix_check=False, b1=False,
+                 b2=False):
     from GridEnv import GridEnv, State, Robot_at
     from skeleton.astar import AStar, park_repairs
     from skeleton import heuristics
@@ -206,8 +207,14 @@ def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
     # B1 mode: candidates come from the extended vocabulary (wall-less transient
     # stoppers); failed complete plans additionally get deterministic park repairs
     # (below). Requires nets trained on B1-vocabulary labels for sensible ranking.
+    # B2 mode (implies the B1 vocabulary): supports-by-reference proposals
+    # (by_reference) plus generalized park repairs (pairwise clearing,
+    # multi-slide destinations, park cap 2). The nets have not seen
+    # by-reference candidates in training; they rank them zero-shot.
+    if b2:
+        b1 = True
     solver = AStar(propose=heuristics.propose_b1 if b1 else heuristics.propose,
-                   max_iters=4000, max_frontier=40_000)
+                   max_iters=4000, max_frontier=40_000, by_reference=b2)
 
     cur_env_id, env = None, None
     rows = []
@@ -248,7 +255,9 @@ def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
                     return []
                 try:
                     return park_repairs(_env, _st, p, fi, _wr, _wd,
-                                        int(round(_size)), max_parks=1)
+                                        int(round(_size)),
+                                        max_parks=2 if b2 else 1,
+                                        pairwise=b2, multi_slide=b2)
                 except Exception:
                     return []
         prefix_filter = None
@@ -471,6 +480,12 @@ def main():
                         "(propose_b1) plus deterministic park repairs of failed "
                         "complete plans (with --backward-anytime); use with nets "
                         "trained on B1-vocabulary labels")
+    p.add_argument("--backward-b2", action="store_true",
+                   help="Lever B2 (implies --backward-b1's vocabulary): "
+                        "supports-by-reference proposals plus generalized park "
+                        "repairs (pairwise clearing, multi-slide destinations, "
+                        "park cap 2); by-reference candidates are ranked "
+                        "zero-shot by the B1 nets")
     p.add_argument("--device", default="cpu")
     p.add_argument("--out", default="eval/results/comparison.json")
     p.add_argument("--md", default="COMPARISON.md")
@@ -512,17 +527,20 @@ def main():
                  if a.backward_anytime else "backward subgoal planner")
     if a.backward_prefix_check:
         back_name += " (prefix-check)"
-    if a.backward_b1:
+    if a.backward_b2:
+        back_name += " [extended language B2]"
+    elif a.backward_b1:
         back_name += " [extended language B1]"
     if run_back:
         print(f"[compare] backward: policy={a.backward_policy} "
               f"value={a.backward_value} anytime={a.backward_anytime} "
-              f"prefix_check={a.backward_prefix_check} b1={a.backward_b1}")
+              f"prefix_check={a.backward_prefix_check} b1={a.backward_b1} "
+              f"b2={a.backward_b2}")
         rows = run_backward(a.backward_policy, a.backward_value, instances,
                             a.k, a.expansions, a.device,
                             anytime=a.backward_anytime,
                             prefix_check=a.backward_prefix_check,
-                            b1=a.backward_b1)
+                            b1=a.backward_b1, b2=a.backward_b2)
         systems[back_name] = {"kind": "backward",
                               "aggregate": aggregate(rows, "realized_strict"),
                               "rows": rows}

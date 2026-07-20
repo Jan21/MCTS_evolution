@@ -125,7 +125,7 @@ def _mover_source(g, v):
     return v
 
 
-def _support_node_for(g, u, v, support_pos):
+def _support_node_for(g, u, v, support_pos, byref=False):
     """The support NODE whose robot must stand at `support_pos` for edge (u, v).
 
     Prefers the sibling support of a bottleneck parent (the pinned segment
@@ -133,6 +133,13 @@ def _support_node_for(g, u, v, support_pos):
     plan assigns no robot to the cell (e.g. a parent_support drawn from the
     goal's dependent-edge supports) -- execution then succeeds only if some
     robot happens to be there.
+
+    `byref=True` (only ever set for plans that contain Lever B2
+    supports-by-reference edges, so every stored pre-B2 plan is untouched)
+    additionally accepts a referenced mid-chain BOTTLENECK node at the cell:
+    the robot passing through it serves as the stopper, and naming the node
+    here gives the scheduler the placed-before-bounce / departs-after-bounce
+    dependencies for it.
     """
     if support_pos is None:
         return None
@@ -144,9 +151,18 @@ def _support_node_for(g, u, v, support_pos):
                     if (g.nodes[sib].get("ntype") == "support"
                             and tuple(g.nodes[sib]["pos"]) == sp):
                         return sib
+                if byref:
+                    for sib in g.successors(sg):
+                        if (g.edges[sg, sib].get("byref")
+                                and tuple(g.nodes[sib]["pos"]) == sp):
+                            return sib
     for n, d in g.nodes(data=True):
         if d.get("ntype") == "support" and tuple(d["pos"]) == sp:
             return n
+    if byref:
+        for n, d in g.nodes(data=True):
+            if d.get("ntype") == "bottleneck" and tuple(d["pos"]) == sp:
+                return n
     return None
 
 
@@ -490,6 +506,7 @@ def _annotate_segments(g, segs, log):
     False when some segment has no resolvable mover (the plan cannot be
     realized); mirrors the historical inline loop of `strict_moves`.
     """
+    byref = any(d.get("byref") for _, _, d in g.edges(data=True))
     for s in segs:
         src = _mover_source(g, s["edge"][1])
         if src is None or "robot" not in g.nodes[src]:
@@ -499,7 +516,7 @@ def _annotate_segments(g, segs, log):
         s["src"] = src
         s["color"] = g.nodes[src]["robot"].color
         s["support_node"] = _support_node_for(g, s["edge"][0], s["edge"][1],
-                                              s["support"])
+                                              s["support"], byref=byref)
     return True
 
 

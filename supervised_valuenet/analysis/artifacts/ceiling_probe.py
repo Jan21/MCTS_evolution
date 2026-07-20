@@ -28,7 +28,13 @@ from simulate import wall_sets, _board_size
 INSTS = json.load(open(sys.argv[1]))
 MAX_ITERS, MAX_FRONTIER, TIME_CAP = 200_000, 400_000, 60.0
 B1 = "--b1" in sys.argv[3:]
-PARK_CAP = 1
+# Lever B2 (supports-by-reference + generalized parks;
+# analysis/b1_extension_notes.md "B2 scoping"): implies the B1 vocabulary.
+B2 = "--b2" in sys.argv[3:]
+if B2:
+    B1 = True
+PARK_CAP = 2 if B2 else 1
+MAX_OPEN = None
 argv = sys.argv[3:]
 if "--time-cap" in argv:
     TIME_CAP = float(argv[argv.index("--time-cap") + 1])
@@ -38,8 +44,11 @@ if "--park-cap" in argv:
     PARK_CAP = int(argv[argv.index("--park-cap") + 1])
 if "--max-frontier" in argv:
     MAX_FRONTIER = int(argv[argv.index("--max-frontier") + 1])
-print(f"[probe] b1={B1} max_iters={MAX_ITERS} time_cap={TIME_CAP} "
-      f"park_cap={PARK_CAP} max_frontier={MAX_FRONTIER}", flush=True)
+if "--max-open" in argv:
+    MAX_OPEN = int(argv[argv.index("--max-open") + 1])
+print(f"[probe] b1={B1} b2={B2} max_iters={MAX_ITERS} time_cap={TIME_CAP} "
+      f"park_cap={PARK_CAP} max_frontier={MAX_FRONTIER} max_open={MAX_OPEN}",
+      flush=True)
 
 def plan_key(p):
     nodes = tuple(sorted(
@@ -53,7 +62,7 @@ def plan_key(p):
 def probe(env, state, solver):
     start = _initial_plan(env, state)
     frontier = [(start.cost(), 0, start)]; tie = 1
-    max_open = 2 * (len(state.helpers) + 2)
+    max_open = MAX_OPEN or 2 * (len(state.helpers) + 2)
     seen = set(); t0 = time.time(); it = 0
     abstract_found = False; complete_tested = 0; realizable_moves = None; exhausted = True
     parks_used = 0
@@ -81,7 +90,8 @@ def probe(env, state, solver):
             # their own cost and re-enter the frontier like any other plan.
             if B1 and fi:
                 for child in park_repairs(env, state, cur, fi, wr, wd, size,
-                                          max_parks=PARK_CAP):
+                                          max_parks=PARK_CAP,
+                                          pairwise=B2, multi_slide=B2):
                     heapq.heappush(frontier, (child.cost(), tie, child)); tie += 1
             continue
         if len(cur.open_edges()) > max_open: continue
@@ -95,7 +105,8 @@ def probe(env, state, solver):
                 seconds=round(time.time() - t0, 2), parks=parks_used)
 
 solver = AStar(propose=(heuristics.propose_b1 if B1 else heuristics.propose),
-               max_iters=MAX_ITERS, max_frontier=MAX_FRONTIER, beam=None)
+               max_iters=MAX_ITERS, max_frontier=MAX_FRONTIER, beam=None,
+               by_reference=B2)
 out = []
 for inst in INSTS:
     env, _ = GridEnv.from_env(inst["env_id"])
@@ -108,7 +119,8 @@ for inst in INSTS:
     res = probe(env, st, solver)
     res.update(idx=inst["idx"], env_id=inst["env_id"], d_star=inst["d_star"], tag=inst["tag"])
     out.append(res)
-    print(f"idx {inst['idx']:3d} env {inst['env_id']:5d} d*={inst['d_star']:2d} [{inst['tag']:3s}] "
+    d_star_txt = "??" if inst["d_star"] is None else f"{inst['d_star']:2d}"
+    print(f"idx {inst['idx']:3d} env {inst['env_id']:5d} d*={d_star_txt} [{inst['tag']:3s}] "
           f"{res['category']:18s} abs={res['abstract_found']!s:5} tested={res['complete_tested']:3d} "
           f"real={res['realizable_moves']} iters={res['iters']} t={res['seconds']}s", flush=True)
 
