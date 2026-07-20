@@ -1,4 +1,5 @@
-"""Encode a (decision-state, candidate) record as a grid tensor [C, 16, 16].
+"""Encode a (decision-state, candidate) record as a grid tensor [C, G, G]
+(G = RR_GRID, default 16).
 
 The partial plan is represented purely as grid channels (no DAG): board walls,
 robot positions, the open segment being decided, the candidate being scored, and
@@ -11,17 +12,19 @@ Encoders are registered by name so the channel scheme is a sweepable knob.
 """
 from __future__ import annotations
 
+import os
 import pickle
 from functools import lru_cache
-from pathlib import Path
 
 import numpy as np
 import torch
 
 from simulate import wall_sets, slide
+from GridEnv import ENV_DIR  # honours RR_ENV_DIR; same stock default as before
+from nn.gen_grids import COLORS
 
-GRID = 16
-ENV_DIR = Path(__file__).resolve().parent.parent / "environments"
+GRID = int(os.environ.get("RR_GRID", "16"))
+ROBOTS = len(COLORS)               # total robots incl. target (RR_ROBOTS)
 
 
 @lru_cache(maxsize=4096)
@@ -91,8 +94,9 @@ def _grid_v1(record) -> np.ndarray:
     return np.stack(planes, 0)
 
 
-# Fixed robot-colour order for per-colour channels (grid_v2).
-COLOR_ORDER = ["Red", "Blue", "Green", "Yellow"]
+# Fixed robot-colour order for per-colour channels (grid_v2): the board
+# palette, first RR_ROBOTS names.
+COLOR_ORDER = COLORS
 
 
 def _grid_v2(record) -> np.ndarray:
@@ -157,7 +161,7 @@ _DNORM = 30.0   # distance normaliser; unreachable -> 1.0 (far)
 
 
 def _dist_field(dmap, anchor, to_anchor):
-    """16x16 field of shortest-path length between each cell and `anchor`.
+    """GxG field of shortest-path length between each cell and `anchor`.
 
     to_anchor=True -> dist(cell, anchor); else dist(anchor, cell).
     Normalised to ~[0,1]; missing/unreachable -> 1.0.
@@ -199,7 +203,7 @@ ENCODERS = {
 }
 CHANNELS = {
     "grid_v1": 15,
-    "grid_v2": 18,
+    "grid_v2": 14 + len(COLOR_ORDER),  # one occupancy channel per robot colour
     "grid_xy": 17,
     "grid_dist": 18,
     "grid_slide": 23,
@@ -230,7 +234,7 @@ def _graph(env_id):
 
 
 def _node_features(r):
-    """Per-cell 9-channel binary markers for one candidate decision. [256,9]."""
+    """Per-cell 9-channel binary markers for one candidate decision. [G*G,9]."""
     f = np.zeros((GRID * GRID, 9), np.float32)
     def idx(p): return p[1] * GRID + p[0]
     f[idx(r["seg_start"]), 0] = 1

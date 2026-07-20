@@ -21,7 +21,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from torch.utils.data import Dataset, DataLoader
 
-from train.encode import GRID, _graph
+from train.encode import GRID, ROBOTS, _graph
 from train.policy_common import _meta, _features, _ix
 from nn.benchmark import load, by_split, group_by_decision
 
@@ -30,7 +30,7 @@ N = GRID * GRID
 
 @lru_cache(maxsize=4096)
 def _adj(env_id):
-    """Binary A_all / A_ind [257,257] + self-loops, used as attention MASK."""
+    """Binary A_all / A_ind [N+1,N+1] + self-loops, used as attention MASK."""
     ei, et = _graph(env_id)
     ei = ei.numpy(); et = et.view(-1).numpy()
     A_all = np.zeros((N + 1, N + 1), np.float32)
@@ -45,7 +45,7 @@ def _adj(env_id):
 
 
 def _x257(r):
-    return torch.cat([_features(r), torch.zeros(1, 7)], 0)   # [257,7], row 256 = global
+    return torch.cat([_features(r), torch.zeros(1, 7)], 0)   # [N+1,7], last row = global
 
 
 class PolicyTFDataset(Dataset):
@@ -104,11 +104,14 @@ class MaskedLayer(nn.Module):
 
 
 class PolicyTF(pl.LightningModule):
-    def __init__(self, d_model=192, recurrence=12, heads=4, temp=1.0, lr=3e-4, weight_decay=1e-4):
+    def __init__(self, d_model=192, recurrence=12, heads=4, temp=1.0, lr=3e-4, weight_decay=1e-4,
+                 grid=GRID, robots=ROBOTS):
         super().__init__()
+        # grid/robots ride along in hparams so load_from_checkpoint rebuilds the
+        # right sizes regardless of the loading process's RR_* env vars.
         self.save_hyperparameters()
         self.enc = nn.Linear(7, d_model)
-        self.pos = nn.Parameter(torch.randn(N + 1, d_model) * 0.02)
+        self.pos = nn.Parameter(torch.randn(grid * grid + 1, d_model) * 0.02)
         self.layer = MaskedLayer(d_model, heads)
         self.seg = _mlp(3 * d_model, d_model)
         self.q_bn = _mlp(d_model, d_model)
@@ -120,7 +123,7 @@ class PolicyTF(pl.LightningModule):
         X = self.enc(x) + self.pos
         for _ in range(self.hparams.recurrence):
             X = self.layer(X, A_all, A_ind)
-        return X                                            # [B,257,d]
+        return X                                            # [B,N+1,d]
 
     def _heads(self, hi, m, bn_cond, sup_cond):
         g = self.seg(torch.cat([hi[m["seg_start"]], hi[m["seg_end"]], hi.mean(0)]))

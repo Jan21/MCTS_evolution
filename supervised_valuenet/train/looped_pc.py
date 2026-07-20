@@ -6,7 +6,7 @@ applied `recurrence` times, with three attention-head families summed + residual
   - all-edge head A_all * softmax(QK^T) * X W     (relaxed reachability)  ~ conv_all
   - indep head    A_ind * softmax(QK^T) * X W     (exact reachability)    ~ conv_ind
 where the structure matrix LEFT-multiplies the attention output (A @ (softmax @ V)).
-Row 256 is a GLOBAL/scratchpad token (not in the graph). Everything downstream --
+Row N=G*G is a GLOBAL/scratchpad token (not in the graph). Everything downstream --
 9-ch node features, gathered 5-cell readout, HL-Gauss classification value, ranking
 loss, regret/MAE metrics match the GNN baseline reported in docs, so any delta is the encoder.
 
@@ -26,16 +26,16 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from torch.utils.data import Dataset, DataLoader
 
-from train.encode import GRID, _graph, _node_features
+from train.encode import GRID, ROBOTS, _graph, _node_features
 from nn.benchmark import load, by_split, group_by_decision
 
-N = GRID * GRID            # 256 cells
-G = N                      # global/scratchpad row index (257th row)
+N = GRID * GRID            # cells (256 at the default 16x16)
+G = N                      # global/scratchpad row index (row N)
 
 
 @lru_cache(maxsize=4096)
 def _adj(env_id):
-    """Row-normalised dense A_all / A_ind in [257,257] with self-loops; row/col 256
+    """Row-normalised dense A_all / A_ind in [N+1,N+1] with self-loops; row/col N
     (global token) left at zero so it's reached only by the global-attention head."""
     ei, et = _graph(env_id)
     ei = ei.numpy(); et = et.view(-1).numpy()
@@ -52,7 +52,7 @@ def _adj(env_id):
 
 
 def _x257(r):
-    return torch.cat([_node_features(r), torch.zeros(1, 9)], 0)   # [257,9], row 256 = global
+    return torch.cat([_node_features(r), torch.zeros(1, 9)], 0)   # [N+1,9], last row = global
 
 
 class DenseDataset(Dataset):
@@ -91,8 +91,8 @@ class DenseDataset(Dataset):
 
 def collate(batch):
     flat = [it for sub in batch for it in sub]
-    x = torch.stack([f[0] for f in flat])              # [M,257,9]
-    A_all = torch.stack([f[1] for f in flat])          # [M,257,257]
+    x = torch.stack([f[0] for f in flat])              # [M,N+1,9]
+    A_all = torch.stack([f[1] for f in flat])          # [M,N+1,N+1]
     A_ind = torch.stack([f[2] for f in flat])
     key = torch.stack([f[3] for f in flat])            # [M,5]
     ctg = torch.tensor([f[4] for f in flat])
@@ -134,11 +134,14 @@ class LoopedLayer(nn.Module):
 
 class LoopedValueNet(pl.LightningModule):
     def __init__(self, d_model=192, recurrence=12, heads=4, use_global=True, num_classes=50,
-                 sigma=1.0, class_weight=1.0, lr=3e-4, weight_decay=1e-4):
+                 sigma=1.0, class_weight=1.0, lr=3e-4, weight_decay=1e-4,
+                 grid=GRID, robots=ROBOTS):
         super().__init__()
+        # grid/robots ride along in hparams so load_from_checkpoint rebuilds the
+        # right sizes regardless of the loading process's RR_* env vars.
         self.save_hyperparameters()
         self.enc = nn.Linear(9, d_model)
-        self.pos = nn.Parameter(torch.randn(N + 1, d_model) * 0.02)   # learned PE + global token
+        self.pos = nn.Parameter(torch.randn(grid * grid + 1, d_model) * 0.02)  # learned PE + global token
         self.layer = LoopedLayer(d_model, heads, use_global)
         self.head = nn.Sequential(nn.Linear(5 * d_model, d_model), nn.GELU(),
                                   nn.Linear(d_model, d_model), nn.GELU(),
@@ -153,7 +156,7 @@ class LoopedValueNet(pl.LightningModule):
         return X
 
     def forward(self, b):
-        X = self._encode(b)                                     # [M,257,d]
+        X = self._encode(b)                                     # [M,N+1,d]
         idx = torch.arange(X.shape[0], device=X.device)[:, None]
         gathered = X[idx, b["key"]].reshape(X.shape[0], -1)     # [M,5d]
         return self.head(gathered)                              # [M,num_classes]

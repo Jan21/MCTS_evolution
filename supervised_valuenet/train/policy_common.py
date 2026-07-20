@@ -4,7 +4,7 @@ Extracted from the original train/policy.py (which trained a GNN proposal net we
 longer ship). The transformer proposal net (train/policy_tf.py) and the end-to-end
 solver (eval/end2end.py) reuse these three:
 
-  _ix       cell (x,y) -> flat 0..255 index
+  _ix       cell (x,y) -> flat 0..GRID*GRID-1 index
   _features per-decision 7-channel node features (segment + robots + plan context,
             candidate NOT marked -- the proposal net generates it)
   _meta     per-decision structure: valid bottleneck/support sets, optimal target,

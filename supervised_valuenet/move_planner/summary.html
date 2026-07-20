@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Move-based planner — policy + value over primitive moves</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --panel:#ffffff; --panel-2:#eef1f6; --inset:#f0f3f8;
+    --ink:#141922; --muted:#5a6473; --faint:#8a94a4; --line:#d9dfe8; --line-2:#c7cfdb;
+    --accent:#3a5bd9; --accent-ink:#2540b0; --accent-soft:#e7ecfb;
+    --good:#1e9d5b; --good-soft:#e2f5ea; --bad:#cf4436; --bad-soft:#fbe7e4;
+    --r-red:#e8590c; --r-blue:#1c7ed6; --r-green:#2f9e44; --r-yellow:#dc9b00;
+    --grid:rgba(58,91,217,.05);
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --maxw:1060px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0c0f15; --panel:#141922; --panel-2:#1a212c; --inset:#11161e;
+      --ink:#e3e8ef; --muted:#98a2b3; --faint:#6b7688; --line:#28313f; --line-2:#333e4e;
+      --accent:#6d8bff; --accent-ink:#9db2ff; --accent-soft:#182140;
+      --good:#3ecb7f; --good-soft:#12271c; --bad:#f0736a; --bad-soft:#2b1512;
+      --r-red:#ff8a4c; --r-blue:#4dabf7; --r-green:#51cf66; --r-yellow:#ffd43b;
+      --grid:rgba(120,150,255,.06);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#f5f7fa; --panel:#ffffff; --panel-2:#eef1f6; --inset:#f0f3f8;
+    --ink:#141922; --muted:#5a6473; --faint:#8a94a4; --line:#d9dfe8; --line-2:#c7cfdb;
+    --accent:#3a5bd9; --accent-ink:#2540b0; --accent-soft:#e7ecfb;
+    --good:#1e9d5b; --good-soft:#e2f5ea; --bad:#cf4436; --bad-soft:#fbe7e4;
+    --r-red:#e8590c; --r-blue:#1c7ed6; --r-green:#2f9e44; --r-yellow:#dc9b00;
+    --grid:rgba(58,91,217,.05);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0c0f15; --panel:#141922; --panel-2:#1a212c; --inset:#11161e;
+    --ink:#e3e8ef; --muted:#98a2b3; --faint:#6b7688; --line:#28313f; --line-2:#333e4e;
+    --accent:#6d8bff; --accent-ink:#9db2ff; --accent-soft:#182140;
+    --good:#3ecb7f; --good-soft:#12271c; --bad:#f0736a; --bad-soft:#2b1512;
+    --r-red:#ff8a4c; --r-blue:#4dabf7; --r-green:#51cf66; --r-yellow:#ffd43b;
+    --grid:rgba(120,150,255,.06);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); line-height:1.6; font-size:16px;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      linear-gradient(var(--grid) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:34px 34px;
+  }
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 22px}
+  section{padding:34px 0; border-top:1px solid var(--line)}
+  section:first-of-type{border-top:0}
+  h1,h2,h3{text-wrap:balance; line-height:1.15; margin:0}
+  .mono{font-family:var(--mono)}
+  .num{font-variant-numeric:tabular-nums}
+  p{margin:.6em 0; max-width:68ch; color:var(--ink)}
+  .muted{color:var(--muted)}
+  a{color:var(--accent-ink); text-decoration:none; border-bottom:1px solid var(--line-2)}
+
+  /* header */
+  header{padding:46px 0 8px}
+  .eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--accent-ink); margin-bottom:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  h1{font-size:clamp(28px,4.6vw,46px); font-weight:760; letter-spacing:-.02em}
+  .lede{font-size:clamp(17px,2.1vw,20px); color:var(--muted); max-width:60ch; margin-top:16px}
+  .lede b{color:var(--ink); font-weight:650}
+
+  /* thesis strip */
+  .thesis{display:flex; align-items:stretch; gap:12px; flex-wrap:wrap; margin-top:26px}
+  .tnode{flex:1 1 150px; background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:14px 16px; min-width:150px}
+  .tnode .k{font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint)}
+  .tnode .v{font-weight:640; margin-top:4px}
+  .tnode.enc{background:var(--accent-soft); border-color:transparent}
+  .tsep{align-self:center; color:var(--faint); font-family:var(--mono); font-size:20px}
+  .split2{display:flex; flex-direction:column; gap:8px; flex:1 1 190px}
+  .split2 .tnode{flex:none}
+  .tnode.val{border-left:3px solid var(--accent)}
+  .tnode.pol{border-left:3px solid var(--r-green)}
+
+  /* generic panels + grid */
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px}
+  .panel h3{font-size:14px; font-family:var(--mono); letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin-bottom:12px}
+  h2{font-size:clamp(21px,3vw,27px); font-weight:720; letter-spacing:-.015em; margin-bottom:6px}
+  .kicker{font-family:var(--mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-bottom:20px}
+  .sec-head{margin-bottom:22px}
+
+  /* flow diagram nodes */
+  .flow{display:flex; flex-direction:column; gap:0; align-items:stretch}
+  .box{background:var(--inset); border:1px solid var(--line); border-radius:11px; padding:13px 15px}
+  .box .bt{font-weight:660; font-size:14.5px; display:flex; align-items:center; gap:8px}
+  .box .bd{color:var(--muted); font-size:13.5px; margin-top:3px}
+  .box.hi{background:var(--accent-soft); border-color:transparent}
+  .arrow{align-self:center; color:var(--line-2); font-size:20px; line-height:1; padding:5px 0; font-family:var(--mono)}
+  .arrow.lbl{display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--faint); font-size:11px}
+  .arrow.lbl span:first-child{font-size:20px; color:var(--line-2)}
+
+  /* tags / shapes */
+  .tag{font-family:var(--mono); font-size:12px; background:var(--panel-2); border:1px solid var(--line);
+    border-radius:6px; padding:1px 7px; color:var(--ink); white-space:nowrap; display:inline-block}
+  .tag.sh{color:var(--accent-ink); background:var(--accent-soft); border-color:transparent}
+  .chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:9px}
+  .ch{font-family:var(--mono); font-size:11.5px; display:inline-flex; align-items:center; gap:6px;
+    background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:2px 9px 2px 7px; color:var(--muted)}
+  .rdot{width:9px;height:9px;border-radius:2px;display:inline-block}
+
+  /* robot legend colors */
+  .rr{background:var(--r-red)} .rb{background:var(--r-blue)} .rg{background:var(--r-green)} .ry{background:var(--r-yellow)}
+
+  /* network diagram specific */
+  .net .box .bd .tag{margin:2px 4px 2px 0}
+  .heads{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .head{border-radius:12px; padding:15px; border:1px solid var(--line)}
+  .head.value{border-top:3px solid var(--accent)}
+  .head.policy{border-top:3px solid var(--r-green)}
+  .head .ht{font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:space-between}
+  .head .ho{font-family:var(--mono); font-size:12.5px; color:var(--accent-ink); margin-top:8px}
+  .head ul{margin:9px 0 0; padding-left:0; list-style:none; display:flex; flex-direction:column; gap:6px}
+  .head li{font-size:13px; color:var(--muted); display:flex; gap:8px}
+  .head li::before{content:"›"; color:var(--faint); font-family:var(--mono)}
+  .callout{margin-top:14px; background:var(--good-soft); border:1px solid transparent; border-left:3px solid var(--good);
+    border-radius:10px; padding:12px 14px; font-size:13.5px}
+  .callout b{color:var(--ink)}
+
+  /* stat tiles */
+  .tiles{display:grid; grid-template-columns:repeat(4,1fr); gap:14px}
+  .tile{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 17px}
+  .tile .tv{font-size:30px; font-weight:770; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+  .tile .tl{font-size:12.5px; color:var(--muted); margin-top:3px}
+  .tile .ts{font-family:var(--mono); font-size:11px; color:var(--faint); margin-top:8px; letter-spacing:.03em}
+  .tile.accent .tv{color:var(--accent-ink)}
+
+  /* meters */
+  .meter{margin:16px 0}
+  .meter .ml{display:flex; justify-content:space-between; align-items:baseline; font-size:13.5px; margin-bottom:8px}
+  .meter .ml .cap{color:var(--muted)}
+  .bar{height:12px; border-radius:7px; background:var(--panel-2); position:relative; overflow:hidden}
+  .bar > i{position:absolute; left:0; top:0; bottom:0; border-radius:7px; display:block}
+  .row2{display:flex; flex-direction:column; gap:7px}
+  .mrow{display:grid; grid-template-columns:96px 1fr 62px; gap:10px; align-items:center; font-size:13px}
+  .mrow .who{font-family:var(--mono); font-size:12px; color:var(--muted)}
+  .mrow .val{text-align:right; font-variant-numeric:tabular-nums; font-weight:640}
+  .track{height:11px; border-radius:6px; background:var(--panel-2); overflow:hidden; position:relative}
+  .track > i{position:absolute; inset:0 auto 0 0; border-radius:6px}
+
+  /* table */
+  .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:14px}
+  table{border-collapse:collapse; width:100%; min-width:560px; font-size:14px}
+  th,td{text-align:left; padding:11px 15px; border-bottom:1px solid var(--line); vertical-align:top}
+  thead th{font-family:var(--mono); font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--faint); background:var(--inset)}
+  tbody tr:last-child td{border-bottom:0}
+  td.old{color:var(--muted)} td.new{color:var(--ink); font-weight:560}
+  .aspect{font-weight:600}
+  .better{color:var(--good); font-weight:680} .worse{color:var(--bad); font-weight:600}
+  .numcell{font-variant-numeric:tabular-nums; white-space:nowrap}
+
+  .warn{background:var(--bad-soft); border:1px solid transparent; border-left:3px solid var(--bad);
+    border-radius:11px; padding:14px 16px; margin:0 0 18px; font-size:14px}
+  .warn b{color:var(--ink)}
+
+  .foot{color:var(--muted); font-size:13.5px}
+  .files{font-family:var(--mono); font-size:12.5px; background:var(--inset); border:1px solid var(--line);
+    border-radius:11px; padding:14px 16px; overflow-x:auto; white-space:pre; color:var(--ink)}
+  .pill{display:inline-block; font-family:var(--mono); font-size:11px; padding:2px 8px; border-radius:20px;
+    background:var(--accent-soft); color:var(--accent-ink); letter-spacing:.03em}
+
+  @media (max-width:720px){
+    .grid2,.tiles,.heads{grid-template-columns:1fr}
+    .tiles{grid-template-columns:1fr 1fr}
+    .thesis{flex-direction:column}
+    .tsep{transform:rotate(90deg)}
+    .mrow{grid-template-columns:76px 1fr 54px}
+  }
+  @media (prefers-reduced-motion:no-preference){
+    .bar > i,.track > i{transition:width .6s ease}
+  }
+
+  /* interactive board demo */
+  .demo{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:24px}
+  .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .tab{font-family:var(--mono);font-size:12px;padding:7px 12px;border-radius:9px;border:1px solid var(--line);background:var(--inset);color:var(--muted);cursor:pointer}
+  .tab:hover{border-color:var(--line-2)}
+  .tab.on{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent;font-weight:600}
+  .demo-grid{display:grid;grid-template-columns:minmax(0,450px) 1fr;gap:24px;align-items:start}
+  svg.board{width:100%;height:auto;display:block;background:var(--inset);border-radius:12px;border:1px solid var(--line)}
+  .controls{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .controls button{font-family:var(--sans);font-size:13.5px;font-weight:560;padding:9px 14px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+  .controls button:hover{border-color:var(--line-2)}
+  .controls button.primary{background:var(--accent);color:#fff;border-color:transparent}
+  .controls button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .statusbadge{font-family:var(--mono);font-size:12.5px;line-height:1.75;padding:12px 14px;border-radius:10px;background:var(--inset);border:1px solid var(--line);margin-bottom:14px}
+  .statusbadge .ok{color:var(--good);font-weight:700}
+  .movelist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+  .movelist li{display:flex;align-items:center;gap:10px;font-size:13.5px;padding:6px 10px;border-radius:8px;color:var(--faint);border:1px solid transparent}
+  .movelist li .n{font-family:var(--mono);font-size:11px;color:var(--faint);width:14px;text-align:right}
+  .movelist li .rc{width:12px;height:12px;border-radius:3px;flex:none}
+  .movelist li.done{color:var(--ink)}
+  .movelist li.cur{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent;font-weight:600}
+  .legend{margin-top:16px;font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:9px;border-top:1px solid var(--line);padding-top:14px}
+  .legend .li{display:flex;align-items:center;gap:10px}
+  .legend svg{flex:none}
+  @media(max-width:720px){.demo-grid{grid-template-columns:1fr}}
+  .gline{stroke:var(--line);stroke-width:.8}
+  .wall{stroke:var(--ink);stroke-width:3.4;stroke-linecap:round}
+  .border{fill:none;stroke:var(--ink);stroke-width:3.4}
+  .tring{fill:none;stroke-width:2;stroke-dasharray:3.5 3;opacity:.95}
+  .tdot{opacity:.3}
+  .fill-Red{fill:var(--r-red)}.fill-Blue{fill:var(--r-blue)}.fill-Green{fill:var(--r-green)}.fill-Yellow{fill:var(--r-yellow)}
+  .stroke-Red{stroke:var(--r-red)}.stroke-Blue{stroke:var(--r-blue)}.stroke-Green{stroke:var(--r-green)}.stroke-Yellow{stroke:var(--r-yellow)}
+  .rbody{stroke:rgba(0,0,0,.28);stroke-width:1.1}
+  .rbody.tgt{stroke:#fff;stroke-width:2.4}
+  .thalo{fill:none;stroke-width:1.6;opacity:.55}
+  .rtxt{fill:#fff;font-family:var(--mono);font-weight:700}
+  .rtxt.dark{fill:#3d2f00}
+  .robot{transition:transform .45s cubic-bezier(.4,0,.2,1)}
+  @media (prefers-reduced-motion:reduce){.robot{transition:none}}
+
+  /* main tab switcher */
+  .tabbar{display:flex;gap:6px;margin:22px 0 2px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .maintab{font-family:var(--sans);font-size:15px;font-weight:640;padding:11px 20px;border:0;background:none;
+    color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .maintab:hover{color:var(--ink)}
+  .maintab.on{color:var(--ink);border-bottom-color:var(--accent)}
+  .maintab:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+  [hidden]{display:none !important}
+
+  /* difficulty charts */
+  .histo{display:flex;align-items:flex-end;gap:5px;height:130px;margin-top:12px;padding-bottom:2px}
+  .histo .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:3px}
+  .histo .hb{width:100%;background:var(--accent);border-radius:3px 3px 0 0;min-height:2px}
+  .histo .cnt{font-family:var(--mono);font-size:9.5px;color:var(--muted)}
+  .histo .lab{font-family:var(--mono);font-size:10px;color:var(--faint)}
+  .srrow{display:grid;grid-template-columns:96px 1fr 46px;gap:10px;align-items:center;font-size:12.5px;margin:5px 0}
+  .srrow .who{font-family:var(--mono);font-size:11.5px}
+  .srrow .val{text-align:right;font-variant-numeric:tabular-nums;font-weight:640}
+  .srtrack{height:12px;border-radius:6px;background:var(--panel-2);overflow:hidden}
+  .srtrack > i{display:block;height:100%;border-radius:6px}
+  .b-sup{background:var(--line-2)} .b-fs{background:var(--accent)} .b-cand{background:var(--good)}
+  .leg{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:6px}
+  .leg span{display:inline-flex;align-items:center;gap:6px}
+  .leg i{width:12px;height:12px;border-radius:3px;display:inline-block}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow"><span class="dot"></span> supervised baseline · Ricochet Robots · policy + value</div>
+    <h1>Predicting the move, and the moves&#8209;to&#8209;go</h1>
+    <p class="lede">A neural net learns to solve a sliding&#8209;robot puzzle by predicting, for any board, <b>how many moves are left</b> and <b>which move to play</b> &mdash; then searching with those two predictions. It is trained first from a perfect solver, then from its <b>own</b> solving, with no solver at all.</p>
+    <p class="muted" style="margin-top:10px;font-size:13.5px"><b>Overview</b> = the whole story in plain English &middot; <b>Details</b> = the full method &middot; <b>Glossary</b> = every term. New to a word? Start with the Glossary.</p>
+
+    <div class="thesis" role="img" aria-label="board state goes into a shared encoder, which splits into a value head and a policy head">
+      <div class="tnode"><div class="k">state</div><div class="v">4 robots + target</div></div>
+      <div class="tsep">→</div>
+      <div class="tnode enc"><div class="k">shared encoder</div><div class="v">looped transformer</div></div>
+      <div class="tsep">→</div>
+      <div class="split2">
+        <div class="tnode val"><div class="k">value head</div><div class="v">optimal cost&#8209;to&#8209;go</div></div>
+        <div class="tnode pol"><div class="k">policy head</div><div class="v">robot × direction</div></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabbar" role="tablist">
+    <button class="maintab on" id="mt-over" type="button" onclick="showTab('overview')">Overview</button>
+    <button class="maintab" id="mt-det" type="button" onclick="showTab('details')">Details</button>
+    <button class="maintab" id="mt-gloss" type="button" onclick="showTab('glossary')">Glossary</button>
+  </div>
+  <div id="tab-overview">
+
+  <section id="solve">
+    <div class="sec-head">
+      <div class="kicker">see it solve</div>
+      <h2>The environment, and the net solving it</h2>
+      <p class="muted">Real held&#8209;out boards. The plan is exactly what <b>NN&nbsp;A&#42;</b> found — each step is one <span class="mono">(robot,&nbsp;direction)</span> slide until a wall or another robot. All three below are solved with <b>no wasted moves</b> (regret 0 on these boards). Press play.</p>
+    </div>
+    <div class="demo">
+      <div class="tabs" id="tabs"></div>
+      <div class="demo-grid">
+        <div>
+          <div id="board"></div>
+          <div class="controls">
+            <button id="reset" type="button">&#9198; Reset</button>
+            <button id="prev" type="button">&#9664; Back</button>
+            <button id="play" type="button" class="primary">&#9654; Play</button>
+            <button id="next" type="button">Next &#9654;</button>
+          </div>
+        </div>
+        <div>
+          <div class="statusbadge" id="status"></div>
+          <ol class="movelist" id="moves"></ol>
+          <div class="legend">
+            <div class="li"><svg width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" class="fill-Blue rbody"></circle></svg> a robot (Red / Blue / Green / Yellow)</div>
+            <div class="li"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" class="thalo stroke-Red"></circle><circle cx="11" cy="11" r="7" class="fill-Red rbody tgt"></circle></svg> the <b>target robot</b> (white ring) — must reach the goal</div>
+            <div class="li"><svg width="20" height="20" viewBox="0 0 20 20"><rect x="2" y="2" width="16" height="16" rx="4" class="tring stroke-Red"></rect></svg> the <b>goal cell</b> for that robot</div>
+            <div class="li"><svg width="20" height="20" viewBox="0 0 20 20"><line x1="4" y1="3" x2="4" y2="17" class="wall"></line></svg> a <b>wall</b> — robots slide until a wall or another robot</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section>
+  <div class="sec-head"><div class="kicker">in one minute</div><h2>What this is</h2></div>
+  <p>A neural net learns to solve <b>Ricochet Robots</b> &mdash; the sliding&#8209;robot puzzle above. For any board it predicts two things:</p>
+  <div class="grid2">
+    <div class="panel" style="border-left:3px solid var(--accent)"><h3>value</h3><p style="margin:0">How many moves are left to the goal (the shortest count). Also called <i>cost&#8209;to&#8209;go</i>.</p></div>
+    <div class="panel" style="border-left:3px solid var(--good)"><h3>policy</h3><p style="margin:0">Which move to play next &mdash; which robot, which direction.</p></div>
+  </div>
+  <p>A search called <b>NN&nbsp;A&#42;</b> uses both: the <b>policy</b> suggests a few moves worth trying, the <b>value</b> scores where they lead. The net is trained first from a <b>perfect solver</b> (called <i>supervised</i>), then taught to improve <b>from its own solving</b>, with no solver at all (called <i>self&#8209;play</i>).</p>
+  <div class="callout"><b>How to read this page.</b> This <b>Overview</b> is the whole story in plain English. The <b>Details</b> tab is the full method &mdash; architecture, data pipeline, search, training, results. The <b>Glossary</b> defines every term; start there if a word is unfamiliar.</div>
+</section>
+
+<section>
+  <div class="sec-head"><div class="kicker">the one idea</div><h2>&ldquo;Off&#8209;path&rdquo; is the whole story</h2>
+    <p class="muted">Every result on this page comes down to one distinction, so it is worth 30 seconds. A puzzle has a <b>shortest solution</b> &mdash; a chain of boards you pass through on the way to the goal.</p></div>
+  <div class="panel">
+    <h3>on&#8209;path vs off&#8209;path</h3>
+    <div class="flow" style="flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px">
+      <div class="box" style="border-left:3px solid var(--good)"><div class="bt">Start</div><div class="bd">robots begin here</div></div>
+      <div class="arrow" style="align-self:center">&rarr;</div>
+      <div class="box" style="border-left:3px solid var(--good)"><div class="bt">board A</div><div class="bd">step of the shortest solution</div></div>
+      <div class="arrow" style="align-self:center">&rarr;</div>
+      <div class="box" style="border-left:3px solid var(--good)"><div class="bt">board B</div><div class="bd">step of the shortest solution</div></div>
+      <div class="arrow" style="align-self:center">&rarr;</div>
+      <div class="box hi"><div class="bt">Goal &#10003;</div><div class="bd">target robot arrives</div></div>
+    </div>
+    <p class="muted" style="margin-top:6px">Those boards are <b style="color:var(--good)">ON&#8209;PATH</b> &mdash; each is a step of a shortest solution.</p>
+    <div class="flow" style="flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px">
+      <div class="box" style="border-left:3px solid var(--good)"><div class="bt">board A</div><div class="bd">on-path</div></div>
+      <div class="arrow" style="align-self:center">&rarr;</div>
+      <div class="box" style="border-left:3px solid var(--bad)"><div class="bt">a detour board</div><div class="bd">reached by a different legal move &mdash; not on any shortest solution</div></div>
+    </div>
+    <p class="muted" style="margin-top:6px">That board is <b style="color:var(--bad)">OFF&#8209;PATH</b> &mdash; a wrong turn.</p>
+  </div>
+  <div class="callout"><b>The bottleneck.</b> The plain net only ever trained on <b>on&#8209;path</b> boards, so it <b>misjudges off&#8209;path boards</b> &mdash; and the search, which must look at those detours to reject them, wanders. It solves 85%. <b>Everything better on this page is one way of fixing that off&#8209;path blind spot.</b></div>
+</section>
+
+<section>
+  <div class="sec-head"><div class="kicker">results</div><h2>Five models, at a glance</h2>
+    <p class="muted">Same puzzle, same search. They differ only in how the net&#8217;s training answers are made. <b>Solved</b> = share of 450 held&#8209;out puzzles reached; <b>regret</b> = extra moves over the shortest solution (0 = optimal).</p></div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>model</th><th>how it&#8217;s trained</th><th>solved</th><th>regret</th></tr></thead>
+      <tbody>
+        <tr><td class="aspect">Supervised <span class="muted">(the baseline)</span></td><td class="old">a perfect solver labels the shortest path</td><td class="numcell">85%</td><td class="numcell">0.354 <span class="muted">mv</span></td></tr>
+        <tr style="background:var(--good-soft)"><td class="aspect">Candidate&#8209;scored <span class="tag">best</span></td><td class="old">&hellip; and the solver also grades off&#8209;path moves</td><td class="numcell better">100%</td><td class="numcell better">0.067 <span class="muted">mv</span></td></tr>
+        <tr><td class="aspect">Self&#8209;play &mdash; warm</td><td class="new">the net&#8217;s own solving, starting from the supervised net</td><td class="numcell better">97.6%</td><td class="numcell better">0.055 <span class="muted">mv</span></td></tr>
+        <tr><td class="aspect">Self&#8209;play &mdash; from scratch</td><td class="new">the net&#8217;s own solving, from random weights, <b>no solver</b></td><td class="numcell better">87.6%</td><td class="numcell">0.213 <span class="muted">mv</span></td></tr>
+        <tr><td class="muted"><i>Original subgoal system</i></td><td class="muted">an older, different approach</td><td class="numcell muted">99.6%</td><td class="numcell muted">0.676 <span class="muted">wt</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted" style="font-size:12.5px;margin-top:10px"><span class="mono">mv</span> = primitive moves &middot; <span class="mono">wt</span> = the old system&#8217;s <i>weighted</i> unit (not the same as moves, so its numbers are not directly comparable). Single training run; regret is measured over solved puzzles only &mdash; the <b>full table with every metric</b> (single&#8209;head ablations, offline accuracy) and the exact definitions live in <b>Details &rarr; Results</b>.</p>
+  <div class="callout"><b>Two takeaways.</b> (1) The best model is <b>candidate&#8209;scored</b> &mdash; still just supervised, but with off&#8209;path boards graded &mdash; at <b>100% solved</b>. (2) Self&#8209;play from <b>random weights with no solver at all</b> reaches <b>87.6%</b>, matching and slightly edging the supervised baseline (85%) &mdash; at the cost of more compute.</div>
+</section>
+
+<section>
+  <div class="sec-head"><div class="kicker">the map</div><h2>How the models differ</h2>
+    <p class="muted">Two choices define each move model: <b>where the training answers come from</b>, and <b>which boards get a value answer</b>. That is the entire difference.</p></div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="aspect">answers from &darr; &nbsp;/&nbsp; value on &rarr;</th><th>shortest path only</th><th>+ off&#8209;path boards</th></tr></thead>
+      <tbody>
+        <tr><td class="aspect">a perfect solver<br><span class="muted mono">= supervised</span></td><td class="numcell">Supervised<br><b>85%</b></td><td class="numcell better" style="background:var(--good-soft)">Candidate&#8209;scored<br><b style="color:var(--good)">100%</b></td></tr>
+        <tr><td class="aspect">the net&#8217;s own solving<br><span class="muted mono">= self-play</span></td><td class="numcell muted">&mdash; (not built)</td><td class="numcell">Self&#8209;play<br><b>warm 97.6%</b> / scratch 87.6%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">Same off&#8209;path fix, two ways: candidate&#8209;scored <b>buys</b> exact off&#8209;path answers from the solver in one pass; self&#8209;play <b>grows</b> its own off&#8209;path answers over many rounds, using no solver. Full per&#8209;model detail, the search, and the training loop are in the <b>Details</b> tab.</p>
+</section>
+
+  </div><!-- /tab-overview -->
+
+  <div id="tab-details" hidden>
+
+<header style="padding:32px 0 6px">
+  <div class="eyebrow"><span class="dot"></span> details &middot; architecture &middot; pipeline &middot; results</div>
+  <h1>The move-based planner, in full</h1>
+  <p class="lede">One board state, one two-headed network, one search. This tab walks the whole stack &mdash; the reformulation, the net, the data and its three labelling lanes, the search loop, expert iteration, the five models, the numbers, and the dead ends &mdash; each stated once.</p>
+</header>
+
+<section>
+  <div class="sec-head">
+    <div class="kicker">01 &mdash; the reformulation</div>
+    <h2>From subgoal DAGs to primitive moves</h2>
+    <p class="muted">The old system searched over plans built from sub-targets. The new one searches over board states, one primitive move at a time.</p>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Before &middot; subgoal DAGs</h3>
+      <p>Search ran over partial <b>plans</b> assembled from sub-targets (bottleneck, support, helper). A node was a plan fragment; cost was a weighted count of subgoals.</p>
+    </div>
+    <div class="panel">
+      <h3>After &middot; primitive moves</h3>
+      <p>Search runs over <b>board states</b>. A node is the full 4-robot position; an edge is one robot sliding until it hits a wall or robot; cost is moves.</p>
+    </div>
+  </div>
+  <div class="flow" style="flex-direction:row;flex-wrap:wrap;align-items:stretch;gap:10px">
+    <div class="box"><div class="bt">Moves are the unit</div><div class="bd">Cost = number of slides. The objective is exactly what the puzzle asks for, so labels and regret are in one honest unit.</div></div>
+    <div class="box"><div class="bt">States are Markov</div><div class="bd">A board fully determines its future; history is irrelevant. Every state can be labelled independently &mdash; no trajectory context needed.</div></div>
+    <div class="box"><div class="bt">Labels are exact</div><div class="bd">An oracle A&#42; gives each state its true cost-to-go (d&#42; &minus; depth), so supervision is exact rather than heuristic.</div></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="kicker">02 &mdash; the network</div>
+    <h2>One shared encoder, two heads</h2>
+    <p class="muted">Every board becomes node features plus slide-graph attention masks; a weight-tied encoder produces token embeddings that feed a value head and a policy head.</p>
+  </div>
+  <div class="flow">
+    <div class="box hi">
+      <div class="bt">Input &middot; per board</div>
+      <div class="bd">Node features <span class="mono">[257,14]</span> &mdash; 256 cells + 1 global token. Channels: <b>ch0-3</b> per-color robot occupancy &middot; <b>ch4</b> target-robot cell &middot; <b>ch5</b> goal cell &middot; <b>ch6-13</b> slide-displacement fields. Plus slide-graph attention masks <span class="mono">A_all</span> / <span class="mono">A_ind</span> <span class="mono">[257,257]</span>.</div>
+    </div>
+    <div class="arrow">&darr;</div>
+    <div class="box">
+      <div class="bt">Shared encoder</div>
+      <div class="bd">Linear <span class="mono">14&rarr;192</span> + learned positional embed, then a weight-tied <b>LoopedLayer &times;12</b>. Each layer attends over the global token, an <span class="mono">A_all</span>-masked pass, and an <span class="mono">A_ind</span>-masked pass.</div>
+    </div>
+    <div class="arrow lbl"><span>&darr;</span><span>token embeddings split to two heads</span></div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Value head</h3>
+      <p>[global-token &oplus; goal-cell &oplus; target-robot-cell] &rarr; <b>HL-Gauss over 64 cost-to-go bins</b>. Value = the expected bin. Predicting a distribution over move-counts trains more stably than regressing a single number.</p>
+    </div>
+    <div class="panel">
+      <h3>Policy head</h3>
+      <p>Per (robot, dir): [robot-cell-emb &oplus; slide-<b>destination</b>-cell-emb] &rarr; a <span class="mono">4&times;4</span> grid of logits, masked to legal moves.</p>
+    </div>
+  </div>
+  <div class="callout"><b>Why the policy reads the destination cell.</b> Picking the optimal move is a 1-step lookahead &mdash; if this robot slides, <i>where does it stop</i>, and does the move-count drop? A static per-robot readout can&#8217;t do it and won&#8217;t even overfit (top-1 &asymp; 0.10). Feed each move&#8217;s slide-<b>destination</b> cell embedding and the same head reaches <b>0.96</b>.</div>
+  <div class="box"><div class="bt">Loss</div><div class="bd">HL-Gauss value cross-entropy + <span class="mono">policy_weight</span> &middot; masked-policy cross-entropy.</div></div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="kicker">03 &mdash; the data pipeline</div>
+    <h2>One pipeline, three labelling lanes</h2>
+    <p class="muted">Boards, splits and instance generation are shared. Only how states get labelled differs &mdash; and all lanes emit one record schema, so the dataset and loss code are reused verbatim.</p>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Boards &amp; splits</h3>
+      <p>Boards from <span class="mono">gen_grids</span> (<span class="mono">env_{id}.pkl</span>). Splits: train <span class="mono">1000-1599</span> &middot; val <span class="mono">1800-1999</span> &middot; test <span class="mono">2400-2599</span>.</p>
+    </div>
+    <div class="panel">
+      <h3>Instance generation</h3>
+      <p><b>Supervised / candidate:</b> sample 4 random robots + a random target robot and cell, keep if reachable (a cheap admissible filter, <i>not</i> an oracle solve). <b>Self-play:</b> target-biased forward-walk (random board, slide the target robot <span class="mono">k~U(1,16)</span> times, relabel goal = target&#8217;s final cell &rarr; guaranteed solvable) + 25% raw random.</p>
+    </div>
+  </div>
+  <p class="muted">The label branch &mdash; the crux. Same instance, three labellings:</p>
+  <div class="flow" style="flex-direction:row;flex-wrap:wrap;align-items:stretch;gap:10px">
+    <div class="box">
+      <div class="bt">Lane A &middot; supervised</div>
+      <div class="bd">An exact <b>oracle</b> (perfect A&#42; solver, train-time only) solves each instance and labels ONLY the states on ONE optimal path with their exact cost-to-go (d&#42; &minus; depth). Off-path states get no label.</div>
+    </div>
+    <div class="box hi">
+      <div class="bt">Lane B &middot; candidate-scored</div>
+      <div class="bd">Same on-path labels, PLUS for each state enumerate its legal candidate moves, apply each to get the child (resulting) state, solve THAT child exactly with the oracle, and emit a value-only record (<span class="mono">best_moves=[]</span>, <span class="mono">full=False</span>) carrying the child&#8217;s own exact cost-to-go. Off-path children get <b>exact</b> labels.</div>
+    </div>
+    <div class="box">
+      <div class="bt">Lane C &middot; self-play</div>
+      <div class="bd">The net&#8217;s OWN budgeted A&#42; (<span class="mono">nn_astar</span>, no oracle) solves forward-walk puzzles. On the solved path: value = T &minus; j (remaining length), the committed move as policy, and a goal anchor (cost_to_go=0). Unsolved instances are dropped.</div>
+    </div>
+  </div>
+  <p class="muted">All three lanes emit this identical record:</p>
+  <div class="files">{env_id, robots[[x,y]&times;4 in COLOR_ORDER], target[x,y], target_idx, cost_to_go, best_moves[[slot,dir]], legal_moves[[slot,dir]], depth, full}</div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="kicker">04 &mdash; search</div>
+    <h2>NN A&#42;: the net drives best-first search</h2>
+    <p class="muted">A short primer first, then how the two heads slot into the search loop, then the honest caveat about optimality.</p>
+  </div>
+  <div class="panel">
+    <h3>A&#42; primer</h3>
+    <p>A&#42; is best-first search over board states. It keeps a frontier of states ranked by <b>f = g + h</b>, where <b>g</b> = moves made so far to reach that state and <b>h</b> = an estimate of moves still to go. It repeatedly pops the lowest-f state, expands it (generates the states its moves lead to), and never re-expands a state it has settled (the &ldquo;closed set&rdquo;). Classic A&#42; uses an admissible (never-overestimating) h and returns optimal paths.</p>
+    <p><b>NN A&#42;</b> sets <b>h = the value head</b> and, before expanding, uses the <b>policy</b> to keep only the top-k moves.</p>
+  </div>
+  <div class="flow">
+    <div class="box"><div class="bt">1 &middot; pop</div><div class="bd">Pop the lowest-f state, f = g + value.</div></div>
+    <div class="arrow">&darr;</div>
+    <div class="box"><div class="bt">2 &middot; goal test</div><div class="bd">Is it the goal? Return g.</div></div>
+    <div class="arrow">&darr;</div>
+    <div class="box"><div class="bt">3 &middot; expand</div><div class="bd">Generate the &le;16 legal moves.</div></div>
+    <div class="arrow">&darr;</div>
+    <div class="box"><div class="bt">4 &middot; policy prune</div><div class="bd">Policy ranks the moves, keep top-k, grey out the rest.</div></div>
+    <div class="arrow">&darr;</div>
+    <div class="box"><div class="bt">5 &middot; value score</div><div class="bd">Value scores the k resulting (child) states.</div></div>
+    <div class="arrow">&darr;</div>
+    <div class="box"><div class="bt">6 &middot; push</div><div class="bd">Push each child with f = (g+1) + value(child); closed-set on state.</div></div>
+    <div class="arrow lbl"><span>&darr;</span><span>repeat</span></div>
+  </div>
+  <div class="warn"><b>Optimality is empirical, not guaranteed.</b> The value head is <b>learned and not admissible</b>, and policy top-k pruning can discard optimal moves &mdash; so NN A&#42;&#8217;s optimality is <b>measured (as regret)</b>, not proven.</div>
+  <div class="callout"><b>Policy proposes, value ranks the proposals.</b> That split is why the value head works inside search even though value-alone fails as a greedy controller &mdash; see the value-greedy number in the model cards and results.</div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="kicker">05 &mdash; self-play / expert iteration</div>
+    <h2>The net trains on its own search&#8217;s solutions</h2>
+    <p class="muted">A closed loop with net-solvability as the implicit curriculum &mdash; framed honestly about what it is and is not.</p>
+  </div>
+  <div class="flow" style="flex-direction:row;flex-wrap:wrap;align-items:stretch;gap:10px">
+    <div class="box"><div class="bt">generate</div><div class="bd">Forward-walk puzzles (guaranteed solvable).</div></div>
+    <div class="arrow" style="align-self:center">&rarr;</div>
+    <div class="box"><div class="bt">solve</div><div class="bd">The net&#8217;s own budgeted A&#42; solves them &mdash; no oracle.</div></div>
+    <div class="arrow" style="align-self:center">&rarr;</div>
+    <div class="box"><div class="bt">train</div><div class="bd">Train on the solved trajectories.</div></div>
+    <div class="arrow" style="align-self:center">&rarr;</div>
+    <div class="box"><div class="bt">repeat</div><div class="bd">Stronger net &rarr; deeper puzzles solved.</div></div>
+  </div>
+  <div class="box hi"><div class="bt">Net-solvability is the curriculum</div><div class="bd">The net solves shallow puzzles first, learns from them, then reaches deeper ones &mdash; the deep-state share of the data climbs each round.</div></div>
+  <div class="warn"><b>Honest framing.</b> (1) This is single-agent <b>Expert Iteration with an A&#42; expert</b> (DeepCubeA lineage), NOT AlphaZero/MCTS &mdash; there is no MCTS, no PUCT, no visit-count targets; &ldquo;self-play&rdquo; here means <i>the net trains on its own search&#8217;s solutions</i>, not adversarial self-play. (2) The value target T&minus;j is the length of a <b>possibly-suboptimal</b> found plan, so it is <b>biased slightly high</b> &mdash; but it is a pure Monte-Carlo return with <b>no bootstrapping</b>, which sidesteps the usual value-iteration instability.</div>
+  <div class="grid2">
+    <div class="box"><div class="bt">Warm-start</div><div class="bd">Fine-tune the supervised net.</div></div>
+    <div class="box"><div class="bt">From-scratch</div><div class="bd">Random init, no oracle anywhere.</div></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="kicker">06 &mdash; the five models</div>
+    <h2>What each model trains on, and what it buys</h2>
+    <p class="muted">Same net and search throughout; the models differ only in their labels.</p>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Original subgoal system</h3>
+      <p>Plans, not board states. Searches over partial plans made of sub-targets (bottleneck / support / helper).</p>
+      <p>Cost is a <b>weighted subgoal count</b> (helper steps count 2), not moves.</p>
+      <p class="muted">So its 99.6% is in a different unit &mdash; not directly comparable. Checkpoint not kept.</p>
+    </div>
+    <div class="panel">
+      <h3>Supervised <span class="tag sh">baseline</span></h3>
+      <p>The baseline. The oracle labels the shortest path only.</p>
+      <p>Learns cost-to-go and the optimal move on-path: <b>85%</b> &middot; regret <b>0.354</b> &middot; value-MAE 0.263 &middot; policy top-1 0.960.</p>
+      <p class="muted">Weakness = off-path value (value-greedy 7%).</p>
+    </div>
+    <div class="panel" style="border-left:3px solid var(--good)">
+      <h3>Candidate-scored <span class="tag">best</span></h3>
+      <p>Still supervised, but the oracle also grades every candidate&#8217;s resulting (off-path) board &mdash; the value net finally sees off-path.</p>
+      <p><b>100%</b> &middot; regret <b>0.067</b> &middot; value-greedy 7% &rarr; <b>78%</b>.</p>
+      <p class="muted">Uses the oracle at train time only; pure NN at inference.</p>
+    </div>
+    <div class="panel" style="border-left:3px solid var(--good)">
+      <h3>Self-play warm</h3>
+      <p>The net&#8217;s own A&#42; replaces the oracle; from the supervised net, one iteration.</p>
+      <p><b>97.6%</b> &middot; regret <b>0.055</b> &middot; value-greedy 7% &rarr; 51%.</p>
+      <p class="muted">Off-path coverage comes from visited states, no oracle.</p>
+    </div>
+    <div class="panel" style="border-left:3px solid var(--accent)">
+      <h3>Self-play from scratch <span class="tag">the goal</span></h3>
+      <p>Random init, no oracle ever; 16 iterations.</p>
+      <p><b>87.6%</b> &middot; regret <b>0.213</b> (iter14 89.1%).</p>
+      <p class="muted">Honestly: this matches / edges past supervised (85%) at substantially higher compute, single run. The decisive model is candidate-scored.</p>
+    </div>
+  </div>
+  <div class="callout"><b>Candidate-scored vs self-play.</b> Both fix off-path value coverage. Candidate-scored uses the <b>oracle</b> on extra states &mdash; exact, one pass, still supervised. Self-play uses the <b>net&#8217;s own A&#42;</b> on the states it visits &mdash; approximate, iterative, no oracle.</div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="kicker">07 &mdash; results</div>
+    <h2>The numbers, with their caveats</h2>
+    <p class="muted">One comparison table, brief metric definitions, the caveats reviewers require, and the difficulty breakdown.</p>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="aspect">model</th>
+          <th>trained on</th>
+          <th class="numcell">solve&nbsp;rate</th>
+          <th class="numcell">regret</th>
+          <th class="numcell">% optimal</th>
+          <th class="numcell">policy&#8209;only</th>
+          <th class="numcell">value&#8209;only</th>
+          <th class="numcell">value&nbsp;MAE</th>
+          <th class="numcell">policy&nbsp;top&#8209;1</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="aspect old">Original subgoal</td>
+          <td class="old">subgoal plans</td>
+          <td class="numcell old">99.6%</td>
+          <td class="numcell old">0.676 <span class="mono">wtd</span></td>
+          <td class="numcell old">&mdash;</td>
+          <td class="numcell old">&mdash;</td>
+          <td class="numcell old">&mdash;</td>
+          <td class="numcell old">2.065 <span class="mono">wtd</span></td>
+          <td class="numcell old">0.827</td>
+        </tr>
+        <tr>
+          <td class="aspect">Supervised</td>
+          <td>oracle shortest path</td>
+          <td class="numcell">85%</td>
+          <td class="numcell">0.354 <span class="mono">mv</span></td>
+          <td class="numcell">73%</td>
+          <td class="numcell">86%</td>
+          <td class="numcell">7%</td>
+          <td class="numcell">0.263</td>
+          <td class="numcell">0.960</td>
+        </tr>
+        <tr style="background:var(--good-soft)">
+          <td class="aspect new">Candidate&#8209;scored</td>
+          <td class="new">oracle + child grades</td>
+          <td class="numcell better">100%</td>
+          <td class="numcell better">0.067 <span class="mono">mv</span></td>
+          <td class="numcell better">94%</td>
+          <td class="numcell">82%</td>
+          <td class="numcell better">78%</td>
+          <td class="numcell">0.316</td>
+          <td class="numcell">0.953</td>
+        </tr>
+        <tr>
+          <td class="aspect">Self&#8209;play warm</td>
+          <td>own A&#42; (from supervised)</td>
+          <td class="numcell">97.6%</td>
+          <td class="numcell better">0.055 <span class="mono">mv</span></td>
+          <td class="numcell better">95%</td>
+          <td class="numcell">69%</td>
+          <td class="numcell">51%</td>
+          <td class="numcell">0.540</td>
+          <td class="numcell">0.925</td>
+        </tr>
+        <tr>
+          <td class="aspect">Self&#8209;play from&#8209;scratch</td>
+          <td>own A&#42; (random init)</td>
+          <td class="numcell">87.6%</td>
+          <td class="numcell">0.213 <span class="mono">mv</span></td>
+          <td class="numcell">83%</td>
+          <td class="numcell">42%</td>
+          <td class="numcell">40%</td>
+          <td class="numcell">0.882</td>
+          <td class="numcell">0.725</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted" style="font-size:12.5px;margin-top:8px"><b>Every metric.</b> <b>solve rate</b> = full NN&nbsp;A&#42; on the 450&#8209;instance test set &middot; <b>regret</b> = mean extra moves over optimal on solved instances (<span class="mono">mv</span> = moves, <span class="mono">wtd</span> = the old system&#8217;s weighted subgoal cost, a different unit) &middot; <b>% optimal</b> = share of solved with regret 0 &middot; <b>policy&#8209;only / value&#8209;only</b> = solve rate of a single head used greedily with <i>no search</i> (ablations; value&#8209;only is the off&#8209;path value probe &mdash; supervised 7% is the bottleneck, candidate&#8209;scored 78% is the fix) &middot; <b>value MAE / policy top&#8209;1</b> = offline accuracy on the <b>shared supervised on&#8209;path val set</b> (env 1800&#8209;2399; top&#8209;1 on states with cost&#8209;to&#8209;go &le; 6). The self&#8209;play nets read <i>worse</i> here (MAE 0.54 / 0.88, top&#8209;1 0.92 / 0.72) because they trained on a <b>different distribution</b> (near&#8209;goal / forward&#8209;walk), not because they plan worse &mdash; their end&#8209;to&#8209;end solve rate is the fair measure. <b>&mdash;</b> = not applicable (the Original searches a different space, so the move&#8209;based ablations and MAE do not transfer). Original&#8217;s weighted subgoal cost &asymp; 13.5 (&asymp; move&#8209;optimal, &asymp;7 moves realized); mean plan length &asymp; test optimal (&asymp;6.5) + regret; from&#8209;scratch figures are iteration&nbsp;15.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="aspect">metric</th><th>brief definition (full versions in Glossary)</th></tr></thead>
+      <tbody>
+        <tr><td class="aspect">solve rate</td><td>share of test instances the planner solves within its search budget</td></tr>
+        <tr><td class="aspect">regret</td><td>extra moves over optimal, averaged over solved instances (moves)</td></tr>
+        <tr><td class="aspect">% optimal</td><td>share of solved instances found in exactly the optimal move-count</td></tr>
+        <tr><td class="aspect">value MAE</td><td>mean absolute error of predicted cost-to-go vs true (moves)</td></tr>
+        <tr><td class="aspect">policy top-1</td><td>fraction where the top policy move is an optimal move (shallow states)</td></tr>
+        <tr><td class="aspect">weighted subgoal cost</td><td>the original system&#8217;s cost unit &mdash; helper steps count 2, not moves</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="warn">
+    <b>Read the numbers with these in mind.</b>
+    <p>(a) <b>Policy top-1 0.960 is measured only on shallow states</b> (cost-to-go &le; 6, where the full optimal-move set is enumerated) &mdash; deep-state policy accuracy is not measured.</p>
+    <p>(b) <b>Regret is over solved instances only</b>, so the models&#8217; regrets are over different subsets &mdash; only candidate-scored&#8217;s 100% is over all 450.</p>
+    <p>(c) <b>Single run, no seeds / error bars</b>; the deep-difficulty bins are tiny (n=7 at 10-12 moves).</p>
+    <p>(d) The original&#8217;s numbers are in <b>weighted subgoal cost, not moves</b> &mdash; not directly comparable.</p>
+  </div>
+
+  <p class="muted">150-instance difficulty test set &middot; count of instances by optimal moves:</p>
+  <div class="histo">
+    <div class="col"><div class="cnt">2</div><div class="hb" style="height:7.4%"></div><div class="lab">1</div></div>
+    <div class="col"><div class="cnt">6</div><div class="hb" style="height:22.2%"></div><div class="lab">2</div></div>
+    <div class="col"><div class="cnt">10</div><div class="hb" style="height:37%"></div><div class="lab">3</div></div>
+    <div class="col"><div class="cnt">11</div><div class="hb" style="height:40.7%"></div><div class="lab">4</div></div>
+    <div class="col"><div class="cnt">15</div><div class="hb" style="height:55.6%"></div><div class="lab">5</div></div>
+    <div class="col"><div class="cnt">26</div><div class="hb" style="height:96.3%"></div><div class="lab">6</div></div>
+    <div class="col"><div class="cnt">21</div><div class="hb" style="height:77.8%"></div><div class="lab">7</div></div>
+    <div class="col"><div class="cnt">25</div><div class="hb" style="height:92.6%"></div><div class="lab">8</div></div>
+    <div class="col"><div class="cnt">27</div><div class="hb" style="height:100%"></div><div class="lab">9</div></div>
+    <div class="col"><div class="cnt">5</div><div class="hb" style="height:18.5%"></div><div class="lab">10</div></div>
+    <div class="col"><div class="cnt">2</div><div class="hb" style="height:7.4%"></div><div class="lab">12</div></div>
+  </div>
+
+  <p class="muted">Solve rate by difficulty bucket:</p>
+  <p class="mono muted">1-3 moves &middot; n=18</p>
+  <div class="srrow"><span class="who">supervised</span><span class="srtrack"><i class="b-sup" style="width:100%"></i></span><span class="val">100%</span></div>
+  <div class="srrow"><span class="who">from-scratch</span><span class="srtrack"><i class="b-fs" style="width:100%"></i></span><span class="val">100%</span></div>
+  <div class="srrow"><span class="who">candidate-scored</span><span class="srtrack"><i class="b-cand" style="width:100%"></i></span><span class="val">100%</span></div>
+  <p class="mono muted">4-6 moves &middot; n=52</p>
+  <div class="srrow"><span class="who">supervised</span><span class="srtrack"><i class="b-sup" style="width:88%"></i></span><span class="val">88%</span></div>
+  <div class="srrow"><span class="who">from-scratch</span><span class="srtrack"><i class="b-fs" style="width:96%"></i></span><span class="val">96%</span></div>
+  <div class="srrow"><span class="who">candidate-scored</span><span class="srtrack"><i class="b-cand" style="width:100%"></i></span><span class="val">100%</span></div>
+  <p class="mono muted">7-9 moves &middot; n=73</p>
+  <div class="srrow"><span class="who">supervised</span><span class="srtrack"><i class="b-sup" style="width:77%"></i></span><span class="val">77%</span></div>
+  <div class="srrow"><span class="who">from-scratch</span><span class="srtrack"><i class="b-fs" style="width:73%"></i></span><span class="val">73%</span></div>
+  <div class="srrow"><span class="who">candidate-scored</span><span class="srtrack"><i class="b-cand" style="width:100%"></i></span><span class="val">100%</span></div>
+  <p class="mono muted">10-12 moves &middot; n=7</p>
+  <div class="srrow"><span class="who">supervised</span><span class="srtrack"><i class="b-sup" style="width:29%"></i></span><span class="val">29%</span></div>
+  <div class="srrow"><span class="who">from-scratch</span><span class="srtrack"><i class="b-fs" style="width:14%"></i></span><span class="val">14%</span></div>
+  <div class="srrow"><span class="who">candidate-scored</span><span class="srtrack"><i class="b-cand" style="width:100%"></i></span><span class="val">100%</span></div>
+  <div class="leg">
+    <span><i class="b-sup"></i> supervised</span>
+    <span><i class="b-fs"></i> from-scratch</span>
+    <span><i class="b-cand"></i> candidate-scored</span>
+  </div>
+  <div class="callout"><b>Candidate-scored stays 100% at every difficulty</b> while supervised and from-scratch collapse past 7 moves &mdash; down to 29% and 14% in the deepest bucket (note n=7 there).</div>
+  <p class="muted" style="font-size:12.5px;margin-top:10px"><b>How this squares with the headline.</b> These bars are on a separate, <b>harder 150&#8209;instance sample</b>: supervised and from-scratch each solve &asymp;<b>81%</b> overall <i>here</i>, versus <b>85%</b> / <b>87.6%</b> on the 450&#8209;instance headline set (candidate&#8209;scored is 100% on both). The from-scratch column is an &asymp;81%&#8209;overall checkpoint; the final 87.6% model shows the same shape, shifted up.</p>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="kicker">08 &mdash; what went wrong</div>
+    <h2>The dead ends, kept in the record</h2>
+    <p class="muted">Four things that failed or were rejected, and what fixed each.</p>
+  </div>
+  <div class="flow">
+    <div class="box"><div class="bt">reverse-scramble curriculum &mdash; failed</div><div class="bd">DeepCubeA&#8217;s trick assumes reversible moves; Ricochet slides aren&#8217;t, so scrambled starts stay ~1 move from goal (measured ~1.3 even at depth 16). The net never trained deep &rarr; capped 66%. Fixed with forward-walk.</div></div>
+    <div class="arrow">&darr;</div>
+    <div class="box"><div class="bt">value-target bug &mdash; downward ratchet</div><div class="bd"><span class="mono">min(found_length, net_estimate)</span> dragged labels toward the net&#8217;s own wrong belief (a partial bootstrap). Fixed to plain found length.</div></div>
+    <div class="arrow">&darr;</div>
+    <div class="box"><div class="bt">under-training a random net</div><div class="bd">Fine-tune settings on a random init gave a weak policy. Fixed to supervised-grade (lr 3e-4, policy_weight 1.0).</div></div>
+    <div class="arrow">&darr;</div>
+    <div class="box"><div class="bt">rejected: oracle fallback at inference</div><div class="bd">Would guarantee 100% but isn&#8217;t the NN &mdash; removed. The planner is pure NN.</div></div>
+  </div>
+</section>
+
+  </div><!-- /tab-details -->
+
+  <div id="tab-glossary" hidden>
+
+<header style="padding:32px 0 6px">
+  <div class="eyebrow"><span class="dot"></span> glossary &middot; every term in plain English</div>
+  <h1>What the words mean</h1>
+  <p class="lede">This report leans on a handful of recurring terms &mdash; <b>on&#8209;path</b>, <b>off&#8209;path</b>, <b>value</b>, <b>regret</b>, <b>self&#8209;play</b>. Here is every one, in plain English, starting with the one that matters most.</p>
+</header>
+
+<section>
+  <div class="sec-head">
+    <div class="kicker">start here</div>
+    <h2>On&#8209;path vs off&#8209;path</h2>
+    <p class="muted">This single distinction drives most of the results, so it is worth 30 seconds. A puzzle has a <b>shortest solution</b> &mdash; the fewest moves that get the target robot home. Think of it as a chain of boards you pass through.</p>
+  </div>
+
+  <div class="panel">
+    <h3>the picture</h3>
+    <div class="flow" style="flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px">
+      <div class="box" style="border-left:3px solid var(--good)"><div class="bt">Start</div><div class="bd">robots begin here</div></div>
+      <div class="arrow" style="align-self:center">&rarr;</div>
+      <div class="box" style="border-left:3px solid var(--good)"><div class="bt">board A</div><div class="bd">step of the shortest solution</div></div>
+      <div class="arrow" style="align-self:center">&rarr;</div>
+      <div class="box" style="border-left:3px solid var(--good)"><div class="bt">board B</div><div class="bd">step of the shortest solution</div></div>
+      <div class="arrow" style="align-self:center">&rarr;</div>
+      <div class="box hi"><div class="bt">Goal &#10003;</div><div class="bd">target robot arrives</div></div>
+    </div>
+    <p class="muted" style="margin-top:6px">Those boards are <b style="color:var(--good)">ON&#8209;PATH</b> &mdash; each one is a step of a shortest solution.</p>
+
+    <div class="flow" style="flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px">
+      <div class="box" style="border-left:3px solid var(--good)"><div class="bt">board A</div><div class="bd">on-path</div></div>
+      <div class="arrow" style="align-self:center">&rarr;</div>
+      <div class="box" style="border-left:3px solid var(--bad)"><div class="bt">a detour board</div><div class="bd">reached by a different legal move &mdash; not part of any shortest solution</div></div>
+    </div>
+    <p class="muted" style="margin-top:6px">That board is <b style="color:var(--bad)">OFF&#8209;PATH</b> &mdash; a wrong turn.</p>
+  </div>
+
+  <div class="callout"><b>Why it matters everywhere.</b> The planner (NN&nbsp;A&#42;) must look at off&#8209;path boards too &mdash; it tries candidate moves and has to judge that the detours are bad. But the plain supervised value net was only ever trained on <b>on&#8209;path</b> boards, so it <b>misjudges off&#8209;path boards</b> and the search wanders. Fixing that off&#8209;path blind spot (with candidate&#8209;scoring, or with self&#8209;play) is the whole story of the results.</div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="kicker">glossary &middot; the puzzle</div>
+    <h2>The game, and what the net predicts</h2>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="aspect">term</th><th>plain English</th></tr></thead>
+      <tbody>
+        <tr><td class="aspect">robot / target robot</td><td>Four robots slide on the board. One of them &mdash; the <i>target robot</i> &mdash; is the one that must reach the goal.</td></tr>
+        <tr><td class="aspect">move (slide)</td><td>Pick a robot + a direction; it slides until a wall or another robot stops it. Each move costs 1.</td></tr>
+        <tr><td class="aspect">goal / target cell</td><td>The single cell the target robot has to land on.</td></tr>
+        <tr><td class="aspect">optimal / shortest</td><td>Using the fewest possible moves. The <b>optimal path</b> is a shortest solution (there can be more than one).</td></tr>
+        <tr><td class="aspect">board state <span class="muted">(&ldquo;state&rdquo;)</span></td><td>A snapshot: where the four robots sit right now. The net sees only the snapshot, not how you got there (that property is called <b>Markov</b>).</td></tr>
+        <tr><td class="aspect">value <span class="muted">(cost&#8209;to&#8209;go)</span></td><td>One of the net&#8217;s two predictions: its estimate of <b>how many moves are left</b> to reach the goal from a board. Smaller = closer. The same quantity is also called <i>moves&#8209;to&#8209;go</i> or <i>remaining length</i>.</td></tr>
+        <tr><td class="aspect">policy</td><td>The net&#8217;s other prediction: a <b>ranking of which move to play</b> from a board (over robot &times; direction).</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="kicker">glossary &middot; paths &amp; search</div>
+    <h2>Boards, moves, and the planner</h2>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="aspect">term</th><th>plain English</th></tr></thead>
+      <tbody>
+        <tr><td class="aspect">on&#8209;path state</td><td>A board you pass through on a shortest solution. (See the picture above.)</td></tr>
+        <tr><td class="aspect">off&#8209;path state</td><td>A board reached by a move that is <b>not</b> part of any shortest solution &mdash; a detour or wrong turn.</td></tr>
+        <tr><td class="aspect">candidate (move)</td><td>Any legal move you could make from a board. The search &ldquo;considers the candidates.&rdquo;</td></tr>
+        <tr><td class="aspect">resulting state / child</td><td>The board you get <i>after</i> making a candidate move.</td></tr>
+        <tr><td class="aspect">NN A&#42; <span class="muted">(the planner)</span></td><td>The search that actually solves puzzles at run time. Repeatedly: take the most promising board, try its best few moves, continue until the target arrives. &ldquo;Promising&rdquo; = smallest <span class="mono">(moves so far + value)</span>.</td></tr>
+        <tr><td class="aspect">policy proposes,<br>value ranks</td><td>How the two heads combine in NN&nbsp;A&#42;: policy narrows to the few moves worth trying, value scores the boards they lead to. Together they beat either head alone.</td></tr>
+        <tr><td class="aspect">top&#8209;k</td><td>Keep only the k best moves the policy proposes at each step; prune the rest.</td></tr>
+        <tr><td class="aspect">value&#8209;greedy</td><td>A stripped&#8209;down planner using <b>only</b> value (no policy): step to whichever neighbouring board value likes best. It fails badly (~7% solved) precisely because value is unreliable off&#8209;path &mdash; which is why value&#8209;greedy&#8217;s solve rate is used as the <b>test for off&#8209;path value quality</b>.</td></tr>
+        <tr><td class="aspect">policy&#8209;greedy</td><td>The opposite stripped&#8209;down planner: play only the policy&#8217;s single top move each step, no search.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="kicker">glossary &middot; search machinery</div>
+    <h2>A&#42; and its vocabulary</h2>
+    <p class="muted">The search words. If <span class="mono">f = g + h</span> looked cryptic in the Details tab, this is for you.</p>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="aspect">term</th><th>plain English</th></tr></thead>
+      <tbody>
+        <tr><td class="aspect">A&#42;</td><td>A classic <b>best-first</b> search: always work on the most promising unexplored board first, judged by cost-so-far plus an estimate of what&#8217;s left.</td></tr>
+        <tr><td class="aspect">best-first</td><td>At each step, expand whichever option currently looks cheapest overall &mdash; not depth-first, not breadth-first.</td></tr>
+        <tr><td class="aspect">g</td><td>Moves made <i>so far</i> to reach a board (the known cost).</td></tr>
+        <tr><td class="aspect">h <span class="muted">(heuristic)</span></td><td>An <i>estimate</i> of the moves still to go. In NN&nbsp;A&#42;, h = the value net&#8217;s prediction.</td></tr>
+        <tr><td class="aspect">f = g + h</td><td>The score A&#42; ranks boards by: known cost so far + estimated cost to finish. It always pops the smallest f.</td></tr>
+        <tr><td class="aspect">expand</td><td>Generate the boards reachable from the current one by one legal move each.</td></tr>
+        <tr><td class="aspect">closed set</td><td>Boards already settled; A&#42; won&#8217;t re-open them (Ricochet boards are Markov, so each need be handled once).</td></tr>
+        <tr><td class="aspect">frontier / priority queue</td><td>The pool of discovered-but-not-yet-expanded boards, kept ordered by f.</td></tr>
+        <tr><td class="aspect">admissible</td><td>A heuristic that never <i>over</i>-estimates. Admissible h makes classic A&#42; return a true shortest path &mdash; the learned value net is <b>not</b> admissible, which is why NN&nbsp;A&#42; is optimal only empirically.</td></tr>
+        <tr><td class="aspect">Monte-Carlo return</td><td>A value target read off an <i>actual</i> solution the search found (its length), not a bootstrapped guess. Self-play uses this.</td></tr>
+        <tr><td class="aspect">MCTS / PUCT</td><td>The tree search + selection rule behind AlphaZero. <b>Not used here</b> &mdash; a single-agent puzzle with a cost-to-go value is handled more simply by A&#42;.</td></tr>
+        <tr><td class="aspect">expert iteration <span class="muted">(ExIt)</span></td><td>Train the net to match a stronger search (the &ldquo;expert&rdquo;), then use the improved net to power the next round&#8217;s search. Repeat &mdash; this is what &ldquo;self-play&rdquo; means here.</td></tr>
+        <tr><td class="aspect">subgoal DAG <span class="muted">(the old system)</span></td><td>The older approach searched over partial <i>plans</i> made of sub-targets (bottleneck / support / helper), not board states, with a different weighted cost unit.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="kicker">glossary &middot; the scores</div>
+    <h2>The measurement words</h2>
+    <p class="muted">Every number in the comparison table is one of these.</p>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="aspect">metric</th><th>plain English</th><th>better</th></tr></thead>
+      <tbody>
+        <tr><td class="aspect">solve rate</td><td>Share of test puzzles the planner actually solves.</td><td>higher</td></tr>
+        <tr><td class="aspect">regret</td><td><b>Extra moves over the shortest solution</b>, averaged over solved puzzles. 0 means it found an optimal plan.</td><td>lower</td></tr>
+        <tr><td class="aspect">% optimal</td><td>Share of solved puzzles it solved in the fewest possible moves (regret exactly 0).</td><td>higher</td></tr>
+        <tr><td class="aspect">value MAE</td><td>Average error in the value net&#8217;s move&#8209;count estimate (e.g. 0.263 means it is off by about a quarter of a move on average).</td><td>lower</td></tr>
+        <tr><td class="aspect">policy top&#8209;1</td><td>How often the policy&#8217;s #1 move is a correct (optimal) move.</td><td>higher</td></tr>
+        <tr><td class="aspect">weighted subgoal cost</td><td>The <i>old</i> system&#8217;s cost unit (helper&#8209;assisted steps counted double). <b>Not</b> a move count &mdash; so the old model&#8217;s numbers are not directly comparable to the move models&#8217;.</td><td>lower</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="kicker">glossary &middot; training</div>
+    <h2>How the models are trained</h2>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="aspect">term</th><th>plain English</th></tr></thead>
+      <tbody>
+        <tr><td class="aspect">oracle</td><td>A <b>perfect but slow</b> exact solver. Used <b>only</b> to create training answers and to grade at test time &mdash; the deployed planner never calls it.</td></tr>
+        <tr><td class="aspect">supervised</td><td>Train the net on the oracle&#8217;s exact answers (the baseline approach).</td></tr>
+        <tr><td class="aspect">candidate&#8209;scored</td><td>A supervised add&#8209;on: also have the oracle grade <b>every candidate&#8217;s resulting board</b>, so the value net finally sees off&#8209;path boards too. Still uses the oracle only at training time.</td></tr>
+        <tr><td class="aspect">self&#8209;play / expert&#8209;iteration <span class="muted">(ExIt)</span></td><td><b>No oracle.</b> The net solves puzzles with its <i>own</i> search, trains on its own solutions, and repeats &mdash; getting better each round.</td></tr>
+        <tr><td class="aspect">warm&#8209;start vs from&#8209;scratch</td><td>Self&#8209;play started from the trained supervised net (<i>warm</i>) versus from a <i>random</i> net (<i>from scratch</i> &mdash; no oracle involved anywhere).</td></tr>
+        <tr><td class="aspect">forward&#8209;walk</td><td>How self&#8209;play makes solvable practice puzzles: take a board, slide the target robot a few random times, then call wherever it landed &ldquo;the goal.&rdquo; A ready&#8209;made solution comes for free.</td></tr>
+        <tr><td class="aspect">iteration (iter)</td><td>One round of self&#8209;play: generate puzzles &rarr; solve &rarr; train &rarr; repeat. &ldquo;iter14&rdquo; = after 14 rounds.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="kicker">glossary &middot; under the hood</div>
+    <h2>Net internals <span class="muted" style="font-family:var(--sans);text-transform:none;letter-spacing:0">&mdash; only if you care</span></h2>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="aspect">term</th><th>plain English</th></tr></thead>
+      <tbody>
+        <tr><td class="aspect">encoder <span class="muted">(looped transformer)</span></td><td>The shared front part of the net that reads the board, before it splits into the value head and the policy head.</td></tr>
+        <tr><td class="aspect">node features <span class="mono">[257,14]</span></td><td>How a board is fed to the net: 256 cells + 1 summary token, each described by 14 numbers (robot positions, goal, slide directions).</td></tr>
+        <tr><td class="aspect">cost&#8209;to&#8209;go bins / HL&#8209;Gauss</td><td>The value is output as a probability spread over the possible move&#8209;counts (0&ndash;63) instead of one bare number &mdash; it trains more stably.</td></tr>
+        <tr><td class="aspect">destination (slide) lookahead</td><td>The policy reads, for each move, the cell the robot would <i>stop</i> on. That one&#8209;step peek is what lets it learn good moves at all (without it, accuracy collapses to ~10%).</td></tr>
+        <tr><td class="aspect">admissible heuristic</td><td>A never&#8209;overestimating distance guess. The oracle uses one to solve exactly and fast; it is not the learned value net.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+  </div><!-- /tab-glossary -->
+
+  <script>
+  function showTab(t){
+    var tabs={overview:'mt-over', details:'mt-det', glossary:'mt-gloss'};
+    for(var k in tabs){
+      document.getElementById('tab-'+k).hidden = (k!==t);
+      document.getElementById(tabs[k]).classList.toggle('on', k===t);
+    }
+    window.scrollTo(0,0);
+  }
+  </script>
+
+<script>var DEMOS = [{"env_id": 2455, "walls_right": [[0, 11], [2, 12], [2, 14], [3, 15], [4, 0], [4, 5], [5, 2], [5, 4], [6, 2], [6, 3], [6, 8], [7, 11], [7, 15], [8, 15], [9, 1], [9, 4], [9, 9], [9, 15], [11, 0], [11, 3], [12, 14], [13, 0], [13, 3], [13, 8], [13, 14], [15, 0], [15, 1], [15, 2], [15, 3], [15, 4], [15, 5], [15, 6], [15, 7], [15, 8], [15, 9], [15, 10], [15, 11], [15, 12], [15, 13], [15, 14], [15, 15]], "walls_down": [[0, 2], [0, 8], [0, 15], [1, 1], [1, 11], [1, 15], [2, 9], [2, 10], [2, 15], [3, 1], [3, 5], [3, 11], [3, 15], [4, 5], [4, 15], [5, 12], [5, 15], [6, 0], [6, 15], [7, 1], [7, 5], [7, 12], [7, 15], [8, 12], [8, 15], [9, 15], [10, 6], [10, 7], [10, 13], [10, 15], [11, 12], [11, 15], [12, 15], [13, 2], [13, 15], [14, 15], [15, 3], [15, 4], [15, 15]], "colors": ["Red", "Blue", "Green", "Yellow"], "start": [[13, 11], [5, 6], [1, 14], [8, 9]], "target": [0, 13], "target_idx": 0, "optimal": 5, "nn_cost": 5, "regret": 0, "steps": [{"slot": 2, "color": "Green", "dir": "left", "from": [1, 14], "to": [0, 14]}, {"slot": 0, "color": "Red", "dir": "left", "from": [13, 11], "to": [8, 11]}, {"slot": 0, "color": "Red", "dir": "up", "from": [8, 11], "to": [8, 10]}, {"slot": 0, "color": "Red", "dir": "left", "from": [8, 10], "to": [0, 10]}, {"slot": 0, "color": "Red", "dir": "down", "from": [0, 10], "to": [0, 13]}], "states": [[[13, 11], [5, 6], [1, 14], [8, 9]], [[13, 11], [5, 6], [0, 14], [8, 9]], [[8, 11], [5, 6], [0, 14], [8, 9]], [[8, 10], [5, 6], [0, 14], [8, 9]], [[0, 10], [5, 6], [0, 14], [8, 9]], [[0, 13], [5, 6], [0, 14], [8, 9]]]}, {"env_id": 2451, "walls_right": [[1, 0], [1, 1], [1, 2], [1, 3], [2, 2], [2, 7], [2, 8], [2, 13], [3, 7], [6, 15], [8, 1], [8, 3], [8, 6], [9, 14], [11, 9], [12, 9], [12, 12], [13, 3], [13, 8], [13, 9], [14, 1], [14, 8], [14, 9], [14, 14], [15, 0], [15, 1], [15, 2], [15, 3], [15, 4], [15, 5], [15, 6], [15, 7], [15, 8], [15, 9], [15, 10], [15, 11], [15, 12], [15, 13], [15, 14], [15, 15]], "walls_down": [[0, 1], [0, 9], [0, 15], [1, 2], [1, 7], [1, 15], [2, 1], [2, 5], [2, 14], [2, 15], [3, 3], [3, 14], [3, 15], [4, 15], [5, 8], [5, 12], [5, 13], [5, 15], [6, 0], [6, 4], [6, 15], [7, 15], [8, 15], [9, 7], [9, 13], [9, 15], [10, 1], [10, 15], [11, 15], [12, 10], [12, 15], [13, 9], [13, 13], [13, 15], [14, 1], [14, 8], [14, 15], [15, 5], [15, 9], [15, 15]], "colors": ["Red", "Blue", "Green", "Yellow"], "start": [[2, 2], [1, 6], [12, 8], [10, 12]], "target": [9, 1], "target_idx": 0, "optimal": 8, "nn_cost": 8, "regret": 0, "steps": [{"slot": 2, "color": "Green", "dir": "right", "from": [12, 8], "to": [13, 8]}, {"slot": 2, "color": "Green", "dir": "up", "from": [13, 8], "to": [13, 0]}, {"slot": 0, "color": "Red", "dir": "down", "from": [2, 2], "to": [2, 5]}, {"slot": 0, "color": "Red", "dir": "right", "from": [2, 5], "to": [15, 5]}, {"slot": 0, "color": "Red", "dir": "up", "from": [15, 5], "to": [15, 0]}, {"slot": 0, "color": "Red", "dir": "left", "from": [15, 0], "to": [14, 0]}, {"slot": 0, "color": "Red", "dir": "down", "from": [14, 0], "to": [14, 1]}, {"slot": 0, "color": "Red", "dir": "left", "from": [14, 1], "to": [9, 1]}], "states": [[[2, 2], [1, 6], [12, 8], [10, 12]], [[2, 2], [1, 6], [13, 8], [10, 12]], [[2, 2], [1, 6], [13, 0], [10, 12]], [[2, 5], [1, 6], [13, 0], [10, 12]], [[15, 5], [1, 6], [13, 0], [10, 12]], [[15, 0], [1, 6], [13, 0], [10, 12]], [[14, 0], [1, 6], [13, 0], [10, 12]], [[14, 1], [1, 6], [13, 0], [10, 12]], [[9, 1], [1, 6], [13, 0], [10, 12]]]}, {"env_id": 2454, "walls_right": [[1, 11], [1, 14], [2, 0], [2, 15], [3, 8], [4, 10], [4, 15], [5, 4], [5, 13], [5, 14], [7, 0], [7, 15], [8, 8], [8, 12], [10, 0], [10, 2], [11, 10], [11, 13], [12, 4], [12, 12], [12, 13], [13, 7], [15, 0], [15, 1], [15, 2], [15, 3], [15, 4], [15, 5], [15, 6], [15, 7], [15, 8], [15, 9], [15, 10], [15, 11], [15, 12], [15, 13], [15, 14], [15, 15]], "walls_down": [[0, 8], [0, 15], [1, 0], [1, 15], [2, 5], [2, 12], [2, 14], [2, 15], [3, 2], [3, 7], [3, 15], [4, 1], [4, 15], [5, 1], [5, 15], [6, 2], [6, 5], [6, 6], [6, 7], [6, 15], [7, 10], [7, 15], [8, 15], [9, 4], [9, 5], [9, 8], [9, 12], [9, 15], [10, 15], [11, 15], [12, 1], [12, 12], [12, 15], [13, 5], [13, 7], [13, 11], [13, 13], [13, 15], [14, 0], [14, 5], [14, 15], [15, 15]], "colors": ["Red", "Blue", "Green", "Yellow"], "start": [[6, 1], [1, 4], [3, 9], [5, 2]], "target": [12, 7], "target_idx": 3, "optimal": 8, "nn_cost": 8, "regret": 0, "steps": [{"slot": 0, "color": "Red", "dir": "left", "from": [6, 1], "to": [0, 1]}, {"slot": 1, "color": "Blue", "dir": "left", "from": [1, 4], "to": [0, 4]}, {"slot": 1, "color": "Blue", "dir": "down", "from": [0, 4], "to": [0, 8]}, {"slot": 0, "color": "Red", "dir": "down", "from": [0, 1], "to": [0, 7]}, {"slot": 0, "color": "Red", "dir": "right", "from": [0, 7], "to": [13, 7]}, {"slot": 3, "color": "Yellow", "dir": "left", "from": [5, 2], "to": [0, 2]}, {"slot": 3, "color": "Yellow", "dir": "down", "from": [0, 2], "to": [0, 7]}, {"slot": 3, "color": "Yellow", "dir": "right", "from": [0, 7], "to": [12, 7]}], "states": [[[6, 1], [1, 4], [3, 9], [5, 2]], [[0, 1], [1, 4], [3, 9], [5, 2]], [[0, 1], [0, 4], [3, 9], [5, 2]], [[0, 1], [0, 8], [3, 9], [5, 2]], [[0, 7], [0, 8], [3, 9], [5, 2]], [[13, 7], [0, 8], [3, 9], [5, 2]], [[13, 7], [0, 8], [3, 9], [0, 2]], [[13, 7], [0, 8], [3, 9], [0, 7]], [[13, 7], [0, 8], [3, 9], [12, 7]]]}];</script>
+
+<script>
+(function(){
+  var NS="http://www.w3.org/2000/svg";
+  var N=16, CELL=27, PAD=9, SIZE=CELL*N;
+  var LET={Red:"R",Blue:"B",Green:"G",Yellow:"Y"};
+  var ARR={up:"↑",down:"↓",left:"←",right:"→"};
+  function cx(x){return PAD+x*CELL+CELL/2;} function cy(y){return PAD+y*CELL+CELL/2;}
+  function E(t,cls,attr){var e=document.createElementNS(NS,t); if(cls)e.setAttribute("class",cls); if(attr)for(var k in attr)e.setAttribute(k,attr[k]); return e;}
+  var D=null, step=0, playing=false, timer=null, robotEls=[];
+
+  function buildBoard(d){
+    var host=document.getElementById("board"); host.innerHTML="";
+    var svg=E("svg","board",{viewBox:"0 0 "+(SIZE+2*PAD)+" "+(SIZE+2*PAD)});
+    svg.setAttribute("role","img");
+    svg.setAttribute("aria-label","16 by 16 board; "+d.colors[d.target_idx]+" robot must reach cell "+d.target[0]+", "+d.target[1]);
+    for(var i=0;i<=N;i++){
+      svg.appendChild(E("line","gline",{x1:PAD+i*CELL,y1:PAD,x2:PAD+i*CELL,y2:PAD+SIZE}));
+      svg.appendChild(E("line","gline",{x1:PAD,y1:PAD+i*CELL,x2:PAD+SIZE,y2:PAD+i*CELL}));
+    }
+    var tc=d.colors[d.target_idx];
+    svg.appendChild(E("rect","tring stroke-"+tc,{x:PAD+d.target[0]*CELL+2.5,y:PAD+d.target[1]*CELL+2.5,width:CELL-5,height:CELL-5,rx:5}));
+    svg.appendChild(E("circle","tdot fill-"+tc,{cx:cx(d.target[0]),cy:cy(d.target[1]),r:CELL*0.15}));
+    svg.appendChild(E("rect","border",{x:PAD,y:PAD,width:SIZE,height:SIZE}));
+    d.walls_right.forEach(function(w){svg.appendChild(E("line","wall",{x1:PAD+(w[0]+1)*CELL,y1:PAD+w[1]*CELL,x2:PAD+(w[0]+1)*CELL,y2:PAD+(w[1]+1)*CELL}));});
+    d.walls_down.forEach(function(w){svg.appendChild(E("line","wall",{x1:PAD+w[0]*CELL,y1:PAD+(w[1]+1)*CELL,x2:PAD+(w[0]+1)*CELL,y2:PAD+(w[1]+1)*CELL}));});
+    robotEls=[];
+    d.colors.forEach(function(c,slot){
+      var g=E("g","robot"); var tgt=slot===d.target_idx;
+      if(tgt) g.appendChild(E("circle","thalo stroke-"+c,{cx:0,cy:0,r:CELL*0.46}));
+      g.appendChild(E("circle","rbody fill-"+c+(tgt?" tgt":""),{cx:0,cy:0,r:CELL*0.36}));
+      var t=E("text","rtxt"+(c==="Yellow"?" dark":""),{x:0,y:0,"text-anchor":"middle",dy:".35em","font-size":CELL*0.4}); t.textContent=LET[c];
+      g.appendChild(t);
+      var p=d.states[0][slot]; g.style.transform="translate("+cx(p[0])+"px,"+cy(p[1])+"px)";
+      svg.appendChild(g); robotEls[slot]=g;
+    });
+    host.appendChild(svg);
+  }
+  function place(i){ D.states[i].forEach(function(p,s){ robotEls[s].style.transform="translate("+cx(p[0])+"px,"+cy(p[1])+"px)"; }); }
+  function moves(){ var ol=document.getElementById("moves"); ol.innerHTML="";
+    D.steps.forEach(function(s,i){ var li=document.createElement("li");
+      li.className=(i<step?"done":"")+(i===step-1&&step>0?" cur":"");
+      li.innerHTML='<span class="n">'+(i+1)+'</span><span class="rc" style="background:var(--r-'+s.color.toLowerCase()+')"></span><span>'+s.color+' <b>'+ARR[s.dir]+' '+s.dir+'</b></span>';
+      ol.appendChild(li); }); }
+  function status(){ var b=document.getElementById("status"); var solved=step>=D.steps.length;
+    b.innerHTML="board <b>#"+D.env_id+"</b> &middot; target <b>"+D.colors[D.target_idx]+"</b> &rarr; ("+D.target[0]+", "+D.target[1]+")<br>"
+      +"NN A&#42;: <b>"+D.nn_cost+" moves</b> &middot; optimal <b>"+D.optimal+"</b> &middot; <span class='ok'>regret 0 &check;</span><br>"
+      +"step <b>"+step+" / "+D.steps.length+"</b>"+(solved?" &middot; <span class='ok'>solved &check;</span>":""); }
+  function setStep(i){ step=Math.max(0,Math.min(D.steps.length,i)); place(step); moves(); status(); }
+  function pause(){ playing=false; if(timer)clearInterval(timer); var p=document.getElementById("play"); if(p)p.innerHTML="&#9654; Play"; }
+  function play(){ if(playing){pause();return;} if(step>=D.steps.length)setStep(0); playing=true;
+    document.getElementById("play").innerHTML="&#9208; Pause";
+    timer=setInterval(function(){ if(step>=D.steps.length){pause();return;} setStep(step+1); },820); }
+  function load(idx){ pause(); D=DEMOS[idx]; buildBoard(D); setStep(0);
+    var ts=document.querySelectorAll(".tab"); for(var i=0;i<ts.length;i++) ts[i].classList.toggle("on",i===idx); }
+  function init(){ var tabs=document.getElementById("tabs");
+    DEMOS.forEach(function(d,i){ var b=document.createElement("button"); b.type="button"; b.className="tab";
+      b.textContent="Board #"+d.env_id+" · "+d.colors[d.target_idx]+" · "+d.optimal+" moves"; b.onclick=function(){load(i);}; tabs.appendChild(b); });
+    document.getElementById("play").onclick=play;
+    document.getElementById("next").onclick=function(){pause();setStep(step+1);};
+    document.getElementById("prev").onclick=function(){pause();setStep(step-1);};
+    document.getElementById("reset").onclick=function(){pause();setStep(0);};
+    load(0); }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();
+})();
+</script>
+
+</div>
+</body>
+</html>

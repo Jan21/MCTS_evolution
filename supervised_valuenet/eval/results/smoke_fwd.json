@@ -1,0 +1,102 @@
+{
+  "protocol": {
+    "expansions": 1200,
+    "k": 5,
+    "instances_file": "eval/data/smoke.jsonl",
+    "instances_sha256": "31ff8688284107a15fea5d49f7e1ef5c971eb40386ae28a0c2d06b888a3fc5a1",
+    "n_instances": 6,
+    "instances_meta": {
+      "protocol": {
+        "sampler": "move_planner.evaluate.benchmark sampling loop (one random.Random(seed) consumed sequentially over boards, per_board draws per board via sample_instance)",
+        "boards": "2400-2402",
+        "per_board": 2,
+        "seed": 1,
+        "d_star": "exact move-optimal cost returned by sample_instance (move_planner.oracle.solve); reference only, never used at inference"
+      },
+      "n_instances": 6,
+      "sha256": "31ff8688284107a15fea5d49f7e1ef5c971eb40386ae28a0c2d06b888a3fc5a1",
+      "generated": "2026-07-09T15:50:13"
+    },
+    "checkpoints": {
+      "move_planner/checkpoints/best.ckpt": "2026-07-07T14:48:13"
+    },
+    "device": "cpu",
+    "date": "2026-07-09T15:51:09",
+    "results_file": "eval/results/smoke_fwd.json",
+    "expansion_definition": "one popped search node whose children are generated (= 1 policy pass + 1 batched value pass over <= k children, in both systems)"
+  },
+  "systems": {
+    "backward subgoal planner": {
+      "kind": "pending"
+    },
+    "forward move planner (move_planner/checkpoints/best.ckpt)": {
+      "kind": "forward",
+      "aggregate": {
+        "n": 6,
+        "solved": 6,
+        "solve_rate": 1.0,
+        "mean_regret": 0.16666666666666666,
+        "pct_optimal": 83.33333333333333,
+        "mean_moves": 5.166666666666667,
+        "mean_expansions": 208.16666666666666,
+        "mean_seconds": 444.93131478483946
+      },
+      "rows": [
+        {
+          "env_id": 2400,
+          "d_star": 12,
+          "solved": true,
+          "moves": 12,
+          "regret": 0,
+          "expansions": 829,
+          "seconds": 493.67383131501265
+        },
+        {
+          "env_id": 2400,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 81,
+          "seconds": 106.33773492788896
+        },
+        {
+          "env_id": 2401,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 100,
+          "seconds": 132.99236757098697
+        },
+        {
+          "env_id": 2401,
+          "d_star": 1,
+          "solved": true,
+          "moves": 1,
+          "regret": 0,
+          "expansions": 4,
+          "seconds": 5.31073964596726
+        },
+        {
+          "env_id": 2402,
+          "d_star": 5,
+          "solved": true,
+          "moves": 6,
+          "regret": 1,
+          "expansions": 229,
+          "seconds": 1868.2829618020914
+        },
+        {
+          "env_id": 2402,
+          "d_star": 2,
+          "solved": true,
+          "moves": 2,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 62.990253447089344
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,2882 @@
+{
+  "protocol": {
+    "expansions": 1200,
+    "k": 5,
+    "instances_file": "scaling/data/g16r6/bench.solved.jsonl",
+    "instances_sha256": "b6eb20e9e434a633697ba8a0ed17b72f4f77970ce8cd33b65ff7e39fb43f537d",
+    "n_instances": 316,
+    "instances_meta": null,
+    "checkpoints": {
+      "lightning_logs/version_43/checkpoints/epoch=7-step=43224.ckpt": "2026-07-14T14:52:55"
+    },
+    "device": "cpu",
+    "date": "2026-07-14T14:57:59",
+    "results_file": "scaling/results/g16r6/comparison_forward_control.json",
+    "command": "PYTHONPATH=. python -m eval.compare --instances scaling/data/g16r6/bench.solved.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts lightning_logs/version_43/checkpoints/epoch=7-step=43224.ckpt --device cpu --out scaling/results/g16r6/comparison_forward_control.json --md /dev/null",
+    "expansion_definition": "one popped search node whose children are generated (= 1 policy pass + 1 batched value pass over <= k children, in both systems)"
+  },
+  "systems": {
+    "backward subgoal planner": {
+      "kind": "pending"
+    },
+    "forward move planner (lightning_logs/version_43/checkpoints/epoch=7-step=43224.ckpt)": {
+      "kind": "forward",
+      "aggregate": {
+        "n": 316,
+        "solved": 314,
+        "solve_rate": 0.9936708860759493,
+        "mean_regret": 0.09554140127388536,
+        "pct_optimal": 92.35668789808918,
+        "mean_moves": 5.777070063694268,
+        "mean_expansions": 64.22151898734177,
+        "mean_seconds": 21.648781449523685
+      },
+      "rows": [
+        {
+          "env_id": 900,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 25,
+          "seconds": 8.929612889885902
+        },
+        {
+          "env_id": 900,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 8,
+          "seconds": 2.828936381265521
+        },
+        {
+          "env_id": 901,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 129,
+          "seconds": 43.98158389236778
+        },
+        {
+          "env_id": 902,
+          "d_star": 2,
+          "solved": true,
+          "moves": 2,
+          "regret": 0,
+          "expansions": 2,
+          "seconds": 0.7762258010916412
+        },
+        {
+          "env_id": 902,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 31,
+          "seconds": 11.3464984302409
+        },
+        {
+          "env_id": 902,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 19,
+          "seconds": 6.859430904965848
+        },
+        {
+          "env_id": 903,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 3,
+          "seconds": 1.1349752419628203
+        },
+        {
+          "env_id": 903,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.8279366730712354
+        },
+        {
+          "env_id": 904,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 17,
+          "seconds": 5.814657588023692
+        },
+        {
+          "env_id": 904,
+          "d_star": 7,
+          "solved": true,
+          "moves": 9,
+          "regret": 2,
+          "expansions": 282,
+          "seconds": 93.96006250241771
+        },
+        {
+          "env_id": 905,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 56,
+          "seconds": 18.720464257057756
+        },
+        {
+          "env_id": 905,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 62,
+          "seconds": 20.44995835889131
+        },
+        {
+          "env_id": 906,
+          "d_star": 1,
+          "solved": true,
+          "moves": 1,
+          "regret": 0,
+          "expansions": 1,
+          "seconds": 0.3957760566845536
+        },
+        {
+          "env_id": 906,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 4,
+          "seconds": 1.3283160678111017
+        },
+        {
+          "env_id": 906,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 21,
+          "seconds": 6.871282890904695
+        },
+        {
+          "env_id": 907,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 21,
+          "seconds": 7.374690133146942
+        },
+        {
+          "env_id": 908,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 36,
+          "seconds": 13.248123412951827
+        },
+        {
+          "env_id": 908,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 14,
+          "seconds": 5.124620373360813
+        },
+        {
+          "env_id": 909,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 103,
+          "seconds": 34.270808266010135
+        },
+        {
+          "env_id": 909,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 4,
+          "seconds": 1.3619125252589583
+        },
+        {
+          "env_id": 909,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 9,
+          "seconds": 2.976575753185898
+        },
+        {
+          "env_id": 910,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 38,
+          "seconds": 14.153978190850466
+        },
+        {
+          "env_id": 910,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 10,
+          "seconds": 3.724791259970516
+        },
+        {
+          "env_id": 911,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 43,
+          "seconds": 15.660509512759745
+        },
+        {
+          "env_id": 911,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 32,
+          "seconds": 11.627157079987228
+        },
+        {
+          "env_id": 911,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 26,
+          "seconds": 9.448648185003549
+        },
+        {
+          "env_id": 912,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 69,
+          "seconds": 25.20820016786456
+        },
+        {
+          "env_id": 913,
+          "d_star": 1,
+          "solved": true,
+          "moves": 1,
+          "regret": 0,
+          "expansions": 1,
+          "seconds": 0.409383328165859
+        },
+        {
+          "env_id": 913,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 14,
+          "seconds": 5.019185482989997
+        },
+        {
+          "env_id": 913,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 11,
+          "seconds": 3.9231081889010966
+        },
+        {
+          "env_id": 914,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 74,
+          "seconds": 24.31081538973376
+        },
+        {
+          "env_id": 914,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 41,
+          "seconds": 13.545680509880185
+        },
+        {
+          "env_id": 914,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 3,
+          "seconds": 1.0351688349619508
+        },
+        {
+          "env_id": 915,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 29,
+          "seconds": 10.63627533102408
+        },
+        {
+          "env_id": 915,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.567465362139046
+        },
+        {
+          "env_id": 915,
+          "d_star": 1,
+          "solved": true,
+          "moves": 1,
+          "regret": 0,
+          "expansions": 1,
+          "seconds": 0.4165222328156233
+        },
+        {
+          "env_id": 916,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 14,
+          "seconds": 5.306913325097412
+        },
+        {
+          "env_id": 917,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 3,
+          "seconds": 1.1241938900202513
+        },
+        {
+          "env_id": 917,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 17,
+          "seconds": 6.012484882958233
+        },
+        {
+          "env_id": 918,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 30,
+          "seconds": 9.855108954012394
+        },
+        {
+          "env_id": 918,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 13,
+          "seconds": 4.221024890895933
+        },
+        {
+          "env_id": 918,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 11,
+          "seconds": 3.5594070670194924
+        },
+        {
+          "env_id": 919,
+          "d_star": 5,
+          "solved": true,
+          "moves": 6,
+          "regret": 1,
+          "expansions": 29,
+          "seconds": 10.627875843085349
+        },
+        {
+          "env_id": 919,
+          "d_star": 7,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 467.48835333203897
+        },
+        {
+          "env_id": 920,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 36,
+          "seconds": 11.886519420892
+        },
+        {
+          "env_id": 920,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 21,
+          "seconds": 6.851450303103775
+        },
+        {
+          "env_id": 921,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 16,
+          "seconds": 5.764313003048301
+        },
+        {
+          "env_id": 922,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 10,
+          "seconds": 3.335392154287547
+        },
+        {
+          "env_id": 922,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 27,
+          "seconds": 8.923345745075494
+        },
+        {
+          "env_id": 922,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 18,
+          "seconds": 5.914171363227069
+        },
+        {
+          "env_id": 923,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 100,
+          "seconds": 36.26997312204912
+        },
+        {
+          "env_id": 923,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 2.2313867677003145
+        },
+        {
+          "env_id": 923,
+          "d_star": 2,
+          "solved": true,
+          "moves": 2,
+          "regret": 0,
+          "expansions": 2,
+          "seconds": 0.7374184341169894
+        },
+        {
+          "env_id": 924,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 11,
+          "seconds": 3.7015947340987623
+        },
+        {
+          "env_id": 925,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 25,
+          "seconds": 9.113276923075318
+        },
+        {
+          "env_id": 925,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.8546536923386157
+        },
+        {
+          "env_id": 926,
+          "d_star": 8,
+          "solved": true,
+          "moves": 9,
+          "regret": 1,
+          "expansions": 745,
+          "seconds": 242.9067756580189
+        },
+        {
+          "env_id": 926,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 10,
+          "seconds": 3.2889367882162333
+        },
+        {
+          "env_id": 926,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 56,
+          "seconds": 18.496163373813033
+        },
+        {
+          "env_id": 927,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 2.206869695801288
+        },
+        {
+          "env_id": 927,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 40,
+          "seconds": 14.213223692961037
+        },
+        {
+          "env_id": 927,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 11,
+          "seconds": 3.8922827057540417
+        },
+        {
+          "env_id": 928,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.2969483081251383
+        },
+        {
+          "env_id": 928,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 11,
+          "seconds": 3.529308713041246
+        },
+        {
+          "env_id": 928,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 14,
+          "seconds": 4.5958954798989
+        },
+        {
+          "env_id": 929,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 4,
+          "seconds": 1.5318648242391646
+        },
+        {
+          "env_id": 929,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 2.200200672261417
+        },
+        {
+          "env_id": 930,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 8,
+          "seconds": 3.217831176239997
+        },
+        {
+          "env_id": 930,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.7979072812013328
+        },
+        {
+          "env_id": 931,
+          "d_star": 2,
+          "solved": true,
+          "moves": 2,
+          "regret": 0,
+          "expansions": 2,
+          "seconds": 0.7891716999001801
+        },
+        {
+          "env_id": 931,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 63,
+          "seconds": 22.46324824821204
+        },
+        {
+          "env_id": 932,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 9,
+          "seconds": 3.269542750902474
+        },
+        {
+          "env_id": 932,
+          "d_star": 7,
+          "solved": true,
+          "moves": 8,
+          "regret": 1,
+          "expansions": 151,
+          "seconds": 53.15696502197534
+        },
+        {
+          "env_id": 932,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 34,
+          "seconds": 12.080094691831619
+        },
+        {
+          "env_id": 933,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 19,
+          "seconds": 6.746550227981061
+        },
+        {
+          "env_id": 933,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 8,
+          "seconds": 2.8256051130592823
+        },
+        {
+          "env_id": 933,
+          "d_star": 2,
+          "solved": true,
+          "moves": 2,
+          "regret": 0,
+          "expansions": 2,
+          "seconds": 0.7419164697639644
+        },
+        {
+          "env_id": 934,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 11,
+          "seconds": 3.9819231419824064
+        },
+        {
+          "env_id": 934,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 4,
+          "seconds": 1.4988143648952246
+        },
+        {
+          "env_id": 935,
+          "d_star": 7,
+          "solved": true,
+          "moves": 8,
+          "regret": 1,
+          "expansions": 790,
+          "seconds": 282.50692175421864
+        },
+        {
+          "env_id": 935,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 4,
+          "seconds": 1.406668258830905
+        },
+        {
+          "env_id": 935,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 11,
+          "seconds": 4.192258461378515
+        },
+        {
+          "env_id": 936,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 59,
+          "seconds": 20.96004600962624
+        },
+        {
+          "env_id": 936,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.418285090010613
+        },
+        {
+          "env_id": 936,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 32,
+          "seconds": 11.240017347037792
+        },
+        {
+          "env_id": 937,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 25,
+          "seconds": 8.657939368858933
+        },
+        {
+          "env_id": 937,
+          "d_star": 6,
+          "solved": true,
+          "moves": 7,
+          "regret": 1,
+          "expansions": 365,
+          "seconds": 126.77985236886889
+        },
+        {
+          "env_id": 937,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 292,
+          "seconds": 101.078337256331
+        },
+        {
+          "env_id": 938,
+          "d_star": 6,
+          "solved": true,
+          "moves": 7,
+          "regret": 1,
+          "expansions": 137,
+          "seconds": 47.97570432303473
+        },
+        {
+          "env_id": 938,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 12,
+          "seconds": 4.100037296768278
+        },
+        {
+          "env_id": 939,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 2.2148681632243097
+        },
+        {
+          "env_id": 939,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 38,
+          "seconds": 13.23685363912955
+        },
+        {
+          "env_id": 939,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 2.118972532916814
+        },
+        {
+          "env_id": 940,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 14,
+          "seconds": 4.9534817561507225
+        },
+        {
+          "env_id": 940,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 47,
+          "seconds": 16.379290788900107
+        },
+        {
+          "env_id": 940,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 30,
+          "seconds": 10.460838116239756
+        },
+        {
+          "env_id": 941,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.491171345114708
+        },
+        {
+          "env_id": 941,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 12,
+          "seconds": 4.1647634990513325
+        },
+        {
+          "env_id": 941,
+          "d_star": 8,
+          "solved": true,
+          "moves": 10,
+          "regret": 2,
+          "expansions": 308,
+          "seconds": 108.99228610889986
+        },
+        {
+          "env_id": 942,
+          "d_star": 10,
+          "solved": true,
+          "moves": 10,
+          "regret": 0,
+          "expansions": 43,
+          "seconds": 15.455860158894211
+        },
+        {
+          "env_id": 943,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 34,
+          "seconds": 11.302581653930247
+        },
+        {
+          "env_id": 944,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 123,
+          "seconds": 43.64051601989195
+        },
+        {
+          "env_id": 944,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.4351251260377467
+        },
+        {
+          "env_id": 944,
+          "d_star": 1,
+          "solved": true,
+          "moves": 1,
+          "regret": 0,
+          "expansions": 1,
+          "seconds": 0.3821030640974641
+        },
+        {
+          "env_id": 945,
+          "d_star": 9,
+          "solved": true,
+          "moves": 10,
+          "regret": 1,
+          "expansions": 80,
+          "seconds": 26.786744582932442
+        },
+        {
+          "env_id": 945,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 77,
+          "seconds": 25.999300238210708
+        },
+        {
+          "env_id": 946,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 4,
+          "seconds": 1.4556937208399177
+        },
+        {
+          "env_id": 946,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 3,
+          "seconds": 1.0923269018530846
+        },
+        {
+          "env_id": 947,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 58,
+          "seconds": 19.000212330836803
+        },
+        {
+          "env_id": 947,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 17,
+          "seconds": 5.626623861026019
+        },
+        {
+          "env_id": 947,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 2.009916282724589
+        },
+        {
+          "env_id": 948,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 99,
+          "seconds": 35.14697882998735
+        },
+        {
+          "env_id": 949,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 68,
+          "seconds": 22.62306254869327
+        },
+        {
+          "env_id": 949,
+          "d_star": 9,
+          "solved": true,
+          "moves": 9,
+          "regret": 0,
+          "expansions": 91,
+          "seconds": 29.86989958304912
+        },
+        {
+          "env_id": 949,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 25,
+          "seconds": 8.076566364150494
+        },
+        {
+          "env_id": 950,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 32,
+          "seconds": 11.216576360166073
+        },
+        {
+          "env_id": 951,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 26,
+          "seconds": 8.586254070978612
+        },
+        {
+          "env_id": 951,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 4,
+          "seconds": 1.37395483488217
+        },
+        {
+          "env_id": 951,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 31,
+          "seconds": 10.220511996652931
+        },
+        {
+          "env_id": 952,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 9,
+          "seconds": 3.1900353557430208
+        },
+        {
+          "env_id": 952,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 10,
+          "seconds": 3.55257416004315
+        },
+        {
+          "env_id": 953,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 8,
+          "seconds": 2.6703442470170557
+        },
+        {
+          "env_id": 953,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 69,
+          "seconds": 22.063212755136192
+        },
+        {
+          "env_id": 954,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 44,
+          "seconds": 14.99780885130167
+        },
+        {
+          "env_id": 954,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.717974164057523
+        },
+        {
+          "env_id": 954,
+          "d_star": 7,
+          "solved": true,
+          "moves": 8,
+          "regret": 1,
+          "expansions": 169,
+          "seconds": 58.38999103335664
+        },
+        {
+          "env_id": 955,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 36,
+          "seconds": 11.918971932027489
+        },
+        {
+          "env_id": 956,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 11,
+          "seconds": 3.8855226300656796
+        },
+        {
+          "env_id": 956,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 4,
+          "seconds": 1.4411407089792192
+        },
+        {
+          "env_id": 957,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 2.2416376816108823
+        },
+        {
+          "env_id": 957,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.6408427101559937
+        },
+        {
+          "env_id": 958,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 52,
+          "seconds": 18.28757165791467
+        },
+        {
+          "env_id": 958,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 64,
+          "seconds": 23.240231768228114
+        },
+        {
+          "env_id": 959,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 8,
+          "seconds": 2.9209289248101413
+        },
+        {
+          "env_id": 959,
+          "d_star": 7,
+          "solved": true,
+          "moves": 8,
+          "regret": 1,
+          "expansions": 210,
+          "seconds": 74.33949183486402
+        },
+        {
+          "env_id": 960,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.446038278285414
+        },
+        {
+          "env_id": 961,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 13,
+          "seconds": 4.312066064681858
+        },
+        {
+          "env_id": 961,
+          "d_star": 9,
+          "solved": true,
+          "moves": 9,
+          "regret": 0,
+          "expansions": 132,
+          "seconds": 44.52144394489005
+        },
+        {
+          "env_id": 962,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 2.04207038320601
+        },
+        {
+          "env_id": 962,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 210,
+          "seconds": 69.72555737942457
+        },
+        {
+          "env_id": 962,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 10,
+          "seconds": 3.240040950011462
+        },
+        {
+          "env_id": 963,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.4063142728991807
+        },
+        {
+          "env_id": 963,
+          "d_star": 5,
+          "solved": true,
+          "moves": 6,
+          "regret": 1,
+          "expansions": 106,
+          "seconds": 35.05429161014035
+        },
+        {
+          "env_id": 964,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 8,
+          "seconds": 2.6917425808496773
+        },
+        {
+          "env_id": 964,
+          "d_star": 7,
+          "solved": true,
+          "moves": 8,
+          "regret": 1,
+          "expansions": 73,
+          "seconds": 24.355758354999125
+        },
+        {
+          "env_id": 965,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.7628406649455428
+        },
+        {
+          "env_id": 966,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.7615717947483063
+        },
+        {
+          "env_id": 966,
+          "d_star": 6,
+          "solved": true,
+          "moves": 9,
+          "regret": 3,
+          "expansions": 409,
+          "seconds": 134.14159638993442
+        },
+        {
+          "env_id": 967,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.7552977330051363
+        },
+        {
+          "env_id": 968,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 16,
+          "seconds": 5.45554931089282
+        },
+        {
+          "env_id": 968,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 9,
+          "seconds": 3.067461095750332
+        },
+        {
+          "env_id": 969,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 9,
+          "seconds": 3.2606337210163474
+        },
+        {
+          "env_id": 969,
+          "d_star": 1,
+          "solved": true,
+          "moves": 1,
+          "regret": 0,
+          "expansions": 1,
+          "seconds": 0.40442074183374643
+        },
+        {
+          "env_id": 969,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 24,
+          "seconds": 8.107703464105725
+        },
+        {
+          "env_id": 970,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 93,
+          "seconds": 31.70889258477837
+        },
+        {
+          "env_id": 970,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 4,
+          "seconds": 1.4157958719879389
+        },
+        {
+          "env_id": 971,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 12,
+          "seconds": 4.413748706225306
+        },
+        {
+          "env_id": 971,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 97,
+          "seconds": 30.890406660269946
+        },
+        {
+          "env_id": 972,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.491711378097534
+        },
+        {
+          "env_id": 972,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 179,
+          "seconds": 59.729958607815206
+        },
+        {
+          "env_id": 973,
+          "d_star": 2,
+          "solved": true,
+          "moves": 2,
+          "regret": 0,
+          "expansions": 2,
+          "seconds": 0.7441408573649824
+        },
+        {
+          "env_id": 973,
+          "d_star": 2,
+          "solved": true,
+          "moves": 2,
+          "regret": 0,
+          "expansions": 2,
+          "seconds": 0.7150878221727908
+        },
+        {
+          "env_id": 974,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 29,
+          "seconds": 10.00118785444647
+        },
+        {
+          "env_id": 974,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 3,
+          "seconds": 1.035863438155502
+        },
+        {
+          "env_id": 975,
+          "d_star": 1,
+          "solved": true,
+          "moves": 1,
+          "regret": 0,
+          "expansions": 1,
+          "seconds": 0.4125302154570818
+        },
+        {
+          "env_id": 975,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 15,
+          "seconds": 5.454435582272708
+        },
+        {
+          "env_id": 976,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 4,
+          "seconds": 1.3724855580367148
+        },
+        {
+          "env_id": 977,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 24,
+          "seconds": 8.248310116119683
+        },
+        {
+          "env_id": 978,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 41,
+          "seconds": 14.26320324325934
+        },
+        {
+          "env_id": 979,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 19,
+          "seconds": 6.125549381133169
+        },
+        {
+          "env_id": 979,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 275,
+          "seconds": 89.61747344722971
+        },
+        {
+          "env_id": 979,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 9,
+          "seconds": 3.1173711172305048
+        },
+        {
+          "env_id": 980,
+          "d_star": 8,
+          "solved": true,
+          "moves": 9,
+          "regret": 1,
+          "expansions": 1154,
+          "seconds": 389.3158119311556
+        },
+        {
+          "env_id": 980,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 17,
+          "seconds": 5.765105702914298
+        },
+        {
+          "env_id": 980,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 50,
+          "seconds": 16.716050965245813
+        },
+        {
+          "env_id": 981,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 105,
+          "seconds": 33.153147684875876
+        },
+        {
+          "env_id": 981,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 11,
+          "seconds": 3.505713456775993
+        },
+        {
+          "env_id": 982,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 41,
+          "seconds": 13.582746366970241
+        },
+        {
+          "env_id": 983,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 9,
+          "seconds": 2.926425830926746
+        },
+        {
+          "env_id": 983,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.5962817100808024
+        },
+        {
+          "env_id": 984,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 72,
+          "seconds": 23.239552738144994
+        },
+        {
+          "env_id": 984,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 66,
+          "seconds": 21.059399761259556
+        },
+        {
+          "env_id": 985,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 173,
+          "seconds": 55.61297209514305
+        },
+        {
+          "env_id": 985,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.3163017239421606
+        },
+        {
+          "env_id": 986,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 9,
+          "seconds": 3.1317115277051926
+        },
+        {
+          "env_id": 986,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 4,
+          "seconds": 1.365021388977766
+        },
+        {
+          "env_id": 986,
+          "d_star": 1,
+          "solved": true,
+          "moves": 1,
+          "regret": 0,
+          "expansions": 1,
+          "seconds": 0.36366214510053396
+        },
+        {
+          "env_id": 987,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 25,
+          "seconds": 8.518507149070501
+        },
+        {
+          "env_id": 987,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 1.9917639172635972
+        },
+        {
+          "env_id": 987,
+          "d_star": 2,
+          "solved": true,
+          "moves": 2,
+          "regret": 0,
+          "expansions": 2,
+          "seconds": 0.6942849289625883
+        },
+        {
+          "env_id": 988,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 19,
+          "seconds": 6.310856806114316
+        },
+        {
+          "env_id": 988,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 22,
+          "seconds": 7.108227834571153
+        },
+        {
+          "env_id": 989,
+          "d_star": 7,
+          "solved": true,
+          "moves": 8,
+          "regret": 1,
+          "expansions": 177,
+          "seconds": 56.844617968425155
+        },
+        {
+          "env_id": 990,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 22,
+          "seconds": 7.269698009826243
+        },
+        {
+          "env_id": 990,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 14,
+          "seconds": 4.6114448751322925
+        },
+        {
+          "env_id": 991,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 3,
+          "seconds": 1.0356645490974188
+        },
+        {
+          "env_id": 991,
+          "d_star": 8,
+          "solved": true,
+          "moves": 9,
+          "regret": 1,
+          "expansions": 376,
+          "seconds": 122.05151787772775
+        },
+        {
+          "env_id": 991,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.6539829666726291
+        },
+        {
+          "env_id": 993,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 8,
+          "seconds": 2.7008191421628
+        },
+        {
+          "env_id": 994,
+          "d_star": 9,
+          "solved": true,
+          "moves": 9,
+          "regret": 0,
+          "expansions": 37,
+          "seconds": 12.227158571127802
+        },
+        {
+          "env_id": 994,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 17,
+          "seconds": 5.731708579696715
+        },
+        {
+          "env_id": 994,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.2760790842585266
+        },
+        {
+          "env_id": 995,
+          "d_star": 2,
+          "solved": true,
+          "moves": 2,
+          "regret": 0,
+          "expansions": 2,
+          "seconds": 0.7120873709209263
+        },
+        {
+          "env_id": 997,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 23,
+          "seconds": 7.892913276795298
+        },
+        {
+          "env_id": 997,
+          "d_star": 9,
+          "solved": true,
+          "moves": 9,
+          "regret": 0,
+          "expansions": 121,
+          "seconds": 39.442397330887616
+        },
+        {
+          "env_id": 998,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 10,
+          "seconds": 3.1958217029459774
+        },
+        {
+          "env_id": 998,
+          "d_star": 9,
+          "solved": true,
+          "moves": 9,
+          "regret": 0,
+          "expansions": 28,
+          "seconds": 8.739585727453232
+        },
+        {
+          "env_id": 998,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.6026737820357084
+        },
+        {
+          "env_id": 999,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 2.4040733790025115
+        },
+        {
+          "env_id": 1001,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.5702028018422425
+        },
+        {
+          "env_id": 1002,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.6096833650954068
+        },
+        {
+          "env_id": 1002,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 102,
+          "seconds": 32.36602786183357
+        },
+        {
+          "env_id": 1002,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 10,
+          "seconds": 3.1819570902734995
+        },
+        {
+          "env_id": 1003,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 100,
+          "seconds": 31.76577078225091
+        },
+        {
+          "env_id": 1003,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 40,
+          "seconds": 12.376366765238345
+        },
+        {
+          "env_id": 1005,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 102,
+          "seconds": 32.83638134319335
+        },
+        {
+          "env_id": 1005,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 519,
+          "seconds": 168.2158540659584
+        },
+        {
+          "env_id": 1005,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 43,
+          "seconds": 13.530902691185474
+        },
+        {
+          "env_id": 1006,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 330,
+          "seconds": 108.37988198688254
+        },
+        {
+          "env_id": 1006,
+          "d_star": 1,
+          "solved": true,
+          "moves": 1,
+          "regret": 0,
+          "expansions": 1,
+          "seconds": 0.36634601885452867
+        },
+        {
+          "env_id": 1007,
+          "d_star": 8,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 396.44276287127286
+        },
+        {
+          "env_id": 1007,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.6727138669230044
+        },
+        {
+          "env_id": 1008,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 55,
+          "seconds": 18.12331988569349
+        },
+        {
+          "env_id": 1008,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 13,
+          "seconds": 4.27439641719684
+        },
+        {
+          "env_id": 1009,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 23,
+          "seconds": 7.770946458913386
+        },
+        {
+          "env_id": 1009,
+          "d_star": 6,
+          "solved": true,
+          "moves": 7,
+          "regret": 1,
+          "expansions": 47,
+          "seconds": 15.652071645017713
+        },
+        {
+          "env_id": 1010,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.412483870983124
+        },
+        {
+          "env_id": 1010,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 118,
+          "seconds": 37.23805219307542
+        },
+        {
+          "env_id": 1011,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 68,
+          "seconds": 21.504173593129963
+        },
+        {
+          "env_id": 1011,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 11,
+          "seconds": 3.6024426431395113
+        },
+        {
+          "env_id": 1012,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 8,
+          "seconds": 2.8779033650644124
+        },
+        {
+          "env_id": 1012,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 51,
+          "seconds": 16.018620990216732
+        },
+        {
+          "env_id": 1013,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 21,
+          "seconds": 6.8289347887039185
+        },
+        {
+          "env_id": 1013,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 1.9545065271668136
+        },
+        {
+          "env_id": 1014,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 9,
+          "seconds": 2.926576209254563
+        },
+        {
+          "env_id": 1014,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 14,
+          "seconds": 4.629067480098456
+        },
+        {
+          "env_id": 1015,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 45,
+          "seconds": 14.016926750075072
+        },
+        {
+          "env_id": 1016,
+          "d_star": 2,
+          "solved": true,
+          "moves": 2,
+          "regret": 0,
+          "expansions": 2,
+          "seconds": 0.6573200961574912
+        },
+        {
+          "env_id": 1017,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 1.9366971906274557
+        },
+        {
+          "env_id": 1017,
+          "d_star": 4,
+          "solved": true,
+          "moves": 6,
+          "regret": 2,
+          "expansions": 21,
+          "seconds": 6.610243760049343
+        },
+        {
+          "env_id": 1017,
+          "d_star": 1,
+          "solved": true,
+          "moves": 1,
+          "regret": 0,
+          "expansions": 1,
+          "seconds": 0.3620006488636136
+        },
+        {
+          "env_id": 1018,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 11,
+          "seconds": 3.765552571043372
+        },
+        {
+          "env_id": 1018,
+          "d_star": 1,
+          "solved": true,
+          "moves": 1,
+          "regret": 0,
+          "expansions": 1,
+          "seconds": 0.3414013581350446
+        },
+        {
+          "env_id": 1019,
+          "d_star": 9,
+          "solved": true,
+          "moves": 10,
+          "regret": 1,
+          "expansions": 891,
+          "seconds": 284.753317410592
+        },
+        {
+          "env_id": 1019,
+          "d_star": 6,
+          "solved": true,
+          "moves": 7,
+          "regret": 1,
+          "expansions": 69,
+          "seconds": 21.87844677409157
+        },
+        {
+          "env_id": 1020,
+          "d_star": 6,
+          "solved": true,
+          "moves": 7,
+          "regret": 1,
+          "expansions": 104,
+          "seconds": 33.76793534588069
+        },
+        {
+          "env_id": 1020,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 207,
+          "seconds": 66.6328431610018
+        },
+        {
+          "env_id": 1020,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 36,
+          "seconds": 11.38558830274269
+        },
+        {
+          "env_id": 1021,
+          "d_star": 1,
+          "solved": true,
+          "moves": 1,
+          "regret": 0,
+          "expansions": 1,
+          "seconds": 0.41081403009593487
+        },
+        {
+          "env_id": 1021,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 122,
+          "seconds": 39.29543892480433
+        },
+        {
+          "env_id": 1022,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 14,
+          "seconds": 4.483460323885083
+        },
+        {
+          "env_id": 1022,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 1.9244997771456838
+        },
+        {
+          "env_id": 1022,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 27,
+          "seconds": 8.470853901933879
+        },
+        {
+          "env_id": 1023,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 50,
+          "seconds": 16.405665590893477
+        },
+        {
+          "env_id": 1023,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 26,
+          "seconds": 9.039975161198527
+        },
+        {
+          "env_id": 1024,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 32,
+          "seconds": 10.069463565014303
+        },
+        {
+          "env_id": 1024,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.167658071964979
+        },
+        {
+          "env_id": 1025,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 11,
+          "seconds": 3.6741359080187976
+        },
+        {
+          "env_id": 1025,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 24,
+          "seconds": 7.734952909871936
+        },
+        {
+          "env_id": 1026,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 26,
+          "seconds": 8.246202320791781
+        },
+        {
+          "env_id": 1026,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 371,
+          "seconds": 116.00587371597067
+        },
+        {
+          "env_id": 1026,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 15,
+          "seconds": 4.513537911698222
+        },
+        {
+          "env_id": 1027,
+          "d_star": 2,
+          "solved": true,
+          "moves": 2,
+          "regret": 0,
+          "expansions": 2,
+          "seconds": 0.7125460021197796
+        },
+        {
+          "env_id": 1027,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 42,
+          "seconds": 13.191408730112016
+        },
+        {
+          "env_id": 1027,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 4,
+          "seconds": 1.3053152807988226
+        },
+        {
+          "env_id": 1028,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 272,
+          "seconds": 84.20109149394557
+        },
+        {
+          "env_id": 1028,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 118,
+          "seconds": 36.857371978927404
+        },
+        {
+          "env_id": 1029,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 17,
+          "seconds": 5.696987643837929
+        },
+        {
+          "env_id": 1029,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 116,
+          "seconds": 36.62764284899458
+        },
+        {
+          "env_id": 1029,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 12,
+          "seconds": 3.84959764406085
+        },
+        {
+          "env_id": 1030,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 81,
+          "seconds": 25.773195555899292
+        },
+        {
+          "env_id": 1030,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 1.958059832919389
+        },
+        {
+          "env_id": 1030,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 8,
+          "seconds": 2.5938998451456428
+        },
+        {
+          "env_id": 1031,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 67,
+          "seconds": 21.418928171973675
+        },
+        {
+          "env_id": 1031,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.6160345892421901
+        },
+        {
+          "env_id": 1031,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 1.9603132251650095
+        },
+        {
+          "env_id": 1032,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 1.9501939415931702
+        },
+        {
+          "env_id": 1032,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 94,
+          "seconds": 31.160283317323774
+        },
+        {
+          "env_id": 1033,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 17,
+          "seconds": 5.683361311908811
+        },
+        {
+          "env_id": 1033,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 30,
+          "seconds": 9.786251683719456
+        },
+        {
+          "env_id": 1034,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 31,
+          "seconds": 10.215612616855651
+        },
+        {
+          "env_id": 1034,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 12,
+          "seconds": 3.968973606824875
+        },
+        {
+          "env_id": 1035,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 9,
+          "seconds": 3.177744299173355
+        },
+        {
+          "env_id": 1035,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 2.1288838642649353
+        },
+        {
+          "env_id": 1035,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.4224865320138633
+        },
+        {
+          "env_id": 1036,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 29,
+          "seconds": 9.642396772280335
+        },
+        {
+          "env_id": 1036,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 3,
+          "seconds": 1.034430935047567
+        },
+        {
+          "env_id": 1036,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.258459080941975
+        },
+        {
+          "env_id": 1037,
+          "d_star": 7,
+          "solved": true,
+          "moves": 9,
+          "regret": 2,
+          "expansions": 452,
+          "seconds": 145.0229353569448
+        },
+        {
+          "env_id": 1037,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 3,
+          "seconds": 0.8997620297595859
+        },
+        {
+          "env_id": 1037,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 116,
+          "seconds": 37.05572168901563
+        },
+        {
+          "env_id": 1038,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 212,
+          "seconds": 69.16669783135876
+        },
+        {
+          "env_id": 1038,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 25,
+          "seconds": 8.17213760316372
+        },
+        {
+          "env_id": 1039,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.6616308111697435
+        },
+        {
+          "env_id": 1039,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 78,
+          "seconds": 25.447399199940264
+        },
+        {
+          "env_id": 1039,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 15,
+          "seconds": 5.0593693307600915
+        },
+        {
+          "env_id": 1040,
+          "d_star": 1,
+          "solved": true,
+          "moves": 1,
+          "regret": 0,
+          "expansions": 1,
+          "seconds": 0.4368463479913771
+        },
+        {
+          "env_id": 1040,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 133,
+          "seconds": 45.312845391221344
+        },
+        {
+          "env_id": 1041,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 15,
+          "seconds": 5.1416050139814615
+        },
+        {
+          "env_id": 1041,
+          "d_star": 9,
+          "solved": true,
+          "moves": 9,
+          "regret": 0,
+          "expansions": 45,
+          "seconds": 14.907825907692313
+        },
+        {
+          "env_id": 1041,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 3,
+          "seconds": 1.0743272248655558
+        },
+        {
+          "env_id": 1042,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 2.428050108253956
+        },
+        {
+          "env_id": 1042,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 10,
+          "seconds": 4.020182250067592
+        },
+        {
+          "env_id": 1043,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 136,
+          "seconds": 43.529063406866044
+        },
+        {
+          "env_id": 1043,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.259614226408303
+        },
+        {
+          "env_id": 1044,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.7463828902691603
+        },
+        {
+          "env_id": 1045,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.8109618369489908
+        },
+        {
+          "env_id": 1045,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 3,
+          "seconds": 1.0931519446894526
+        },
+        {
+          "env_id": 1045,
+          "d_star": 5,
+          "solved": true,
+          "moves": 5,
+          "regret": 0,
+          "expansions": 5,
+          "seconds": 1.7847692649811506
+        },
+        {
+          "env_id": 1046,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 49,
+          "seconds": 17.465505491010845
+        },
+        {
+          "env_id": 1046,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 7,
+          "seconds": 2.5282689621672034
+        },
+        {
+          "env_id": 1047,
+          "d_star": 9,
+          "solved": true,
+          "moves": 9,
+          "regret": 0,
+          "expansions": 112,
+          "seconds": 38.96413177717477
+        },
+        {
+          "env_id": 1047,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 9,
+          "seconds": 3.1564202969893813
+        },
+        {
+          "env_id": 1048,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 14,
+          "seconds": 4.943356454838067
+        },
+        {
+          "env_id": 1048,
+          "d_star": 7,
+          "solved": true,
+          "moves": 8,
+          "regret": 1,
+          "expansions": 423,
+          "seconds": 147.1242420519702
+        },
+        {
+          "env_id": 1049,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 11,
+          "seconds": 4.090850610285997
+        }
+      ]
+    }
+  }
+}

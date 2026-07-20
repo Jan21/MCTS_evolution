@@ -6,3 +6,16 @@ outputs/
 *.ckpt
 __pycache__/
 *.pyc
+
+# Per-config board sets + generated datasets + run outputs: transferred as data
+# bundles (see KAROLINA_PROMPT.md), not committed.
+environments_*/
+nn/data/regen*/
+nn/data/*.jsonl
+scaling/data/*/backward*.jsonl
+scaling/data/*/forward*.jsonl
+scaling/data/*/rust_work/
+rust_datagen/target/
+rust_datagen/pyref/out/
+rust_datagen/pyref/cache/
+checkpoints_backward/

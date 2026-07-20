@@ -1,0 +1,811 @@
+{
+ "_summary": [
+  "Lever A adds an in-search prefix-realizability filter (eval/realize.py:prefix_playable): before a child plan enters the frontier, its already-FIXED physical segments whose dependencies are all fixed are strict-executed with the existing two-phase+reorder machinery; children with an unplayable committed prefix are pruned. Opt-in via eval.compare --backward-prefix-check and subgoal_selfplay --prefix-check; defaults OFF, baselines unchanged (fresh plain run reproduces 120/150 exactly).",
+  "No-false-pruning A/B (bench450_first150, policy_v2+value_v2, k=5, 1200 exp): every instance solved without the flag is solved with it \u2014 false prunes: 0 (plain arm), 0 (anytime arm); all 120 both-solved plain instances realize IDENTICAL move counts. Verdicts: PASS / PASS.",
+  "Prefix-check alone lifts plain from 120/150 to 130/150 \u2014 the same 10 instances the anytime mode recovers, caught at push time instead of at the complete-plan pop: with the filter on, 'plan found' comes to mean 'playable plan found'.",
+  "Anytime arm: 130/150 -> 130/150 (solve >= anytime-alone), mean expansions 7.3 -> 7.1 with per-instance expansions never increasing (deltas -1..-11), and one instance improves its realized moves (17 -> 16).",
+  "Guidance-headroom puzzles (7 REALIZABLE_EXISTS rows of ceiling_probe_results.json) at k=5/1200: 0/7 plain, 0/7 prefix, 0/7 anytime, 0/7 anytime+prefix \u2014 none recovered. Their searches die of top-5 FRONTIER exhaustion well under budget (23-146 expansions), so the binding constraint is proposal coverage (Lever D territory), not budget wasted on doomed branches; the filter does cut the budget burned on them (636 -> 547 total anytime expansions).",
+  "Self-play smoke (5 instances, random-init nets, prefix_check on): generation completes; all found winners strictly playable: True (4/4); records schema-valid: True (12 records). With the flag on, kept winners are playable by construction (the complete-pop strict check is implied).",
+  "The check is one-directional by design: passing says nothing about the completion (open segments are unchecked); failing means the committed segments themselves could not be executed by the strict realizer (all robots at instance cells, no on-target condition, same two-phase+reorder retries).",
+  "Only fixed segments whose full dependency closure (mover delivery chain, support placement chain, departure-after-bounce) is itself fixed are executed; anything downstream of an open edge or an unplaced stopper is skipped rather than guessed, keeping the filter permissive.",
+  "Winner-ancestor probe (25 instances): every ancestor partial plan of every strictly-playable winner passes the check (0 false prunes on winning branches); on complete plans the check equals strict_moves exactly; mean cost ~0.9 ms per check (max 4.6 ms), memoized per fixed-segment multiset.",
+  "Methodology unchanged: propose -> rank -> score -> best-first is untouched; the filter is pure physics (simulate.slide via eval.realize), no oracle; skeleton/astar.py, eval/end2end.py, scaling/ and move_planner*/ are not modified."
+ ],
+ "protocol": {
+  "instances": "eval/data/bench450_first150.jsonl",
+  "checkpoints": [
+   "checkpoints_backward/policy_v2.ckpt",
+   "checkpoints_backward/value_v2.ckpt"
+  ],
+  "k": 5,
+  "expansions": 1200,
+  "device": "cpu",
+  "runs": {
+   "plain": "eval/results/prefix150_plain.json",
+   "prefix": "eval/results/prefix150_prefix.json",
+   "anytime": "eval/results/prefix150_anytime.json",
+   "anytime_prefix": "eval/results/prefix150_anytime_prefix.json"
+  },
+  "headroom_instances": "rows 62,119,136,164,184,209,314 of eval/data/bench450.jsonl (REALIZABLE_EXISTS in analysis/artifacts/ceiling_probe_results.json)",
+  "date": "2026-07-13T14:45:46"
+ },
+ "aggregates": {
+  "plain": {
+   "n": 150,
+   "solved": 120,
+   "solve_rate": 0.8,
+   "mean_regret": 1.6666666666666667,
+   "pct_optimal": 51.666666666666664,
+   "mean_expansions": 5.8533333333333335,
+   "mean_seconds": 1.193030788777396,
+   "plan_found": 138,
+   "mean_children_pruned": 0.0
+  },
+  "prefix": {
+   "n": 150,
+   "solved": 130,
+   "solve_rate": 0.8666666666666667,
+   "mean_regret": 2.169230769230769,
+   "pct_optimal": 47.69230769230769,
+   "mean_expansions": 7.1,
+   "mean_seconds": 1.2820162117294966,
+   "plan_found": 135,
+   "mean_children_pruned": 1.6066666666666667
+  },
+  "anytime": {
+   "n": 150,
+   "solved": 130,
+   "solve_rate": 0.8666666666666667,
+   "mean_regret": 2.1769230769230767,
+   "pct_optimal": 47.69230769230769,
+   "mean_expansions": 7.3,
+   "mean_seconds": 1.2473072579161575,
+   "plan_found": 138,
+   "mean_children_pruned": 0.0
+  },
+  "anytime_prefix": {
+   "n": 150,
+   "solved": 130,
+   "solve_rate": 0.8666666666666667,
+   "mean_regret": 2.169230769230769,
+   "pct_optimal": 47.69230769230769,
+   "mean_expansions": 7.1,
+   "mean_seconds": 1.2632242783003798,
+   "plan_found": 135,
+   "mean_children_pruned": 1.6066666666666667
+  }
+ },
+ "no_false_pruning_ab": {
+  "plain_vs_prefix": {
+   "n": 150,
+   "solved_off": 120,
+   "solved_on": 130,
+   "false_prunes": [],
+   "newly_solved": [
+    {
+     "idx": 15,
+     "env_id": 2405,
+     "d_star": 7,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 33,
+     "expansions_delta": 9,
+     "children_pruned": 37
+    },
+    {
+     "idx": 23,
+     "env_id": 2407,
+     "d_star": 8,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 12,
+     "expansions_delta": 3,
+     "children_pruned": 5
+    },
+    {
+     "idx": 30,
+     "env_id": 2410,
+     "d_star": 8,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 16,
+     "expansions_delta": 19,
+     "children_pruned": 17
+    },
+    {
+     "idx": 37,
+     "env_id": 2412,
+     "d_star": 8,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 12,
+     "expansions_delta": 7,
+     "children_pruned": 7
+    },
+    {
+     "idx": 45,
+     "env_id": 2415,
+     "d_star": 8,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 17,
+     "expansions_delta": 0,
+     "children_pruned": 2
+    },
+    {
+     "idx": 48,
+     "env_id": 2416,
+     "d_star": 5,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 11,
+     "expansions_delta": 0,
+     "children_pruned": 3
+    },
+    {
+     "idx": 61,
+     "env_id": 2420,
+     "d_star": 7,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 17,
+     "expansions_delta": 14,
+     "children_pruned": 7
+    },
+    {
+     "idx": 106,
+     "env_id": 2435,
+     "d_star": 9,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 17,
+     "expansions_delta": 37,
+     "children_pruned": 12
+    },
+    {
+     "idx": 117,
+     "env_id": 2439,
+     "d_star": 8,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 9,
+     "expansions_delta": 3,
+     "children_pruned": 2
+    },
+    {
+     "idx": 126,
+     "env_id": 2442,
+     "d_star": 9,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 15,
+     "expansions_delta": 0,
+     "children_pruned": 7
+    }
+   ],
+   "moves_regressions": [],
+   "moves_improvements": [],
+   "per_instance_diffs": [
+    {
+     "idx": 15,
+     "env_id": 2405,
+     "d_star": 7,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 33,
+     "expansions_delta": 9,
+     "children_pruned": 37
+    },
+    {
+     "idx": 23,
+     "env_id": 2407,
+     "d_star": 8,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 12,
+     "expansions_delta": 3,
+     "children_pruned": 5
+    },
+    {
+     "idx": 30,
+     "env_id": 2410,
+     "d_star": 8,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 16,
+     "expansions_delta": 19,
+     "children_pruned": 17
+    },
+    {
+     "idx": 37,
+     "env_id": 2412,
+     "d_star": 8,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 12,
+     "expansions_delta": 7,
+     "children_pruned": 7
+    },
+    {
+     "idx": 42,
+     "env_id": 2414,
+     "d_star": 9,
+     "solved_plain": true,
+     "solved_prefix": true,
+     "moves_plain": 9,
+     "moves_prefix": 9,
+     "expansions_delta": -1,
+     "children_pruned": 5
+    },
+    {
+     "idx": 45,
+     "env_id": 2415,
+     "d_star": 8,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 17,
+     "expansions_delta": 0,
+     "children_pruned": 2
+    },
+    {
+     "idx": 48,
+     "env_id": 2416,
+     "d_star": 5,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 11,
+     "expansions_delta": 0,
+     "children_pruned": 3
+    },
+    {
+     "idx": 58,
+     "env_id": 2419,
+     "d_star": 9,
+     "solved_plain": false,
+     "solved_prefix": false,
+     "moves_plain": null,
+     "moves_prefix": null,
+     "expansions_delta": -4,
+     "children_pruned": 4
+    },
+    {
+     "idx": 61,
+     "env_id": 2420,
+     "d_star": 7,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 17,
+     "expansions_delta": 14,
+     "children_pruned": 7
+    },
+    {
+     "idx": 62,
+     "env_id": 2420,
+     "d_star": 8,
+     "solved_plain": false,
+     "solved_prefix": false,
+     "moves_plain": null,
+     "moves_prefix": null,
+     "expansions_delta": -1,
+     "children_pruned": 1
+    },
+    {
+     "idx": 105,
+     "env_id": 2435,
+     "d_star": 10,
+     "solved_plain": false,
+     "solved_prefix": false,
+     "moves_plain": null,
+     "moves_prefix": null,
+     "expansions_delta": 103,
+     "children_pruned": 6
+    },
+    {
+     "idx": 106,
+     "env_id": 2435,
+     "d_star": 9,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 17,
+     "expansions_delta": 37,
+     "children_pruned": 12
+    },
+    {
+     "idx": 117,
+     "env_id": 2439,
+     "d_star": 8,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 9,
+     "expansions_delta": 3,
+     "children_pruned": 2
+    },
+    {
+     "idx": 119,
+     "env_id": 2439,
+     "d_star": 9,
+     "solved_plain": false,
+     "solved_prefix": false,
+     "moves_plain": null,
+     "moves_prefix": null,
+     "expansions_delta": -11,
+     "children_pruned": 8
+    },
+    {
+     "idx": 121,
+     "env_id": 2440,
+     "d_star": 9,
+     "solved_plain": false,
+     "solved_prefix": false,
+     "moves_plain": null,
+     "moves_prefix": null,
+     "expansions_delta": 17,
+     "children_pruned": 2
+    },
+    {
+     "idx": 126,
+     "env_id": 2442,
+     "d_star": 9,
+     "solved_plain": false,
+     "solved_prefix": true,
+     "moves_plain": null,
+     "moves_prefix": 15,
+     "expansions_delta": 0,
+     "children_pruned": 7
+    },
+    {
+     "idx": 136,
+     "env_id": 2445,
+     "d_star": 9,
+     "solved_plain": false,
+     "solved_prefix": false,
+     "moves_plain": null,
+     "moves_prefix": null,
+     "expansions_delta": -8,
+     "children_pruned": 8
+    }
+   ],
+   "mean_expansions_off": 5.853,
+   "mean_expansions_on": 7.1,
+   "total_children_pruned_on": 241
+  },
+  "anytime_vs_anytime_prefix": {
+   "n": 150,
+   "solved_off": 130,
+   "solved_on": 130,
+   "false_prunes": [],
+   "newly_solved": [],
+   "moves_regressions": [],
+   "moves_improvements": [
+    {
+     "idx": 30,
+     "env_id": 2410,
+     "d_star": 8,
+     "solved_anytime": true,
+     "solved_anytime_prefix": true,
+     "moves_anytime": 17,
+     "moves_anytime_prefix": 16,
+     "expansions_delta": -3,
+     "children_pruned": 17
+    }
+   ],
+   "per_instance_diffs": [
+    {
+     "idx": 15,
+     "env_id": 2405,
+     "d_star": 7,
+     "solved_anytime": true,
+     "solved_anytime_prefix": true,
+     "moves_anytime": 33,
+     "moves_anytime_prefix": 33,
+     "expansions_delta": -2,
+     "children_pruned": 37
+    },
+    {
+     "idx": 30,
+     "env_id": 2410,
+     "d_star": 8,
+     "solved_anytime": true,
+     "solved_anytime_prefix": true,
+     "moves_anytime": 17,
+     "moves_anytime_prefix": 16,
+     "expansions_delta": -3,
+     "children_pruned": 17
+    },
+    {
+     "idx": 42,
+     "env_id": 2414,
+     "d_star": 9,
+     "solved_anytime": true,
+     "solved_anytime_prefix": true,
+     "moves_anytime": 9,
+     "moves_anytime_prefix": 9,
+     "expansions_delta": -1,
+     "children_pruned": 5
+    },
+    {
+     "idx": 58,
+     "env_id": 2419,
+     "d_star": 9,
+     "solved_anytime": false,
+     "solved_anytime_prefix": false,
+     "moves_anytime": null,
+     "moves_anytime_prefix": null,
+     "expansions_delta": -4,
+     "children_pruned": 4
+    },
+    {
+     "idx": 62,
+     "env_id": 2420,
+     "d_star": 8,
+     "solved_anytime": false,
+     "solved_anytime_prefix": false,
+     "moves_anytime": null,
+     "moves_anytime_prefix": null,
+     "expansions_delta": -1,
+     "children_pruned": 1
+    },
+    {
+     "idx": 119,
+     "env_id": 2439,
+     "d_star": 9,
+     "solved_anytime": false,
+     "solved_anytime_prefix": false,
+     "moves_anytime": null,
+     "moves_anytime_prefix": null,
+     "expansions_delta": -11,
+     "children_pruned": 8
+    },
+    {
+     "idx": 136,
+     "env_id": 2445,
+     "d_star": 9,
+     "solved_anytime": false,
+     "solved_anytime_prefix": false,
+     "moves_anytime": null,
+     "moves_anytime_prefix": null,
+     "expansions_delta": -8,
+     "children_pruned": 8
+    }
+   ],
+   "mean_expansions_off": 7.3,
+   "mean_expansions_on": 7.1,
+   "total_children_pruned_on": 241
+  },
+  "verdict_plain": "PASS",
+  "verdict_anytime": "PASS"
+ },
+ "headroom7": {
+  "plain": {
+   "solved": 0,
+   "per_puzzle": [
+    {
+     "bench450_idx": 62,
+     "env_id": 2420,
+     "d_star": 8,
+     "solved": false,
+     "moves": null,
+     "expansions": 141,
+     "plans_rejected": 0,
+     "children_pruned": 0
+    },
+    {
+     "bench450_idx": 119,
+     "env_id": 2439,
+     "d_star": 9,
+     "solved": false,
+     "moves": null,
+     "expansions": 106,
+     "plans_rejected": 0,
+     "children_pruned": 0
+    },
+    {
+     "bench450_idx": 136,
+     "env_id": 2445,
+     "d_star": 9,
+     "solved": false,
+     "moves": null,
+     "expansions": 94,
+     "plans_rejected": 0,
+     "children_pruned": 0
+    },
+    {
+     "bench450_idx": 164,
+     "env_id": 2454,
+     "d_star": 7,
+     "solved": false,
+     "moves": null,
+     "expansions": 6,
+     "plans_rejected": 0,
+     "children_pruned": 0
+    },
+    {
+     "bench450_idx": 184,
+     "env_id": 2461,
+     "d_star": 3,
+     "solved": false,
+     "moves": null,
+     "expansions": 4,
+     "plans_rejected": 0,
+     "children_pruned": 0
+    },
+    {
+     "bench450_idx": 209,
+     "env_id": 2469,
+     "d_star": 11,
+     "solved": false,
+     "moves": null,
+     "expansions": 78,
+     "plans_rejected": 0,
+     "children_pruned": 0
+    },
+    {
+     "bench450_idx": 314,
+     "env_id": 2504,
+     "d_star": 6,
+     "solved": false,
+     "moves": null,
+     "expansions": 2,
+     "plans_rejected": 0,
+     "children_pruned": 0
+    }
+   ]
+  },
+  "prefix": {
+   "solved": 0,
+   "per_puzzle": [
+    {
+     "bench450_idx": 62,
+     "env_id": 2420,
+     "d_star": 8,
+     "solved": false,
+     "moves": null,
+     "expansions": 140,
+     "plans_rejected": 0,
+     "children_pruned": 1
+    },
+    {
+     "bench450_idx": 119,
+     "env_id": 2439,
+     "d_star": 9,
+     "solved": false,
+     "moves": null,
+     "expansions": 95,
+     "plans_rejected": 0,
+     "children_pruned": 8
+    },
+    {
+     "bench450_idx": 136,
+     "env_id": 2445,
+     "d_star": 9,
+     "solved": false,
+     "moves": null,
+     "expansions": 86,
+     "plans_rejected": 0,
+     "children_pruned": 8
+    },
+    {
+     "bench450_idx": 164,
+     "env_id": 2454,
+     "d_star": 7,
+     "solved": false,
+     "moves": null,
+     "expansions": 55,
+     "plans_rejected": 0,
+     "children_pruned": 15
+    },
+    {
+     "bench450_idx": 184,
+     "env_id": 2461,
+     "d_star": 3,
+     "solved": false,
+     "moves": null,
+     "expansions": 25,
+     "plans_rejected": 0,
+     "children_pruned": 17
+    },
+    {
+     "bench450_idx": 209,
+     "env_id": 2469,
+     "d_star": 11,
+     "solved": false,
+     "moves": null,
+     "expansions": 123,
+     "plans_rejected": 0,
+     "children_pruned": 8
+    },
+    {
+     "bench450_idx": 314,
+     "env_id": 2504,
+     "d_star": 6,
+     "solved": false,
+     "moves": null,
+     "expansions": 23,
+     "plans_rejected": 0,
+     "children_pruned": 13
+    }
+   ]
+  },
+  "anytime": {
+   "solved": 0,
+   "per_puzzle": [
+    {
+     "bench450_idx": 62,
+     "env_id": 2420,
+     "d_star": 8,
+     "solved": false,
+     "moves": null,
+     "expansions": 141,
+     "plans_rejected": 0,
+     "children_pruned": 0
+    },
+    {
+     "bench450_idx": 119,
+     "env_id": 2439,
+     "d_star": 9,
+     "solved": false,
+     "moves": null,
+     "expansions": 106,
+     "plans_rejected": 0,
+     "children_pruned": 0
+    },
+    {
+     "bench450_idx": 136,
+     "env_id": 2445,
+     "d_star": 9,
+     "solved": false,
+     "moves": null,
+     "expansions": 94,
+     "plans_rejected": 0,
+     "children_pruned": 0
+    },
+    {
+     "bench450_idx": 164,
+     "env_id": 2454,
+     "d_star": 7,
+     "solved": false,
+     "moves": null,
+     "expansions": 101,
+     "plans_rejected": 5,
+     "children_pruned": 0
+    },
+    {
+     "bench450_idx": 184,
+     "env_id": 2461,
+     "d_star": 3,
+     "solved": false,
+     "moves": null,
+     "expansions": 25,
+     "plans_rejected": 17,
+     "children_pruned": 0
+    },
+    {
+     "bench450_idx": 209,
+     "env_id": 2469,
+     "d_star": 11,
+     "solved": false,
+     "moves": null,
+     "expansions": 146,
+     "plans_rejected": 10,
+     "children_pruned": 0
+    },
+    {
+     "bench450_idx": 314,
+     "env_id": 2504,
+     "d_star": 6,
+     "solved": false,
+     "moves": null,
+     "expansions": 23,
+     "plans_rejected": 13,
+     "children_pruned": 0
+    }
+   ]
+  },
+  "anytime_prefix": {
+   "solved": 0,
+   "per_puzzle": [
+    {
+     "bench450_idx": 62,
+     "env_id": 2420,
+     "d_star": 8,
+     "solved": false,
+     "moves": null,
+     "expansions": 140,
+     "plans_rejected": 0,
+     "children_pruned": 1
+    },
+    {
+     "bench450_idx": 119,
+     "env_id": 2439,
+     "d_star": 9,
+     "solved": false,
+     "moves": null,
+     "expansions": 95,
+     "plans_rejected": 0,
+     "children_pruned": 8
+    },
+    {
+     "bench450_idx": 136,
+     "env_id": 2445,
+     "d_star": 9,
+     "solved": false,
+     "moves": null,
+     "expansions": 86,
+     "plans_rejected": 0,
+     "children_pruned": 8
+    },
+    {
+     "bench450_idx": 164,
+     "env_id": 2454,
+     "d_star": 7,
+     "solved": false,
+     "moves": null,
+     "expansions": 55,
+     "plans_rejected": 0,
+     "children_pruned": 15
+    },
+    {
+     "bench450_idx": 184,
+     "env_id": 2461,
+     "d_star": 3,
+     "solved": false,
+     "moves": null,
+     "expansions": 25,
+     "plans_rejected": 0,
+     "children_pruned": 17
+    },
+    {
+     "bench450_idx": 209,
+     "env_id": 2469,
+     "d_star": 11,
+     "solved": false,
+     "moves": null,
+     "expansions": 123,
+     "plans_rejected": 0,
+     "children_pruned": 8
+    },
+    {
+     "bench450_idx": 314,
+     "env_id": 2504,
+     "d_star": 6,
+     "solved": false,
+     "moves": null,
+     "expansions": 23,
+     "plans_rejected": 0,
+     "children_pruned": 13
+    }
+   ]
+  }
+ },
+ "selfplay_smoke": {
+  "n_instances": 5,
+  "n_plan_found": 4,
+  "strict_pass": 4,
+  "all_found_winners_strictly_playable": true,
+  "n_kept": 4,
+  "n_records": 12,
+  "n_anytime_rejected": 0,
+  "records_schema_valid": true,
+  "schema_bad_indices": []
+ },
+ "selfplay_smoke_ok": true
+}

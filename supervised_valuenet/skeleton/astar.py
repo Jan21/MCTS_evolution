@@ -129,9 +129,12 @@ def _segment(plan: PartialPlan, state: State, parent: str, child: str) -> _Seg:
         s.support = _sibling_support(plan, parent)
     s.fix_support = s.support.position if s.support is not None else None
 
-    # Helpers available to this segment: everyone except the mover.
-    s.helpers = [h for h in state.helpers if h != s.mover]
-    if s.mover != state.target_robot:
+    # Helpers available to this segment: everyone except the mover. Identity is the
+    # robot's COLOR: dataclass equality also compares positions, so a mover carried at
+    # a planned (moved) position would survive in its own helper list and could be
+    # scheduled to bounce off itself.
+    s.helpers = [h for h in state.helpers if h.color != s.mover.color]
+    if s.mover.color != state.target_robot.color:
         s.helpers.append(state.target_robot)
     return s
 
@@ -172,6 +175,29 @@ def _apply(env, plan, parent, child, seg, cand) -> PartialPlan | None:
     bn_pos = cand.subgoal.bottleneck.position
     sp_pos = cand.subgoal.support.position
 
+    # Invariant: one physical robot, one leaf identity. A robot that already
+    # owns a leaf in this plan has a standing assignment; recruiting it again
+    # as a FRESH leaf (at its original cell) schedules the single real robot
+    # in two places at once. Compare by COLOR, not dataclass equality, per the
+    # helper-identity precedent in _segment.
+    helper_color = cand.subgoal.helper.color
+    if any(d.get("ntype") == "leaf" and d["robot"].color == helper_color
+           for _, d in plan.g.nodes(data=True)):
+        return None
+
+    # Invariant: a supported (dependent-edge) route cost may only be claimed
+    # when the plan assigns a robot to stand on the stopper cell. A
+    # parent_support drawn from the board's dependent-edge supports carries no
+    # robot; accept it only when a support node already occupies that cell or
+    # this candidate's own support is that cell -- otherwise the plan counts
+    # as complete with a declared stopper that no plan node ever places.
+    ps = cand.parent_support
+    if (ps is not None and tuple(ps) != tuple(sp_pos)
+            and not any(d.get("ntype") == "support"
+                        and tuple(d["pos"]) == tuple(ps)
+                        for _, d in plan.g.nodes(data=True))):
+        return None
+
     parent_cost = env.compute_exact_shortest_path_length(
         bn_pos, seg.end, cand.parent_support)
     if parent_cost is None:
@@ -209,6 +235,117 @@ def _attach_move(env, plan, parent, child, start, end, support):
         relaxed = env.compute_relaxed_shortest_path_length(start, end, support)
         plan.add_edge(parent, child, status="open",
                       cost=relaxed if relaxed is not None else INF)
+
+
+# ---------------------------------------------------------------------------
+# Lever B1: park ("step aside / vacate") plan augmentation
+# ---------------------------------------------------------------------------
+#
+# A park is a subgoal-shaped commitment "robot X must first stand on cell P",
+# scheduled to complete before one specific plan segment runs (so it can clear
+# that segment's way). In the DAG it is a `park` node with attrs pos /
+# robot / before_edge and one fixed, costed edge to the node where the plan
+# leaves the robot (its support node if it was placed — the realizer's
+# departs-after-bounce rule then makes it a true post-bounce vacate — else its
+# leaf; an idle robot gets a fresh leaf). The park's moves are ordinary plan
+# cost: exact walls-only path, no free vacates. See analysis/b1_design.md.
+
+
+def robot_plan_node(plan, color):
+    """Node where the plan leaves robot `color`: its support node if placed,
+    else its leaf, else None (robot not in the plan)."""
+    sup = leaf = None
+    for n, d in plan.g.nodes(data=True):
+        if d.get("ntype") == "support" and d["robot"].color == color:
+            sup = n
+        elif d.get("ntype") == "leaf" and d["robot"].color == color:
+            leaf = n
+    return sup or leaf
+
+
+def apply_park(env, plan, robot, park_pos, before_edge):
+    """Augment a COMPLETE plan with one park: `robot` slides from where the
+    plan leaves it to `park_pos`, ordered before `before_edge`'s segment.
+    Returns the new plan, or None when the park cannot be expressed (mover
+    robots are not parked; the park must have an exact walls-only path)."""
+    g = plan.g
+    out = plan.copy()
+    n = out.nc
+    out.nc += 1
+    node = robot_plan_node(out, robot.color)
+    # A robot that travels through bottlenecks but is NOT finally parked on a
+    # support cell (i.e. the target robot / a pure mover) has no single plan
+    # node describing where it stands — it cannot be parked. A helper
+    # delivered via nested bottlenecks ends at its support node and can.
+    if (node is None or g.nodes[node].get("ntype") != "support") and any(
+            d.get("ntype") == "bottleneck" and d["robot"].color == robot.color
+            for _, d in g.nodes(data=True)):
+        return None
+    if node is None:                       # idle robot: give it a leaf
+        node = f"leaf_{n}"
+        out.add_node(node, "leaf", pos=tuple(robot.position), robot=robot)
+    start = tuple(out.g.nodes[node]["pos"])
+    if tuple(park_pos) == start:
+        return None
+    exact = env.compute_exact_shortest_path_length(start, tuple(park_pos), None)
+    if exact is None:
+        return None
+    prk = f"prk_{n}"
+    out.add_node(prk, "park", pos=tuple(park_pos),
+                 robot=Robot_at(position=tuple(park_pos), color=robot.color),
+                 before_edge=tuple(before_edge))
+    out.add_edge(prk, node, status="fixed", cost=exact)
+    return out
+
+
+def park_repairs(env, state, plan, fail_info, wr, wd, size, max_parks=1):
+    """Park-augmented variants of a complete plan whose strict realization
+    failed. `fail_info` is the dict filled by `eval.realize.strict_moves`.
+
+    Proposal rule, deterministic: for the failing segment, find every robot
+    whose one-robot removal unblocks the mover's slide-BFS at the recorded
+    failure positions; for each, try its <= 4 walls-only slide destinations
+    and keep those under which the blocked segment becomes passable. Each
+    surviving (robot, cell) yields one `apply_park` child. Plans already
+    carrying `max_parks` park nodes return no children (bounded repair)."""
+    from simulate import slide, DIRECTIONS
+    from eval.realize import _slide_bfs
+
+    n_parks = sum(1 for _, d in plan.g.nodes(data=True)
+                  if d.get("ntype") == "park")
+    if n_parks >= max_parks:
+        return []
+    fs = fail_info.get("fail_seg")
+    ctx = fail_info.get("ctx") or {}
+    pos = ctx.get("pos")
+    if not fs or not pos:
+        return []
+    end = tuple(fs["end"])
+    mover_color = fs["color"]
+    mover_cur = tuple(pos.get(mover_color, fs["start"]))
+    by_color = {r.color: r for r in state.all_robots}
+    out = []
+    for x_color, xp in sorted(pos.items()):
+        if x_color == mover_color or x_color not in by_color:
+            continue
+        xpos = tuple(xp)
+        # would X stepping fully aside unblock the failing slide?
+        bl = frozenset(tuple(p) for c, p in pos.items()
+                       if c not in (mover_color, x_color))
+        if _slide_bfs(mover_cur, end, bl, wr, wd, size) is None:
+            continue
+        dests = []
+        for d in DIRECTIONS:               # walls-only slide destinations
+            dest = slide(xpos, d, frozenset(), wr, wd, size)
+            if dest != xpos and dest not in dests:
+                dests.append(dest)
+        for dest in dests:
+            if _slide_bfs(mover_cur, end, bl | {dest}, wr, wd, size) is None:
+                continue                    # X parked there still blocks
+            child = apply_park(env, plan, by_color[x_color], dest, fs["edge"])
+            if child is not None:
+                out.append(child)
+    return out
 
 
 # ---------------------------------------------------------------------------

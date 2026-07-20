@@ -1,0 +1,27 @@
+{
+  "protocol": {
+    "sampler": "eval.bench_instances sampling loop (one random.Random(seed) consumed sequentially over boards, per_board draws per board); oracle failures keep the instance with d_star=null instead of resampling",
+    "config": "g24r8",
+    "env": {
+      "RR_GRID": "24",
+      "RR_ROBOTS": "8",
+      "RR_WALLS": "108",
+      "RR_ENV_DIR": "/mnt/raid/data/Hyner_Petr/MCTS_evolution/supervised_valuenet/environments_g24r8"
+    },
+    "boards": "900-1049",
+    "per_board": 3,
+    "seed": 1,
+    "d_star": "exact move-optimal cost (move_planner.oracle.solve) or null when the oracle exceeded its caps; reference only, never used at inference",
+    "oracle_caps": {
+      "max_expansions": 200000,
+      "wall_time_s": 60.0
+    }
+  },
+  "n_instances": 450,
+  "n_oracle_failed": 289,
+  "oracle_failure_rate": 0.6422222222222222,
+  "sha256": "1609120b01bc449f4c30e4f9417317a86c6bd84e39cee3c01303367956f6756a",
+  "solved_file": "/mnt/raid/data/Hyner_Petr/MCTS_evolution/supervised_valuenet/scaling/data/g24r8/bench.solved.jsonl",
+  "solved_sha256": "e3e2fe34ec7784844d29dff1086bf1f442552c249e599ef3746bff027c499c7b",
+  "generated": "2026-07-19T14:44:59"
+}

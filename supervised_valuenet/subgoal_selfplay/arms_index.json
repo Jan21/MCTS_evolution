@@ -1,0 +1,47 @@
+{
+  "_summary": "Index of self-play runs (arms) for the subgoal planner. Each arm = one out_dir, one label semantics, never mix records across arms.",
+  "arms": [
+    {
+      "run_dir": "subgoal_selfplay/runs_warm/",
+      "flags": "warm start from checkpoints_backward/{policy_v2,value_v2}.ckpt; plain loop (no strict filter, no in-search realization check)",
+      "label_semantics": "abstract plan cost (the plan's own cost model)",
+      "iterations_completed": "rounds 0 and 1 full; stopped at the round-2 boundary (control arm, frozen)",
+      "role": "control arm — self-play on the abstract objective",
+      "headline": "probe regret: baseline 1.48 -> round 0: 1.18 -> round 1: 1.12 (50/50 solved throughout)",
+      "code_vintage": "pre self-support fix, pre two-phase realizer, pre strict instrumentation"
+    },
+    {
+      "run_dir": "subgoal_selfplay/runs_warm_anytime/",
+      "flags": "--gen-realize-check (search discards unplayable completed plans during data generation)",
+      "label_semantics": "abstract plan cost; winners guaranteed playable",
+      "iterations_completed": "rounds 0-2, then FROZEN 2026-07-12: superseded by the duplicate-leaf + unplaced-stopper planner fixes (its base checkpoints were trained on labels counting illegal completions)",
+      "role": "training-pressure arm, first attempt (ablation record)",
+      "headline": "probe strict regret 1.042 -> 0.16-0.27; matched-150 rate did not beat supervised baseline (74.7% plain / 88.7% checked)",
+      "code_vintage": "post self-support fix + two-phase realizer default + strict instrumentation; PRE duplicate-leaf/unplaced-stopper fixes"
+    },
+    {
+      "run_dir": "subgoal_selfplay/runs_warm_strict/",
+      "flags": "--strict-filter, larger --instances-per-iter to restore record volume",
+      "label_semantics": "abstract plan cost; unplayable winners dropped after search",
+      "iterations_completed": "pending",
+      "role": "cheap ablation arm",
+      "code_vintage": "same as anytime arm"
+    }
+  ],
+  "baselines": {
+    "supervised_ckpts": "checkpoints_backward/{policy_v2,value_v2}.ckpt",
+    "matched150_prefix": "eval/data/bench450_first150.jsonl",
+    "pre_fix": {"plain": "54.0% strict / regret 1.383 / 2.1 exp", "anytime": "83.3% / 3.048 / 70.0 exp"},
+    "post_selfsupport_fix": {"plain": "63.3% / 1.358 / 3.3 exp", "anytime": "85.3% / 2.867 / 59.8 exp"},
+    "post_both_fixes": {"plain": "74.7% / 1.420 / 3.3 exp", "anytime": "89.3% / 2.575 / 46.8 exp"},
+    "post_reorder_retry": {"plain": "79.3% (119/150), realizer-only ablation"},
+    "post_all_four_fixes (contaminated ckpts)": {"plain": "80.0% (120/150) / 1.667 / 5.9 exp — eval/results/comparison_backward_postfix3.json; supersedes above; nets still trained on pre-fix labels, retrain pending on regen_v3 data"},
+    "files": [
+      "eval/results/comparison_backward_postfix.json",
+      "eval/results/comparison_backward_postfix_anytime.json",
+      "eval/results/comparison_backward_postfix2.json",
+      "eval/results/comparison_backward_postfix2_anytime.json",
+      "eval/results/realizer_twophase_ab.json"
+    ]
+  }
+}

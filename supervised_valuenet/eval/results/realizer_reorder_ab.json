@@ -1,0 +1,2233 @@
+{
+ "_summary": [
+  "A/B test of a second bounded retry ('reorder') added to the step that turns the planner's high-level plans into legal robot moves (the realizer in eval/realize.py, strict_moves).",
+  "The retry targets ordering failures where a robot stands on another move's destination cell and the plan itself moves it later -- including the pure swap: a stopper must be placed on the very cell its future bouncer still occupies, so the bouncer's approach leg is executed first (analysis had estimated 4 such swaps, idx 0/1/62/105).",
+  "The retry is deterministic and bounded (at most one reorder per blocked move, no search) and only ever runs AFTER the default schedule has already failed; it reorders the plan's own declared moves and never invents new ones.",
+  "All 112 plans of the matched 150 that the stored benchmark (comparison_backward_postfix2.json) already realized return exactly the same move count as before: 0 regressions, 112/112 identical counts.",
+  "Of the 38 stored failures, 7 now execute fully into legal move sequences (idx [0, 1, 30, 92, 105, 108, 121]); every one was replayed move-by-move under the game physics (simulate.slide) with the full joint state: 7/7 legal, target reached.",
+  "The newly fixed plans average 11.86 moves at mean regret 3.43 extra moves over the shortest possible solution (d*); per-instance costs are in per_instance.",
+  "3 of the 4 predicted swaps (idx 0, 1, 105) are among the fixes; idx 62 is not: its plan also parks two different robots permanently-in-sequence on one cell ((0,12) is both Blue's stopper post and Green's landing cell), and untangling that needs a robot to arrive, be consumed, and depart between another segment's two legs -- beyond the sanctioned single-reorder vocabulary, so it fails cleanly as before.",
+  "4 additional ordering failures (idx 30, 92, 108, 121, all from the same 16-instance 'blocked by a plan robot moving later' class) fall to the same retry.",
+  "All 150 plans regenerate bit-identically to the stored run (150/150 abstract costs match); the 38 failing plans were additionally cross-checked against the pickled plans of the diagnosis run (38/38 agree on the new outcome and count).",
+  "With the retry on by default the benchmark solve count rises from 112 to 119 of 150 (74% -> 79%); it is enabled inside the default two_phase=True realizer since there are no regressions."
+ ],
+ "n_regressions": 0,
+ "n_newly_fixed": 7,
+ "n_passing_checked": 112,
+ "n_passing_identical": 112,
+ "n_failing_checked": 38,
+ "n_replay_ok": 7,
+ "n_regen_cost_matches_stored": 150,
+ "n_pickled_crosscheck_agree": 38,
+ "newly_fixed_mean_strict_cost": 11.857142857142858,
+ "newly_fixed_mean_regret": 3.4285714285714284,
+ "solved_before": 112,
+ "solved_after": 119,
+ "protocol": {
+  "instances": "eval/data/bench450_first150.jsonl",
+  "stored_run": "eval/results/comparison_backward_postfix2.json (backward subgoal planner rows)",
+  "regeneration": "torch.manual_seed(0), k=5, 1200 expansions, CPU, checkpoints_backward/{policy_v2,value_v2}.ckpt; skeleton/astar.py pinned to the stored-run-era version (sha256 448f3e78027e611f2a629747c27d180e1fdd503a0e852fc02ed1a733305c0b69) because a parallel workstream was editing proposal invariants in that file during this A/B",
+  "failing_plans_crosscheck": "analysis/artifacts/residual_failing_plans.pkl",
+  "replay": "path-recording mirror of the executor (count asserted equal to strict_moves), each move applied with simulate.slide over the full joint state"
+ },
+ "per_instance": [
+  {
+   "idx": 0,
+   "env_id": 2400,
+   "d_star": 12,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": 22,
+   "newly_fixed": true,
+   "regression": false,
+   "regret": 10,
+   "pickled_agrees": true,
+   "replay_ok": true,
+   "replay_error": null,
+   "moves": [
+    [
+     "Green",
+     "down"
+    ],
+    [
+     "Blue",
+     "down"
+    ],
+    [
+     "Blue",
+     "right"
+    ],
+    [
+     "Blue",
+     "down"
+    ],
+    [
+     "Blue",
+     "right"
+    ],
+    [
+     "Blue",
+     "up"
+    ],
+    [
+     "Blue",
+     "right"
+    ],
+    [
+     "Blue",
+     "down"
+    ],
+    [
+     "Blue",
+     "left"
+    ],
+    [
+     "Green",
+     "left"
+    ],
+    [
+     "Yellow",
+     "down"
+    ],
+    [
+     "Yellow",
+     "right"
+    ],
+    [
+     "Yellow",
+     "down"
+    ],
+    [
+     "Yellow",
+     "right"
+    ],
+    [
+     "Green",
+     "right"
+    ],
+    [
+     "Red",
+     "right"
+    ],
+    [
+     "Red",
+     "up"
+    ],
+    [
+     "Red",
+     "right"
+    ],
+    [
+     "Red",
+     "up"
+    ],
+    [
+     "Red",
+     "left"
+    ],
+    [
+     "Red",
+     "down"
+    ],
+    [
+     "Red",
+     "right"
+    ]
+   ]
+  },
+  {
+   "idx": 1,
+   "env_id": 2400,
+   "d_star": 4,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": 8,
+   "newly_fixed": true,
+   "regression": false,
+   "regret": 4,
+   "pickled_agrees": true,
+   "replay_ok": true,
+   "replay_error": null,
+   "moves": [
+    [
+     "Green",
+     "down"
+    ],
+    [
+     "Green",
+     "left"
+    ],
+    [
+     "Green",
+     "up"
+    ],
+    [
+     "Yellow",
+     "right"
+    ],
+    [
+     "Green",
+     "right"
+    ],
+    [
+     "Red",
+     "right"
+    ],
+    [
+     "Red",
+     "up"
+    ],
+    [
+     "Red",
+     "right"
+    ]
+   ]
+  },
+  {
+   "idx": 2,
+   "env_id": 2400,
+   "d_star": 7,
+   "group": "passing",
+   "stored_strict": 7,
+   "regen_cost_matches_stored": true,
+   "new_strict": 7,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 3,
+   "env_id": 2401,
+   "d_star": 1,
+   "group": "passing",
+   "stored_strict": 1,
+   "regen_cost_matches_stored": true,
+   "new_strict": 1,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 4,
+   "env_id": 2401,
+   "d_star": 4,
+   "group": "passing",
+   "stored_strict": 4,
+   "regen_cost_matches_stored": true,
+   "new_strict": 4,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 5,
+   "env_id": 2401,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 7,
+   "regen_cost_matches_stored": true,
+   "new_strict": 7,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 6,
+   "env_id": 2402,
+   "d_star": 2,
+   "group": "passing",
+   "stored_strict": 2,
+   "regen_cost_matches_stored": true,
+   "new_strict": 2,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 7,
+   "env_id": 2402,
+   "d_star": 4,
+   "group": "passing",
+   "stored_strict": 4,
+   "regen_cost_matches_stored": true,
+   "new_strict": 4,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 8,
+   "env_id": 2402,
+   "d_star": 10,
+   "group": "passing",
+   "stored_strict": 11,
+   "regen_cost_matches_stored": true,
+   "new_strict": 11,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 9,
+   "env_id": 2403,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 7,
+   "regen_cost_matches_stored": true,
+   "new_strict": 7,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 10,
+   "env_id": 2403,
+   "d_star": 1,
+   "group": "passing",
+   "stored_strict": 1,
+   "regen_cost_matches_stored": true,
+   "new_strict": 1,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 11,
+   "env_id": 2403,
+   "d_star": 7,
+   "group": "passing",
+   "stored_strict": 12,
+   "regen_cost_matches_stored": true,
+   "new_strict": 12,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 5
+  },
+  {
+   "idx": 12,
+   "env_id": 2404,
+   "d_star": 8,
+   "group": "passing",
+   "stored_strict": 9,
+   "regen_cost_matches_stored": true,
+   "new_strict": 9,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 13,
+   "env_id": 2404,
+   "d_star": 5,
+   "group": "passing",
+   "stored_strict": 15,
+   "regen_cost_matches_stored": true,
+   "new_strict": 15,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 10
+  },
+  {
+   "idx": 14,
+   "env_id": 2404,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 11,
+   "regen_cost_matches_stored": true,
+   "new_strict": 11,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 5
+  },
+  {
+   "idx": 15,
+   "env_id": 2405,
+   "d_star": 7,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 16,
+   "env_id": 2405,
+   "d_star": 3,
+   "group": "passing",
+   "stored_strict": 3,
+   "regen_cost_matches_stored": true,
+   "new_strict": 3,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 17,
+   "env_id": 2405,
+   "d_star": 7,
+   "group": "passing",
+   "stored_strict": 11,
+   "regen_cost_matches_stored": true,
+   "new_strict": 11,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 4
+  },
+  {
+   "idx": 18,
+   "env_id": 2406,
+   "d_star": 9,
+   "group": "passing",
+   "stored_strict": 11,
+   "regen_cost_matches_stored": true,
+   "new_strict": 11,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 2
+  },
+  {
+   "idx": 19,
+   "env_id": 2406,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 6,
+   "regen_cost_matches_stored": true,
+   "new_strict": 6,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 20,
+   "env_id": 2406,
+   "d_star": 3,
+   "group": "passing",
+   "stored_strict": 3,
+   "regen_cost_matches_stored": true,
+   "new_strict": 3,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 21,
+   "env_id": 2407,
+   "d_star": 4,
+   "group": "passing",
+   "stored_strict": 4,
+   "regen_cost_matches_stored": true,
+   "new_strict": 4,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 22,
+   "env_id": 2407,
+   "d_star": 7,
+   "group": "passing",
+   "stored_strict": 11,
+   "regen_cost_matches_stored": true,
+   "new_strict": 11,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 4
+  },
+  {
+   "idx": 23,
+   "env_id": 2407,
+   "d_star": 8,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 24,
+   "env_id": 2408,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 9,
+   "regen_cost_matches_stored": true,
+   "new_strict": 9,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 3
+  },
+  {
+   "idx": 25,
+   "env_id": 2408,
+   "d_star": 7,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 26,
+   "env_id": 2408,
+   "d_star": 10,
+   "group": "passing",
+   "stored_strict": 11,
+   "regen_cost_matches_stored": true,
+   "new_strict": 11,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 27,
+   "env_id": 2409,
+   "d_star": 8,
+   "group": "passing",
+   "stored_strict": 8,
+   "regen_cost_matches_stored": true,
+   "new_strict": 8,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 28,
+   "env_id": 2409,
+   "d_star": 7,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 29,
+   "env_id": 2409,
+   "d_star": 10,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 30,
+   "env_id": 2410,
+   "d_star": 8,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": 10,
+   "newly_fixed": true,
+   "regression": false,
+   "regret": 2,
+   "pickled_agrees": true,
+   "replay_ok": true,
+   "replay_error": null,
+   "moves": [
+    [
+     "Green",
+     "left"
+    ],
+    [
+     "Green",
+     "up"
+    ],
+    [
+     "Green",
+     "left"
+    ],
+    [
+     "Green",
+     "up"
+    ],
+    [
+     "Green",
+     "left"
+    ],
+    [
+     "Green",
+     "down"
+    ],
+    [
+     "Green",
+     "right"
+    ],
+    [
+     "Red",
+     "left"
+    ],
+    [
+     "Red",
+     "down"
+    ],
+    [
+     "Red",
+     "right"
+    ]
+   ]
+  },
+  {
+   "idx": 31,
+   "env_id": 2410,
+   "d_star": 4,
+   "group": "passing",
+   "stored_strict": 4,
+   "regen_cost_matches_stored": true,
+   "new_strict": 4,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 32,
+   "env_id": 2410,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 7,
+   "regen_cost_matches_stored": true,
+   "new_strict": 7,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 33,
+   "env_id": 2411,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 9,
+   "regen_cost_matches_stored": true,
+   "new_strict": 9,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 3
+  },
+  {
+   "idx": 34,
+   "env_id": 2411,
+   "d_star": 6,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 35,
+   "env_id": 2411,
+   "d_star": 4,
+   "group": "passing",
+   "stored_strict": 4,
+   "regen_cost_matches_stored": true,
+   "new_strict": 4,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 36,
+   "env_id": 2412,
+   "d_star": 4,
+   "group": "passing",
+   "stored_strict": 11,
+   "regen_cost_matches_stored": true,
+   "new_strict": 11,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 7
+  },
+  {
+   "idx": 37,
+   "env_id": 2412,
+   "d_star": 8,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 38,
+   "env_id": 2412,
+   "d_star": 7,
+   "group": "passing",
+   "stored_strict": 7,
+   "regen_cost_matches_stored": true,
+   "new_strict": 7,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 39,
+   "env_id": 2413,
+   "d_star": 5,
+   "group": "passing",
+   "stored_strict": 5,
+   "regen_cost_matches_stored": true,
+   "new_strict": 5,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 40,
+   "env_id": 2413,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 6,
+   "regen_cost_matches_stored": true,
+   "new_strict": 6,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 41,
+   "env_id": 2413,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 8,
+   "regen_cost_matches_stored": true,
+   "new_strict": 8,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 2
+  },
+  {
+   "idx": 42,
+   "env_id": 2414,
+   "d_star": 9,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 43,
+   "env_id": 2414,
+   "d_star": 5,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 44,
+   "env_id": 2414,
+   "d_star": 10,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 45,
+   "env_id": 2415,
+   "d_star": 8,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 46,
+   "env_id": 2415,
+   "d_star": 7,
+   "group": "passing",
+   "stored_strict": 7,
+   "regen_cost_matches_stored": true,
+   "new_strict": 7,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 47,
+   "env_id": 2415,
+   "d_star": 5,
+   "group": "passing",
+   "stored_strict": 5,
+   "regen_cost_matches_stored": true,
+   "new_strict": 5,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 48,
+   "env_id": 2416,
+   "d_star": 5,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 49,
+   "env_id": 2416,
+   "d_star": 9,
+   "group": "passing",
+   "stored_strict": 11,
+   "regen_cost_matches_stored": true,
+   "new_strict": 11,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 2
+  },
+  {
+   "idx": 50,
+   "env_id": 2416,
+   "d_star": 7,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 51,
+   "env_id": 2417,
+   "d_star": 7,
+   "group": "passing",
+   "stored_strict": 7,
+   "regen_cost_matches_stored": true,
+   "new_strict": 7,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 52,
+   "env_id": 2417,
+   "d_star": 9,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 53,
+   "env_id": 2417,
+   "d_star": 9,
+   "group": "passing",
+   "stored_strict": 9,
+   "regen_cost_matches_stored": true,
+   "new_strict": 9,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 54,
+   "env_id": 2418,
+   "d_star": 8,
+   "group": "passing",
+   "stored_strict": 9,
+   "regen_cost_matches_stored": true,
+   "new_strict": 9,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 55,
+   "env_id": 2418,
+   "d_star": 10,
+   "group": "passing",
+   "stored_strict": 11,
+   "regen_cost_matches_stored": true,
+   "new_strict": 11,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 56,
+   "env_id": 2418,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 7,
+   "regen_cost_matches_stored": true,
+   "new_strict": 7,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 57,
+   "env_id": 2419,
+   "d_star": 9,
+   "group": "passing",
+   "stored_strict": 9,
+   "regen_cost_matches_stored": true,
+   "new_strict": 9,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 58,
+   "env_id": 2419,
+   "d_star": 9,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 59,
+   "env_id": 2419,
+   "d_star": 8,
+   "group": "passing",
+   "stored_strict": 8,
+   "regen_cost_matches_stored": true,
+   "new_strict": 8,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 60,
+   "env_id": 2420,
+   "d_star": 4,
+   "group": "passing",
+   "stored_strict": 4,
+   "regen_cost_matches_stored": true,
+   "new_strict": 4,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 61,
+   "env_id": 2420,
+   "d_star": 7,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 62,
+   "env_id": 2420,
+   "d_star": 8,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 63,
+   "env_id": 2421,
+   "d_star": 8,
+   "group": "passing",
+   "stored_strict": 10,
+   "regen_cost_matches_stored": true,
+   "new_strict": 10,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 2
+  },
+  {
+   "idx": 64,
+   "env_id": 2421,
+   "d_star": 9,
+   "group": "passing",
+   "stored_strict": 13,
+   "regen_cost_matches_stored": true,
+   "new_strict": 13,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 4
+  },
+  {
+   "idx": 65,
+   "env_id": 2421,
+   "d_star": 8,
+   "group": "passing",
+   "stored_strict": 15,
+   "regen_cost_matches_stored": true,
+   "new_strict": 15,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 7
+  },
+  {
+   "idx": 66,
+   "env_id": 2422,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 6,
+   "regen_cost_matches_stored": true,
+   "new_strict": 6,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 67,
+   "env_id": 2422,
+   "d_star": 2,
+   "group": "passing",
+   "stored_strict": 2,
+   "regen_cost_matches_stored": true,
+   "new_strict": 2,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 68,
+   "env_id": 2422,
+   "d_star": 9,
+   "group": "passing",
+   "stored_strict": 10,
+   "regen_cost_matches_stored": true,
+   "new_strict": 10,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 69,
+   "env_id": 2423,
+   "d_star": 8,
+   "group": "passing",
+   "stored_strict": 8,
+   "regen_cost_matches_stored": true,
+   "new_strict": 8,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 70,
+   "env_id": 2423,
+   "d_star": 8,
+   "group": "passing",
+   "stored_strict": 8,
+   "regen_cost_matches_stored": true,
+   "new_strict": 8,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 71,
+   "env_id": 2423,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 8,
+   "regen_cost_matches_stored": true,
+   "new_strict": 8,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 2
+  },
+  {
+   "idx": 72,
+   "env_id": 2424,
+   "d_star": 5,
+   "group": "passing",
+   "stored_strict": 8,
+   "regen_cost_matches_stored": true,
+   "new_strict": 8,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 3
+  },
+  {
+   "idx": 73,
+   "env_id": 2424,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 7,
+   "regen_cost_matches_stored": true,
+   "new_strict": 7,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 74,
+   "env_id": 2424,
+   "d_star": 5,
+   "group": "passing",
+   "stored_strict": 10,
+   "regen_cost_matches_stored": true,
+   "new_strict": 10,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 5
+  },
+  {
+   "idx": 75,
+   "env_id": 2425,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 7,
+   "regen_cost_matches_stored": true,
+   "new_strict": 7,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 76,
+   "env_id": 2425,
+   "d_star": 6,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 77,
+   "env_id": 2425,
+   "d_star": 5,
+   "group": "passing",
+   "stored_strict": 5,
+   "regen_cost_matches_stored": true,
+   "new_strict": 5,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 78,
+   "env_id": 2426,
+   "d_star": 4,
+   "group": "passing",
+   "stored_strict": 4,
+   "regen_cost_matches_stored": true,
+   "new_strict": 4,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 79,
+   "env_id": 2426,
+   "d_star": 7,
+   "group": "passing",
+   "stored_strict": 8,
+   "regen_cost_matches_stored": true,
+   "new_strict": 8,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 80,
+   "env_id": 2426,
+   "d_star": 7,
+   "group": "passing",
+   "stored_strict": 11,
+   "regen_cost_matches_stored": true,
+   "new_strict": 11,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 4
+  },
+  {
+   "idx": 81,
+   "env_id": 2427,
+   "d_star": 2,
+   "group": "passing",
+   "stored_strict": 2,
+   "regen_cost_matches_stored": true,
+   "new_strict": 2,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 82,
+   "env_id": 2427,
+   "d_star": 3,
+   "group": "passing",
+   "stored_strict": 3,
+   "regen_cost_matches_stored": true,
+   "new_strict": 3,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 83,
+   "env_id": 2427,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 6,
+   "regen_cost_matches_stored": true,
+   "new_strict": 6,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 84,
+   "env_id": 2428,
+   "d_star": 9,
+   "group": "passing",
+   "stored_strict": 10,
+   "regen_cost_matches_stored": true,
+   "new_strict": 10,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 85,
+   "env_id": 2428,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 7,
+   "regen_cost_matches_stored": true,
+   "new_strict": 7,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 86,
+   "env_id": 2428,
+   "d_star": 10,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 87,
+   "env_id": 2429,
+   "d_star": 7,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 88,
+   "env_id": 2429,
+   "d_star": 7,
+   "group": "passing",
+   "stored_strict": 7,
+   "regen_cost_matches_stored": true,
+   "new_strict": 7,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 89,
+   "env_id": 2429,
+   "d_star": 4,
+   "group": "passing",
+   "stored_strict": 6,
+   "regen_cost_matches_stored": true,
+   "new_strict": 6,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 2
+  },
+  {
+   "idx": 90,
+   "env_id": 2430,
+   "d_star": 2,
+   "group": "passing",
+   "stored_strict": 2,
+   "regen_cost_matches_stored": true,
+   "new_strict": 2,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 91,
+   "env_id": 2430,
+   "d_star": 8,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 92,
+   "env_id": 2430,
+   "d_star": 7,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": 7,
+   "newly_fixed": true,
+   "regression": false,
+   "regret": 0,
+   "pickled_agrees": true,
+   "replay_ok": true,
+   "replay_error": null,
+   "moves": [
+    [
+     "Red",
+     "down"
+    ],
+    [
+     "Red",
+     "right"
+    ],
+    [
+     "Red",
+     "up"
+    ],
+    [
+     "Green",
+     "left"
+    ],
+    [
+     "Green",
+     "down"
+    ],
+    [
+     "Green",
+     "right"
+    ],
+    [
+     "Green",
+     "up"
+    ]
+   ]
+  },
+  {
+   "idx": 93,
+   "env_id": 2431,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 6,
+   "regen_cost_matches_stored": true,
+   "new_strict": 6,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 94,
+   "env_id": 2431,
+   "d_star": 7,
+   "group": "passing",
+   "stored_strict": 7,
+   "regen_cost_matches_stored": true,
+   "new_strict": 7,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 95,
+   "env_id": 2431,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 6,
+   "regen_cost_matches_stored": true,
+   "new_strict": 6,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 96,
+   "env_id": 2432,
+   "d_star": 5,
+   "group": "passing",
+   "stored_strict": 5,
+   "regen_cost_matches_stored": true,
+   "new_strict": 5,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 97,
+   "env_id": 2432,
+   "d_star": 8,
+   "group": "passing",
+   "stored_strict": 14,
+   "regen_cost_matches_stored": true,
+   "new_strict": 14,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 6
+  },
+  {
+   "idx": 98,
+   "env_id": 2432,
+   "d_star": 7,
+   "group": "passing",
+   "stored_strict": 15,
+   "regen_cost_matches_stored": true,
+   "new_strict": 15,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 8
+  },
+  {
+   "idx": 99,
+   "env_id": 2433,
+   "d_star": 8,
+   "group": "passing",
+   "stored_strict": 8,
+   "regen_cost_matches_stored": true,
+   "new_strict": 8,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 100,
+   "env_id": 2433,
+   "d_star": 8,
+   "group": "passing",
+   "stored_strict": 9,
+   "regen_cost_matches_stored": true,
+   "new_strict": 9,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 101,
+   "env_id": 2433,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 6,
+   "regen_cost_matches_stored": true,
+   "new_strict": 6,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 102,
+   "env_id": 2434,
+   "d_star": 4,
+   "group": "passing",
+   "stored_strict": 9,
+   "regen_cost_matches_stored": true,
+   "new_strict": 9,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 5
+  },
+  {
+   "idx": 103,
+   "env_id": 2434,
+   "d_star": 5,
+   "group": "passing",
+   "stored_strict": 5,
+   "regen_cost_matches_stored": true,
+   "new_strict": 5,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 104,
+   "env_id": 2434,
+   "d_star": 7,
+   "group": "passing",
+   "stored_strict": 7,
+   "regen_cost_matches_stored": true,
+   "new_strict": 7,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 105,
+   "env_id": 2435,
+   "d_star": 10,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": 12,
+   "newly_fixed": true,
+   "regression": false,
+   "regret": 2,
+   "pickled_agrees": true,
+   "replay_ok": true,
+   "replay_error": null,
+   "moves": [
+    [
+     "Blue",
+     "right"
+    ],
+    [
+     "Blue",
+     "down"
+    ],
+    [
+     "Blue",
+     "up"
+    ],
+    [
+     "Red",
+     "down"
+    ],
+    [
+     "Red",
+     "right"
+    ],
+    [
+     "Red",
+     "down"
+    ],
+    [
+     "Blue",
+     "down"
+    ],
+    [
+     "Blue",
+     "left"
+    ],
+    [
+     "Green",
+     "up"
+    ],
+    [
+     "Green",
+     "right"
+    ],
+    [
+     "Green",
+     "down"
+    ],
+    [
+     "Green",
+     "left"
+    ]
+   ]
+  },
+  {
+   "idx": 106,
+   "env_id": 2435,
+   "d_star": 9,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 107,
+   "env_id": 2435,
+   "d_star": 8,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 108,
+   "env_id": 2436,
+   "d_star": 9,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": 13,
+   "newly_fixed": true,
+   "regression": false,
+   "regret": 4,
+   "pickled_agrees": true,
+   "replay_ok": true,
+   "replay_error": null,
+   "moves": [
+    [
+     "Blue",
+     "up"
+    ],
+    [
+     "Blue",
+     "right"
+    ],
+    [
+     "Red",
+     "left"
+    ],
+    [
+     "Red",
+     "down"
+    ],
+    [
+     "Red",
+     "right"
+    ],
+    [
+     "Red",
+     "up"
+    ],
+    [
+     "Yellow",
+     "up"
+    ],
+    [
+     "Yellow",
+     "left"
+    ],
+    [
+     "Yellow",
+     "down"
+    ],
+    [
+     "Yellow",
+     "right"
+    ],
+    [
+     "Yellow",
+     "up"
+    ],
+    [
+     "Yellow",
+     "left"
+    ],
+    [
+     "Yellow",
+     "down"
+    ]
+   ]
+  },
+  {
+   "idx": 109,
+   "env_id": 2436,
+   "d_star": 7,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 110,
+   "env_id": 2436,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 7,
+   "regen_cost_matches_stored": true,
+   "new_strict": 7,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 111,
+   "env_id": 2437,
+   "d_star": 9,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 112,
+   "env_id": 2437,
+   "d_star": 7,
+   "group": "passing",
+   "stored_strict": 12,
+   "regen_cost_matches_stored": true,
+   "new_strict": 12,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 5
+  },
+  {
+   "idx": 113,
+   "env_id": 2437,
+   "d_star": 5,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 114,
+   "env_id": 2438,
+   "d_star": 2,
+   "group": "passing",
+   "stored_strict": 5,
+   "regen_cost_matches_stored": true,
+   "new_strict": 5,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 3
+  },
+  {
+   "idx": 115,
+   "env_id": 2438,
+   "d_star": 9,
+   "group": "passing",
+   "stored_strict": 12,
+   "regen_cost_matches_stored": true,
+   "new_strict": 12,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 3
+  },
+  {
+   "idx": 116,
+   "env_id": 2438,
+   "d_star": 5,
+   "group": "passing",
+   "stored_strict": 9,
+   "regen_cost_matches_stored": true,
+   "new_strict": 9,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 4
+  },
+  {
+   "idx": 117,
+   "env_id": 2439,
+   "d_star": 8,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 118,
+   "env_id": 2439,
+   "d_star": 3,
+   "group": "passing",
+   "stored_strict": 3,
+   "regen_cost_matches_stored": true,
+   "new_strict": 3,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 119,
+   "env_id": 2439,
+   "d_star": 9,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 120,
+   "env_id": 2440,
+   "d_star": 3,
+   "group": "passing",
+   "stored_strict": 3,
+   "regen_cost_matches_stored": true,
+   "new_strict": 3,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 121,
+   "env_id": 2440,
+   "d_star": 9,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": 11,
+   "newly_fixed": true,
+   "regression": false,
+   "regret": 2,
+   "pickled_agrees": true,
+   "replay_ok": true,
+   "replay_error": null,
+   "moves": [
+    [
+     "Yellow",
+     "left"
+    ],
+    [
+     "Blue",
+     "left"
+    ],
+    [
+     "Blue",
+     "down"
+    ],
+    [
+     "Blue",
+     "right"
+    ],
+    [
+     "Red",
+     "left"
+    ],
+    [
+     "Red",
+     "up"
+    ],
+    [
+     "Red",
+     "right"
+    ],
+    [
+     "Red",
+     "down"
+    ],
+    [
+     "Red",
+     "left"
+    ],
+    [
+     "Red",
+     "down"
+    ],
+    [
+     "Red",
+     "right"
+    ]
+   ]
+  },
+  {
+   "idx": 122,
+   "env_id": 2440,
+   "d_star": 8,
+   "group": "passing",
+   "stored_strict": 8,
+   "regen_cost_matches_stored": true,
+   "new_strict": 8,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 123,
+   "env_id": 2441,
+   "d_star": 8,
+   "group": "passing",
+   "stored_strict": 10,
+   "regen_cost_matches_stored": true,
+   "new_strict": 10,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 2
+  },
+  {
+   "idx": 124,
+   "env_id": 2441,
+   "d_star": 9,
+   "group": "passing",
+   "stored_strict": 9,
+   "regen_cost_matches_stored": true,
+   "new_strict": 9,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 125,
+   "env_id": 2441,
+   "d_star": 8,
+   "group": "passing",
+   "stored_strict": 8,
+   "regen_cost_matches_stored": true,
+   "new_strict": 8,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 126,
+   "env_id": 2442,
+   "d_star": 9,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 127,
+   "env_id": 2442,
+   "d_star": 4,
+   "group": "passing",
+   "stored_strict": 4,
+   "regen_cost_matches_stored": true,
+   "new_strict": 4,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 128,
+   "env_id": 2442,
+   "d_star": 4,
+   "group": "passing",
+   "stored_strict": 4,
+   "regen_cost_matches_stored": true,
+   "new_strict": 4,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 129,
+   "env_id": 2443,
+   "d_star": 9,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 130,
+   "env_id": 2443,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 11,
+   "regen_cost_matches_stored": true,
+   "new_strict": 11,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 5
+  },
+  {
+   "idx": 131,
+   "env_id": 2443,
+   "d_star": 4,
+   "group": "passing",
+   "stored_strict": 4,
+   "regen_cost_matches_stored": true,
+   "new_strict": 4,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 132,
+   "env_id": 2444,
+   "d_star": 5,
+   "group": "passing",
+   "stored_strict": 5,
+   "regen_cost_matches_stored": true,
+   "new_strict": 5,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 133,
+   "env_id": 2444,
+   "d_star": 9,
+   "group": "passing",
+   "stored_strict": 17,
+   "regen_cost_matches_stored": true,
+   "new_strict": 17,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 8
+  },
+  {
+   "idx": 134,
+   "env_id": 2444,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 6,
+   "regen_cost_matches_stored": true,
+   "new_strict": 6,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 135,
+   "env_id": 2445,
+   "d_star": 3,
+   "group": "passing",
+   "stored_strict": 6,
+   "regen_cost_matches_stored": true,
+   "new_strict": 6,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 3
+  },
+  {
+   "idx": 136,
+   "env_id": 2445,
+   "d_star": 9,
+   "group": "passing",
+   "stored_strict": 12,
+   "regen_cost_matches_stored": true,
+   "new_strict": 12,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 3
+  },
+  {
+   "idx": 137,
+   "env_id": 2445,
+   "d_star": 5,
+   "group": "passing",
+   "stored_strict": 6,
+   "regen_cost_matches_stored": true,
+   "new_strict": 6,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 1
+  },
+  {
+   "idx": 138,
+   "env_id": 2446,
+   "d_star": 9,
+   "group": "failing",
+   "stored_strict": null,
+   "regen_cost_matches_stored": true,
+   "new_strict": null,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": null,
+   "pickled_agrees": true
+  },
+  {
+   "idx": 139,
+   "env_id": 2446,
+   "d_star": 5,
+   "group": "passing",
+   "stored_strict": 5,
+   "regen_cost_matches_stored": true,
+   "new_strict": 5,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 140,
+   "env_id": 2446,
+   "d_star": 1,
+   "group": "passing",
+   "stored_strict": 1,
+   "regen_cost_matches_stored": true,
+   "new_strict": 1,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 141,
+   "env_id": 2447,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 6,
+   "regen_cost_matches_stored": true,
+   "new_strict": 6,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 142,
+   "env_id": 2447,
+   "d_star": 4,
+   "group": "passing",
+   "stored_strict": 4,
+   "regen_cost_matches_stored": true,
+   "new_strict": 4,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 143,
+   "env_id": 2447,
+   "d_star": 8,
+   "group": "passing",
+   "stored_strict": 11,
+   "regen_cost_matches_stored": true,
+   "new_strict": 11,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 3
+  },
+  {
+   "idx": 144,
+   "env_id": 2448,
+   "d_star": 8,
+   "group": "passing",
+   "stored_strict": 8,
+   "regen_cost_matches_stored": true,
+   "new_strict": 8,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 145,
+   "env_id": 2448,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 6,
+   "regen_cost_matches_stored": true,
+   "new_strict": 6,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 146,
+   "env_id": 2448,
+   "d_star": 5,
+   "group": "passing",
+   "stored_strict": 10,
+   "regen_cost_matches_stored": true,
+   "new_strict": 10,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 5
+  },
+  {
+   "idx": 147,
+   "env_id": 2449,
+   "d_star": 9,
+   "group": "passing",
+   "stored_strict": 9,
+   "regen_cost_matches_stored": true,
+   "new_strict": 9,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  },
+  {
+   "idx": 148,
+   "env_id": 2449,
+   "d_star": 9,
+   "group": "passing",
+   "stored_strict": 11,
+   "regen_cost_matches_stored": true,
+   "new_strict": 11,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 2
+  },
+  {
+   "idx": 149,
+   "env_id": 2449,
+   "d_star": 6,
+   "group": "passing",
+   "stored_strict": 6,
+   "regen_cost_matches_stored": true,
+   "new_strict": 6,
+   "newly_fixed": false,
+   "regression": false,
+   "regret": 0
+  }
+ ]
+}

@@ -12,17 +12,30 @@ that a plan need not resolve robot-robot interference.
 from __future__ import annotations
 
 from collections import deque
+from math import isqrt
+
+
+def _board_size(grid_data, size):
+    """Board side length: explicit `size`, else inferred from the wall layout.
+    Inference is safer than an env var — a disagreeing global would mis-decode
+    boards silently."""
+    if size is not None:
+        return size
+    n = isqrt(len(grid_data))
+    assert n * n == len(grid_data), f"grid_data length {len(grid_data)} not a square"
+    return n
 
 
 DIRECTIONS = ("up", "down", "left", "right")
 
 
-def wall_sets(grid_data, size=16):
+def wall_sets(grid_data, size=None):
     """Return (walls_right, walls_down) as sets of (x, y) = (col, row).
 
     walls_right(x, y): wall on the right edge of (x, y), between (x,y)/(x+1,y).
     walls_down(x, y):  wall on the bottom edge of (x, y), between (x,y)/(x,y+1).
     """
+    size = _board_size(grid_data, size)
     walls_right, walls_down = set(), set()
     for idx, cell in enumerate(grid_data):
         col, row = idx % size, idx // size
@@ -71,7 +84,7 @@ def slide(pos, direction, blockers, walls_right, walls_down, size=16):
         x, y = nxt
 
 
-def segment_realizable(grid_env, start, end, support_pos, walls_right, walls_down, size=16):
+def segment_realizable(grid_env, start, end, support_pos, walls_right, walls_down, size=None):
     """True if a robot can get from `start` to `end` (blocker-clearing + ordering).
 
     Independent of the plan's cost oracle. For an independent segment, the
@@ -81,6 +94,7 @@ def segment_realizable(grid_env, start, end, support_pos, walls_right, walls_dow
     Candidate `u` cells come from the (geometry-certified) dependent edges into
     `end`; the approach and the final stop are both re-simulated from walls.
     """
+    size = _board_size(grid_env.grid_data, size)
     if start == end:
         return True
     if support_pos is None:
@@ -99,7 +113,7 @@ def segment_realizable(grid_env, start, end, support_pos, walls_right, walls_dow
     return False
 
 
-def verify_plan(plan, grid_env, state, size=16):
+def verify_plan(plan, grid_env, state, size=None):
     """Check a complete PartialPlan is realizable up to blocker-clearing.
 
     Each physical segment is re-simulated from the wall layout (not the cost
@@ -108,6 +122,7 @@ def verify_plan(plan, grid_env, state, size=16):
     """
     from validate_plan import _physical_movement, STRUCTURAL_EDGE_PAIRS
 
+    size = _board_size(grid_env.grid_data, size)
     wr, wd = wall_sets(grid_env.grid_data, size)
     g = plan.g
     report = []

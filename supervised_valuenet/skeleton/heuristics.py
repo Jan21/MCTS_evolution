@@ -34,15 +34,19 @@ def _dependent_supports(env: GridEnv, pos):
             if "dependent" in d}
 
 
-def propose(env: GridEnv, goal, mover: Robot_at, helpers, support: Robot_at | None):
+def propose(env: GridEnv, goal, mover: Robot_at, helpers, support: Robot_at | None,
+            b1: bool = False):
     """Candidate subgoals for moving `mover` to cell `goal`.
 
     `support` is the helper already pinned for this segment (when the parent is
     itself a bottleneck), else None. Returns candidates whose bottleneck can
-    actually reach the parent segment via some support.
+    actually reach the parent segment via some support. With `b1=True`
+    (Lever B1, analysis/b1_design.md) transient-support candidates are
+    included; the default path is unchanged.
     """
     segment = State(target=goal, target_robot=mover, helpers=helpers)
-    raw = list(env.propose_subgoal_states(segment, support_robot=support))
+    raw = list(env.propose_subgoal_states(segment, support_robot=support,
+                                          transient=b1))
 
     # Fallback: when `goal` cannot be reached as a plain stop, it must be
     # reached by first placing a helper at one of its dependent-edge supports.
@@ -51,7 +55,8 @@ def propose(env: GridEnv, goal, mover: Robot_at, helpers, support: Robot_at | No
         for sup_pos in _dependent_supports(env, goal):
             for helper in helpers:
                 pinned = Robot_at(position=sup_pos, color=helper.color)
-                raw.extend(env.propose_subgoal_states(segment, support_robot=pinned))
+                raw.extend(env.propose_subgoal_states(segment, support_robot=pinned,
+                                                      transient=b1))
 
     # A bottleneck is only useful if it can reach the parent cell `goal` via
     # an exact (dependent-edge-free, or single-support) path.
@@ -70,6 +75,13 @@ def propose(env: GridEnv, goal, mover: Robot_at, helpers, support: Robot_at | No
                 candidates.append(Candidate(subgoal, ps, score))
                 break
     return candidates
+
+
+def propose_b1(env: GridEnv, goal, mover: Robot_at, helpers,
+               support: Robot_at | None):
+    """`propose` with the Lever B1 temporary-support vocabulary enabled —
+    the drop-in for `AStar(propose=heuristics.propose_b1)`."""
+    return propose(env, goal, mover, helpers, support, b1=True)
 
 
 def score(env: GridEnv, candidate: Candidate) -> float:

@@ -1,11 +1,15 @@
 from collections import defaultdict
 from dataclasses import dataclass
+import os
 import pickle
 from pathlib import Path
 
 import networkx as nx
 
-ENV_DIR = Path(__file__).resolve().parent / "environments"
+# Board directory; RR_ENV_DIR selects a per-config dir (read once at import,
+# one config per process). Unset -> the stock 16x16 boards, as before.
+ENV_DIR = (Path(os.environ["RR_ENV_DIR"]) if "RR_ENV_DIR" in os.environ
+           else Path(__file__).resolve().parent / "environments")
 CACHE_DIR = ENV_DIR / "cache"
 
 @dataclass
@@ -32,6 +36,11 @@ class Subgoal:
     goal_pos: tuple[int, int]
     target_robot: Robot_at
     helper: Robot_at
+    # Lever B1 (analysis/b1_design.md): True when the support cell has no
+    # adjacent wall, i.e. the stopper can only be held transiently — the
+    # helper must itself be stopped by another robot or by plan timing.
+    # Default False keeps every existing constructor and pickle valid.
+    transient: bool = False
 
 
 class GridEnv:
@@ -216,6 +225,39 @@ class GridEnv:
                         pairs.add((v, support_pos))
         return pairs
 
+    def _transient_support_pairs(self, cache_key, final_component=None):
+        """Lever B1 candidate pairs: same final-component crossing rule as
+        `_collect_bottleneck_support_pairs`, but admitting only support cells
+        WITHOUT an adjacent wall (the cells the static vocabulary filters
+        out). Computed lazily and memoized on the instance, so pickled GridEnv
+        caches stay valid; `final_component` (goal included) may be passed by
+        the caller when it already computed one.
+        """
+        memo = getattr(self, "_transient_pairs_cache", None)
+        if memo is None:
+            memo = self._transient_pairs_cache = {}
+        hit = memo.get(cache_key)
+        if hit is not None:
+            return hit
+        if final_component is None:
+            goal, support_pos = cache_key
+            if support_pos is None:
+                final_component = self.precomputed_final_components[goal] | {goal}
+            else:
+                entry = self._dependent_edge_cache.get(cache_key)
+                final_component = ((entry["final_component"] | {goal})
+                                   if entry is not None else {goal})
+        pairs = set()
+        for node in final_component:
+            for u, v, d in self.G.in_edges(node, data=True):
+                if u not in final_component and 'dependent' in d:
+                    support_pos = d['dependent']
+                    if not self._has_adjacent_wall(support_pos):
+                        pairs.add((v, support_pos))
+        out = frozenset(pairs)
+        memo[cache_key] = out
+        return out
+
     def subgoal_score(self, subgoal: Subgoal):
         bottleneck_pos = subgoal.bottleneck.position
         support_pos = subgoal.support.position
@@ -238,10 +280,14 @@ class GridEnv:
         return bottleneck_to_goal_score + target_to_bottleneck_score + helper_to_support_score
         
 
-    def propose_subgoal_states(self, state: State, support_robot: Robot_at = None):
+    def propose_subgoal_states(self, state: State, support_robot: Robot_at = None,
+                               transient: bool = False):
         """Generate candidate subgoal states for an open segment.
 
-        Returns list of (Subgoal, score).
+        Returns list of (Subgoal, score). With `transient=True` (Lever B1,
+        analysis/b1_design.md) the pair set additionally includes supports on
+        cells without an adjacent wall; those subgoals carry
+        `transient=True`. The default path is unchanged.
         """
         goal = state.target
         target_robot = state.target_robot
@@ -254,6 +300,7 @@ class GridEnv:
             support_pos = None
             cache_key = (goal, None)
 
+        computed_fc = None
         cached_pairs = self._bottleneck_support_pairs_cache.get(cache_key)
         if cached_pairs is not None:
             pairs = cached_pairs
@@ -268,7 +315,10 @@ class GridEnv:
                     is_extended_graph=True, blocker_pos=support_pos)
                 del extended_G
                 del extended_G_independent
-            pairs = self._collect_bottleneck_support_pairs(final_component | {goal})
+            computed_fc = final_component | {goal}
+            pairs = self._collect_bottleneck_support_pairs(computed_fc)
+        if transient:
+            pairs = set(pairs) | self._transient_support_pairs(cache_key, computed_fc)
         results = []
         for (bottleneck_pos, support_pos) in pairs:
             for helper_robot in state.helpers:
@@ -280,7 +330,8 @@ class GridEnv:
                     support=new_support_robot,
                     goal_pos=goal,
                     target_robot=target_robot,
-                    helper=helper_robot)
+                    helper=helper_robot,
+                    transient=not self._has_adjacent_wall(tuple(support_pos)))
                 score = self.subgoal_score(subgoal)
                 results.append((subgoal, score))
         return results

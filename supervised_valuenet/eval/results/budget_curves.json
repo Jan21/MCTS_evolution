@@ -1,0 +1,309 @@
+{
+ "_summary": "Solve-rate-vs-search-budget curves. Every point = eval.compare on the identical 450 instances (eval/data/bench450.jsonl), k=5, expansion cap as listed. Backward 'checked' = keeps searching past unplayable plans. 1200-cap points from the main comparison files.",
+ "systems": {
+  "backward subgoal planner (anytime realization-checked)": {
+   "points": [
+    {
+     "expansion_cap": 10,
+     "solve_rate": 0.7866666666666666,
+     "solved": 354,
+     "n": 450,
+     "mean_regret": 1.6751412429378532,
+     "mean_expansions": 3.0,
+     "mean_seconds": 1.0657379068936117,
+     "source": "eval/results/curves/backward_anytime_b10.json"
+    },
+    {
+     "expansion_cap": 30,
+     "solve_rate": 0.8533333333333334,
+     "solved": 384,
+     "n": 450,
+     "mean_regret": 2.0416666666666665,
+     "mean_expansions": 5.3133333333333335,
+     "mean_seconds": 1.8405534894557463,
+     "source": "eval/results/curves/backward_anytime_b30.json"
+    },
+    {
+     "expansion_cap": 100,
+     "solve_rate": 0.8822222222222222,
+     "solved": 397,
+     "n": 450,
+     "mean_regret": 2.3073047858942064,
+     "mean_expansions": 10.535555555555556,
+     "mean_seconds": 3.528216406038652,
+     "source": "eval/results/curves/backward_anytime_b100.json"
+    },
+    {
+     "expansion_cap": 300,
+     "solve_rate": 0.8888888888888888,
+     "solved": 400,
+     "n": 450,
+     "mean_regret": 2.37,
+     "mean_expansions": 22.884444444444444,
+     "mean_seconds": 7.791055359190019,
+     "source": "eval/results/curves/backward_anytime_b300.json"
+    }
+   ]
+  },
+  "backward subgoal planner": {
+   "points": [
+    {
+     "expansion_cap": 10,
+     "solve_rate": 0.7244444444444444,
+     "solved": 326,
+     "n": 450,
+     "mean_regret": 1.4754601226993864,
+     "mean_expansions": 2.4466666666666668,
+     "mean_seconds": 0.8703577520884573,
+     "source": "eval/results/curves/backward_plain_b10.json"
+    },
+    {
+     "expansion_cap": 30,
+     "solve_rate": 0.7444444444444445,
+     "solved": 335,
+     "n": 450,
+     "mean_regret": 1.5761194029850747,
+     "mean_expansions": 3.1355555555555554,
+     "mean_seconds": 1.1001669708406552,
+     "source": "eval/results/curves/backward_plain_b30.json"
+    },
+    {
+     "expansion_cap": 100,
+     "solve_rate": 0.7466666666666667,
+     "solved": 336,
+     "n": 450,
+     "mean_regret": 1.6160714285714286,
+     "mean_expansions": 3.7066666666666666,
+     "mean_seconds": 1.2935240424595151,
+     "source": "eval/results/curves/backward_plain_b100.json"
+    },
+    {
+     "expansion_cap": 300,
+     "solve_rate": 0.7466666666666667,
+     "solved": 336,
+     "n": 450,
+     "mean_regret": 1.6160714285714286,
+     "mean_expansions": 4.16,
+     "mean_seconds": 1.4164031067304312,
+     "source": "eval/results/curves/backward_plain_b300.json"
+    }
+   ]
+  },
+  "forward move planner (move_planner/checkpoints/best.ckpt)": {
+   "points": [
+    {
+     "expansion_cap": 10,
+     "solve_rate": 0.024444444444444446,
+     "solved": 11,
+     "n": 450,
+     "mean_regret": 0.09090909090909091,
+     "mean_expansions": 9.88,
+     "mean_seconds": 3.430511598933695,
+     "source": "eval/results/curves/forward_b10.json"
+    },
+    {
+     "expansion_cap": 30,
+     "solve_rate": 0.10444444444444445,
+     "solved": 47,
+     "n": 450,
+     "mean_regret": 0.1702127659574468,
+     "mean_expansions": 28.606666666666666,
+     "mean_seconds": 9.921928525036718,
+     "source": "eval/results/curves/forward_b30.json"
+    },
+    {
+     "expansion_cap": 100,
+     "solve_rate": 0.33111111111111113,
+     "solved": 149,
+     "n": 450,
+     "mean_regret": 0.1610738255033557,
+     "mean_expansions": 83.21555555555555,
+     "mean_seconds": 27.96308227074695,
+     "source": "eval/results/curves/forward_b100.json"
+    },
+    {
+     "expansion_cap": 300,
+     "solve_rate": 0.5511111111111111,
+     "solved": 248,
+     "n": 450,
+     "mean_regret": 0.23387096774193547,
+     "mean_expansions": 192.09555555555556,
+     "mean_seconds": 63.58119073912605,
+     "source": "eval/results/curves/forward_b300.json"
+    },
+    {
+     "expansion_cap": 1200,
+     "solve_rate": 0.8466666666666667,
+     "solved": 381,
+     "n": 450,
+     "mean_regret": 0.3543307086614173,
+     "mean_expansions": 423.4866666666667,
+     "mean_seconds": 11.415336850921417,
+     "source": "eval/results/comparison_forward.json"
+    }
+   ]
+  },
+  "forward move planner (move_planner/checkpoints/candidate_scored.ckpt)": {
+   "points": [
+    {
+     "expansion_cap": 10,
+     "solve_rate": 0.3466666666666667,
+     "solved": 156,
+     "n": 450,
+     "mean_regret": 0.0,
+     "mean_expansions": 8.237777777777778,
+     "mean_seconds": 2.7447644936060533,
+     "source": "eval/results/curves/forward_b10.json"
+    },
+    {
+     "expansion_cap": 30,
+     "solve_rate": 0.6977777777777778,
+     "solved": 314,
+     "n": 450,
+     "mean_regret": 0.025477707006369428,
+     "mean_expansions": 16.595555555555556,
+     "mean_seconds": 5.538755812802249,
+     "source": "eval/results/curves/forward_b30.json"
+    },
+    {
+     "expansion_cap": 100,
+     "solve_rate": 0.9355555555555556,
+     "solved": 421,
+     "n": 450,
+     "mean_regret": 0.040380047505938245,
+     "mean_expansions": 25.97111111111111,
+     "mean_seconds": 8.540312792237641,
+     "source": "eval/results/curves/forward_b100.json"
+    },
+    {
+     "expansion_cap": 300,
+     "solve_rate": 0.9844444444444445,
+     "solved": 443,
+     "n": 450,
+     "mean_regret": 0.05417607223476298,
+     "mean_expansions": 30.962222222222223,
+     "mean_seconds": 9.675507961244632,
+     "source": "eval/results/curves/forward_b300.json"
+    },
+    {
+     "expansion_cap": 1200,
+     "solve_rate": 1.0,
+     "solved": 450,
+     "n": 450,
+     "mean_regret": 0.06666666666666667,
+     "mean_expansions": 36.026666666666664,
+     "mean_seconds": 0.9864478266632392,
+     "source": "eval/results/comparison_forward.json"
+    }
+   ]
+  },
+  "forward move planner (move_planner_v2/runs_warm/iter5.ckpt)": {
+   "points": [
+    {
+     "expansion_cap": 10,
+     "solve_rate": 0.25555555555555554,
+     "solved": 115,
+     "n": 450,
+     "mean_regret": 0.0,
+     "mean_expansions": 8.53111111111111,
+     "mean_seconds": 2.842931062672287,
+     "source": "eval/results/curves/forward_b10.json"
+    },
+    {
+     "expansion_cap": 30,
+     "solve_rate": 0.52,
+     "solved": 234,
+     "n": 450,
+     "mean_regret": 0.004273504273504274,
+     "mean_expansions": 20.11777777777778,
+     "mean_seconds": 7.160761100617755,
+     "source": "eval/results/curves/forward_b30.json"
+    },
+    {
+     "expansion_cap": 100,
+     "solve_rate": 0.7555555555555555,
+     "solved": 340,
+     "n": 450,
+     "mean_regret": 0.026470588235294117,
+     "mean_expansions": 43.25333333333333,
+     "mean_seconds": 15.238527353227965,
+     "source": "eval/results/curves/forward_b100.json"
+    },
+    {
+     "expansion_cap": 300,
+     "solve_rate": 0.8866666666666667,
+     "solved": 399,
+     "n": 450,
+     "mean_regret": 0.03007518796992481,
+     "mean_expansions": 74.7688888888889,
+     "mean_seconds": 23.337237304663287,
+     "source": "eval/results/curves/forward_b300.json"
+    },
+    {
+     "expansion_cap": 1200,
+     "solve_rate": 0.9755555555555555,
+     "solved": 439,
+     "n": 450,
+     "mean_regret": 0.05466970387243736,
+     "mean_expansions": 120.80666666666667,
+     "mean_seconds": 3.2825238951502573,
+     "source": "eval/results/comparison_forward.json"
+    }
+   ]
+  },
+  "forward move planner (move_planner_v2/runs_scratch_v5/iter15.ckpt)": {
+   "points": [
+    {
+     "expansion_cap": 10,
+     "solve_rate": 0.23555555555555555,
+     "solved": 106,
+     "n": 450,
+     "mean_regret": 0.018867924528301886,
+     "mean_expansions": 8.584444444444445,
+     "mean_seconds": 2.862824308877914,
+     "source": "eval/results/curves/forward_b10.json"
+    },
+    {
+     "expansion_cap": 30,
+     "solve_rate": 0.39555555555555555,
+     "solved": 178,
+     "n": 450,
+     "mean_regret": 0.028089887640449437,
+     "mean_expansions": 21.935555555555556,
+     "mean_seconds": 7.292136846765772,
+     "source": "eval/results/curves/forward_b30.json"
+    },
+    {
+     "expansion_cap": 100,
+     "solve_rate": 0.5555555555555556,
+     "solved": 250,
+     "n": 450,
+     "mean_regret": 0.064,
+     "mean_expansions": 57.08888888888889,
+     "mean_seconds": 18.701880452272274,
+     "source": "eval/results/curves/forward_b100.json"
+    },
+    {
+     "expansion_cap": 300,
+     "solve_rate": 0.6933333333333334,
+     "solved": 312,
+     "n": 450,
+     "mean_regret": 0.12179487179487179,
+     "mean_expansions": 130.47333333333333,
+     "mean_seconds": 40.64573473881982,
+     "source": "eval/results/curves/forward_b300.json"
+    },
+    {
+     "expansion_cap": 1200,
+     "solve_rate": 0.8755555555555555,
+     "solved": 394,
+     "n": 450,
+     "mean_regret": 0.2131979695431472,
+     "mean_expansions": 304.0422222222222,
+     "mean_seconds": 8.258875842047338,
+     "source": "eval/results/comparison_forward.json"
+    }
+   ]
+  }
+ }
+}

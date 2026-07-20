@@ -15,6 +15,7 @@ All-pairs distances are then precomputed exactly as `GridEnv.from_env` expects.
 from __future__ import annotations
 
 import argparse
+import os
 import pickle
 import random
 from pathlib import Path
@@ -24,9 +25,11 @@ import networkx as nx
 from simulate import wall_sets, slide
 from GridEnv import Robot_at
 
-GRID = 16
-N_INTERIOR = 48
-COLORS = ["Red", "Blue", "Green", "Yellow"]
+GRID = int(os.environ.get("RR_GRID", "16"))
+# Interior wall count scales with board area to keep the stock density (48 @ 16x16).
+N_INTERIOR = int(os.environ.get("RR_WALLS", str(round(48 * (GRID / 16) ** 2))))
+PALETTE = ["Red", "Blue", "Green", "Yellow", "Purple", "Orange", "Cyan", "Magenta"]
+COLORS = PALETTE[:int(os.environ.get("RR_ROBOTS", "4"))]
 DIRS = {"up": (0, -1), "down": (0, 1), "left": (-1, 0), "right": (1, 0)}
 
 
@@ -134,7 +137,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--n", type=int, default=200)
     p.add_argument("--start", type=int, default=1000)
-    p.add_argument("--out", default="environments")
+    p.add_argument("--out", default=os.environ.get("RR_ENV_DIR", "environments"))
     p.add_argument("--seed", type=int, default=0)
     a = p.parse_args()
     out = Path(a.out)
