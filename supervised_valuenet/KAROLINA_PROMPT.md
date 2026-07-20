@@ -37,35 +37,43 @@ The bundle unpacks to `karolina_bundle/` containing:
 - `MCTS_evolution/` — the git repo (branch `b1-language-extension-scaling-study`,
   `.git` included — you can pull/push; remote `github.com:Jan21/MCTS_evolution`)
   with all gitignored data already in place: board sets `environments*/`
-  (boards + solver caches), label data `nn/data/`, `scaling/data/`, banked
-  checkpoints `checkpoints_backward/` (incl. `policy_b1.ckpt`/`value_b1.ckpt`),
+  (**boards only — the solver `cache/` dirs were stripped to shrink the
+  archive; they rebuild automatically on first `GridEnv` use, ~seconds per
+  board**), label data `nn/data/`, `scaling/data/`, banked checkpoints
+  `checkpoints_backward/` (incl. `policy_b1.ckpt`/`value_b1.ckpt`),
   `move_planner/` data+checkpoints, `move_planner_v2/` and `subgoal_selfplay/`
   run dirs, `scaling/runs/`, and the repo-root `lightning_logs/` versions the
   measured rows reference (0, 1, 42–49; v43=g16r6 fwd control, v44=g16r8,
   v45=g32r4 fwd, v47=g24r8 control, v48/49=B1 policy/value).
-- `jobs/` — Slurm job templates (see §4).
-- `launcher_patterns/` — the working launcher scripts from the old machine's
-  scratchpad that HANDOFF references (`train_fwd_lowlr*.py`,
+- `supervised_valuenet/jobs/*.slurm` — Slurm job templates (committed to the
+  repo; see §4). Same two files are also copied to the bundle top level at
+  `karolina_bundle/jobs/`.
+- `karolina_bundle/launcher_patterns/` (bundle top level, one directory above
+  the `MCTS_evolution` checkout) — the working launcher scripts from the origin
+  machine's scratchpad that HANDOFF references (`train_fwd_lowlr*.py`,
   `b1_retrain_chain.sh`, `final_lanes.sh`, other chain scripts). HANDOFF's
-  `$SCRATCH/...` paths resolve here now.
-- `MANIFEST.md` — full inventory, sizes, and the definitive status of the two
-  scaling lanes that were still running at seal time.
+  `$SCRATCH/...` paths map here.
+- `karolina_bundle/MANIFEST.md` (bundle top level) — full inventory, sizes,
+  cache-stripped note, and the status of the two deferred scaling lanes.
 
-NOT included (all rebuildable): `rust_datagen/target/` (run
-`cargo build --release`), `rust_datagen/pyref/out/` and `pyref/cache/`
-(regenerate with the pyref scripts if ever needed), `scaling/data/*/rust_work/`
-shard intermediates (the merged label jsonls ARE included), old lightning_logs
-versions nothing references, Python caches. If an `environments*/cache/` entry
-is ever missing or corrupt, `GridEnv` rebuilds it automatically on first use
-(first eval touching that board is just slower).
+NOT included (all rebuildable): the `environments*/cache/` solver caches
+(~67 GB — stripped; `GridEnv` rebuilds any missing/corrupt cache entry
+automatically on first use, so a first eval touching a board is just slower —
+the boards themselves ARE all included); `rust_datagen/target/` (run
+`cargo build --release`); `rust_datagen/pyref/out/` and `pyref/cache/`
+(regenerate with the pyref scripts if ever needed); `scaling/data/*/rust_work/`
+shard intermediates (the merged label jsonls ARE included); old lightning_logs
+versions nothing references; Python caches.
 
 ## 2. Karolina facts (researched 2026-07-20; each item cited or flagged)
 
 - **Login:** `ssh username@karolina.it4i.cz` (or `login[1-4].karolina.it4i.cz`),
-  SSH key auth only (RSA/ED25519).
+  **SSH key only (RSA or ED25519) — no passwords**; the account must be attached
+  to a project (the PI/owner authorizes it).
   https://docs.it4i.cz/en/docs/general/access-services/accessing-the-clusters/shell-and-data-access
-- **Scheduler is Slurm, not PBS** (the cluster migrated): `sbatch`, `squeue --me`,
-  `salloc`; every job needs `-A PROJECT-ID`.
+- **Scheduler is Slurm, NOT PBS** (the cluster migrated): submit `sbatch`,
+  monitor `squeue --me`, interactive `salloc -A PROJECT-ID -p qgpu_exp --gpus 1`;
+  every job needs `-A PROJECT-ID`.
   https://docs.it4i.cz/en/docs/general/run-jobs/job-sub-exec/job-submission-and-execution
 - **Partitions** (default/max walltime): `qcpu` 24/48 h, `qcpu_long` 72/144 h,
   `qcpu_exp` 1/1 h (tests), `qcpu_free` 12/18 h (low priority); `qgpu` 24/48 h,
@@ -99,27 +107,40 @@ is ever missing or corrupt, `GridEnv` rebuilds it automatically on first use
 
 ## 3. First hour on the machine (setup checklist)
 
-1. **Unpack on scratch** (never /home — 25 GB quota vs ~140 GB unpacked):
+0. **Before you start**: confirm with the owner your SSH access is working and
+   get the **PROJECT-ID** and the node-hour budget — nothing schedules without
+   `-A PROJECT-ID` and every job spends the allocation (§4).
+1. **Unpack on /scratch, run everything from /scratch** — NEVER /home. `/home`
+   is only 25 GB; the bundle unpacks to ~66 GB. `/scratch` is Lustre, 20 TB.
    `tar -xzf karolina_bundle.tar.gz -C <your-scratch-dir>/` — one command, then
-   `cd .../karolina_bundle/MCTS_evolution/supervised_valuenet`.
-2. **Purge insurance** (the 90-day scratch auto-delete): commit + push results
-   often (`.git` is live); after big milestones copy `checkpoints_backward/`,
-   new `scaling/results/`, and `eval/results/` to PROJECT storage if the
-   project has it.
-3. **Python env** (on a LOGIN node, venv on scratch):
-   `ml Python` (pick ≥3.10; old machine ran 3.11.13), then
-   `python3 -m venv <scratch>/venv && source <scratch>/venv/bin/activate && pip
-   install "torch>=2.8" "pytorch-lightning>=2.5" numpy networkx`.
-   Old machine: torch 2.8.0+cu126, lightning 2.5.1. The default torch wheel
-   bundles the CUDA runtime and covers the A100; `requirements.txt` in
-   `supervised_valuenet/` is the authoritative dependency list (nothing else is
-   imported).
-4. **Rust toolchain** for `rust_datagen/`: `ml Rust` (or rustup on a login
-   node), then `cd rust_datagen && cargo build --release && make smoke`.
-   `make smoke` passing is the acceptance test (golden corpora are included).
+   `cd <your-scratch-dir>/karolina_bundle/MCTS_evolution/supervised_valuenet`.
+   (You may keep the small git checkout/configs referenceable from /home if you
+   like, but data + runs live on /scratch.)
+2. **PURGE WARNING — copy results off /scratch.** Files on /scratch untouched
+   for **90 days are auto-deleted**. Commit + push results often (`.git` is
+   live), and after milestones copy `checkpoints_backward/`, new
+   `scaling/results/`, and `eval/results/` to PROJECT storage (`/mnt/proj*`) or
+   download them — before the 90-day window.
+3. **Python env — build on a LOGIN node** (compute nodes have no internet;
+   venv on /scratch). Prefer Karolina's own modules first: `ml av Python CUDA
+   PyTorch` and load matching modules; only `pip install` what the modules
+   don't provide. Fallback recipe: `ml Python` (≥3.10; origin machine ran
+   3.11.13), then `python3 -m venv <scratch>/venv && source
+   <scratch>/venv/bin/activate && pip install "torch>=2.8"
+   "pytorch-lightning>=2.5" numpy networkx`. Origin machine: torch 2.8.0+cu126,
+   lightning 2.5.1. The default torch wheel bundles the CUDA runtime and covers
+   the A100; `requirements.txt` in `supervised_valuenet/` is the authoritative
+   dependency list (nothing else is imported). If a module/pip torch mismatches
+   the driver, `apptainer exec --nv <img>` is the container fallback.
+4. **Rust toolchain — on a LOGIN node** (cargo fetches crates from the
+   internet): `ml Rust` (or rustup on a login node), then `cd rust_datagen &&
+   cargo build --release && make smoke`. `make smoke` passing is the acceptance
+   test (golden corpora are included). Do the build on login, then use the
+   binary from compute jobs.
 5. **End-to-end verification** (CPU, ~minutes; run under `qcpu_exp` or a short
-   `salloc -A PROJECT-ID -p qcpu_exp` — keep login nodes light). From
-   `supervised_valuenet/`:
+   `salloc -A PROJECT-ID -p qcpu_exp` — keep login nodes light). This exact
+   recipe PASSED against the bundle before transfer (both planners solved 19/20
+   on the origin machine). From `supervised_valuenet/`:
    ```
    head -20 eval/data/bench450.jsonl > /tmp/bench20.jsonl
    OMP_NUM_THREADS=8 CUDA_VISIBLE_DEVICES="" PYTHONPATH=. \
@@ -136,17 +157,22 @@ is ever missing or corrupt, `GridEnv` rebuilds it automatically on first use
 
 ## 4. How GPU/CPU work maps to Karolina
 
-- Templates: `jobs/train_template.pbs` (one A100 via `qgpu --gpus 1`) and
-  `jobs/eval_template.pbs` (whole CPU node; pack ~16 eight-thread eval lanes
-  per node — CPU nodes charge whole node-hours regardless). Both files carry
-  Slurm syntax; the `.pbs` extension is historical. Edit `PROJECT-ID`, paths,
-  and the payload before first use.
-- **The old machine's GPU rules (max one/two GPUs, claim locks, nvidia-smi
+- Slurm templates (submit with `sbatch`): `jobs/train_template.slurm` (one A100
+  via `-p qgpu --gpus 1`) and `jobs/eval_template.slurm` (whole CPU node via
+  `-p qcpu`; pack ~16 eight-thread eval lanes per node — CPU nodes charge whole
+  node-hours regardless). Both are committed at `supervised_valuenet/jobs/` and
+  copied to `karolina_bundle/jobs/`. Edit `PROJECT-ID`, the /scratch paths, the
+  module loads, and the payload before first use. Interactive testing:
+  `salloc -A PROJECT-ID -p qgpu_exp --gpus 1` (GPU) or `-p qcpu_exp` (CPU).
+- **The origin machine's GPU rules (max one/two GPUs, claim locks, nvidia-smi
   first) are obsolete here.** On Karolina the binding constraint is the
-  project's node-hour allocation. **Before any big run, ask the owner for the
-  project ID and how many node-hours the project may spend**; report projected
-  cost (jobs × walltime × rate) when asking. Smoke-test on `qgpu_exp`/
-  `qcpu_exp` (1 h) first; consider `*_free` partitions for low-priority work.
+  project's **node-hour** allocation: 1 GPU-hour = 0.125 node-hour, charged on
+  the allocation whether the GPU is busy or idle; a CPU job bills the whole
+  128-core node. **Before any big run, ask the owner for the PROJECT-ID and how
+  many node-hours the project may spend**; report projected cost
+  (jobs × walltime × rate) when asking. Smoke-test on `qgpu_exp`/`qcpu_exp`
+  (1 h) first; consider `*_free` partitions for low-priority work. Request a
+  whole node (`--gpus 8`) only when a run actually parallelizes across 8 GPUs.
 - Evaluations stay CPU (`OMP_NUM_THREADS=8`, `CUDA_VISIBLE_DEVICES=""`), as
   before. Training uses one GPU per job unless the owner approves more.
 
