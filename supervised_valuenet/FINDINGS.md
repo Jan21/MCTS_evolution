@@ -351,8 +351,14 @@ by move** on the real board.
      (backward graded regret ~2.4–2.6 moves); frontier solution lengths run
      long (no true optima exist there — only solve rate / steps / time are
      meaningful, per the house rule).
-   24×24/8 and 32×32 extended rows are computing; they append here when they
-   land.
+   - **32×32 graded (175): 154 (88.0%) at 34.5 steps**; frontier (275 — the
+     hardest pool in the study, oracle failure 61.1%): **196 (71.3%) at 96.1
+     steps**, ~58 s/puzzle (sources:
+     `scaling/results/g32r4/comparison{_b2,_ungraded_b2}.json`; per-config
+     nets + full language, zero-shot). Their old-language and forward
+     opponents are computing in the baseline lanes and complete this rung's
+     head-to-head when they land.
+   The 24×24/8 extended rows are computing; they append here when they land.
 
 ## Verdict so far against the goal
 
