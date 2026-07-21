@@ -170,7 +170,7 @@ by move** on the real board.
    | 16×16, 8 robots | beyond the oracle (184) | 88 (47.8%) at 264 steps / 88 s | 93 (50.5%) at 819 steps / 257 s |
    | 24×24, 4 robots | graded head-to-head (232) | 205 (88.4%) | 220 (94.8%) |
    | 24×24, 8 robots | graded head-to-head | – | – |
-   | 24×24, 8 robots | beyond the oracle | – | – |
+   | 24×24, 8 robots | beyond the oracle (289) | 154 (53.3%) at 260 steps / 201 s | 44 (15.2%) at 1101 steps / 1166 s |
    | 32×32, 4 robots | graded head-to-head (175 gradable) | – | – |
    | 32×32, 4 robots | beyond the oracle (275) | – | – |
 
