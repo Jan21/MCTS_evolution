@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ricochet Robots: what a plan looks like</title>
+<style>
+:root{
+  --bg:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --muted:#52514e;
+  --faint:#898781; --grid:#e1e0d9; --baseline:#c3c2b7;
+  --line:rgba(11,11,11,.10); --accent:#2a78d6; --accent-ink:#1c5cab;
+  --r-red:#d9480f; --r-blue:#1c7ed6; --r-green:#2f9e44; --r-yellow:#c9971c;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0d0d0d; --surface:#1a1a19; --ink:#f2f1ec; --muted:#c3c2b7;
+    --faint:#898781; --grid:#2c2c2a; --baseline:#55544f;
+    --line:rgba(255,255,255,.10); --accent:#3987e5; --accent-ink:#86b6ef;
+    --r-red:#ff8a4c; --r-blue:#4dabf7; --r-green:#51cf66; --r-yellow:#ffd43b;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --muted:#52514e;
+  --faint:#898781; --grid:#e1e0d9; --baseline:#c3c2b7;
+  --line:rgba(11,11,11,.10); --accent:#2a78d6; --accent-ink:#1c5cab;
+  --r-red:#d9480f; --r-blue:#1c7ed6; --r-green:#2f9e44; --r-yellow:#c9971c;
+}
+:root[data-theme="dark"]{
+  --bg:#0d0d0d; --surface:#1a1a19; --ink:#f2f1ec; --muted:#c3c2b7;
+  --faint:#898781; --grid:#2c2c2a; --baseline:#55544f;
+  --line:rgba(255,255,255,.10); --accent:#3987e5; --accent-ink:#86b6ef;
+  --r-red:#ff8a4c; --r-blue:#4dabf7; --r-green:#51cf66; --r-yellow:#ffd43b;
+}
+*{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 22px 60px}
+header{padding:44px 0 8px}
+h1{font-size:clamp(25px,4vw,38px);font-weight:750;letter-spacing:-.02em;
+  line-height:1.16;margin:0}
+h2{font-size:clamp(19px,2.6vw,25px);font-weight:700;letter-spacing:-.015em;
+  margin:0 0 6px}
+section{padding:28px 0;border-top:1px solid var(--grid)}
+p{margin:.6em 0;max-width:76ch}
+a{color:var(--accent-ink);text-decoration:none;
+  border-bottom:1px solid var(--line)}
+a:hover{border-bottom-color:var(--accent-ink)}
+.muted{color:var(--muted)} .small{font-size:13px} .tiny{font-size:11.5px}
+.lede{font-size:clamp(15.5px,1.8vw,18px);color:var(--muted);max-width:74ch}
+.panel{background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;padding:18px;margin:14px 0}
+.panel .ph{font-weight:680;margin:0 0 2px}
+.howto{background:var(--surface);border:1px solid var(--line);
+  border-left:3px solid var(--accent);border-radius:10px;
+  padding:12px 16px;margin:14px 0;max-width:86ch}
+.cap{color:var(--muted);font-size:14px;max-width:84ch}
+.scroll{overflow-x:auto;max-width:100%}
+.viz-split{display:grid;grid-template-columns:minmax(0,1fr) 232px;gap:18px;
+  align-items:start}
+.inset{padding-top:6px}
+.legend-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 16px;
+  margin:8px 0 4px;font-size:12px;color:var(--muted)}
+.legend-grid div{display:flex;align-items:center;gap:8px}
+.legend-grid svg{flex:none}
+.themebtn{position:fixed;top:14px;right:14px;font-family:var(--mono);
+  font-size:12px;background:var(--surface);color:var(--muted);
+  border:1px solid var(--line);border-radius:18px;padding:5px 13px;
+  cursor:pointer;z-index:30}
+.footer{color:var(--muted);font-size:13px;border-top:1px solid var(--grid);
+  padding-top:18px;margin-top:30px}
+.mono{font-family:var(--mono);font-size:.92em}
+@media (max-width:760px){
+  .viz-split{grid-template-columns:1fr}
+  .legend-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<button class="themebtn" id="themebtn" type="button">theme: auto</button>
+<div class="wrap">
+<header>
+  <h1>What a backward plan looks like — before and after the two language
+  extensions</h1>
+  <p class="lede">The backward planner writes a puzzle solution as a
+  <b>plan</b>: a small diagram of commitments (“this robot must stop here;
+  for that, this helper must first park there…”) rather than a list of
+  moves. This page draws five real plans — all of them verified to play out
+  legally, move by move — to show what the plan language could and could not
+  express at each stage.</p>
+  <p class="lede">The three pictures below are the reason the backward planner's hard ceiling moved <b>90.7% → 97.6% → 99.6%</b>: each extension lets a plan say something that was previously unsayable.</p>
+  <div class="howto"><b>How to read the pictures.</b> The goal
+  sits at the top; robots' starting positions sit at the bottom. A plan is
+  <i>written</i> top-down (“for the goal slide to work, this must happen
+  first…”), but the robots <b>travel bottom-up</b>: every colored arrow means
+  “this robot really slides from the lower box up to the upper box,” and the
+  pill on the arrow counts its moves. Thin gray lines only group things and
+  involve no movement. Cell coordinates like (4,1) locate each box on the
+  real board — the small board beside each diagram shows the starting
+  layout.</div>
+</header>
+
+<section id="before">
+  <div class="sec-head">
+    <h2>Before: what the original language could say</h2>
+  </div>
+  
+  <p>In the original plan language, a plan may say exactly one kind of thing:
+  <b>“park a helper robot on a cell next to a wall, then bounce another robot
+  off it.”</b> Helpers can be delivered by other helpers (the picture below
+  chains two of these stepping-stones), but two rules are absolute: a parked
+  helper can never move again, and a helper can only park where a wall will
+  stop it. Whatever cannot be phrased that way cannot be planned at all.</p>
+
+  
+<div class="legend-grid">
+  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
+    width="140" height="24" rx="7" fill="var(--surface)" stroke="var(--ink)"
+    stroke-width="1.8"/><rect x="8" y="7" width="132" height="16" rx="4"
+    fill="none" stroke="var(--ink)" stroke-dasharray="4 3"
+    stroke-width="0.8"/></svg><span>the goal cell</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
+    width="140" height="24" rx="12" fill="var(--surface)"
+    stroke="var(--r-blue)" stroke-width="1.6"/><circle cx="18" cy="15" r="6"
+    fill="var(--r-blue)"/></svg><span>a robot's starting position</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
+    width="140" height="24" rx="7" fill="var(--surface)"
+    stroke="var(--r-green)" stroke-width="1.8"/></svg>
+    <span>"stops here" — a robot's planned stopping cell</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
+    width="140" height="24" rx="7" fill="var(--r-yellow)" fill-opacity="0.14"
+    stroke="var(--r-yellow)" stroke-width="1.8"/></svg>
+    <span>"parks here" — a helper placed so another robot can bounce off
+    it</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
+    width="140" height="24" rx="7" fill="none" stroke="var(--r-red)"
+    stroke-width="1.8" stroke-dasharray="2.5 3.5"/></svg>
+    <span>"steps aside" — a robot moves out of the way first</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><path d="M10 15 l16 0"
+    stroke="var(--baseline)" stroke-width="1.3"/><path d="M40 22 l10 -7
+    l-10 -7 l-10 7 z" fill="var(--baseline)" transform="translate(0,0)
+    scale(0.6) translate(30,8)"/></svg>
+    <span>thin gray line — grouping only, no movement</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><defs><marker id="la"
+    viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7"
+    orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="context-stroke"/></marker>
+    </defs><line x1="14" y1="24" x2="14" y2="6" stroke="var(--r-blue)"
+    stroke-width="2" marker-end="url(#la)"/><rect x="30" y="6" width="52"
+    height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/>
+    <text x="56" y="19" text-anchor="middle" font-size="10"
+    font-weight="700" fill="var(--ink)">2 slides</text></svg>
+    <span>colored arrow — that robot really slides, upward along the arrow;
+    the pill counts its moves</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><line x1="10" y1="24"
+    x2="60" y2="8" stroke="var(--r-blue)" stroke-width="2"
+    stroke-dasharray="6 4"/></svg>
+    <span>dashed link — the plan re-uses a robot it already placed</span></div>
+</div>
+
+  
+  <div class="panel">
+    <p class="ph">ordinary plan, original language</p>
+    <p class="muted small">puzzle 0 of the benchmark · shortest possible solution: 12 moves · this plan plays out in 12 legal moves</p>
+    <div class="viz-split">
+      <div class="scroll"><svg viewBox="0 0 540 586" role="img" aria-label="Plan structure for benchmark puzzle 0" style="width:100%;max-width:540px;height:auto;display:block"><defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" fill="context-stroke"/></marker></defs><line x1="228" y1="76" x2="228" y2="141" stroke="var(--baseline)" stroke-width="1.3"/><line x1="228" y1="159" x2="102" y2="224" stroke="var(--baseline)" stroke-width="1.3"/><line x1="228" y1="159" x2="354" y2="224" stroke="var(--baseline)" stroke-width="1.3"/><line x1="102" y1="320" x2="102" y2="268" stroke="var(--r-red)" stroke-width="2.2" marker-end="url(#arr)"/><rect x="76" y="284" width="52" height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/><text class="cost" x="102" y="298" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">7 slides</text><line x1="354" y1="268" x2="354" y2="333" stroke="var(--baseline)" stroke-width="1.3"/><line x1="354" y1="351" x2="270" y2="416" stroke="var(--baseline)" stroke-width="1.3"/><line x1="354" y1="351" x2="438" y2="416" stroke="var(--baseline)" stroke-width="1.3"/><line x1="270" y1="512" x2="270" y2="460" stroke="var(--r-blue)" stroke-width="2.2" marker-end="url(#arr)"/><rect x="244" y="476" width="52" height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/><text class="cost" x="270" y="490" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">4 slides</text><line x1="438" y1="512" x2="438" y2="460" stroke="var(--r-green)" stroke-width="2.2" marker-end="url(#arr)"/><rect x="412" y="476" width="52" height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/><text class="cost" x="438" y="490" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">1 slide</text><rect x="162.0" y="32" width="132" height="44" rx="10" fill="var(--surface)" stroke="var(--ink)" stroke-width="2.2"/><rect x="166.0" y="36" width="124" height="36" rx="7" fill="none" stroke="var(--ink)" stroke-width="1" stroke-dasharray="4 3"/><text x="228" y="50" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--ink)">the goal cell</text><text x="228" y="65" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(9,15)</text><rect x="36.0" y="320" width="132" height="44" rx="22.0" fill="var(--surface)" stroke="var(--r-red)" stroke-width="1.6"/><circle cx="56.0" cy="342.0" r="7" fill="var(--r-red)"/><text x="70.0" y="338" font-size="11.5" font-weight="640" fill="var(--ink)">start: Red</text><text x="70.0" y="353" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(1,15)</text><path d="M228.0 143.0 l7 7 l-7 7 l-7 -7 z" fill="var(--baseline)"/><rect x="36.0" y="224" width="132" height="44" rx="9" fill="var(--surface)" stroke="var(--r-red)" stroke-width="2"/><text x="102" y="242" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--r-red)">Red stops here</text><text x="102" y="257" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(9,15)</text><rect x="288.0" y="224" width="132" height="44" rx="9" fill="var(--r-blue)" fill-opacity="0.14" stroke="var(--r-blue)" stroke-width="2"/><text x="354" y="242" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--r-blue)">Blue parks here</text><text x="354" y="257" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(10,15)</text><rect x="204.0" y="512" width="132" height="44" rx="22.0" fill="var(--surface)" stroke="var(--r-blue)" stroke-width="1.6"/><circle cx="224.0" cy="534.0" r="7" fill="var(--r-blue)"/><text x="238.0" y="530" font-size="11.5" font-weight="640" fill="var(--ink)">start: Blue</text><text x="238.0" y="545" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(2,12)</text><path d="M354.0 335.0 l7 7 l-7 7 l-7 -7 z" fill="var(--baseline)"/><rect x="204.0" y="416" width="132" height="44" rx="9" fill="var(--surface)" stroke="var(--r-blue)" stroke-width="2"/><text x="270" y="434" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--r-blue)">Blue stops here</text><text x="270" y="449" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(10,15)</text><rect x="372.0" y="416" width="132" height="44" rx="9" fill="var(--r-green)" fill-opacity="0.14" stroke="var(--r-green)" stroke-width="2"/><text x="438" y="434" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--r-green)">Green parks here</text><text x="438" y="449" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(11,15)</text><rect x="372.0" y="512" width="132" height="44" rx="22.0" fill="var(--surface)" stroke="var(--r-green)" stroke-width="1.6"/><circle cx="392.0" cy="534.0" r="7" fill="var(--r-green)"/><text x="406.0" y="530" font-size="11.5" font-weight="640" fill="var(--ink)">start: Green</text><text x="406.0" y="545" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(11,6)</text></svg></div>
+      <div class="inset">
+        <svg viewBox="0 0 214 214" role="img" aria-label="Where the robots start on the real 16-by-16 board" style="width:100%;max-width:220px;height:auto;display:block"><line x1="16" y1="3" x2="16" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="16" x2="211" y2="16" stroke="var(--grid)" stroke-width="0.6"/><line x1="29" y1="3" x2="29" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="29" x2="211" y2="29" stroke="var(--grid)" stroke-width="0.6"/><line x1="42" y1="3" x2="42" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="42" x2="211" y2="42" stroke="var(--grid)" stroke-width="0.6"/><line x1="55" y1="3" x2="55" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="55" x2="211" y2="55" stroke="var(--grid)" stroke-width="0.6"/><line x1="68" y1="3" x2="68" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="68" x2="211" y2="68" stroke="var(--grid)" stroke-width="0.6"/><line x1="81" y1="3" x2="81" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="81" x2="211" y2="81" stroke="var(--grid)" stroke-width="0.6"/><line x1="94" y1="3" x2="94" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="94" x2="211" y2="94" stroke="var(--grid)" stroke-width="0.6"/><line x1="107" y1="3" x2="107" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="107" x2="211" y2="107" stroke="var(--grid)" stroke-width="0.6"/><line x1="120" y1="3" x2="120" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="120" x2="211" y2="120" stroke="var(--grid)" stroke-width="0.6"/><line x1="133" y1="3" x2="133" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="133" x2="211" y2="133" stroke="var(--grid)" stroke-width="0.6"/><line x1="146" y1="3" x2="146" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="146" x2="211" y2="146" stroke="var(--grid)" stroke-width="0.6"/><line x1="159" y1="3" x2="159" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="159" x2="211" y2="159" stroke="var(--grid)" stroke-width="0.6"/><line x1="172" y1="3" x2="172" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="172" x2="211" y2="172" stroke="var(--grid)" stroke-width="0.6"/><line x1="185" y1="3" x2="185" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="185" x2="211" y2="185" stroke="var(--grid)" stroke-width="0.6"/><line x1="198" y1="3" x2="198" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="198" x2="211" y2="198" stroke="var(--grid)" stroke-width="0.6"/><rect x="3" y="3" width="208" height="208" fill="none" stroke="var(--ink)" stroke-width="1.6"/><rect x="121.5" y="199.5" width="10" height="10" rx="2.5" fill="none" stroke="var(--r-red)" stroke-width="1.6" stroke-dasharray="3 2"/><circle cx="35.5" cy="165.5" r="5.0" fill="var(--r-blue)"/><circle cx="152.5" cy="87.5" r="5.0" fill="var(--r-green)"/><circle cx="22.5" cy="204.5" r="7.5" fill="none" stroke="var(--r-red)" stroke-width="1.2" opacity="0.55"/><circle cx="22.5" cy="204.5" r="5.0" fill="var(--r-red)"/><circle cx="9.5" cy="48.5" r="5.0" fill="var(--r-yellow)"/></svg>
+        <p class="muted tiny">where the robots start (walls not drawn);
+        the dashed square is the goal, the haloed robot must reach it</p>
+      </div>
+    </div>
+  </div>
+  <p class="cap">This ordinary puzzle fits the language comfortably — the plan above plays out in 12 legal moves, exactly the known optimum. But on the 450-puzzle benchmark the language itself runs out for 42 puzzles, capping the backward planner at <b>90.7%</b> no matter how well its networks are trained.</p>
+</section>
+
+<section id="b1">
+  <div class="sec-head">
+    <h2>First extension: wall-less parking and stepping aside</h2>
+  </div>
+  
+  <p>The first extension adds two new phrases. A helper may park on a cell
+  <b>with no wall to lean on</b> — it is held there only because another
+  robot (or the timing of the plan itself) stops it; the starred, dashed box
+  below is exactly that. And a robot may <b>step aside</b> before one
+  specific slide, clearing the way — the dotted box, whose dotted arrow
+  points at the slide it must precede. Every one of these maneuvers is paid
+  for in ordinary counted moves.</p>
+
+  
+<div class="legend-grid">
+  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
+    width="140" height="24" rx="7" fill="var(--surface)" stroke="var(--ink)"
+    stroke-width="1.8"/><rect x="8" y="7" width="132" height="16" rx="4"
+    fill="none" stroke="var(--ink)" stroke-dasharray="4 3"
+    stroke-width="0.8"/></svg><span>the goal cell</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
+    width="140" height="24" rx="12" fill="var(--surface)"
+    stroke="var(--r-blue)" stroke-width="1.6"/><circle cx="18" cy="15" r="6"
+    fill="var(--r-blue)"/></svg><span>a robot's starting position</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
+    width="140" height="24" rx="7" fill="var(--surface)"
+    stroke="var(--r-green)" stroke-width="1.8"/></svg>
+    <span>"stops here" — a robot's planned stopping cell</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
+    width="140" height="24" rx="7" fill="var(--r-yellow)" fill-opacity="0.14"
+    stroke="var(--r-yellow)" stroke-width="1.8"/></svg>
+    <span>"parks here" — a helper placed so another robot can bounce off
+    it</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
+    width="140" height="24" rx="7" fill="none" stroke="var(--r-red)"
+    stroke-width="1.8" stroke-dasharray="2.5 3.5"/></svg>
+    <span>"steps aside" — a robot moves out of the way first</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><path d="M10 15 l16 0"
+    stroke="var(--baseline)" stroke-width="1.3"/><path d="M40 22 l10 -7
+    l-10 -7 l-10 7 z" fill="var(--baseline)" transform="translate(0,0)
+    scale(0.6) translate(30,8)"/></svg>
+    <span>thin gray line — grouping only, no movement</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><defs><marker id="la"
+    viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7"
+    orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="context-stroke"/></marker>
+    </defs><line x1="14" y1="24" x2="14" y2="6" stroke="var(--r-blue)"
+    stroke-width="2" marker-end="url(#la)"/><rect x="30" y="6" width="52"
+    height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/>
+    <text x="56" y="19" text-anchor="middle" font-size="10"
+    font-weight="700" fill="var(--ink)">2 slides</text></svg>
+    <span>colored arrow — that robot really slides, upward along the arrow;
+    the pill counts its moves</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><line x1="10" y1="24"
+    x2="60" y2="8" stroke="var(--r-blue)" stroke-width="2"
+    stroke-dasharray="6 4"/></svg>
+    <span>dashed link — the plan re-uses a robot it already placed</span></div>
+</div>
+
+  
+  <div class="panel">
+    <p class="ph">transient (wall-less) stopper; impossible before B1</p>
+    <p class="muted small">puzzle 333 of the benchmark · shortest possible solution: 4 moves · this plan plays out in 4 legal moves</p>
+    <div class="viz-split">
+      <div class="scroll"><svg viewBox="0 0 540 586" role="img" aria-label="Plan structure for benchmark puzzle 333" style="width:100%;max-width:540px;height:auto;display:block"><defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" fill="context-stroke"/></marker></defs><line x1="228" y1="76" x2="228" y2="141" stroke="var(--baseline)" stroke-width="1.3"/><line x1="228" y1="159" x2="102" y2="224" stroke="var(--baseline)" stroke-width="1.3"/><line x1="228" y1="159" x2="354" y2="224" stroke="var(--baseline)" stroke-width="1.3"/><line x1="102" y1="320" x2="102" y2="268" stroke="var(--r-yellow)" stroke-width="2.2" marker-end="url(#arr)"/><rect x="76" y="284" width="52" height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/><text class="cost" x="102" y="298" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">2 slides</text><line x1="354" y1="268" x2="354" y2="333" stroke="var(--baseline)" stroke-width="1.3"/><line x1="354" y1="351" x2="270" y2="416" stroke="var(--baseline)" stroke-width="1.3"/><line x1="354" y1="351" x2="438" y2="416" stroke="var(--baseline)" stroke-width="1.3"/><line x1="270" y1="512" x2="270" y2="460" stroke="var(--r-blue)" stroke-width="2.2" marker-end="url(#arr)"/><rect x="244" y="476" width="52" height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/><text class="cost" x="270" y="490" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">1 slide</text><line x1="438" y1="512" x2="438" y2="460" stroke="var(--r-green)" stroke-width="2.2" marker-end="url(#arr)"/><rect x="412" y="476" width="52" height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/><text class="cost" x="438" y="490" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">1 slide</text><rect x="162.0" y="32" width="132" height="44" rx="10" fill="var(--surface)" stroke="var(--ink)" stroke-width="2.2"/><rect x="166.0" y="36" width="124" height="36" rx="7" fill="none" stroke="var(--ink)" stroke-width="1" stroke-dasharray="4 3"/><text x="228" y="50" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--ink)">the goal cell</text><text x="228" y="65" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(3,1)</text><rect x="36.0" y="320" width="132" height="44" rx="22.0" fill="var(--surface)" stroke="var(--r-yellow)" stroke-width="1.6"/><circle cx="56.0" cy="342.0" r="7" fill="var(--r-yellow)"/><text x="70.0" y="338" font-size="11.5" font-weight="640" fill="var(--ink)">start: Yellow</text><text x="70.0" y="353" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(6,1)</text><path d="M228.0 143.0 l7 7 l-7 7 l-7 -7 z" fill="var(--baseline)"/><rect x="36.0" y="224" width="132" height="44" rx="9" fill="var(--surface)" stroke="var(--r-yellow)" stroke-width="2"/><text x="102" y="242" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--r-yellow)">Yellow stops here</text><text x="102" y="257" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(3,1)</text><rect x="288.0" y="224" width="132" height="44" rx="9" fill="var(--r-blue)" fill-opacity="0.14" stroke="var(--r-blue)" stroke-width="2" stroke-dasharray="5 3"/><text x="354" y="242" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--r-blue)">Blue parks here</text><text x="354" y="257" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(4,1)</text><text x="416.0" y="219" text-anchor="end" font-size="10" font-weight="700" fill="var(--r-blue)">★ no wall to lean on</text><rect x="204.0" y="512" width="132" height="44" rx="22.0" fill="var(--surface)" stroke="var(--r-blue)" stroke-width="1.6"/><circle cx="224.0" cy="534.0" r="7" fill="var(--r-blue)"/><text x="238.0" y="530" font-size="11.5" font-weight="640" fill="var(--ink)">start: Blue</text><text x="238.0" y="545" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(4,9)</text><path d="M354.0 335.0 l7 7 l-7 7 l-7 -7 z" fill="var(--baseline)"/><rect x="204.0" y="416" width="132" height="44" rx="9" fill="var(--surface)" stroke="var(--r-blue)" stroke-width="2"/><text x="270" y="434" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--r-blue)">Blue stops here</text><text x="270" y="449" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(4,1)</text><rect x="372.0" y="416" width="132" height="44" rx="9" fill="var(--r-green)" fill-opacity="0.14" stroke="var(--r-green)" stroke-width="2"/><text x="438" y="434" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--r-green)">Green parks here</text><text x="438" y="449" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(4,0)</text><rect x="372.0" y="512" width="132" height="44" rx="22.0" fill="var(--surface)" stroke="var(--r-green)" stroke-width="1.6"/><circle cx="392.0" cy="534.0" r="7" fill="var(--r-green)"/><text x="406.0" y="530" font-size="11.5" font-weight="640" fill="var(--ink)">start: Green</text><text x="406.0" y="545" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(4,5)</text></svg></div>
+      <div class="inset">
+        <svg viewBox="0 0 214 214" role="img" aria-label="Where the robots start on the real 16-by-16 board" style="width:100%;max-width:220px;height:auto;display:block"><line x1="16" y1="3" x2="16" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="16" x2="211" y2="16" stroke="var(--grid)" stroke-width="0.6"/><line x1="29" y1="3" x2="29" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="29" x2="211" y2="29" stroke="var(--grid)" stroke-width="0.6"/><line x1="42" y1="3" x2="42" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="42" x2="211" y2="42" stroke="var(--grid)" stroke-width="0.6"/><line x1="55" y1="3" x2="55" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="55" x2="211" y2="55" stroke="var(--grid)" stroke-width="0.6"/><line x1="68" y1="3" x2="68" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="68" x2="211" y2="68" stroke="var(--grid)" stroke-width="0.6"/><line x1="81" y1="3" x2="81" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="81" x2="211" y2="81" stroke="var(--grid)" stroke-width="0.6"/><line x1="94" y1="3" x2="94" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="94" x2="211" y2="94" stroke="var(--grid)" stroke-width="0.6"/><line x1="107" y1="3" x2="107" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="107" x2="211" y2="107" stroke="var(--grid)" stroke-width="0.6"/><line x1="120" y1="3" x2="120" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="120" x2="211" y2="120" stroke="var(--grid)" stroke-width="0.6"/><line x1="133" y1="3" x2="133" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="133" x2="211" y2="133" stroke="var(--grid)" stroke-width="0.6"/><line x1="146" y1="3" x2="146" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="146" x2="211" y2="146" stroke="var(--grid)" stroke-width="0.6"/><line x1="159" y1="3" x2="159" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="159" x2="211" y2="159" stroke="var(--grid)" stroke-width="0.6"/><line x1="172" y1="3" x2="172" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="172" x2="211" y2="172" stroke="var(--grid)" stroke-width="0.6"/><line x1="185" y1="3" x2="185" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="185" x2="211" y2="185" stroke="var(--grid)" stroke-width="0.6"/><line x1="198" y1="3" x2="198" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="198" x2="211" y2="198" stroke="var(--grid)" stroke-width="0.6"/><rect x="3" y="3" width="208" height="208" fill="none" stroke="var(--ink)" stroke-width="1.6"/><rect x="43.5" y="17.5" width="10" height="10" rx="2.5" fill="none" stroke="var(--r-yellow)" stroke-width="1.6" stroke-dasharray="3 2"/><circle cx="61.5" cy="126.5" r="5.0" fill="var(--r-blue)"/><circle cx="61.5" cy="74.5" r="5.0" fill="var(--r-green)"/><circle cx="152.5" cy="178.5" r="5.0" fill="var(--r-red)"/><circle cx="87.5" cy="22.5" r="7.5" fill="none" stroke="var(--r-yellow)" stroke-width="1.2" opacity="0.55"/><circle cx="87.5" cy="22.5" r="5.0" fill="var(--r-yellow)"/></svg>
+        <p class="muted tiny">where the robots start (walls not drawn);
+        the dashed square is the goal, the haloed robot must reach it</p>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <p class="ph">step-aside (park): a robot clears the way, ordered before one specific slide</p>
+    <p class="muted small">puzzle 28 of the benchmark · shortest possible solution: 7 moves · this plan plays out in 11 legal moves</p>
+    <div class="viz-split">
+      <div class="scroll"><svg viewBox="0 0 372 202" role="img" aria-label="Plan structure for benchmark puzzle 28" style="width:100%;max-width:372px;height:auto;display:block"><defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" fill="context-stroke"/></marker></defs><line x1="102" y1="128" x2="102" y2="76" stroke="var(--r-red)" stroke-width="2.2" marker-end="url(#arr)"/><rect x="76" y="92" width="52" height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/><text class="cost" x="102" y="106" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">6 slides</text><line x1="270" y1="128" x2="270" y2="76" stroke="var(--r-blue)" stroke-width="2.2" marker-end="url(#arr)"/><rect x="244" y="92" width="52" height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/><text class="cost" x="270" y="106" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">1 slide</text><path d="M270 32 C 270 -8, 142 142, 110 110" fill="none" stroke="var(--r-blue)" stroke-width="1.6" stroke-dasharray="2 4" marker-end="url(#arr)"/><text x="198" y="67" font-size="10.5" font-style="italic" fill="var(--r-blue)">must happen before this slide</text><rect x="36.0" y="32" width="132" height="44" rx="10" fill="var(--surface)" stroke="var(--ink)" stroke-width="2.2"/><rect x="40.0" y="36" width="124" height="36" rx="7" fill="none" stroke="var(--ink)" stroke-width="1" stroke-dasharray="4 3"/><text x="102" y="50" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--ink)">the goal cell</text><text x="102" y="65" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(7,3)</text><rect x="36.0" y="128" width="132" height="44" rx="22.0" fill="var(--surface)" stroke="var(--r-red)" stroke-width="1.6"/><circle cx="56.0" cy="150.0" r="7" fill="var(--r-red)"/><text x="70.0" y="146" font-size="11.5" font-weight="640" fill="var(--ink)">start: Red</text><text x="70.0" y="161" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(7,9)</text><rect x="204.0" y="128" width="132" height="44" rx="22.0" fill="var(--surface)" stroke="var(--r-blue)" stroke-width="1.6"/><circle cx="224.0" cy="150.0" r="7" fill="var(--r-blue)"/><text x="238.0" y="146" font-size="11.5" font-weight="640" fill="var(--ink)">start: Blue</text><text x="238.0" y="161" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(10,3)</text><rect x="204.0" y="32" width="132" height="44" rx="9" fill="none" stroke="var(--r-blue)" stroke-width="2" stroke-dasharray="2.5 3.5"/><text x="270" y="50" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--r-blue)">Blue steps aside</text><text x="270" y="65" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(10,0)</text></svg></div>
+      <div class="inset">
+        <svg viewBox="0 0 214 214" role="img" aria-label="Where the robots start on the real 16-by-16 board" style="width:100%;max-width:220px;height:auto;display:block"><line x1="16" y1="3" x2="16" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="16" x2="211" y2="16" stroke="var(--grid)" stroke-width="0.6"/><line x1="29" y1="3" x2="29" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="29" x2="211" y2="29" stroke="var(--grid)" stroke-width="0.6"/><line x1="42" y1="3" x2="42" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="42" x2="211" y2="42" stroke="var(--grid)" stroke-width="0.6"/><line x1="55" y1="3" x2="55" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="55" x2="211" y2="55" stroke="var(--grid)" stroke-width="0.6"/><line x1="68" y1="3" x2="68" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="68" x2="211" y2="68" stroke="var(--grid)" stroke-width="0.6"/><line x1="81" y1="3" x2="81" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="81" x2="211" y2="81" stroke="var(--grid)" stroke-width="0.6"/><line x1="94" y1="3" x2="94" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="94" x2="211" y2="94" stroke="var(--grid)" stroke-width="0.6"/><line x1="107" y1="3" x2="107" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="107" x2="211" y2="107" stroke="var(--grid)" stroke-width="0.6"/><line x1="120" y1="3" x2="120" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="120" x2="211" y2="120" stroke="var(--grid)" stroke-width="0.6"/><line x1="133" y1="3" x2="133" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="133" x2="211" y2="133" stroke="var(--grid)" stroke-width="0.6"/><line x1="146" y1="3" x2="146" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="146" x2="211" y2="146" stroke="var(--grid)" stroke-width="0.6"/><line x1="159" y1="3" x2="159" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="159" x2="211" y2="159" stroke="var(--grid)" stroke-width="0.6"/><line x1="172" y1="3" x2="172" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="172" x2="211" y2="172" stroke="var(--grid)" stroke-width="0.6"/><line x1="185" y1="3" x2="185" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="185" x2="211" y2="185" stroke="var(--grid)" stroke-width="0.6"/><line x1="198" y1="3" x2="198" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="198" x2="211" y2="198" stroke="var(--grid)" stroke-width="0.6"/><rect x="3" y="3" width="208" height="208" fill="none" stroke="var(--ink)" stroke-width="1.6"/><rect x="95.5" y="43.5" width="10" height="10" rx="2.5" fill="none" stroke="var(--r-red)" stroke-width="1.6" stroke-dasharray="3 2"/><circle cx="139.5" cy="48.5" r="5.0" fill="var(--r-blue)"/><circle cx="139.5" cy="191.5" r="5.0" fill="var(--r-green)"/><circle cx="100.5" cy="126.5" r="7.5" fill="none" stroke="var(--r-red)" stroke-width="1.2" opacity="0.55"/><circle cx="100.5" cy="126.5" r="5.0" fill="var(--r-red)"/><circle cx="178.5" cy="113.5" r="5.0" fill="var(--r-yellow)"/></svg>
+        <p class="muted tiny">where the robots start (walls not drawn);
+        the dashed square is the goal, the haloed robot must reach it</p>
+      </div>
+    </div>
+  </div>
+  <p class="cap">Left: the famous four-move puzzle that was provably unwritable in the original language — the wall-less park (★) makes it sayable, and the plan plays out at its exact optimum. Right: a step-aside plan; honest pricing means stepping aside costs real moves (11 played vs an optimum of 7). Re-measuring the whole benchmark with these phrases: the cap moves from 90.7% to <b>97.6%</b>.</p>
+</section>
+
+<section id="b2">
+  <div class="sec-head">
+    <h2>Second extension: re-using robots the plan already placed</h2>
+  </div>
+  
+  <p>The second extension removes the last big restriction: a plan may now
+  <b>re-use a robot it has already placed</b>. The same parked robot can
+  stop two different sliders; the main robot itself can serve as a bounce
+  point mid-route; a placed helper can slide on to a second post. In the
+  left picture that shows up as a dashed link: the third stepping-stone
+  points back at an <i>existing</i> parked robot instead of recruiting a
+  fresh one — three stepping-stones, only two parked robots. The step-aside
+  repair was generalized the same way: on the right, <i>two</i> robots must
+  both clear the same slide.</p>
+
+  
+<div class="legend-grid">
+  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
+    width="140" height="24" rx="7" fill="var(--surface)" stroke="var(--ink)"
+    stroke-width="1.8"/><rect x="8" y="7" width="132" height="16" rx="4"
+    fill="none" stroke="var(--ink)" stroke-dasharray="4 3"
+    stroke-width="0.8"/></svg><span>the goal cell</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
+    width="140" height="24" rx="12" fill="var(--surface)"
+    stroke="var(--r-blue)" stroke-width="1.6"/><circle cx="18" cy="15" r="6"
+    fill="var(--r-blue)"/></svg><span>a robot's starting position</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
+    width="140" height="24" rx="7" fill="var(--surface)"
+    stroke="var(--r-green)" stroke-width="1.8"/></svg>
+    <span>"stops here" — a robot's planned stopping cell</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
+    width="140" height="24" rx="7" fill="var(--r-yellow)" fill-opacity="0.14"
+    stroke="var(--r-yellow)" stroke-width="1.8"/></svg>
+    <span>"parks here" — a helper placed so another robot can bounce off
+    it</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
+    width="140" height="24" rx="7" fill="none" stroke="var(--r-red)"
+    stroke-width="1.8" stroke-dasharray="2.5 3.5"/></svg>
+    <span>"steps aside" — a robot moves out of the way first</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><path d="M10 15 l16 0"
+    stroke="var(--baseline)" stroke-width="1.3"/><path d="M40 22 l10 -7
+    l-10 -7 l-10 7 z" fill="var(--baseline)" transform="translate(0,0)
+    scale(0.6) translate(30,8)"/></svg>
+    <span>thin gray line — grouping only, no movement</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><defs><marker id="la"
+    viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7"
+    orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="context-stroke"/></marker>
+    </defs><line x1="14" y1="24" x2="14" y2="6" stroke="var(--r-blue)"
+    stroke-width="2" marker-end="url(#la)"/><rect x="30" y="6" width="52"
+    height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/>
+    <text x="56" y="19" text-anchor="middle" font-size="10"
+    font-weight="700" fill="var(--ink)">2 slides</text></svg>
+    <span>colored arrow — that robot really slides, upward along the arrow;
+    the pill counts its moves</span></div>
+  <div><svg viewBox="0 0 150 30" style="width:130px"><line x1="10" y1="24"
+    x2="60" y2="8" stroke="var(--r-blue)" stroke-width="2"
+    stroke-dasharray="6 4"/></svg>
+    <span>dashed link — the plan re-uses a robot it already placed</span></div>
+</div>
+
+  
+  <div class="panel">
+    <p class="ph">supports-by-reference: a proposal names an existing plan node as its stopper instead of recruiting a fresh robot</p>
+    <p class="muted small">puzzle 156 of the benchmark · shortest possible solution: 8 moves · this plan plays out in 8 legal moves</p>
+    <div class="viz-split">
+      <div class="scroll"><svg viewBox="0 0 540 586" role="img" aria-label="Plan structure for benchmark puzzle 156" style="width:100%;max-width:540px;height:auto;display:block"><defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" fill="context-stroke"/></marker></defs><line x1="312" y1="76" x2="312" y2="141" stroke="var(--baseline)" stroke-width="1.3"/><line x1="312" y1="159" x2="186" y2="224" stroke="var(--baseline)" stroke-width="1.3"/><line x1="312" y1="159" x2="438" y2="224" stroke="var(--baseline)" stroke-width="1.3"/><line x1="186" y1="333" x2="186" y2="268" stroke="var(--r-green)" stroke-width="2.2" marker-end="url(#arr)"/><rect x="160" y="290" width="52" height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/><text class="cost" x="186" y="304" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">1 slide</text><line x1="438" y1="333" x2="438" y2="268" stroke="var(--r-red)" stroke-width="2.2" marker-end="url(#arr)"/><rect x="412" y="290" width="52" height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/><text class="cost" x="438" y="304" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">1 slide</text><line x1="186" y1="351" x2="102" y2="416" stroke="var(--baseline)" stroke-width="1.3"/><line x1="186" y1="351" x2="270" y2="416" stroke="var(--baseline)" stroke-width="1.3"/><line x1="102" y1="512" x2="102" y2="460" stroke="var(--r-green)" stroke-width="2.2" marker-end="url(#arr)"/><rect x="76" y="476" width="52" height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/><text class="cost" x="102" y="490" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">3 slides</text><line x1="270" y1="512" x2="270" y2="460" stroke="var(--r-blue)" stroke-width="2.2" marker-end="url(#arr)"/><rect x="244" y="476" width="52" height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/><text class="cost" x="270" y="490" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">2 slides</text><line x1="438" y1="351" x2="438" y2="416" stroke="var(--baseline)" stroke-width="1.3"/><path d="M438 351 C 438 385, 270 382, 270 416" fill="none" stroke="var(--r-blue)" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arr)"/><text x="362" y="384" font-size="10.5" font-weight="700" fill="var(--r-blue)">re-uses this robot — no new one recruited</text><line x1="438" y1="512" x2="438" y2="460" stroke="var(--r-red)" stroke-width="2.2" marker-end="url(#arr)"/><rect x="412" y="476" width="52" height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/><text class="cost" x="438" y="490" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">1 slide</text><rect x="246.0" y="32" width="132" height="44" rx="10" fill="var(--surface)" stroke="var(--ink)" stroke-width="2.2"/><rect x="250.0" y="36" width="124" height="36" rx="7" fill="none" stroke="var(--ink)" stroke-width="1" stroke-dasharray="4 3"/><text x="312" y="50" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--ink)">the goal cell</text><text x="312" y="65" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(12,4)</text><rect x="36.0" y="512" width="132" height="44" rx="22.0" fill="var(--surface)" stroke="var(--r-green)" stroke-width="1.6"/><circle cx="56.0" cy="534.0" r="7" fill="var(--r-green)"/><text x="70.0" y="530" font-size="11.5" font-weight="640" fill="var(--ink)">start: Green</text><text x="70.0" y="545" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(11,9)</text><path d="M312.0 143.0 l7 7 l-7 7 l-7 -7 z" fill="var(--baseline)"/><rect x="120.0" y="224" width="132" height="44" rx="9" fill="var(--surface)" stroke="var(--r-green)" stroke-width="2"/><text x="186" y="242" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--r-green)">Green stops here</text><text x="186" y="257" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(12,4)</text><rect x="372.0" y="224" width="132" height="44" rx="9" fill="var(--r-red)" fill-opacity="0.14" stroke="var(--r-red)" stroke-width="2"/><text x="438" y="242" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--r-red)">Red parks here</text><text x="438" y="257" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(12,5)</text><rect x="372.0" y="512" width="132" height="44" rx="22.0" fill="var(--surface)" stroke="var(--r-red)" stroke-width="1.6"/><circle cx="392.0" cy="534.0" r="7" fill="var(--r-red)"/><text x="406.0" y="530" font-size="11.5" font-weight="640" fill="var(--ink)">start: Red</text><text x="406.0" y="545" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(8,0)</text><path d="M186.0 335.0 l7 7 l-7 7 l-7 -7 z" fill="var(--baseline)"/><rect x="36.0" y="416" width="132" height="44" rx="9" fill="var(--surface)" stroke="var(--r-green)" stroke-width="2"/><text x="102" y="434" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--r-green)">Green stops here</text><text x="102" y="449" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(12,0)</text><rect x="204.0" y="416" width="132" height="44" rx="9" fill="var(--r-blue)" fill-opacity="0.14" stroke="var(--r-blue)" stroke-width="2"/><text x="270" y="434" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--r-blue)">Blue parks here</text><text x="270" y="449" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(13,0)</text><rect x="204.0" y="512" width="132" height="44" rx="22.0" fill="var(--surface)" stroke="var(--r-blue)" stroke-width="1.6"/><circle cx="224.0" cy="534.0" r="7" fill="var(--r-blue)"/><text x="238.0" y="530" font-size="11.5" font-weight="640" fill="var(--ink)">start: Blue</text><text x="238.0" y="545" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(10,13)</text><path d="M438.0 335.0 l7 7 l-7 7 l-7 -7 z" fill="var(--baseline)"/><rect x="372.0" y="416" width="132" height="44" rx="9" fill="var(--surface)" stroke="var(--r-red)" stroke-width="2"/><text x="438" y="434" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--r-red)">Red stops here</text><text x="438" y="449" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(12,0)</text></svg></div>
+      <div class="inset">
+        <svg viewBox="0 0 214 214" role="img" aria-label="Where the robots start on the real 16-by-16 board" style="width:100%;max-width:220px;height:auto;display:block"><line x1="16" y1="3" x2="16" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="16" x2="211" y2="16" stroke="var(--grid)" stroke-width="0.6"/><line x1="29" y1="3" x2="29" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="29" x2="211" y2="29" stroke="var(--grid)" stroke-width="0.6"/><line x1="42" y1="3" x2="42" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="42" x2="211" y2="42" stroke="var(--grid)" stroke-width="0.6"/><line x1="55" y1="3" x2="55" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="55" x2="211" y2="55" stroke="var(--grid)" stroke-width="0.6"/><line x1="68" y1="3" x2="68" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="68" x2="211" y2="68" stroke="var(--grid)" stroke-width="0.6"/><line x1="81" y1="3" x2="81" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="81" x2="211" y2="81" stroke="var(--grid)" stroke-width="0.6"/><line x1="94" y1="3" x2="94" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="94" x2="211" y2="94" stroke="var(--grid)" stroke-width="0.6"/><line x1="107" y1="3" x2="107" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="107" x2="211" y2="107" stroke="var(--grid)" stroke-width="0.6"/><line x1="120" y1="3" x2="120" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="120" x2="211" y2="120" stroke="var(--grid)" stroke-width="0.6"/><line x1="133" y1="3" x2="133" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="133" x2="211" y2="133" stroke="var(--grid)" stroke-width="0.6"/><line x1="146" y1="3" x2="146" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="146" x2="211" y2="146" stroke="var(--grid)" stroke-width="0.6"/><line x1="159" y1="3" x2="159" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="159" x2="211" y2="159" stroke="var(--grid)" stroke-width="0.6"/><line x1="172" y1="3" x2="172" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="172" x2="211" y2="172" stroke="var(--grid)" stroke-width="0.6"/><line x1="185" y1="3" x2="185" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="185" x2="211" y2="185" stroke="var(--grid)" stroke-width="0.6"/><line x1="198" y1="3" x2="198" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="198" x2="211" y2="198" stroke="var(--grid)" stroke-width="0.6"/><rect x="3" y="3" width="208" height="208" fill="none" stroke="var(--ink)" stroke-width="1.6"/><rect x="160.5" y="56.5" width="10" height="10" rx="2.5" fill="none" stroke="var(--r-green)" stroke-width="1.6" stroke-dasharray="3 2"/><circle cx="139.5" cy="178.5" r="5.0" fill="var(--r-blue)"/><circle cx="152.5" cy="126.5" r="7.5" fill="none" stroke="var(--r-green)" stroke-width="1.2" opacity="0.55"/><circle cx="152.5" cy="126.5" r="5.0" fill="var(--r-green)"/><circle cx="113.5" cy="9.5" r="5.0" fill="var(--r-red)"/><circle cx="35.5" cy="139.5" r="5.0" fill="var(--r-yellow)"/></svg>
+        <p class="muted tiny">where the robots start (walls not drawn);
+        the dashed square is the goal, the haloed robot must reach it</p>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <p class="ph">generalized step-aside: two robots must both clear the same slide</p>
+    <p class="muted small">puzzle 76 of the benchmark · shortest possible solution: 6 moves · this plan plays out in 13 legal moves</p>
+    <div class="viz-split">
+      <div class="scroll"><svg viewBox="0 0 540 202" role="img" aria-label="Plan structure for benchmark puzzle 76" style="width:100%;max-width:540px;height:auto;display:block"><defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" fill="context-stroke"/></marker></defs><line x1="102" y1="128" x2="102" y2="76" stroke="var(--r-green)" stroke-width="2.2" marker-end="url(#arr)"/><rect x="76" y="92" width="52" height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/><text class="cost" x="102" y="106" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">11 slides</text><line x1="270" y1="128" x2="270" y2="76" stroke="var(--r-blue)" stroke-width="2.2" marker-end="url(#arr)"/><rect x="244" y="92" width="52" height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/><text class="cost" x="270" y="106" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">1 slide</text><line x1="438" y1="128" x2="438" y2="76" stroke="var(--r-yellow)" stroke-width="2.2" marker-end="url(#arr)"/><rect x="412" y="92" width="52" height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/><text class="cost" x="438" y="106" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink)">1 slide</text><path d="M270 32 C 270 -8, 142 142, 110 110" fill="none" stroke="var(--r-blue)" stroke-width="1.6" stroke-dasharray="2 4" marker-end="url(#arr)"/><text x="198" y="67" font-size="10.5" font-style="italic" fill="var(--r-blue)">must happen before this slide</text><path d="M438 32 C 438 -8, 142 142, 110 110" fill="none" stroke="var(--r-yellow)" stroke-width="1.6" stroke-dasharray="2 4" marker-end="url(#arr)"/><text x="282" y="67" font-size="10.5" font-style="italic" fill="var(--r-yellow)">must happen before this slide</text><rect x="36.0" y="32" width="132" height="44" rx="10" fill="var(--surface)" stroke="var(--ink)" stroke-width="2.2"/><rect x="40.0" y="36" width="124" height="36" rx="7" fill="none" stroke="var(--ink)" stroke-width="1" stroke-dasharray="4 3"/><text x="102" y="50" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--ink)">the goal cell</text><text x="102" y="65" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(5,15)</text><rect x="36.0" y="128" width="132" height="44" rx="22.0" fill="var(--surface)" stroke="var(--r-green)" stroke-width="1.6"/><circle cx="56.0" cy="150.0" r="7" fill="var(--r-green)"/><text x="70.0" y="146" font-size="11.5" font-weight="640" fill="var(--ink)">start: Green</text><text x="70.0" y="161" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(7,0)</text><rect x="204.0" y="128" width="132" height="44" rx="22.0" fill="var(--surface)" stroke="var(--r-blue)" stroke-width="1.6"/><circle cx="224.0" cy="150.0" r="7" fill="var(--r-blue)"/><text x="238.0" y="146" font-size="11.5" font-weight="640" fill="var(--ink)">start: Blue</text><text x="238.0" y="161" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(7,1)</text><rect x="204.0" y="32" width="132" height="44" rx="9" fill="none" stroke="var(--r-blue)" stroke-width="2" stroke-dasharray="2.5 3.5"/><text x="270" y="50" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--r-blue)">Blue steps aside</text><text x="270" y="65" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(7,15)</text><rect x="372.0" y="128" width="132" height="44" rx="22.0" fill="var(--surface)" stroke="var(--r-yellow)" stroke-width="1.6"/><circle cx="392.0" cy="150.0" r="7" fill="var(--r-yellow)"/><text x="406.0" y="146" font-size="11.5" font-weight="640" fill="var(--ink)">start: Yellow</text><text x="406.0" y="161" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(2,0)</text><rect x="372.0" y="32" width="132" height="44" rx="9" fill="none" stroke="var(--r-yellow)" stroke-width="2" stroke-dasharray="2.5 3.5"/><text x="438" y="50" text-anchor="middle" font-size="11.5" font-weight="640" fill="var(--r-yellow)">Yellow steps aside</text><text x="438" y="65" text-anchor="middle" font-size="10.5" fill="var(--muted)" style="font-family:var(--mono)">(2,15)</text></svg></div>
+      <div class="inset">
+        <svg viewBox="0 0 214 214" role="img" aria-label="Where the robots start on the real 16-by-16 board" style="width:100%;max-width:220px;height:auto;display:block"><line x1="16" y1="3" x2="16" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="16" x2="211" y2="16" stroke="var(--grid)" stroke-width="0.6"/><line x1="29" y1="3" x2="29" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="29" x2="211" y2="29" stroke="var(--grid)" stroke-width="0.6"/><line x1="42" y1="3" x2="42" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="42" x2="211" y2="42" stroke="var(--grid)" stroke-width="0.6"/><line x1="55" y1="3" x2="55" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="55" x2="211" y2="55" stroke="var(--grid)" stroke-width="0.6"/><line x1="68" y1="3" x2="68" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="68" x2="211" y2="68" stroke="var(--grid)" stroke-width="0.6"/><line x1="81" y1="3" x2="81" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="81" x2="211" y2="81" stroke="var(--grid)" stroke-width="0.6"/><line x1="94" y1="3" x2="94" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="94" x2="211" y2="94" stroke="var(--grid)" stroke-width="0.6"/><line x1="107" y1="3" x2="107" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="107" x2="211" y2="107" stroke="var(--grid)" stroke-width="0.6"/><line x1="120" y1="3" x2="120" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="120" x2="211" y2="120" stroke="var(--grid)" stroke-width="0.6"/><line x1="133" y1="3" x2="133" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="133" x2="211" y2="133" stroke="var(--grid)" stroke-width="0.6"/><line x1="146" y1="3" x2="146" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="146" x2="211" y2="146" stroke="var(--grid)" stroke-width="0.6"/><line x1="159" y1="3" x2="159" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="159" x2="211" y2="159" stroke="var(--grid)" stroke-width="0.6"/><line x1="172" y1="3" x2="172" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="172" x2="211" y2="172" stroke="var(--grid)" stroke-width="0.6"/><line x1="185" y1="3" x2="185" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="185" x2="211" y2="185" stroke="var(--grid)" stroke-width="0.6"/><line x1="198" y1="3" x2="198" y2="211" stroke="var(--grid)" stroke-width="0.6"/><line x1="3" y1="198" x2="211" y2="198" stroke="var(--grid)" stroke-width="0.6"/><rect x="3" y="3" width="208" height="208" fill="none" stroke="var(--ink)" stroke-width="1.6"/><rect x="69.5" y="199.5" width="10" height="10" rx="2.5" fill="none" stroke="var(--r-green)" stroke-width="1.6" stroke-dasharray="3 2"/><circle cx="100.5" cy="22.5" r="5.0" fill="var(--r-blue)"/><circle cx="100.5" cy="9.5" r="7.5" fill="none" stroke="var(--r-green)" stroke-width="1.2" opacity="0.55"/><circle cx="100.5" cy="9.5" r="5.0" fill="var(--r-green)"/><circle cx="113.5" cy="35.5" r="5.0" fill="var(--r-red)"/><circle cx="35.5" cy="9.5" r="5.0" fill="var(--r-yellow)"/></svg>
+        <p class="muted tiny">where the robots start (walls not drawn);
+        the dashed square is the goal, the haloed robot must reach it</p>
+      </div>
+    </div>
+  </div>
+  <p class="cap">Left: the 8-move optimum is reached because one parked robot (Blue) stops two different robots in turn — inexpressible before this extension. Right: two step-asides at once (13 moves played vs an optimum of 6 — again, clearing the way is paid for honestly). With the full language, only 2 of 450 benchmark puzzles remain unresolved — none proven impossible — a cap of at least <b>99.6%</b>.</p>
+</section>
+
+<div class="footer">
+  <p>Every number and every diagram on this page is generated from
+  <span class="mono">eval/results/plan_structures_data.json</span> (five
+  plans produced by the hand-coded search and verified by legal playback;
+  extractor: <span class="mono">analysis/plan_viz/extract_plans.py</span>)
+  and the ceiling probe files. Rebuild with
+  <span class="mono">PYTHONPATH=. python3 -m eval.build_plan_viz</span>.</p>
+  <p><a href="report.html#ceiling">← back to the full comparison report</a></p>
+</div>
+</div>
+<script>
+(function(){
+  var btn=document.getElementById('themebtn');
+  var modes=['auto','light','dark'];
+  var i=0;
+  btn.addEventListener('click',function(){
+    i=(i+1)%3;
+    var m=modes[i];
+    if(m==='auto'){delete document.documentElement.dataset.theme;}
+    else{document.documentElement.dataset.theme=m;}
+    btn.textContent='theme: '+m;
+  });
+})();
+</script>
+</body>
+</html>

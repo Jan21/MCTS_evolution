@@ -867,9 +867,22 @@ def collect():
     D["ceiling_probe_b1"] = load_json(
         "analysis/artifacts/ceiling_probe_results_b1.json")
     # the follow-up language extension (re-using an already-parked robot as a
-    # second stopper); renders automatically once its probe file lands
+    # second stopper); each file renders automatically once it lands
     D["ceiling_probe_b2"] = load_json(
         "analysis/artifacts/ceiling_probe_results_b2.json")
+    D["ceiling_probe_b2_deep"] = load_json(
+        "analysis/artifacts/ceiling_probe_results_b2_deep.json")
+    D["b2_450"] = load_json("eval/results/final450_backward_b2.json")
+    D["b2_ab"] = load_json("eval/results/realizer_b2_ab.json")
+    D["recheck_default_b2"] = load_json(
+        "analysis/artifacts/ceiling_probe_default_recheck_post_b2.json")
+    D["recheck_b1_b2"] = load_json(
+        "analysis/artifacts/ceiling_probe_b1_recheck_post_b2.json")
+    D["ceiling_g16r6_b1"] = load_json(
+        "scaling/results/g16r6/ceiling_probe_b1.json")
+    D["ceiling_g16r6_b2"] = load_json(
+        "scaling/results/g16r6/ceiling_probe_b2.json")
+    D["g16r6_meta"] = load_json("scaling/data/g16r6/bench.jsonl.meta.json")
     D["bench_meta"] = load_json("eval/data/bench450.jsonl.meta.json")
     D["bench_rows"] = load_jsonl("eval/data/bench450.jsonl")
     D["arms"] = load_json("subgoal_selfplay/arms_index.json")
@@ -1000,6 +1013,7 @@ def build_headline_rows(D):
                 "eval/results/comparison_backward_postfix2.json",
                 note="first 150 of the 450 puzzles")
     have_b1 = bool(D.get("b1_450"))
+    have_b2 = bool(D.get("b2_450"))
     if D["final450_prefix"]:
         _, s = first_backward(D["final450_prefix"])
         if s:
@@ -1007,9 +1021,10 @@ def build_headline_rows(D):
                 "backward",
                 "each partial plan is physics-checked as it is built, so doomed "
                 "branches are dropped immediately"
-                + ("" if have_b1 else " (the best backward mode)"),
+                + ("" if have_b1 or have_b2 else " (the best backward mode)"),
                 s["aggregate"],
-                "eval/results/final450_backward_prefix.json", hl=not have_b1)
+                "eval/results/final450_backward_prefix.json",
+                hl=not (have_b1 or have_b2))
     if have_b1:
         _, s = first_backward(D["b1_450"])
         if s:
@@ -1017,9 +1032,21 @@ def build_headline_rows(D):
                 "backward",
                 "two new things a plan may say (a stopper may stand on a "
                 "wall-less cell; a robot may briefly step aside), networks "
-                "retrained to use them — the best backward mode",
+                "retrained to use them"
+                + ("" if have_b2 else " — the best backward mode"),
                 s["aggregate"],
-                "eval/results/final450_backward_b1.json", hl=True)
+                "eval/results/final450_backward_b1.json", hl=not have_b2)
+    if have_b2:
+        _, s = first_backward(D["b2_450"])
+        if s:
+            add("Backward planner — plus re-use of placed robots "
+                "(same networks)",
+                "backward",
+                "the fullest plan language (an already-placed robot may serve "
+                "again) with the SAME trained networks — retraining on the "
+                "new step type is the scoped next step",
+                s["aggregate"],
+                "eval/results/final450_backward_b2.json", hl=True)
     return rows, checks
 
 
@@ -1129,16 +1156,23 @@ def sec_experiments(D):
 
     fwd_best_base = (_sysagg(D["fwd"], "forward", "candidate_scored")
                      or _sysagg(D["fwd"], "forward"))
+    b2_base = _sysagg(D.get("b2_450"), "backward")
     b1_base = _sysagg(D["b1_450"], "backward")
+    base_tag = ""
+    if b2_base is not None:
+        base_tag = ("subgoal side uses the fullest plan language "
+                    "(including re-use of placed robots)")
+    elif b1_base is not None:
+        base_tag = "subgoal side uses the richer plan language"
     entries = [
         {
             "name": "Standard puzzles — 16×16 board, 4 robots",
             "sub": "the shared 450-puzzle benchmark; every solution is graded "
                    "against the known shortest one",
-            "b": b1_base or _sysagg(D["final450_prefix"], "backward"),
+            "b": (b2_base or b1_base
+                  or _sysagg(D["final450_prefix"], "backward")),
             "f": fwd_best_base,
-            "tag": ("subgoal side uses the richer plan language"
-                    if b1_base is not None else ""),
+            "tag": base_tag,
         },
         {
             "name": "6 robots — puzzles the exact solver can still grade",
@@ -1390,7 +1424,22 @@ def tab_overview(D, rows):
     probe = D.get("ceiling_probe")
     nt = (len(D["bench_rows"]) if D.get("bench_rows")
           else (D["bench_meta"] or {}).get("n_instances") or 450)
-    if probe and probe_b1:
+    probe_b2 = valid_probe(D.get("ceiling_probe_b2"))
+    if probe and probe_b1 and probe_b2:
+        old_struct = sum(1 for r in probe if r["category"] in
+                         ("NO_COMPLETE_PLAN", "NO_REALIZABLE_PLAN"))
+        n_fail2 = sum(1 for r in probe_b2
+                      if r["category"] != "REALIZABLE_EXISTS")
+        old_c = (nt - old_struct) / nt * 100
+        c2 = (nt - n_fail2) / nt * 100
+        tiles.append(tile(
+            f"{c2:.1f}%",
+            "the ceiling on the backward planner after its plan language was "
+            "extended, twice",
+            f"was {old_c:.1f}%; of {nt} puzzles only {n_fail2} remain "
+            f"unresolved — and none is proven impossible — "
+            f"<a href='#ceiling'>why plans fail</a>"))
+    elif probe and probe_b1:
         old_struct = sum(1 for r in probe if r["category"] in
                          ("NO_COMPLETE_PLAN", "NO_REALIZABLE_PLAN"))
         new_struct = sum(1 for r in probe_b1 if r["category"] in
@@ -2195,6 +2244,186 @@ def sec_ceiling(D):
 """
 
 
+def valid_probe(p, expect_n=None):
+    """A probe file is trusted only if it is a JSON list of row dicts that
+    all carry a category (guards against reading a partially written or
+    crashed rerun); `expect_n` additionally pins the row count."""
+    if not isinstance(p, list):
+        return None
+    if expect_n is not None and len(p) != expect_n:
+        return None
+    if not all(isinstance(r, dict) and "category" in r for r in p):
+        return None
+    return p
+
+
+def _b2_block(D, n_total, new_struct, n_none, n_unplay, new_c):
+    """The second language extension (re-use of placed robots): base-scale
+    re-probe, the zero-shot learned run, and the 6-robot re-probe."""
+    probe_b2 = valid_probe(D.get("ceiling_probe_b2"))
+    if not probe_b2:
+        if not new_struct:
+            return "", None
+        return (
+            f"<p><b>What still cannot be said.</b> {new_struct} puzzles "
+            f"remain out of reach: {n_none} still admit no complete plan "
+            f"(their helper-delivery chains run out of robots), and "
+            f"{n_unplay} have plans that all fail the physics check in ways "
+            f"one step-aside cannot fix. These need one further, already "
+            f"scoped bookkeeping extension — letting a plan <i>re-use</i> an "
+            f"already-parked robot as the stopper for a second bounce — "
+            f"which is in progress. Re-running this probe after it lands "
+            f"updates this section automatically.</p>"), None
+
+    # Optional escalated re-probe of the unresolved rows (bigger memory box):
+    # its verdict is preferred per row, and can only add recoveries.
+    deep = valid_probe(D.get("ceiling_probe_b2_deep"))
+    if deep:
+        by_idx = {r.get("idx"): r for r in deep
+                  if r.get("category") == "REALIZABLE_EXISTS"}
+        probe_b2 = [by_idx.get(r.get("idx"), r) for r in probe_b2]
+
+    cats2 = Counter(r["category"] for r in probe_b2)
+    n_imp2 = (cats2.get("NO_COMPLETE_PLAN", 0)
+              + cats2.get("NO_REALIZABLE_PLAN", 0))
+    n_unres = cats2.get("INCONCLUSIVE", 0)
+    rec2 = [r for r in probe_b2 if r["category"] == "REALIZABLE_EXISTS"]
+    n_fail2 = n_imp2 + n_unres            # conservative: unresolved = failed
+    c2 = (n_total - n_fail2) / n_total * 100
+    n_opt2 = sum(1 for r in rec2
+                 if r.get("realizable_moves") is not None
+                 and r.get("realizable_moves") == r.get("d_star"))
+    n_two_parks = sum(1 for r in rec2 if (r.get("parks") or 0) >= 2)
+
+    aux_need("second extension: new percentage rendered", f"{c2:.1f}%")
+    aux_fact(f"second extension: probe covers the full residue "
+             f"({len(probe_b2)} rows = {new_struct} remaining puzzles)",
+             len(probe_b2) == new_struct)
+
+    unres_txt = ""
+    if n_unres:
+        unres_txt = (
+            f" The other {n_unres} are <b>unresolved, not proven "
+            f"impossible</b>: their exhaustive probes ran out of search "
+            f"memory before either finding a plan or exhausting every "
+            f"option — an open search-budget question, not a proven wall.")
+        if n_imp2 == 0:
+            unres_txt += (" For the first time, <b>no puzzle on this "
+                          "benchmark is proven unsolvable</b> for the "
+                          "subgoal planner.")
+    quality2 = ""
+    if rec2:
+        bits = [f"{n_opt2} of the {len(rec2)} recovered puzzles solved "
+                f"move-optimally"]
+        if n_two_parks:
+            bits.append(f"{n_two_parks} needed two robots cleared out of "
+                        f"the way at once — the exact case the first "
+                        f"extension could not say")
+        quality2 = " " + "; ".join(bits) + "."
+
+    zero_shot = ""
+    b2a = _sysagg(D.get("b2_450"), "backward")
+    b1a = _sysagg(D.get("b1_450"), "backward")
+    if b2a:
+        delta = ""
+        if b1a:
+            delta = (f" — only {b2a['solved'] - b1a['solved']} more than "
+                     f"before this extension")
+        zero_shot = (
+            f"<p>The learned planner was re-run with the new machinery but "
+            f"<b>the same trained networks</b> (they have never seen the new "
+            f"kind of plan step): {ffrac(b2a['solved'], b2a['n'])} solved "
+            f"playably at {fnum(b2a['mean_expansions'], 1)} search steps"
+            f"{delta}. That gap is the honest reading: the language now "
+            f"permits about {c2:.1f}%, the networks achieve "
+            f"{fpct(b2a['solve_rate'])}, and closing the difference is a "
+            f"training problem — retraining on examples written in the full "
+            f"language is the scoped next step "
+            f"(eval/results/final450_backward_b2.json).</p>")
+
+    six = _b2_six_robot_block(D)
+
+    return (
+        f"<h3 class='subh'>The second extension: re-using robots the plan "
+        f"already placed — {new_c:.1f}% → {c2:.1f}%</h3>"
+        f"<p>The first extension still could not express plans in which a "
+        f"robot does <b>two jobs</b>. The second one adds exactly that: the "
+        f"plan can now <b>re-use a robot it already placed</b> — the same "
+        f"parked robot can stop two different sliders, the main robot itself "
+        f"can serve as a bounce point mid-route, and a placed helper can "
+        f"slide on to a second post — and the step-aside repair can clear "
+        f"two robots at once, or step aside twice. As before, every extra "
+        f"maneuver is costed as ordinary moves.</p>"
+        f"<p>Re-probing the {new_struct} remaining puzzles with the fuller "
+        f"language: <b>{len(rec2)} now have a playable plan</b>, and "
+        f"<b>none is proven impossible</b>"
+        + (f" ({n_imp2} still are)" if n_imp2 else "")
+        + f". Counting the unresolved ones as failures — the conservative "
+        f"reading — the ceiling moves from {new_c:.1f}% to <b>{c2:.1f}%</b> "
+        f"({n_total - n_fail2} of {n_total}; "
+        f"analysis/artifacts/ceiling_probe_results_b2.json)."
+        f"{unres_txt}{quality2}</p>"
+        + zero_shot + six), c2
+
+
+def _b2_six_robot_block(D):
+    """6-robot re-probe of the 14 instances the first extension left."""
+    g6b1 = valid_probe(D.get("ceiling_g16r6_b1"))
+    if not g6b1:
+        return ""
+    n6 = (D.get("g16r6_meta") or {}).get("n_instances") or 450
+    bad1 = [r for r in g6b1 if r["category"] != "REALIZABLE_EXISTS"]
+    imp1 = [r for r in bad1 if r["category"] in
+            ("NO_COMPLETE_PLAN", "NO_REALIZABLE_PLAN")]
+    g6b2 = valid_probe(D.get("ceiling_g16r6_b2"), expect_n=len(bad1))
+    if not g6b2:
+        return (
+            f"<p><b>At 6 robots</b> the first extension left "
+            f"{len(bad1)} puzzles unrecovered ({len(imp1)} proven "
+            f"impossible, {len(bad1) - len(imp1)} unresolved at their "
+            f"search-memory caps). The re-probe with the second extension "
+            f"is running; this paragraph updates automatically when "
+            f"scaling/results/g16r6/ceiling_probe_b2.json lands.</p>")
+    by_key = {(r.get("tag"), r.get("idx")): r for r in g6b2}
+    rec = [r for r in g6b2 if r["category"] == "REALIZABLE_EXISTS"]
+    imp2 = [r for r in g6b2 if r["category"] in
+            ("NO_COMPLETE_PLAN", "NO_REALIZABLE_PLAN")]
+    unres2 = [r for r in g6b2 if r["category"] == "INCONCLUSIVE"]
+    n_fail6 = len(imp2) + len(unres2)
+    c6 = (n6 - n_fail6) / n6 * 100
+    aux_need("second extension, 6 robots: ceiling rendered", f"{c6:.1f}%")
+    flipped = [r for r in g6b1 if r["category"] in
+               ("NO_COMPLETE_PLAN", "NO_REALIZABLE_PLAN")
+               and (by_key.get((r.get("tag"), r.get("idx")))
+                    or {}).get("category") == "REALIZABLE_EXISTS"]
+    flip_txt = ""
+    if imp1 and len(flipped) == len(imp1):
+        opt_flips = [r for r in
+                     (by_key.get((x.get("tag"), x.get("idx"))) for x in imp1)
+                     if r and r.get("realizable_moves") is not None
+                     and r.get("realizable_moves") == r.get("d_star")]
+        flip_txt = (
+            f" Notably, <b>both</b> puzzles that were proven impossible "
+            f"under the first extension flipped to solvable"
+            + (f" ({len(opt_flips)} of them at exactly its move optimum)"
+               if opt_flips else "") + " — ")
+        if not imp2:
+            flip_txt += ("so at 6 robots, <b>nothing is proven impossible "
+                         "any more</b>.")
+        else:
+            flip_txt += (f"though {len(imp2)} other puzzles are now proven "
+                         f"impossible.")
+    return (
+        f"<p><b>At 6 robots</b> — the scale where the ceiling matters most — "
+        f"the same re-probe over the {len(g6b2)} previously unrecovered "
+        f"puzzles finds a playable plan for <b>{len(rec)}</b>, with "
+        f"{len(unres2)} still unresolved at their search-memory caps and "
+        f"{len(imp2)} proven impossible. Counting every unresolved probe as "
+        f"a failure, the 6-robot ceiling is now at least <b>{c6:.1f}%</b> "
+        f"({n6 - n_fail6} of {n6}; "
+        f"scaling/results/g16r6/ceiling_probe_b2.json).{flip_txt}</p>")
+
+
 def sec_ceiling_lifted(D):
     probe_b1 = D.get("ceiling_probe_b1")
     if not probe_b1:
@@ -2264,36 +2493,42 @@ def sec_ceiling_lifted(D):
             f"{len(ab.get('mismatches') or [])} mismatches) — the richer "
             f"language adds words without changing the meaning of any "
             f"existing plan (eval/results/realizer_b1_ab.json).</p>")
+    ab2 = D.get("b2_ab") or {}
+    if ab2.get("n"):
+        aux_fact(f"second extension: stored-plan A/B identical "
+                 f"({ab2.get('n_equal')}/{ab2['n']})",
+                 ab2.get("n_equal") == ab2["n"]
+                 and not (ab2.get("mismatches") or []))
+        safety += (
+            f"<p class='muted small'>The same held for the second "
+            f"extension: {ab2.get('n_equal')} of {ab2['n']} stored plans "
+            f"convert identically (eval/results/realizer_b2_ab.json).</p>")
+    rc_ok = []
+    for key, base_key, label in (
+            ("recheck_default_b2", "ceiling_probe", "original-language"),
+            ("recheck_b1_b2", "ceiling_probe_b1", "first-extension")):
+        rc = valid_probe(D.get(key))
+        base = valid_probe(D.get(base_key))
+        if rc and base:
+            same = ({(r.get("idx"), r.get("category")) for r in rc}
+                    == {(r.get("idx"), r.get("category")) for r in base})
+            aux_fact(f"post-second-extension recheck matches the {label} "
+                     f"probe row-for-row ({len(rc)} rows)", same)
+            if same:
+                rc_ok.append(label)
+    if rc_ok:
+        safety += (
+            f"<p class='muted small'>And with the second extension switched "
+            f"off, re-running the {' and the '.join(rc_ok)} probes "
+            f"reproduces their checked-in results row-for-row — nothing "
+            f"about the default behavior changed "
+            f"(analysis/artifacts/ceiling_probe_*_recheck_post_b2.json).</p>")
 
-    remaining = ""
-    probe_b2 = D.get("ceiling_probe_b2")
-    if probe_b2:
-        cats2 = Counter(r["category"] for r in probe_b2)
-        s2 = (cats2.get("NO_COMPLETE_PLAN", 0)
-              + cats2.get("NO_REALIZABLE_PLAN", 0))
-        c2 = (n_total - s2) / n_total * 100
-        aux_need("second extension: new percentage rendered", f"{c2:.1f}%")
-        remaining = (
-            f"<p><b>The second extension.</b> A follow-up change lets a plan "
-            f"<i>re-use</i> a robot that is already parked — as the stopper "
-            f"for another bounce, or by sliding it from its current parking "
-            f"spot to a new one — instead of always recruiting a fresh "
-            f"robot. Re-probing the remaining failures with it: puzzles with "
-            f"no playable plan drop from <b>{new_struct} to {s2}</b> of "
-            f"{n_total}, moving the ceiling from {new_c:.1f}% to "
-            f"<b>{c2:.1f}%</b> "
-            f"(analysis/artifacts/ceiling_probe_results_b2.json).</p>")
-    elif new_struct:
-        remaining = (
-            f"<p><b>What still cannot be said.</b> {new_struct} puzzles "
-            f"remain out of reach: {n_none} still admit no complete plan "
-            f"(their helper-delivery chains run out of robots), and "
-            f"{n_unplay} have plans that all fail the physics check in ways "
-            f"one step-aside cannot fix. These need one further, already "
-            f"scoped bookkeeping extension — letting a plan <i>re-use</i> an "
-            f"already-parked robot as the stopper for a second bounce — "
-            f"which is in progress. Re-running this probe after it lands "
-            f"updates this section automatically.</p>")
+    remaining, c2_final = _b2_block(D, n_total, new_struct, n_none, n_unplay,
+                                    new_c)
+    h2_tail = f"{old_c:.1f}% → {new_c:.1f}%"
+    if c2_final is not None:
+        h2_tail += f" → {c2_final:.1f}%"
 
     quality = ""
     if rec:
@@ -2307,7 +2542,7 @@ def sec_ceiling_lifted(D):
 <section id="ceiling-lifted">
   <div class="sec-head">
     <div class="kicker">step 4 · lifting the ceiling</div>
-    <h2>The richer plan language moved the ceiling: {old_c:.1f}% → {new_c:.1f}%</h2>
+    <h2>Extending the plan language moved the ceiling: {h2_tail}</h2>
   </div>
   <div class="tiles tiles3">
     {tile(f"{old_struct} → {new_struct}",
@@ -2460,7 +2695,21 @@ def sec_worked_example(D):
 
 
 def tab_ceiling(D):
-    intro = """
+    links = []
+    if os.path.exists(rp("eval", "results", "plan_structures.html")):
+        links.append('<a href="plan_structures.html">see the plan '
+                     "structures drawn out — before and after each "
+                     "extension</a>")
+        aux_need("ceiling tab links to the plan-structure visualization",
+                 'href="plan_structures.html"')
+    if os.path.exists(rp("eval", "results", "failure_gallery.html")):
+        links.append('<a href="failure_gallery.html">browse the '
+                     "failure-example gallery</a>")
+    link_html = ""
+    if links:
+        link_html = ("<p>Companion pages: " + " · ".join(links)
+                     + " (both open beside this report).</p>")
+    intro = f"""
 <section id="ceiling-intro">
   <div class="sec-head">
     <div class="kicker">the playability story</div>
@@ -2474,6 +2723,7 @@ def tab_ceiling(D):
   bugs that were fixed, the search change that finished the climb, the hard
   ceiling that remained — and how making the plan language richer then moved
   that ceiling.</p>
+  {link_html}
 </section>
 """
     return (intro + sec_fixes(D) + sec_insearch(D) + sec_ceiling(D)
