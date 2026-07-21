@@ -325,6 +325,35 @@ by move** on the real board.
    needs the memory-shaped (depth-bounded) probe redesign already scoped in
    the B1 notes, not more wall-clock.
 
+17. **The full-language backward planner, zero-shot, contests every rung it has
+   been tried on (2026-07-21; series in progress).** Per the owner's fairness
+   directive, the ladder gains "same trained networks, richer plan language"
+   backward rows at matched budgets (1200 / top-5, anytime, `--backward-b2`;
+   the 16×16 rungs use the base-trained B1 net pair, which generalizes across
+   robot counts — the nets rank the new candidate types zero-shot). Landed so
+   far, both 16×16 rungs (sources:
+   `scaling/results/g16r6/comparison{_b2,_ungraded_b2}.json`,
+   `scaling/results/g16r8/comparison{_b2,_ungraded_b2}.json`; measured on
+   Karolina — seconds not comparable to origin rows):
+   - **6 robots graded (316): 306 (96.8%) at 27.1 steps** — up from 96.2%
+     (B1) and 87.0% (old language); forward control 99.4% at 64 steps.
+     Frontier (134): 108 (80.6%) at 269 steps — unchanged from B1, vs
+     forward's 48.5% at 835 steps.
+   - **8 robots graded (266): 262 (98.5%) at 8.6 steps — the backward
+     planner's first graded-set win** (forward control 261 = 98.1% at 62.4
+     steps, i.e. 7× more search). Old-language backward: 230 (86.5%).
+     **Frontier (184): 163 (88.6%) at 183 steps vs forward's 93 (50.5%) at
+     819 steps** — +70 puzzles over the old-language row (88), +75 over
+     forward, at 4.5× fewer steps. This replaces the §14 "contested frontier"
+     verdict: with its full language the subgoal planner wins the 8-robot
+     frontier decisively.
+   - Honest constants: where both solve, forward's solutions stay shorter
+     (backward graded regret ~2.4–2.6 moves); frontier solution lengths run
+     long (no true optima exist there — only solve rate / steps / time are
+     meaningful, per the house rule).
+   24×24/8 and 32×32 extended rows are computing; they append here when they
+   land.
+
 ## Verdict so far against the goal
 
 **One-paragraph summary of where the thesis stands.** On puzzles easy enough for exact
