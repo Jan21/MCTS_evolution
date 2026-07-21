@@ -1,0 +1,805 @@
+{
+ "generated_by": "analysis/plan_viz/extract_plans.py (hand-coded search, no neural networks; strictly-playable plans only)",
+ "examples": [
+  {
+   "stage": "base",
+   "bench_idx": 0,
+   "env_id": 2400,
+   "d_star": 12,
+   "why": "ordinary plan, original language",
+   "plan_cost": 12.0,
+   "legal_moves": 12,
+   "robots": {
+    "Red": [
+     1,
+     15
+    ],
+    "Blue": [
+     2,
+     12
+    ],
+    "Green": [
+     11,
+     6
+    ],
+    "Yellow": [
+     0,
+     3
+    ]
+   },
+   "target_robot": "Red",
+   "target_cell": [
+    9,
+    15
+   ],
+   "nodes": [
+    {
+     "id": "goal",
+     "type": "goal",
+     "pos": [
+      9,
+      15
+     ],
+     "robot": null
+    },
+    {
+     "id": "leaf_0",
+     "type": "leaf",
+     "pos": [
+      1,
+      15
+     ],
+     "robot": "Red"
+    },
+    {
+     "id": "sg_1",
+     "type": "subgoal",
+     "pos": null,
+     "robot": null
+    },
+    {
+     "id": "bn_1",
+     "type": "bottleneck",
+     "pos": [
+      9,
+      15
+     ],
+     "robot": "Red"
+    },
+    {
+     "id": "sp_1",
+     "type": "support",
+     "pos": [
+      10,
+      15
+     ],
+     "robot": "Blue",
+     "transient": false
+    },
+    {
+     "id": "leaf_1",
+     "type": "leaf",
+     "pos": [
+      2,
+      12
+     ],
+     "robot": "Blue"
+    },
+    {
+     "id": "sg_2",
+     "type": "subgoal",
+     "pos": null,
+     "robot": null
+    },
+    {
+     "id": "bn_2",
+     "type": "bottleneck",
+     "pos": [
+      10,
+      15
+     ],
+     "robot": "Blue"
+    },
+    {
+     "id": "sp_2",
+     "type": "support",
+     "pos": [
+      11,
+      15
+     ],
+     "robot": "Green",
+     "transient": false
+    },
+    {
+     "id": "leaf_2",
+     "type": "leaf",
+     "pos": [
+      11,
+      6
+     ],
+     "robot": "Green"
+    }
+   ],
+   "edges": [
+    {
+     "from": "goal",
+     "to": "sg_1",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "sg_1",
+     "to": "bn_1",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "sg_1",
+     "to": "sp_1",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "bn_1",
+     "to": "leaf_0",
+     "status": "fixed",
+     "cost": 7,
+     "byref": false
+    },
+    {
+     "from": "sp_1",
+     "to": "sg_2",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "sg_2",
+     "to": "bn_2",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "sg_2",
+     "to": "sp_2",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "bn_2",
+     "to": "leaf_1",
+     "status": "fixed",
+     "cost": 4,
+     "byref": false
+    },
+    {
+     "from": "sp_2",
+     "to": "leaf_2",
+     "status": "fixed",
+     "cost": 1,
+     "byref": false
+    }
+   ]
+  },
+  {
+   "stage": "b1",
+   "bench_idx": 333,
+   "env_id": 2511,
+   "d_star": 4,
+   "why": "transient (wall-less) stopper; impossible before B1",
+   "plan_cost": 4.0,
+   "legal_moves": 4,
+   "robots": {
+    "Yellow": [
+     6,
+     1
+    ],
+    "Red": [
+     11,
+     13
+    ],
+    "Blue": [
+     4,
+     9
+    ],
+    "Green": [
+     4,
+     5
+    ]
+   },
+   "target_robot": "Yellow",
+   "target_cell": [
+    3,
+    1
+   ],
+   "nodes": [
+    {
+     "id": "goal",
+     "type": "goal",
+     "pos": [
+      3,
+      1
+     ],
+     "robot": null
+    },
+    {
+     "id": "leaf_0",
+     "type": "leaf",
+     "pos": [
+      6,
+      1
+     ],
+     "robot": "Yellow"
+    },
+    {
+     "id": "sg_1",
+     "type": "subgoal",
+     "pos": null,
+     "robot": null
+    },
+    {
+     "id": "bn_1",
+     "type": "bottleneck",
+     "pos": [
+      3,
+      1
+     ],
+     "robot": "Yellow"
+    },
+    {
+     "id": "sp_1",
+     "type": "support",
+     "pos": [
+      4,
+      1
+     ],
+     "robot": "Blue",
+     "transient": true
+    },
+    {
+     "id": "leaf_1",
+     "type": "leaf",
+     "pos": [
+      4,
+      9
+     ],
+     "robot": "Blue"
+    },
+    {
+     "id": "sg_2",
+     "type": "subgoal",
+     "pos": null,
+     "robot": null
+    },
+    {
+     "id": "bn_2",
+     "type": "bottleneck",
+     "pos": [
+      4,
+      1
+     ],
+     "robot": "Blue"
+    },
+    {
+     "id": "sp_2",
+     "type": "support",
+     "pos": [
+      4,
+      0
+     ],
+     "robot": "Green",
+     "transient": false
+    },
+    {
+     "id": "leaf_2",
+     "type": "leaf",
+     "pos": [
+      4,
+      5
+     ],
+     "robot": "Green"
+    }
+   ],
+   "edges": [
+    {
+     "from": "goal",
+     "to": "sg_1",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "sg_1",
+     "to": "bn_1",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "sg_1",
+     "to": "sp_1",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "bn_1",
+     "to": "leaf_0",
+     "status": "fixed",
+     "cost": 2,
+     "byref": false
+    },
+    {
+     "from": "sp_1",
+     "to": "sg_2",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "sg_2",
+     "to": "bn_2",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "sg_2",
+     "to": "sp_2",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "bn_2",
+     "to": "leaf_1",
+     "status": "fixed",
+     "cost": 1,
+     "byref": false
+    },
+    {
+     "from": "sp_2",
+     "to": "leaf_2",
+     "status": "fixed",
+     "cost": 1,
+     "byref": false
+    }
+   ]
+  },
+  {
+   "stage": "b1",
+   "bench_idx": 28,
+   "env_id": 2409,
+   "d_star": 7,
+   "why": "step-aside (park): a robot clears the way, ordered before one specific slide",
+   "plan_cost": 7.0,
+   "legal_moves": 11,
+   "robots": {
+    "Red": [
+     7,
+     9
+    ],
+    "Blue": [
+     10,
+     3
+    ],
+    "Green": [
+     10,
+     14
+    ],
+    "Yellow": [
+     13,
+     8
+    ]
+   },
+   "target_robot": "Red",
+   "target_cell": [
+    7,
+    3
+   ],
+   "nodes": [
+    {
+     "id": "goal",
+     "type": "goal",
+     "pos": [
+      7,
+      3
+     ],
+     "robot": null
+    },
+    {
+     "id": "leaf_0",
+     "type": "leaf",
+     "pos": [
+      7,
+      9
+     ],
+     "robot": "Red"
+    },
+    {
+     "id": "leaf_1",
+     "type": "leaf",
+     "pos": [
+      10,
+      3
+     ],
+     "robot": "Blue"
+    },
+    {
+     "id": "prk_1",
+     "type": "park",
+     "pos": [
+      10,
+      0
+     ],
+     "robot": "Blue",
+     "before_edge": [
+      "goal",
+      "leaf_0"
+     ]
+    }
+   ],
+   "edges": [
+    {
+     "from": "goal",
+     "to": "leaf_0",
+     "status": "fixed",
+     "cost": 6,
+     "byref": false
+    },
+    {
+     "from": "prk_1",
+     "to": "leaf_1",
+     "status": "fixed",
+     "cost": 1,
+     "byref": false
+    }
+   ]
+  },
+  {
+   "stage": "b2",
+   "bench_idx": 156,
+   "env_id": 2452,
+   "d_star": 8,
+   "why": "supports-by-reference: a proposal names an existing plan node as its stopper instead of recruiting a fresh robot",
+   "plan_cost": 8.0,
+   "legal_moves": 8,
+   "robots": {
+    "Green": [
+     11,
+     9
+    ],
+    "Red": [
+     8,
+     0
+    ],
+    "Blue": [
+     10,
+     13
+    ],
+    "Yellow": [
+     2,
+     10
+    ]
+   },
+   "target_robot": "Green",
+   "target_cell": [
+    12,
+    4
+   ],
+   "nodes": [
+    {
+     "id": "goal",
+     "type": "goal",
+     "pos": [
+      12,
+      4
+     ],
+     "robot": null
+    },
+    {
+     "id": "leaf_0",
+     "type": "leaf",
+     "pos": [
+      11,
+      9
+     ],
+     "robot": "Green"
+    },
+    {
+     "id": "sg_1",
+     "type": "subgoal",
+     "pos": null,
+     "robot": null
+    },
+    {
+     "id": "bn_1",
+     "type": "bottleneck",
+     "pos": [
+      12,
+      4
+     ],
+     "robot": "Green"
+    },
+    {
+     "id": "sp_1",
+     "type": "support",
+     "pos": [
+      12,
+      5
+     ],
+     "robot": "Red",
+     "transient": false
+    },
+    {
+     "id": "leaf_1",
+     "type": "leaf",
+     "pos": [
+      8,
+      0
+     ],
+     "robot": "Red"
+    },
+    {
+     "id": "sg_2",
+     "type": "subgoal",
+     "pos": null,
+     "robot": null
+    },
+    {
+     "id": "bn_2",
+     "type": "bottleneck",
+     "pos": [
+      12,
+      0
+     ],
+     "robot": "Green"
+    },
+    {
+     "id": "sp_2",
+     "type": "support",
+     "pos": [
+      13,
+      0
+     ],
+     "robot": "Blue",
+     "transient": false
+    },
+    {
+     "id": "leaf_2",
+     "type": "leaf",
+     "pos": [
+      10,
+      13
+     ],
+     "robot": "Blue"
+    },
+    {
+     "id": "sg_3",
+     "type": "subgoal",
+     "pos": null,
+     "robot": null
+    },
+    {
+     "id": "bn_3",
+     "type": "bottleneck",
+     "pos": [
+      12,
+      0
+     ],
+     "robot": "Red"
+    }
+   ],
+   "edges": [
+    {
+     "from": "goal",
+     "to": "sg_1",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "sg_1",
+     "to": "bn_1",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "sg_1",
+     "to": "sp_1",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "bn_1",
+     "to": "sg_2",
+     "status": "fixed",
+     "cost": 1,
+     "byref": false
+    },
+    {
+     "from": "sp_1",
+     "to": "sg_3",
+     "status": "fixed",
+     "cost": 1,
+     "byref": false
+    },
+    {
+     "from": "sg_2",
+     "to": "bn_2",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "sg_2",
+     "to": "sp_2",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "bn_2",
+     "to": "leaf_0",
+     "status": "fixed",
+     "cost": 3,
+     "byref": false
+    },
+    {
+     "from": "sp_2",
+     "to": "leaf_2",
+     "status": "fixed",
+     "cost": 2,
+     "byref": false
+    },
+    {
+     "from": "sg_3",
+     "to": "bn_3",
+     "status": "fixed",
+     "cost": 0,
+     "byref": false
+    },
+    {
+     "from": "sg_3",
+     "to": "sp_2",
+     "status": "fixed",
+     "cost": 0,
+     "byref": true
+    },
+    {
+     "from": "bn_3",
+     "to": "leaf_1",
+     "status": "fixed",
+     "cost": 1,
+     "byref": false
+    }
+   ]
+  },
+  {
+   "stage": "b2",
+   "bench_idx": 76,
+   "env_id": 2425,
+   "d_star": 6,
+   "why": "generalized step-aside: two robots must both clear the same slide",
+   "plan_cost": 13.0,
+   "legal_moves": 13,
+   "robots": {
+    "Green": [
+     7,
+     0
+    ],
+    "Red": [
+     8,
+     2
+    ],
+    "Blue": [
+     7,
+     1
+    ],
+    "Yellow": [
+     2,
+     0
+    ]
+   },
+   "target_robot": "Green",
+   "target_cell": [
+    5,
+    15
+   ],
+   "nodes": [
+    {
+     "id": "goal",
+     "type": "goal",
+     "pos": [
+      5,
+      15
+     ],
+     "robot": null
+    },
+    {
+     "id": "leaf_0",
+     "type": "leaf",
+     "pos": [
+      7,
+      0
+     ],
+     "robot": "Green"
+    },
+    {
+     "id": "leaf_1",
+     "type": "leaf",
+     "pos": [
+      7,
+      1
+     ],
+     "robot": "Blue"
+    },
+    {
+     "id": "prk_1",
+     "type": "park",
+     "pos": [
+      7,
+      15
+     ],
+     "robot": "Blue",
+     "before_edge": [
+      "goal",
+      "leaf_0"
+     ]
+    },
+    {
+     "id": "leaf_2",
+     "type": "leaf",
+     "pos": [
+      2,
+      0
+     ],
+     "robot": "Yellow"
+    },
+    {
+     "id": "prk_2",
+     "type": "park",
+     "pos": [
+      2,
+      15
+     ],
+     "robot": "Yellow",
+     "before_edge": [
+      "goal",
+      "leaf_0"
+     ]
+    }
+   ],
+   "edges": [
+    {
+     "from": "goal",
+     "to": "leaf_0",
+     "status": "fixed",
+     "cost": 11,
+     "byref": false
+    },
+    {
+     "from": "prk_1",
+     "to": "leaf_1",
+     "status": "fixed",
+     "cost": 1,
+     "byref": false
+    },
+    {
+     "from": "prk_2",
+     "to": "leaf_2",
+     "status": "fixed",
+     "cost": 1,
+     "byref": false
+    }
+   ]
+  }
+ ]
+}
