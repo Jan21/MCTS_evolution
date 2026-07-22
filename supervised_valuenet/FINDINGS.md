@@ -358,7 +358,11 @@ by move** on the real board.
      nets + full language, zero-shot). Their old-language and forward
      opponents are computing in the baseline lanes and complete this rung's
      head-to-head when they land.
-   The 24×24/8 extended rows are computing; they append here when they land.
+   - **24×24/8 graded (161): 148 (91.9%) at 94.9 steps** (source:
+     `scaling/results/g24r8/comparison_b2.json`; per-config nets + full
+     language, zero-shot) — up from 89.4% old-language; forward control 97.5%
+     at 152 steps. The 24×24/8 extended frontier row is computing (sharded
+     rerun) and appends here when it lands.
 
 ## Verdict so far against the goal
 
