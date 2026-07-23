@@ -13,37 +13,26 @@ mechanism to eval/build_report.py), and runs a self-verification pass. No
 number is hardcoded in the HTML — everything comes from the JSON files at
 build time. Exit code is non-zero if any check fails.
 
-Each plan is a DAG. Nodes are drawn goal-at-top, starting positions at the
-bottom; edges between them are either *structural* (grouping, no movement) or
-*physical* (a robot really slides). The one non-obvious reading rule — the
-robot travels from the LOWER node UP to the upper node — is stated on the page
-itself and encoded in the arrowheads.
+All SVG rendering lives in eval/plan_viz_core.py, shared with the report
+page's compact in-page versions of the same diagrams.
 """
 
 import json
-import html as _html
 import os
 import sys
-from collections import Counter
+
+from eval.plan_viz_core import (STRUCTURAL_PAIRS, ROBOT_VARS, dag_svg,
+                                board_inset, legend, esc)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_PATH = os.path.join(ROOT, "eval", "results", "plan_structures_data.json")
 OUT_PATH = os.path.join(ROOT, "eval", "results", "plan_structures.html")
-
-STRUCTURAL_PAIRS = {("subgoal", "bottleneck"), ("subgoal", "support")}
-
-ROBOT_VARS = {"Red": "--r-red", "Blue": "--r-blue",
-              "Green": "--r-green", "Yellow": "--r-yellow"}
 
 CHECKS = []  # (description, ok)
 
 
 def check(desc, ok):
     CHECKS.append((desc, bool(ok)))
-
-
-def esc(x):
-    return _html.escape(str(x), quote=True)
 
 
 def rp(*parts):
@@ -92,372 +81,12 @@ def ceiling_story():
 
 
 # ---------------------------------------------------------------------------
-# DAG layout: layered, goal on top, leaves at the bottom
-# ---------------------------------------------------------------------------
-
-def layout(nodes, edges):
-    """Return {node_id: (col, row)} plus the grid extent (ncols, nrows).
-
-    Layering: primary-tree depth from each root (the goal, then any park
-    nodes), park subtrees bottom-aligned with the main tree. Columns: one
-    global post-order walk, leaves take successive columns, every parent
-    centers over its children. Deterministic; by-reference edges are overlay
-    links and do not affect the layout.
-    """
-    by_id = {n["id"]: n for n in nodes}
-    children = {n["id"]: [] for n in nodes}
-    has_parent = set()
-    for e in edges:
-        if e.get("byref"):
-            continue                      # overlay link, not a tree edge
-        children[e["from"]].append(e["to"])
-        has_parent.add(e["to"])
-    roots = [n["id"] for n in nodes if n["id"] not in has_parent]
-    roots.sort(key=lambda i: (0 if by_id[i]["type"] == "goal" else 1, i))
-
-    depth, col = {}, {}
-    counter = [0]
-
-    def walk(nid, d):
-        depth[nid] = max(depth.get(nid, 0), d)
-        kids = children[nid]
-        if not kids:
-            col[nid] = counter[0]
-            counter[0] += 1
-            return col[nid]
-        xs = [walk(k, d + 1) for k in kids]
-        col[nid] = sum(xs) / len(xs)
-        return col[nid]
-
-    sub_max = {}
-    for r in roots:
-        walk(r, 0)
-        sub_max[r] = max(depth[nid] for nid in _subtree(r, children))
-    grand = max(sub_max.values()) if sub_max else 0
-    for r in roots:                       # bottom-align each root's subtree
-        shift = grand - sub_max[r]
-        if shift:
-            for nid in _subtree(r, children):
-                depth[nid] += shift
-    ncols = max(1, int(round(max(col.values()))) + 1) if col else 1
-    return depth, col, ncols, grand + 1
-
-
-def _subtree(root, children):
-    out, todo = set(), [root]
-    while todo:
-        cur = todo.pop()
-        if cur in out:
-            continue
-        out.add(cur)
-        todo.extend(children[cur])
-    return out
-
-
-# ---------------------------------------------------------------------------
-# SVG rendering
-# ---------------------------------------------------------------------------
-
-CELL_W, ROW_H, NODE_W, NODE_H, PAD = 168, 96, 132, 44, 18
-
-
-def robot_var(name):
-    return ROBOT_VARS.get(name, "--faint")
-
-
-def _mover_robot(by_id, children, v_id):
-    """Robot doing the physical travel of edge (u, v): v's own robot, or —
-    when v is a grouping node — the robot of its 'stops here' child."""
-    v = by_id[v_id]
-    if v["type"] != "subgoal":
-        return v.get("robot")
-    for k in children[v_id]:
-        if by_id[k]["type"] == "bottleneck":
-            return by_id[k].get("robot")
-    return None
-
-
-def node_svg(n, x, y):
-    t = n["type"]
-    cxm = x + NODE_W / 2
-    pos = ""
-    if n.get("pos") is not None:
-        pos = f"({n['pos'][0]},{n['pos'][1]})"
-    var = robot_var(n.get("robot"))
-    parts = []
-
-    def label(title, sub, ink="var(--ink)"):
-        parts.append(
-            f'<text x="{cxm:.0f}" y="{y + 18:.0f}" text-anchor="middle" '
-            f'font-size="11.5" font-weight="640" fill="{ink}">{esc(title)}'
-            f"</text>")
-        if sub:
-            parts.append(
-                f'<text x="{cxm:.0f}" y="{y + 33:.0f}" text-anchor="middle" '
-                f'font-size="10.5" fill="var(--muted)" '
-                f'style="font-family:var(--mono)">{esc(sub)}</text>')
-
-    if t == "goal":
-        parts.append(
-            f'<rect x="{x}" y="{y}" width="{NODE_W}" height="{NODE_H}" '
-            f'rx="10" fill="var(--surface)" stroke="var(--ink)" '
-            f'stroke-width="2.2"/>')
-        parts.append(
-            f'<rect x="{x + 4}" y="{y + 4}" width="{NODE_W - 8}" '
-            f'height="{NODE_H - 8}" rx="7" fill="none" stroke="var(--ink)" '
-            f'stroke-width="1" stroke-dasharray="4 3"/>')
-        label("the goal cell", pos)
-    elif t == "subgoal":
-        r = 7
-        parts.append(
-            f'<path d="M{cxm} {y + NODE_H / 2 - r} l{r} {r} l-{r} {r} '
-            f'l-{r} -{r} z" fill="var(--baseline)"/>')
-    elif t == "bottleneck":
-        parts.append(
-            f'<rect x="{x}" y="{y}" width="{NODE_W}" height="{NODE_H}" '
-            f'rx="9" fill="var(--surface)" stroke="var({var})" '
-            f'stroke-width="2"/>')
-        label(f"{n['robot']} stops here", pos, f"var({var})")
-    elif t == "support":
-        extra = ""
-        if n.get("transient"):
-            extra = ' stroke-dasharray="5 3"'
-        parts.append(
-            f'<rect x="{x}" y="{y}" width="{NODE_W}" height="{NODE_H}" '
-            f'rx="9" fill="var({var})" fill-opacity="0.14" '
-            f'stroke="var({var})" stroke-width="2"{extra}/>')
-        label(f"{n['robot']} parks here", pos, f"var({var})")
-        if n.get("transient"):
-            parts.append(
-                f'<text x="{x + NODE_W - 4}" y="{y - 5}" text-anchor="end" '
-                f'font-size="10" font-weight="700" fill="var({var})">'
-                f"★ no wall to lean on</text>")
-    elif t == "leaf":
-        parts.append(
-            f'<rect x="{x}" y="{y}" width="{NODE_W}" height="{NODE_H}" '
-            f'rx="{NODE_H / 2}" fill="var(--surface)" stroke="var({var})" '
-            f'stroke-width="1.6"/>')
-        parts.append(
-            f'<circle cx="{x + 20}" cy="{y + NODE_H / 2}" r="7" '
-            f'fill="var({var})"/>')
-        parts.append(
-            f'<text x="{x + 34}" y="{y + 18}" font-size="11.5" '
-            f'font-weight="640" fill="var(--ink)">start: {esc(n["robot"])}'
-            f"</text>")
-        parts.append(
-            f'<text x="{x + 34}" y="{y + 33}" font-size="10.5" '
-            f'fill="var(--muted)" style="font-family:var(--mono)">{esc(pos)}'
-            f"</text>")
-    elif t == "park":
-        parts.append(
-            f'<rect x="{x}" y="{y}" width="{NODE_W}" height="{NODE_H}" '
-            f'rx="9" fill="none" stroke="var({var})" stroke-width="2" '
-            f'stroke-dasharray="2.5 3.5"/>')
-        label(f"{n['robot']} steps aside", pos, f"var({var})")
-    return "".join(parts)
-
-
-def dag_svg(ex, aria):
-    nodes, edges = ex["nodes"], ex["edges"]
-    by_id = {n["id"]: n for n in nodes}
-    children = {n["id"]: [] for n in nodes}
-    for e in edges:
-        if not e.get("byref"):
-            children[e["from"]].append(e["to"])
-    depth, col, ncols, nrows = layout(nodes, edges)
-
-    W = PAD * 2 + ncols * CELL_W
-    H = PAD * 2 + (nrows - 1) * ROW_H + NODE_H + 26
-
-    def cx(nid):                          # left x of the node box
-        return PAD + col[nid] * CELL_W + (CELL_W - NODE_W) / 2
-
-    def cy(nid):                          # top y of the node box
-        return PAD + 14 + depth[nid] * ROW_H
-
-    def anchor(nid, top):
-        n = by_id[nid]
-        x = cx(nid) + NODE_W / 2
-        if n["type"] == "subgoal":
-            y = cy(nid) + NODE_H / 2 + (-9 if top else 9)
-        else:
-            y = cy(nid) + (0 if top else NODE_H)
-        return x, y
-
-    parts = [f'<svg viewBox="0 0 {W:.0f} {H:.0f}" role="img" '
-             f'aria-label="{esc(aria)}" '
-             f'style="width:100%;max-width:{W:.0f}px;height:auto;'
-             f'display:block">',
-             '<defs>'
-             '<marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" '
-             'markerWidth="7" markerHeight="7" orient="auto-start-reverse">'
-             '<path d="M0 0 L8 4 L0 8 z" fill="context-stroke"/>'
-             "</marker></defs>"]
-
-    edge_mid = {}
-    n_cost_labels = 0
-    for e in edges:
-        u, v = e["from"], e["to"]
-        structural = ((by_id[u]["type"], by_id[v]["type"]) in STRUCTURAL_PAIRS
-                      and not e.get("byref"))
-        x1, y1 = anchor(u, top=False)      # parent bottom
-        x2, y2 = anchor(v, top=True)       # child top
-        mx, my = (x1 + x2) / 2, (y1 + y2) / 2
-        edge_mid[(u, v)] = (mx, my)
-        if e.get("byref"):
-            var = robot_var(by_id[v].get("robot"))
-            parts.append(
-                f'<path d="M{x1:.0f} {y1:.0f} C {x1:.0f} {y1 + 34:.0f}, '
-                f'{x2:.0f} {y2 - 34:.0f}, {x2:.0f} {y2:.0f}" fill="none" '
-                f'stroke="var({var})" stroke-width="2" '
-                f'stroke-dasharray="6 4" marker-end="url(#arr)"/>')
-            parts.append(
-                f'<text x="{mx + 8:.0f}" y="{my:.0f}" font-size="10.5" '
-                f'font-weight="700" fill="var({var})">re-uses this robot — '
-                f"no new one recruited</text>")
-            continue
-        if structural or not e.get("cost"):
-            parts.append(
-                f'<line x1="{x1:.0f}" y1="{y1:.0f}" x2="{x2:.0f}" '
-                f'y2="{y2:.0f}" stroke="var(--baseline)" '
-                f'stroke-width="1.3"/>')
-            continue
-        mover = _mover_robot(by_id, children, v)
-        var = robot_var(mover)
-        # arrowhead at the PARENT end: the robot travels child -> parent (up)
-        parts.append(
-            f'<line x1="{x2:.0f}" y1="{y2:.0f}" x2="{x1:.0f}" y2="{y1:.0f}" '
-            f'stroke="var({var})" stroke-width="2.2" '
-            f'marker-end="url(#arr)"/>')
-        c = int(e["cost"]) if float(e["cost"]).is_integer() else e["cost"]
-        parts.append(
-            f'<rect x="{mx - 26:.0f}" y="{my - 10:.0f}" width="52" '
-            f'height="18" rx="9" fill="var(--surface)" '
-            f'stroke="var(--line)"/>'
-            f'<text class="cost" x="{mx:.0f}" y="{my + 4:.0f}" '
-            f'text-anchor="middle" font-size="10.5" font-weight="700" '
-            f'fill="var(--ink)">{c} slide{"s" if c != 1 else ""}</text>')
-        n_cost_labels += 1
-
-    for n in nodes:                        # park ordering arrows on top
-        if n["type"] != "park" or not n.get("before_edge"):
-            continue
-        be = tuple(n["before_edge"])
-        if be not in edge_mid:
-            continue
-        px, py = cx(n["id"]) + NODE_W / 2, cy(n["id"])
-        tx, ty = edge_mid[be]
-        var = robot_var(n.get("robot"))
-        parts.append(
-            f'<path d="M{px:.0f} {py:.0f} C {px:.0f} {py - 40:.0f}, '
-            f'{tx + 40:.0f} {ty + 40:.0f}, {tx + 8:.0f} {ty + 8:.0f}" '
-            f'fill="none" stroke="var({var})" stroke-width="1.6" '
-            f'stroke-dasharray="2 4" marker-end="url(#arr)"/>')
-        parts.append(
-            f'<text x="{(px + tx) / 2 + 12:.0f}" y="{(py + ty) / 2:.0f}" '
-            f'font-size="10.5" font-style="italic" fill="var({var})">'
-            f"must happen before this slide</text>")
-
-    for n in nodes:
-        parts.append(node_svg(n, cx(n["id"]), cy(n["id"])))
-    parts.append("</svg>")
-    return "".join(parts), n_cost_labels
-
-
-# ---------------------------------------------------------------------------
-# Mini board inset
-# ---------------------------------------------------------------------------
-
-def board_inset(ex):
-    size, c, pad = 16, 13, 3
-    W = size * c + 2 * pad
-    parts = [f'<svg viewBox="0 0 {W} {W}" role="img" aria-label="Where the '
-             f'robots start on the real 16-by-16 board" '
-             f'style="width:100%;max-width:220px;height:auto;display:block">']
-    for i in range(1, size):
-        parts.append(f'<line x1="{pad + i * c}" y1="{pad}" '
-                     f'x2="{pad + i * c}" y2="{W - pad}" '
-                     f'stroke="var(--grid)" stroke-width="0.6"/>')
-        parts.append(f'<line x1="{pad}" y1="{pad + i * c}" '
-                     f'x2="{W - pad}" y2="{pad + i * c}" '
-                     f'stroke="var(--grid)" stroke-width="0.6"/>')
-    parts.append(f'<rect x="{pad}" y="{pad}" width="{size * c}" '
-                 f'height="{size * c}" fill="none" stroke="var(--ink)" '
-                 f'stroke-width="1.6"/>')
-    tx, ty = ex["target_cell"]
-    tvar = robot_var(ex["target_robot"])
-    parts.append(
-        f'<rect x="{pad + tx * c + 1.5}" y="{pad + ty * c + 1.5}" '
-        f'width="{c - 3}" height="{c - 3}" rx="2.5" fill="none" '
-        f'stroke="var({tvar})" stroke-width="1.6" stroke-dasharray="3 2"/>')
-    for name, (x, y) in sorted(ex["robots"].items()):
-        var = robot_var(name)
-        cxp, cyp = pad + x * c + c / 2, pad + y * c + c / 2
-        if name == ex["target_robot"]:
-            parts.append(f'<circle cx="{cxp}" cy="{cyp}" r="{c / 2 + 1}" '
-                         f'fill="none" stroke="var({var})" '
-                         f'stroke-width="1.2" opacity="0.55"/>')
-        parts.append(f'<circle cx="{cxp}" cy="{cyp}" r="{c / 2 - 1.5}" '
-                     f'fill="var({var})"/>')
-    parts.append("</svg>")
-    return "".join(parts)
-
-
-# ---------------------------------------------------------------------------
 # Page assembly
 # ---------------------------------------------------------------------------
 
-def legend():
-    return """
-<div class="legend-grid">
-  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
-    width="140" height="24" rx="7" fill="var(--surface)" stroke="var(--ink)"
-    stroke-width="1.8"/><rect x="8" y="7" width="132" height="16" rx="4"
-    fill="none" stroke="var(--ink)" stroke-dasharray="4 3"
-    stroke-width="0.8"/></svg><span>the goal cell</span></div>
-  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
-    width="140" height="24" rx="12" fill="var(--surface)"
-    stroke="var(--r-blue)" stroke-width="1.6"/><circle cx="18" cy="15" r="6"
-    fill="var(--r-blue)"/></svg><span>a robot's starting position</span></div>
-  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
-    width="140" height="24" rx="7" fill="var(--surface)"
-    stroke="var(--r-green)" stroke-width="1.8"/></svg>
-    <span>"stops here" — a robot's planned stopping cell</span></div>
-  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
-    width="140" height="24" rx="7" fill="var(--r-yellow)" fill-opacity="0.14"
-    stroke="var(--r-yellow)" stroke-width="1.8"/></svg>
-    <span>"parks here" — a helper placed so another robot can bounce off
-    it</span></div>
-  <div><svg viewBox="0 0 150 30" style="width:130px"><rect x="4" y="3"
-    width="140" height="24" rx="7" fill="none" stroke="var(--r-red)"
-    stroke-width="1.8" stroke-dasharray="2.5 3.5"/></svg>
-    <span>"steps aside" — a robot moves out of the way first</span></div>
-  <div><svg viewBox="0 0 150 30" style="width:130px"><path d="M10 15 l16 0"
-    stroke="var(--baseline)" stroke-width="1.3"/><path d="M40 22 l10 -7
-    l-10 -7 l-10 7 z" fill="var(--baseline)" transform="translate(0,0)
-    scale(0.6) translate(30,8)"/></svg>
-    <span>thin gray line — grouping only, no movement</span></div>
-  <div><svg viewBox="0 0 150 30" style="width:130px"><defs><marker id="la"
-    viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7"
-    orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="context-stroke"/></marker>
-    </defs><line x1="14" y1="24" x2="14" y2="6" stroke="var(--r-blue)"
-    stroke-width="2" marker-end="url(#la)"/><rect x="30" y="6" width="52"
-    height="18" rx="9" fill="var(--surface)" stroke="var(--line)"/>
-    <text x="56" y="19" text-anchor="middle" font-size="10"
-    font-weight="700" fill="var(--ink)">2 slides</text></svg>
-    <span>colored arrow — that robot really slides, upward along the arrow;
-    the pill counts its moves</span></div>
-  <div><svg viewBox="0 0 150 30" style="width:130px"><line x1="10" y1="24"
-    x2="60" y2="8" stroke="var(--r-blue)" stroke-width="2"
-    stroke-dasharray="6 4"/></svg>
-    <span>dashed link — the plan re-uses a robot it already placed</span></div>
-</div>
-"""
-
-
 def stage_section(sid, title, intro, examples, blocks, caption):
     ex_html = []
-    for ex, (svg, _), extra in zip(examples, blocks, [None] * len(examples)):
+    for ex, (svg, _) in zip(examples, blocks):
         head = (f"puzzle {ex['bench_idx']} of the benchmark · shortest "
                 f"possible solution: {ex['d_star']} moves · this plan plays "
                 f"out in {ex['legal_moves']} legal moves")
@@ -480,7 +109,7 @@ def stage_section(sid, title, intro, examples, blocks, caption):
     <h2>{esc(title)}</h2>
   </div>
   {intro}
-  {legend()}
+  {legend(marker_id="la-" + sid)}
   {"".join(ex_html)}
   <p class="cap">{caption}</p>
 </section>
@@ -603,7 +232,8 @@ def build():
             and (by_id[e["from"]]["type"], by_id[e["to"]]["type"])
             not in STRUCTURAL_PAIRS)
         svg, ncl = dag_svg(
-            ex, f"Plan structure for benchmark puzzle {ex['bench_idx']}")
+            ex, f"Plan structure for benchmark puzzle {ex['bench_idx']}",
+            marker_id=f"arr-{ex['stage']}-{ex['bench_idx']}")
         rendered[(ex["stage"], ex["bench_idx"])] = (svg, ncl)
         total_cost_labels += ncl
     check(f"every physical movement carries a move-count pill "
@@ -617,7 +247,7 @@ def build():
     b1_txt = pct(cs["b1"][1]) if cs["b1"] else "—"
     b2_txt = pct(cs["b2"][1]) if cs["b2"] else "—"
 
-    base_intro = f"""
+    base_intro = """
   <p>In the original plan language, a plan may say exactly one kind of thing:
   <b>“park a helper robot on a cell next to a wall, then bounce another robot
   off it.”</b> Helpers can be delivered by other helpers (the picture below
@@ -634,7 +264,7 @@ def build():
            f"<b>{old_txt}</b> no matter how well its networks are trained."
            if cs["old"] else "dozens of puzzles."))
 
-    b1_intro = f"""
+    b1_intro = """
   <p>The first extension adds two new phrases. A helper may park on a cell
   <b>with no wall to lean on</b> — it is held there only because another
   robot (or the timing of the plan itself) stops it; the starred, dashed box

@@ -28,6 +28,10 @@ import sys
 from collections import Counter, deque
 from datetime import datetime
 
+from eval.plan_viz_core import (GEOM_COMPACT, dag_svg as plan_dag_svg,
+                                legend as plan_legend,
+                                STRUCTURAL_PAIRS as PLAN_STRUCTURAL_PAIRS)
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_PATH = os.path.join(ROOT, "eval", "results", "report.html")
 
@@ -821,12 +825,16 @@ SCALING_LADDER = [
 SCALING_EXPECTED = {
     "g16r6": ["comparison.json", "comparison_forward_control.json",
               "comparison_ungraded.json", "comparison_b1.json",
-              "comparison_ungraded_b1.json"],
+              "comparison_ungraded_b1.json", "comparison_b2.json",
+              "comparison_ungraded_b2.json"],
     "g16r8": ["comparison.json", "comparison_forward_control.json",
-              "comparison_ungraded.json"],
+              "comparison_ungraded.json", "comparison_b2.json",
+              "comparison_ungraded_b2.json"],
     "g24r4": ["comparison.json"],
-    "g24r8": ["comparison.json", "comparison_ungraded.json"],
-    "g32r4": ["comparison.json", "comparison_ungraded.json"],
+    "g24r8": ["comparison.json", "comparison_ungraded.json",
+              "comparison_b2.json", "comparison_ungraded_b2.json"],
+    "g32r4": ["comparison.json", "comparison_ungraded.json",
+              "comparison_b2.json", "comparison_ungraded_b2.json"],
 }
 
 SCALING_FILE_LABEL = {
@@ -837,6 +845,12 @@ SCALING_FILE_LABEL = {
         "backward planner with the extended plan language, on the gradable set",
     "comparison_ungraded_b1.json":
         "backward planner with the extended plan language, "
+        "beyond the exact solver's reach",
+    "comparison_b2.json":
+        "backward planner with the full plan language (re-use of placed "
+        "robots included, networks unchanged), on the gradable set",
+    "comparison_ungraded_b2.json":
+        "backward planner with the full plan language (networks unchanged), "
         "beyond the exact solver's reach",
     "comparison_ungraded.json":
         "beyond the exact solver's reach (a solution proves itself)",
@@ -883,6 +897,7 @@ def collect():
     D["ceiling_g16r6_b2"] = load_json(
         "scaling/results/g16r6/ceiling_probe_b2.json")
     D["g16r6_meta"] = load_json("scaling/data/g16r6/bench.jsonl.meta.json")
+    D["plan_structs"] = load_json("eval/results/plan_structures_data.json")
     D["bench_meta"] = load_json("eval/data/bench450.jsonl.meta.json")
     D["bench_rows"] = load_jsonl("eval/data/bench450.jsonl")
     D["arms"] = load_json("subgoal_selfplay/arms_index.json")
@@ -1160,10 +1175,42 @@ def sec_experiments(D):
     b1_base = _sysagg(D["b1_450"], "backward")
     base_tag = ""
     if b2_base is not None:
-        base_tag = ("subgoal side uses the fullest plan language "
-                    "(including re-use of placed robots)")
+        base_tag = ("subgoal side: full plan language, same trained "
+                    "networks (zero-shot)")
     elif b1_base is not None:
         base_tag = "subgoal side uses the richer plan language"
+
+    FULL_TAG = ("subgoal side: full plan language, same trained networks "
+                "(zero-shot)")
+
+    def bpick(cfg, graded):
+        """Best backward aggregate for a scale row: full language when
+        measured, else the first extension, else the original language."""
+        suffix = "" if graded else "_ungraded"
+        a = _sysagg(sfile(cfg, f"comparison{suffix}_b2.json"), "backward")
+        if a is not None:
+            return a, FULL_TAG
+        a = _sysagg(sfile(cfg, f"comparison{suffix}_b1.json"), "backward")
+        if a is not None:
+            return a, "subgoal side uses the richer plan language"
+        base_f = "comparison.json" if graded else "comparison_ungraded.json"
+        a = _sysagg(sfile(cfg, base_f), "backward")
+        tag = ""
+        if (a is not None
+                and f"comparison{suffix}_b2.json"
+                in SCALING_EXPECTED.get(cfg, [])):
+            tag = ("original language on both sides — the full-language "
+                   "rerun is still computing")
+        return a, tag
+
+    b_r6g, t_r6g = bpick("g16r6", True)
+    b_r6u, t_r6u = bpick("g16r6", False)
+    b_r8g, t_r8g = bpick("g16r8", True)
+    b_r8u, t_r8u = bpick("g16r8", False)
+    b_24r8g, t_24r8g = bpick("g24r8", True)
+    b_24r8u, t_24r8u = bpick("g24r8", False)
+    b_32g, t_32g = bpick("g32r4", True)
+    b_32u, t_32u = bpick("g32r4", False)
     entries = [
         {
             "name": "Standard puzzles — 16×16 board, 4 robots",
@@ -1177,40 +1224,34 @@ def sec_experiments(D):
         {
             "name": "6 robots — puzzles the exact solver can still grade",
             "sub": "more robots, same board; graded against known optima",
-            "b": (_sysagg(sfile("g16r6", "comparison_b1.json"), "backward")
-                  or _sysagg(sfile("g16r6", "comparison.json"), "backward")),
+            "b": b_r6g,
             "f": _sysagg(sfile("g16r6", "comparison_forward_control.json"),
                          "forward"),
-            "tag": ("subgoal side uses the richer plan language"
-                    if sfile("g16r6", "comparison_b1.json") else ""),
+            "tag": t_r6g,
         },
         {
             "name": "6 robots — the hardest puzzles, beyond the exact solver",
             "sub": "no reference answers exist; solving is self-certifying — "
                    "a plan that plays out legally to the goal proves itself",
-            "b": (_sysagg(sfile("g16r6", "comparison_ungraded_b1.json"),
-                          "backward")
-                  or _sysagg(sfile("g16r6", "comparison_ungraded.json"),
-                             "backward")),
+            "b": b_r6u,
             "f": _sysagg(sfile("g16r6", "comparison_ungraded.json"), "forward"),
-            "tag": ("subgoal side uses the richer plan language"
-                    if sfile("g16r6", "comparison_ungraded_b1.json") else ""),
+            "tag": t_r6u,
             "ungraded": True,
         },
         {
             "name": "8 robots — puzzles the exact solver can still grade",
             "sub": "",
-            "b": _sysagg(sfile("g16r8", "comparison.json"), "backward"),
+            "b": b_r8g,
             "f": _sysagg(sfile("g16r8", "comparison_forward_control.json"),
                          "forward"),
+            "tag": t_r8g,
         },
         {
             "name": "8 robots — the hardest puzzles, beyond the exact solver",
             "sub": "",
-            "b": _sysagg(sfile("g16r8", "comparison_ungraded.json"), "backward"),
+            "b": b_r8u,
             "f": _sysagg(sfile("g16r8", "comparison_ungraded.json"), "forward"),
-            "tag": "measured before the richer plan language landed — "
-                   "both sides use the original language",
+            "tag": t_r8u,
             "ungraded": True,
         },
         {
@@ -1222,27 +1263,31 @@ def sec_experiments(D):
         {
             "name": "Bigger board and more robots — 24×24, 8 robots",
             "sub": "",
-            "b": _sysagg(sfile("g24r8", "comparison.json"), "backward"),
+            "b": b_24r8g,
             "f": _sysagg(sfile("g24r8", "comparison.json"), "forward"),
+            "tag": t_24r8g,
         },
         {
             "name": "24×24, 8 robots — the hardest puzzles",
             "sub": "",
-            "b": _sysagg(sfile("g24r8", "comparison_ungraded.json"), "backward"),
+            "b": b_24r8u,
             "f": _sysagg(sfile("g24r8", "comparison_ungraded.json"), "forward"),
+            "tag": t_24r8u,
             "ungraded": True,
         },
         {
             "name": "Biggest board — 32×32, 4 robots",
             "sub": "",
-            "b": _sysagg(sfile("g32r4", "comparison.json"), "backward"),
+            "b": b_32g,
             "f": _sysagg(sfile("g32r4", "comparison.json"), "forward"),
+            "tag": t_32g,
         },
         {
             "name": "32×32, 4 robots — the hardest puzzles",
             "sub": "",
-            "b": _sysagg(sfile("g32r4", "comparison_ungraded.json"), "backward"),
+            "b": b_32u,
             "f": _sysagg(sfile("g32r4", "comparison_ungraded.json"), "forward"),
+            "tag": t_32u,
             "ungraded": True,
         },
     ]
@@ -1266,11 +1311,15 @@ def sec_experiments(D):
         if b is None and f is None:
             tag = "planned — results pending"
             n_pending += 1
+        elif f is None:
+            tag = (tag + " · " if tag else "") + \
+                "move-by-move side still computing"
+            n_pending += 1
 
         def side(agg, other):
             if agg is None:
                 return ["–", "–", "–"], False
-            win = (other is None or
+            win = (other is not None and
                    (agg.get("solve_rate") or 0) > (other.get("solve_rate") or 0))
             return [ffrac(agg.get("solved"), agg.get("n")),
                     fnum(agg.get("mean_expansions"), 1),
@@ -1329,6 +1378,148 @@ def sec_experiments(D):
 # ---------------------------------------------------------------------------
 # Tab 1 — Overview
 # ---------------------------------------------------------------------------
+
+def sec_whatsnew(D):
+    """A light 'what's new in this build' note, derived entirely from which
+    data files are present so it stays truthful on every rebuild."""
+    sc = D["scaling"]
+    labels = {"g16r6": "6 robots", "g16r8": "8 robots",
+              "g24r8": "24×24 with 8 robots", "g32r4": "32×32 boards"}
+    full_lang = [labels[c] for c in ("g16r6", "g16r8", "g24r8", "g32r4")
+                 if (sc.get(c) or {}).get("comparison_b2.json")
+                 or (sc.get(c) or {}).get("comparison_ungraded_b2.json")]
+    bits = []
+    if full_lang:
+        bits.append("rows for the subgoal planner running its <b>full plan "
+                    "language</b> (networks unchanged) at "
+                    + ", ".join(full_lang))
+    if (sc.get("g24r8") or {}).get("comparison_ungraded.json"):
+        bits.append("the hardest-puzzle head-to-head at 24×24 with 8 robots")
+    if not bits:
+        return ""
+    pend = []
+    for cfg, fname, plab in (
+            ("g32r4", "comparison.json", "the 32×32 head-to-head"),
+            ("g32r4", "comparison_ungraded.json",
+             "the 32×32 hardest-set comparison"),
+            ("g24r8", "comparison_ungraded_b2.json",
+             "the full-language rerun on the 24×24/8 hardest set")):
+        if (fname in SCALING_EXPECTED.get(cfg, [])
+                and not (sc.get(cfg) or {}).get(fname)):
+            pend.append(plab)
+    out = ("<div class='whatsnew'><b>New in this build:</b> "
+           + "; ".join(bits)
+           + ". The two language extensions are explained under "
+             "<a href='#ceiling'>why plans fail</a>, and the plans "
+             "themselves are drawn in <a href='#plan-shapes'>how the "
+             "planner's plans changed</a>")
+    if os.path.exists(rp("eval", "results", "plan_structures.html")):
+        out += (" (deep-dive: the <a href='plan_structures.html'>"
+                "plan-structures page</a>)")
+    out += "."
+    if pend:
+        out += (" Still computing, shown as dashes: " + "; ".join(pend)
+                + " — this page picks them up on rebuild.")
+    out += "</div>"
+    aux_need("what's-new note present", "New in this build:")
+    return out
+
+
+def sec_how(D):
+    """The one-block answer to 'how was it achieved': five numbered steps,
+    every effect measured, rendered directly under the takeaway tiles."""
+    pre = _sysagg(D.get("bwd450"), "backward")
+    fix4 = _sysagg(D.get("postfix4"), "backward")
+    insearch = _sysagg(D.get("final450_prefix"), "backward")
+    b1 = _sysagg(D.get("b1_450"), "backward")
+    b2 = _sysagg(D.get("b2_450"), "backward")
+    if not (pre and insearch):
+        return ""
+    n_total = (len(D["bench_rows"]) if D.get("bench_rows")
+               else (D["bench_meta"] or {}).get("n_instances") or 450)
+
+    def probe_pct(probe, conservative=False):
+        if not isinstance(probe, list):
+            return None
+        if conservative:
+            bad = sum(1 for r in probe
+                      if r.get("category") != "REALIZABLE_EXISTS")
+        else:
+            bad = sum(1 for r in probe if r.get("category") in
+                      ("NO_COMPLETE_PLAN", "NO_REALIZABLE_PLAN"))
+        return (n_total - bad) / n_total * 100
+
+    c_old = probe_pct(D.get("ceiling_probe"))
+    c_b1 = probe_pct(D.get("ceiling_probe_b1"))
+    c_b2 = probe_pct(valid_probe(D.get("ceiling_probe_b2")),
+                     conservative=True)
+
+    steps = []
+
+    def step(text, effect):
+        if effect:
+            aux_need(f"how-story step {len(steps) + 1}: measured effect "
+                     f"rendered", effect)
+        steps.append(f"<li>{text}"
+                     + (f' <b class="eff">{effect}</b>' if effect else "")
+                     + "</li>")
+
+    step(f"<b>Honest scoring first.</b> Every plan was forced to actually "
+         f"play out, move by legal move, on the real board. On paper the "
+         f"planner had an answer for every single puzzle "
+         f"({pre.get('plan_found', '—')} of {pre['n']}) —",
+         f"but only {fpct(pre['solve_rate'])} of the plans really played "
+         f"out. That is the honest starting point.")
+    if fix4:
+        step("<b>Four specific coding defects repaired</b> — a robot could "
+             "be scheduled to bounce off itself; one robot could hold two "
+             "jobs at once; a plan could claim a stopper cell without ever "
+             "placing a robot there; and plan steps were executed in a "
+             "stricter order than intended. Each fix was accepted only "
+             "after an A/B test showed zero regressions.",
+             f"→ {fpct(fix4['solve_rate'])} on the matched "
+             f"{fix4['n']}-puzzle slice.")
+    step("<b>Physics-checking moved inside the search.</b> Instead of "
+         "finishing a plan and only then discovering it cannot be played, "
+         "every part-plan is checked as it is built and doomed branches "
+         "are dropped immediately (verified: zero wrongly dropped).",
+         f"→ {fpct(insearch['solve_rate'])}.")
+    if b1:
+        eff = f"→ {fpct(b1['solve_rate'])}"
+        if c_old is not None and c_b1 is not None:
+            eff += (f" (and the provable ceiling moved "
+                    f"{c_old:.1f}% → {c_b1:.1f}%).")
+        else:
+            eff += "."
+        step("<b>First language extension.</b> Two new things a plan may "
+             "say: a stopper may stand on a wall-less cell (held there "
+             "only by another robot or by timing), and a robot may briefly "
+             "step aside to clear one specific slide. The networks were "
+             "retrained on the new vocabulary.", eff)
+    if b2:
+        eff = f"→ {fpct(b2['solve_rate'])} with the SAME networks"
+        eff += (f", ceiling → {c_b2:.1f}%." if c_b2 is not None else ".")
+        step("<b>Second language extension.</b> A plan may now re-use an "
+             "already-placed robot: the same parked robot can stop two "
+             "different sliders, the main robot itself can serve as a "
+             "bounce point mid-route, and a placed helper can move on to "
+             "a second post.", eff)
+
+    lo = f"{pre['solve_rate'] * 100:.0f}%"
+    best = b2 or b1 or insearch
+    hi = f"{best['solve_rate'] * 100:.0f}%"
+    return f"""
+  <div class="howblock" id="how">
+    <h3 class="howh">How the backward planner got from {lo} to {hi}</h3>
+    <ol class="howsteps">{"".join(steps)}</ol>
+    <p class="muted small" style="max-width:86ch">Each step is verified
+    against stored results at build time. The
+    <a href="#headline">per-stage table</a> and the
+    <a href="#ceiling">why-plans-fail tab</a> carry the details, and the
+    <a href="#plan-shapes">plan diagrams</a> draw the structures.</p>
+  </div>
+"""
+
 
 def tab_overview(D, rows):
     # --- how the game works, with a schematic ---
@@ -1416,10 +1607,35 @@ def tab_overview(D, rows):
                           f"…but it needs {esc(best_fwd['exp'])} search steps "
                           f"per puzzle on average"))
     if best_bwd:
+        # the journey line: this headline number is the END of a story, and
+        # a bare "430/450" reads ambiguously without it
+        prog = (f"…in only {esc(best_bwd['exp'])} search steps "
+                f"per puzzle on average")
+        pre = _sysagg(D.get("bwd450"), "backward")
+        fixed = _sysagg(D.get("final450_prefix"), "backward")
+        today_b2 = _sysagg(D.get("b2_450"), "backward")
+        today = today_b2 or _sysagg(D.get("b1_450"), "backward")
+        if pre and fixed and today:
+            suffix = (" (same networks)" if today_b2 else " (retrained)")
+            allow_txt = ""
+            pb2 = valid_probe(D.get("ceiling_probe_b2"))
+            if pb2:
+                nt2 = (len(D["bench_rows"]) if D.get("bench_rows")
+                       else (D["bench_meta"] or {}).get("n_instances") or 450)
+                nf2 = sum(1 for r in pb2
+                          if r.get("category") != "REALIZABLE_EXISTS")
+                allow_txt = (f"; the plan language itself now allows "
+                             f"{fpct((nt2 - nf2) / nt2)}")
+            journey = (f"was {fpct(pre['solve_rate'])} before the repairs "
+                       f"→ {fpct(fixed['solve_rate'])} after "
+                       f"→ {fpct(today['solve_rate'])} today{suffix}"
+                       f"{allow_txt}")
+            aux_need("backward tile: repair-journey line rendered", journey)
+            prog += (f"<br>{journey} — the full story: "
+                     f"<a href='#headline'>every stage in one table</a> · "
+                     f"<a href='#ceiling'>why plans fail</a>")
         tiles.append(tile(esc(best_bwd["solve_txt"].split(" (")[0]),
-                          "solved by the best backward planner",
-                          f"…in only {esc(best_bwd['exp'])} search steps "
-                          f"per puzzle on average"))
+                          "solved by the best backward planner", prog))
     probe_b1 = D.get("ceiling_probe_b1")
     probe = D.get("ceiling_probe")
     nt = (len(D["bench_rows"]) if D.get("bench_rows")
@@ -1461,10 +1677,22 @@ def tab_overview(D, rows):
                           f"{old_struct} of {nt} puzzles have no playable plan "
                           f"in its language — "
                           f"<a href='#ceiling'>why plans fail</a>"))
+    g16r8 = D["scaling"].get("g16r8") or {}
+    ug8_b2 = g16r8.get("comparison_ungraded_b2.json")
+    ug8 = g16r8.get("comparison_ungraded.json")
     g16r6 = D["scaling"].get("g16r6") or {}
     ug_b1 = g16r6.get("comparison_ungraded_b1.json")
     ug = g16r6.get("comparison_ungraded.json")
-    if ug:
+    if ug8_b2 and ug8:
+        ba = _sysagg(ug8_b2, "backward")
+        fa = _sysagg(ug8, "forward")
+        if ba and fa:
+            tiles.append(tile(
+                f"{fpct(ba['solve_rate'])} vs {fpct(fa['solve_rate'])}",
+                "subgoals vs move-by-move on the hardest 8-robot puzzles",
+                "with the full plan language (same networks) — "
+                "<a href='#scaling'>scaling</a>"))
+    elif ug:
         _, fs = first_forward(ug)
         ba = (_sysagg(ug_b1, "backward") if ug_b1
               else (first_backward(ug)[1] or {}).get("aggregate"))
@@ -1487,6 +1715,7 @@ def tab_overview(D, rows):
     <h2>The numbers to remember</h2>
   </div>
   <div class="tiles">{"".join(tiles)}</div>
+  {sec_how(D)}
   <p class="muted">On small puzzles the move-by-move planner wins on solution
   quality and the subgoal planner wins on effort — by one to two orders of
   magnitude. As puzzles grow, three measured things happen: the exact solver
@@ -1498,7 +1727,7 @@ def tab_overview(D, rows):
   <a href="#scaling">scaling</a>.</p>
 </section>
 """
-    return game + planners + sec_experiments(D) + takeaways
+    return sec_whatsnew(D) + game + planners + sec_experiments(D) + takeaways
 
 
 def sec_headline(D, rows):
@@ -2569,6 +2798,143 @@ def sec_ceiling_lifted(D):
 """
 
 
+def sec_plan_shapes(D):
+    """Three compact plan diagrams inlined from the plan-structures data:
+    the original design, after the first extension, after the second."""
+    data = D.get("plan_structs")
+    if not data or "examples" not in data:
+        return f"""
+<section id="plan-shapes">
+  <div class="sec-head">
+    <div class="kicker">the plans themselves</div>
+    <h2>How the planner's plans changed</h2>
+  </div>
+  {pending("the plan-structure examples render here from "
+           "eval/results/plan_structures_data.json once it is generated "
+           "(analysis/plan_viz/extract_plans.py)")}
+</section>
+"""
+    by_key = {(e["stage"], e["bench_idx"]): e for e in data["examples"]}
+    picks = [("base", 0), ("b1", 333), ("b2", 156)]
+    missing = [k for k in picks if k not in by_key]
+    if missing:
+        return f"""
+<section id="plan-shapes">
+  <div class="sec-head">
+    <div class="kicker">the plans themselves</div>
+    <h2>How the planner's plans changed</h2>
+  </div>
+  {pending("expected plan examples missing from "
+           "eval/results/plan_structures_data.json: " + str(missing))}
+</section>
+"""
+
+    # ceiling percentages, same sources as the rest of this tab
+    n_total = (len(D["bench_rows"]) if D.get("bench_rows")
+               else (D["bench_meta"] or {}).get("n_instances") or 450)
+
+    def ceiling_pct(probe, conservative=False):
+        if not isinstance(probe, list):
+            return None
+        if conservative:
+            bad = sum(1 for r in probe
+                      if r.get("category") != "REALIZABLE_EXISTS")
+        else:
+            bad = sum(1 for r in probe if r.get("category") in
+                      ("NO_COMPLETE_PLAN", "NO_REALIZABLE_PLAN"))
+        return (n_total - bad) / n_total * 100
+
+    c_old = ceiling_pct(D.get("ceiling_probe"))
+    c_b1 = ceiling_pct(D.get("ceiling_probe_b1"))
+    c_b2 = ceiling_pct(valid_probe(D.get("ceiling_probe_b2")) or 0,
+                       conservative=True)
+
+    def pct_or(v):
+        return f"{v:.1f}%" if v is not None else "—"
+
+    captions = {
+        ("base", 0): (
+            "The original design: a plan could only park a helper against a "
+            "wall and leave it there forever — here two such stepping-stones "
+            "chain (Green parks so Blue can stop; Blue parks so Red can stop "
+            "on the goal). Whatever cannot be phrased this way cannot be "
+            f"planned at all — ceiling <b>{pct_or(c_old)}</b>."),
+        ("b1", 333): (
+            "After the first extension: the starred, dashed box is a helper "
+            "parked on a cell with <b>no wall to lean on</b> — held there "
+            "only by another robot — and that helper's own delivery is "
+            "itself a stepping-stone (a chain of supports). This exact "
+            "puzzle was provably unwritable before; the plan above plays "
+            "out at its 4-move optimum. A robot may also briefly step "
+            f"aside. Ceiling <b>{pct_or(c_b1)}</b>."),
+        ("b2", 156): (
+            "After the second extension: the dashed link is the new phrase — "
+            "the third stepping-stone <b>re-uses a robot the plan already "
+            "placed</b> (the same parked robot stops two different sliders; "
+            "no second robot is recruited — three stepping-stones, two "
+            f"parked helpers). Ceiling at least <b>{pct_or(c_b2)}</b>."),
+    }
+    titles = {("base", 0): "1 · The original design",
+              ("b1", 333): "2 · After the first extension",
+              ("b2", 156): "3 · After the second extension"}
+
+    panels = []
+    for key in picks:
+        ex = by_key[key]
+        svg, ncl = plan_dag_svg(
+            ex, f"Plan structure of benchmark puzzle {ex['bench_idx']} "
+                f"({titles[key]})",
+            G=GEOM_COMPACT, marker_id=f"rparr-{key[0]}")
+        by_id = {nd["id"]: nd for nd in ex["nodes"]}
+        expect = sum(
+            1 for e in ex["edges"]
+            if not e.get("byref") and e.get("cost")
+            and (by_id[e["from"]]["type"], by_id[e["to"]]["type"])
+            not in PLAN_STRUCTURAL_PAIRS)
+        aux_fact(f"plan diagram {key}: every real slide labeled "
+                 f"({ncl}/{expect})", ncl == expect)
+        panels.append(f"""
+  <div class="panel">
+    <h3 class="ph">{esc(titles[key])}</h3>
+    <p class="muted small">real plan for benchmark puzzle
+    {ex['bench_idx']} — plays out in {ex['legal_moves']} legal moves
+    (shortest possible: {ex['d_star']})</p>
+    <div class="scroll">{svg}</div>
+    <p class="cellnote" style="max-width:70ch">{captions[key]}</p>
+  </div>""")
+    aux_need("plan diagrams: the by-reference reuse link is drawn",
+             "re-uses this robot — no new one recruited")
+    aux_need("plan diagrams: the wall-less stopper is starred",
+             "★ no wall to lean on")
+
+    more = ""
+    if os.path.exists(rp("eval", "results", "plan_structures.html")):
+        more = ('<p>Two more examples — the step-aside plan and a plan '
+                'needing <i>two</i> robots cleared at once — are drawn in '
+                'the <a href="plan_structures.html">plan-structures '
+                "companion page</a>, with board layouts for every "
+                "example.</p>")
+
+    return f"""
+<section id="plan-shapes">
+  <div class="sec-head">
+    <div class="kicker">the plans themselves</div>
+    <h2>How the planner's plans changed</h2>
+    <p class="muted">These are three real plans, drawn as the planner builds
+    them. Read each picture top-down as commitments (“for the goal slide to
+    work, this must happen first…”), but remember the robots travel
+    <b>bottom-up</b>: a colored arrow means that robot really slides from
+    the lower box up to the upper one, and the pill counts its moves. Thin
+    gray lines only group things. All three plans were verified by playing
+    them out move by move.</p>
+  </div>
+  {plan_legend(marker_id="rp-legend")}
+  {"".join(panels)}
+  {more}
+</section>
+"""
+
+
 def sec_worked_example(D):
     w = D.get("worked")
     if not w:
@@ -2727,7 +3093,8 @@ def tab_ceiling(D):
 </section>
 """
     return (intro + sec_fixes(D) + sec_insearch(D) + sec_ceiling(D)
-            + sec_ceiling_lifted(D) + sec_worked_example(D))
+            + sec_ceiling_lifted(D) + sec_plan_shapes(D)
+            + sec_worked_example(D))
 
 
 # ---------------------------------------------------------------------------
@@ -2931,7 +3298,55 @@ def sec_ladder(D):
                     "no reference optimum exists — a solution proves itself")
                 notes.add("ungraded")
 
+        # "full plan language" rows: both extensions on, networks unchanged
+        if "comparison_b2.json" in SCALING_EXPECTED[cfg]:
+            b2 = files.get("comparison_b2.json")
+            if b2:
+                b_agg = _sysagg(b2, "backward")
+                f_agg = (_sysagg(files.get("comparison_forward_control.json"),
+                                 "forward")
+                         or _sysagg(files.get("comparison.json"), "forward"))
+                n_txt = str((b2.get("protocol") or {}).get("n_instances")
+                            or (b_agg or {}).get("n") or "–")
+                row(desc, "graded head-to-head — full plan language", n_txt,
+                    _agg_cells(b_agg), _agg_cells(f_agg),
+                    "backward: networks unchanged, full language zero-shot; "
+                    "forward: same opponent as the baseline row")
+                notes.add("b2")
+            else:
+                row(desc, "graded head-to-head — full plan language", "–",
+                    _agg_cells(None), _agg_cells(None),
+                    "computing — fills in on rebuild")
+        if "comparison_ungraded_b2.json" in SCALING_EXPECTED[cfg]:
+            ugb2 = files.get("comparison_ungraded_b2.json")
+            if ugb2:
+                b_agg = _sysagg(ugb2, "backward")
+                f_agg = _sysagg(files.get("comparison_ungraded.json"),
+                                "forward")
+                n_txt = str((ugb2.get("protocol") or {}).get("n_instances")
+                            or (b_agg or {}).get("n") or "–")
+                row(desc, "beyond the oracle — full plan language", n_txt,
+                    _agg_cells(b_agg, ungraded=True),
+                    _agg_cells(f_agg, ungraded=True),
+                    "no reference optimum exists — a solution proves itself")
+                notes.add("ungraded")
+                notes.add("b2")
+            else:
+                row(desc, "beyond the oracle — full plan language", "–",
+                    _agg_cells(None, ungraded=True),
+                    _agg_cells(None, ungraded=True),
+                    "computing — fills in on rebuild")
+
     note_html = ""
+    if "b2" in notes:
+        note_html += (
+            "<p class='muted small'>“Full plan language” rows: the backward "
+            "planner runs with both language extensions switched on, but its "
+            "networks were <b>never trained</b> on the new kinds of plan "
+            "step — they rank them zero-shot. Which networks: the 16×16 rows "
+            "use the base-trained extended-language pair (it generalizes "
+            "across robot count); the 24×24 and 32×32 rows use each "
+            "configuration's own original-language networks.</p>")
     if "ungraded" in notes:
         note_html += (
             "<p class='muted small'>“Beyond the oracle” rows are the puzzles "
@@ -2974,7 +3389,9 @@ def friendly_system_name(name, kind):
             return "Move-by-move planner (trained for this configuration)"
         return label.replace("Forward planner", "Move-by-move planner")
     parts = []
-    if "extended language" in name or "B1" in name:
+    if "B2" in name:
+        parts.append("full plan language, incl. re-use of placed robots")
+    elif "extended language" in name or "B1" in name:
         parts.append("richer plan language")
     if "anytime" in name:
         parts.append("keeps searching past plans that fail the physics test")
@@ -3043,21 +3460,82 @@ def sec_scaling_details(D):
                 f"<span class='mono small muted'>({esc(rel)})</span></h3>"
                 + scroll(f"<table>{head}{''.join(rows)}</table>") + note_html)
 
-    # headline reading of the two decided frontier results
+    # headline readings of the decided frontier results
     reading = ""
+    g16r8_files = D["scaling"].get("g16r8") or {}
+    ug8 = g16r8_files.get("comparison_ungraded.json")
+    ug8_b2 = g16r8_files.get("comparison_ungraded_b2.json")
+    if ug8_b2 and ug8:
+        ba = _sysagg(ug8_b2, "backward")
+        fa = _sysagg(ug8, "forward")
+        if ba and fa:
+            r_steps = (fa["mean_expansions"] / ba["mean_expansions"]
+                       if ba.get("mean_expansions") else None)
+            r_time = (fa["mean_seconds"] / ba["mean_seconds"]
+                      if ba.get("mean_seconds") else None)
+            first_win = ""
+            b2g = _sysagg(g16r8_files.get("comparison_b2.json"), "backward")
+            ctl = _sysagg(g16r8_files.get("comparison_forward_control.json"),
+                          "forward")
+            if (b2g and ctl and b2g["solved"] > ctl["solved"]
+                    and ctl.get("mean_expansions")):
+                first_win = (
+                    f" The same run also produced a first: on the puzzles "
+                    f"the exact solver <i>can</i> grade, the subgoal planner "
+                    f"edged the properly trained move-by-move planner "
+                    f"outright — {ffrac(b2g['solved'], b2g['n'])} vs "
+                    f"{ffrac(ctl['solved'], ctl['n'])}, at "
+                    f"{fnum(ctl['mean_expansions'] / b2g['mean_expansions'], 1)}× "
+                    f"fewer search steps.")
+            reading += (
+                f'<div class="callout"><b>The flip grows with robot count.</b> '
+                f"On the {ba['n']} eight-robot puzzles too hard for the exact "
+                f"solver, the subgoal planner with the full plan language "
+                f"(networks unchanged) solves "
+                f"<b>{ffrac(ba['solved'], ba['n'])}</b> vs the move-by-move "
+                f"planner's {ffrac(fa['solved'], fa['n'])}, at "
+                f"{fnum(r_steps, 1)}× fewer search steps and "
+                f"{fnum(r_time, 1)}× less time. Where both solve, the "
+                f"move-by-move solutions remain shorter "
+                f"({fnum(fa.get('mean_moves'), 1)} vs "
+                f"{fnum(ba.get('mean_moves'), 1)} moves).{first_win}</div>")
+    g24r8_files = D["scaling"].get("g24r8") or {}
+    ug24 = g24r8_files.get("comparison_ungraded.json")
+    if ug24:
+        ba = _sysagg(ug24, "backward")
+        fa = _sysagg(ug24, "forward")
+        if ba and fa:
+            r_steps = (fa["mean_expansions"] / ba["mean_expansions"]
+                       if ba.get("mean_expansions") else None)
+            r_time = (fa["mean_seconds"] / ba["mean_seconds"]
+                      if ba.get("mean_seconds") else None)
+            reading += (
+                f'<div class="callout"><b>Big board and many robots at '
+                f"once.</b> On the {ba['n']} hardest 24×24, 8-robot puzzles, "
+                f"even with the ORIGINAL plan language the subgoal planner "
+                f"solves <b>{ffrac(ba['solved'], ba['n'])}</b> vs the "
+                f"move-by-move planner's {ffrac(fa['solved'], fa['n'])}, at "
+                f"{fnum(r_steps, 1)}× fewer search steps and "
+                f"{fnum(r_time, 1)}× less time — the move-by-move planner "
+                f"spends nearly its whole search budget per puzzle and still "
+                f"rarely finishes. A full-language rerun is computing.</div>")
     g16r6_files = D["scaling"].get("g16r6") or {}
     ug6 = g16r6_files.get("comparison_ungraded.json")
+    ug6_b2 = g16r6_files.get("comparison_ungraded_b2.json")
     ug6_b1 = g16r6_files.get("comparison_ungraded_b1.json")
     if ug6:
         _, fs = first_forward(ug6)
-        ba = _sysagg(ug6_b1, "backward") if ug6_b1 else _sysagg(ug6, "backward")
+        ba = (_sysagg(ug6_b2, "backward") or _sysagg(ug6_b1, "backward")
+              or _sysagg(ug6, "backward"))
         fa = fs["aggregate"] if fs else None
         if ba and fa:
             ratio_steps = (fa["mean_expansions"] / ba["mean_expansions"]
                            if ba.get("mean_expansions") else None)
             ratio_time = (fa["mean_seconds"] / ba["mean_seconds"]
                           if ba.get("mean_seconds") else None)
-            lang_note = (" (with its networks retrained on the richer plan "
+            lang_note = (" (full plan language, networks unchanged)"
+                         if ug6_b2 else
+                         " (with its networks retrained on the richer plan "
                          "language)" if ug6_b1 else "")
             reading += (
                 f'<div class="callout"><b>The frontier flip.</b> On the '
@@ -3262,6 +3740,12 @@ def tab_method(D):
     intended helper robot were on the board, so it can undercount real game
     moves.{abs_note} Every comparable number on this page uses the strict
     count: moves of a plan that was actually executed legally, move by move.</li>
+    <li><b>Seconds are machine-dependent; steps are not.</b> Rows were
+    produced in different eras on different machines (the study moved to a
+    supercomputer partway through), so wall-clock seconds should only be
+    compared between the two planners <i>within</i> the same row — never
+    across rows. Search-step counts are machine-independent and are the
+    right cross-row efficiency measure.</li>
     <li><b>Where every number comes from.</b> This page is generated by
     <span class="mono">eval/build_report.py</span>; no result number is typed
     into the page by hand, and a build-time verification pass re-checks the
@@ -3426,6 +3910,27 @@ tr.hlrow td{background:var(--hl)}
   align-self:center}
 .foots{padding-left:20px;max-width:82ch}
 .foots li{margin:10px 0}
+.legend-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 16px;
+  margin:8px 0 4px;font-size:12px;color:var(--muted)}
+.legend-grid div{display:flex;align-items:center;gap:8px}
+.legend-grid svg{flex:none}
+.whatsnew{background:var(--surface);border:1px dashed var(--baseline);
+  border-radius:10px;padding:10px 16px;margin:18px 0 4px;font-size:13.5px;
+  color:var(--muted);max-width:88ch}
+.whatsnew b{color:var(--ink)}
+.howblock{margin:22px 0 6px}
+.howh{font-size:clamp(17px,2.2vw,21px);font-weight:700;
+  letter-spacing:-.01em;margin:0 0 10px}
+.howsteps{counter-reset:hs;list-style:none;padding:0;margin:10px 0;
+  max-width:88ch}
+.howsteps li{position:relative;padding:11px 16px 11px 54px;margin:9px 0;
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:11px;counter-increment:hs;font-size:14.5px;line-height:1.55}
+.howsteps li::before{content:counter(hs);position:absolute;left:16px;
+  top:13px;width:24px;height:24px;border-radius:50%;background:var(--bwd);
+  color:#fff;font-weight:700;font-size:13px;display:flex;
+  align-items:center;justify-content:center}
+.howsteps .eff{color:var(--bwd-ink)}
 .themebtn{position:fixed;top:14px;right:14px;font-family:var(--mono);font-size:12px;
   background:var(--surface);color:var(--muted);border:1px solid var(--line);
   border-radius:18px;padding:5px 13px;cursor:pointer;z-index:30}
