@@ -268,6 +268,11 @@ pub struct WorkBackwardRollout {
     /// (DESIGN §5.6); anything non-null is rejected.
     #[serde(default)]
     pub max_final_component_distance: Option<Value>,
+    /// Plan-language vocabulary: absent/"base" (original), "b1" (+ transient
+    /// supports), "b2" (+ supports-by-reference). Labels are
+    /// vocabulary-relative — never mix vocabularies in one dataset.
+    #[serde(default)]
+    pub vocab: Option<String>,
 }
 
 /// task: "replay_backward_decision" (gate 3; produced by pyref dumpers).
@@ -294,6 +299,10 @@ pub struct WorkReplayBackward {
     pub max_candidates: Option<Value>,
     #[serde(default)]
     pub python_labels: Option<Value>,
+    /// Plan-language vocabulary of the dumped decision (see
+    /// [`WorkBackwardRollout::vocab`]).
+    #[serde(default)]
+    pub vocab: Option<String>,
 }
 
 /// task: "replay_forward_state" (gate 3). `full_policy_max_ctg` and
@@ -592,9 +601,12 @@ fn run_backward(item: WorkBackwardRollout, ctx: &Ctx) -> anyhow::Result<String> 
             .collect::<anyhow::Result<_>>()
             .context("helpers")?,
     };
+    let (b1, by_reference) = crate::subgoal::astar::vocab_flags(item.vocab.as_deref())?;
     let solver = AStar {
         max_iters: item.max_iters,
         max_frontier: item.max_frontier,
+        b1,
+        by_reference,
         ..AStar::default()
     };
     let budget = item.budget.map(|b| b.solver_iters).unwrap_or(DEFAULT_SOLVER_ITERS);
@@ -631,6 +643,7 @@ fn run_replay_backward(item: WorkReplayBackward, ctx: &Ctx) -> anyhow::Result<St
         "candidates": item.candidates,
         "max_iters": item.max_iters,
         "max_frontier": item.max_frontier,
+        "vocab": item.vocab,
     });
     let decision = parse_replay_decision(&payload)?;
     let env = SubgoalEnv::new(&board);

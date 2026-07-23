@@ -162,7 +162,7 @@ fn fixture_b_propose_candidate_sets() {
             } else {
                 Some(parse_robot(&ctx["support"]).unwrap())
             };
-            let cands = env.propose(goal, &mover, &helpers, support.as_ref());
+            let cands = env.propose(goal, &mover, &helpers, support.as_ref(), false);
             assert_eq!(
                 cands.len(),
                 ctx["n_candidates"].as_u64().unwrap() as usize,

@@ -84,6 +84,9 @@ def parse_args(argv=None):
     p.add_argument("--max-candidates", type=int, default=14)
     p.add_argument("--max-iters", type=int, default=4000)
     p.add_argument("--max-frontier", type=int, default=40_000)
+    p.add_argument("--vocab", default="base", choices=["base", "b1", "b2"],
+                   help="plan-language vocabulary (backward task): base, "
+                        "b1 (+transient supports), b2 (+supports-by-reference)")
     p.add_argument("--dependent-edge-weight", type=int, default=2)
     p.add_argument("--instance-timeout", type=int, default=300,
                    help="per-instance rollout wall cap (s); timed-out instances dropped")
@@ -194,9 +197,11 @@ def _prepare_tables(boards, n, weight, workers):
 
 def _rollout_dump(env, state, solver, env_id, n, grid_data, tag, inst_idx, a):
     """nn.generate.rollout, copied verbatim and instrumented: one
-    replay_backward_decision line per non-forced decision."""
+    replay_backward_decision line per non-forced decision. Mirrors the
+    labeler's Lever B2 wiring: reference helpers join the segment before
+    proposing when the solver was built with by_reference=True."""
     import common
-    from skeleton.astar import _initial_plan, _segment, _apply
+    from skeleton.astar import _initial_plan, _segment, _apply, _reference_helpers
     from nn.generate import _fixed_g
 
     max_candidates = a.max_candidates
@@ -213,6 +218,8 @@ def _rollout_dump(env, state, solver, env_id, n, grid_data, tag, inst_idx, a):
             plan = solver._expand(env, state, plan)[0]
             continue
 
+        if solver.by_reference:
+            seg.helpers = seg.helpers + _reference_helpers(plan, seg.mover.color)
         cands = solver.propose(env, seg.end, seg.mover, seg.helpers, seg.support)
         if max_candidates is not None:
             cands = sorted(cands, key=lambda c: solver.score(env, c))[:max_candidates]
@@ -221,7 +228,8 @@ def _rollout_dump(env, state, solver, env_id, n, grid_data, tag, inst_idx, a):
         plan_ser = common.ser_plan(plan)            # BEFORE any apply
         labels, labeled = [], []
         for cand in cands:
-            child_plan = _apply(env, plan, parent, child, seg, cand)
+            child_plan = _apply(env, plan, parent, child, seg, cand,
+                                by_reference=solver.by_reference)
             if child_plan is None:
                 labels.append({"ctg": None, "rejected": True})
                 continue
@@ -242,6 +250,7 @@ def _rollout_dump(env, state, solver, env_id, n, grid_data, tag, inst_idx, a):
                 "max_iters": a.max_iters,
                 "max_frontier": a.max_frontier,
                 "max_candidates": a.max_candidates,
+                "vocab": getattr(a, "vocab", "base"),
                 "state": common.ser_state(state),
                 "plan": plan_ser,
                 "open_edge": [parent, child],
@@ -261,8 +270,7 @@ def _backward_board(job):
     (gid, grid_data, n, robots, a_dict, tag) = job
     a = argparse.Namespace(**a_dict)
     import common
-    from skeleton.astar import AStar
-    from nn.generate import random_instance
+    from nn.generate import make_solver, random_instance
 
     t0 = time.time()
     if a.env_source == "pkl":
@@ -274,7 +282,8 @@ def _backward_board(job):
     t_env = time.time() - t0
     colors = common.PALETTE[:robots]
     rng = random.Random(a.seed * 100003 + gid)
-    solver = AStar(max_iters=a.max_iters, max_frontier=a.max_frontier)
+    solver = make_solver(getattr(a, "vocab", "base"),
+                         max_iters=a.max_iters, max_frontier=a.max_frontier)
     signal.signal(signal.SIGALRM, _raise_timeout)
 
     lines = []

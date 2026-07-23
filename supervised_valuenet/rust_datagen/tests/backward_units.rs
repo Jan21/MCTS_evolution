@@ -232,7 +232,7 @@ fn fix_b_helper_color_owning_a_leaf_is_rejected() {
     let seg = segment(&plan, &state, parent, child);
 
     // Baseline: Blue helper (owns no leaf) is accepted.
-    assert!(apply(&env, &plan, parent, child, &seg, &cand_own_support(r((3, 3), 1))).is_some());
+    assert!(apply(&env, &plan, parent, child, &seg, &cand_own_support(r((3, 3), 1)), false).is_some());
 
     // Add a leaf owned by GREEN (at any cell): a Green-helper candidate must
     // now be rejected — one robot, one leaf identity (compared BY COLOR).
@@ -244,9 +244,9 @@ fn fix_b_helper_color_owning_a_leaf_is_rejected() {
         robot: Some(r((1, 1), 2)),
         parent_support_pos: None,
     });
-    assert!(apply(&env, &plan2, parent, child, &seg, &cand_own_support(r((1, 1), 2))).is_none());
+    assert!(apply(&env, &plan2, parent, child, &seg, &cand_own_support(r((1, 1), 2)), false).is_none());
     // ... while a Blue-helper candidate still passes on the same plan.
-    assert!(apply(&env, &plan2, parent, child, &seg, &cand_own_support(r((3, 3), 1))).is_some());
+    assert!(apply(&env, &plan2, parent, child, &seg, &cand_own_support(r((3, 3), 1)), false).is_some());
 }
 
 #[test]
@@ -258,7 +258,7 @@ fn fix_c_parent_support_must_be_own_or_existing_support_cell() {
     let seg = segment(&plan, &state, parent, child);
 
     // parent_support == the candidate's own support cell -> accepted.
-    assert!(apply(&env, &plan, parent, child, &seg, &cand_own_support(r((3, 3), 1))).is_some());
+    assert!(apply(&env, &plan, parent, child, &seg, &cand_own_support(r((3, 3), 1)), false).is_some());
 
     // parent_support (2,3) is a REAL dependent support of the goal, and the
     // bottleneck (2,0) reaches (2,2) through it — but no plan node ever
@@ -275,7 +275,7 @@ fn fix_c_parent_support_must_be_own_or_existing_support_cell() {
         score: 0,
     };
     assert_eq!(env.compute_exact((2, 0), (2, 2), Some((2, 3))), Some(1));
-    assert!(apply(&env, &plan, parent, child, &seg, &cand_foreign_ps).is_none());
+    assert!(apply(&env, &plan, parent, child, &seg, &cand_foreign_ps, false).is_none());
 
     // Same candidate, but the plan already carries a support node at (2,3)
     // -> fix (c) is satisfied and the candidate applies.
@@ -287,7 +287,7 @@ fn fix_c_parent_support_must_be_own_or_existing_support_cell() {
         robot: Some(r((2, 3), 2)),
         parent_support_pos: None,
     });
-    assert!(apply(&env, &plan2, parent, child, &seg, &cand_foreign_ps).is_some());
+    assert!(apply(&env, &plan2, parent, child, &seg, &cand_foreign_ps, false).is_some());
 }
 
 // ---------------------------------------------------------------------------
@@ -301,7 +301,7 @@ fn apply_builds_python_node_and_edge_order() {
     let (state, plan) = apply_setting(&env);
     let (parent, child) = plan.first_open_edge().unwrap();
     let seg = segment(&plan, &state, parent, child);
-    let out = apply(&env, &plan, parent, child, &seg, &cand_own_support(r((3, 3), 1))).unwrap();
+    let out = apply(&env, &plan, parent, child, &seg, &cand_own_support(r((3, 3), 1)), false).unwrap();
 
     // Nodes appended in Python order: sg_1, bn_1, sp_1, leaf_1.
     let ids: Vec<NodeId> = out.nodes.iter().map(|n| n.id).collect();
@@ -310,8 +310,10 @@ fn apply_builds_python_node_and_edge_order() {
         vec![NodeId::Goal, NodeId::Leaf(0), NodeId::Sg(1), NodeId::Bn(1), NodeId::Sp(1), NodeId::Leaf(1)]
     );
     assert_eq!(out.nc, 2);
-    // Edge creation order: goal->sg fixed(parent_cost=1), sg->bn 0, sg->sp 0,
-    // bn->leaf_0 (mover move), sp->leaf_1 (helper move).
+    // Edge creation order (current Python _apply, post-B2 restructure):
+    // goal->sg fixed(parent_cost=1), sg->bn 0, bn->leaf_0 (mover move),
+    // sg->sp 0, sp->leaf_1 (helper move). The nx-derived iteration order
+    // (edges_nx) is identical to the pre-B2 shape either way.
     let shape: Vec<(u32, u32, bool, Option<i64>)> =
         out.edges.iter().map(|e: &EdgeRec| (e.u, e.v, e.open, e.cost)).collect();
     // mover (0,2) -> bn (0,2) VIA SUPPORT (3,2): the supported computation
@@ -326,8 +328,8 @@ fn apply_builds_python_node_and_edge_order() {
         vec![
             (0, 2, false, Some(1)),           // goal -> sg_1
             (2, 3, false, Some(0)),           // sg_1 -> bn_1
-            (2, 4, false, Some(0)),           // sg_1 -> sp_1
             (3, 1, true, Some(SUBGOAL_INF)),  // bn_1 -> leaf_0 (no group)
+            (2, 4, false, Some(0)),           // sg_1 -> sp_1
             (4, 5, true, Some(2)),            // sp_1 -> leaf_1 (relaxed)
         ]
     );

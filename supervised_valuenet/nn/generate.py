@@ -23,7 +23,8 @@ import time
 from pathlib import Path
 
 from GridEnv import GridEnv, State, Robot_at
-from skeleton.astar import AStar, _initial_plan, _segment, _apply
+from skeleton.astar import (AStar, _initial_plan, _segment, _apply,
+                            _reference_helpers)
 from skeleton import heuristics
 
 
@@ -64,7 +65,13 @@ def _context(plan):
 
 def rollout(env: GridEnv, state: State, solver: AStar, env_id: int,
             max_candidates=None):
-    """One optimal trajectory; label every candidate at each decision."""
+    """One optimal trajectory; label every candidate at each decision.
+
+    The candidate enumeration mirrors `AStar._expand` exactly, including the
+    Lever B2 reference-helper injection when the solver was built with
+    `by_reference=True` — so the labeled candidate set is the same set the
+    solver's own search would generate at this decision.
+    """
     records = []
     plan = _initial_plan(env, state)
     depth = 0
@@ -77,6 +84,8 @@ def rollout(env: GridEnv, state: State, solver: AStar, env_id: int,
             plan = solver._expand(env, state, plan)[0]
             continue
 
+        if solver.by_reference:
+            seg.helpers = seg.helpers + _reference_helpers(plan, seg.mover.color)
         cands = solver.propose(env, seg.end, seg.mover, seg.helpers, seg.support)
         if max_candidates is not None:
             cands = sorted(cands, key=lambda c: solver.score(env, c))[:max_candidates]
@@ -85,7 +94,8 @@ def rollout(env: GridEnv, state: State, solver: AStar, env_id: int,
         bn_ctx, sp_ctx, open_eps = _context(plan)
         labeled, best = [], None
         for cand in cands:
-            child_plan = _apply(env, plan, parent, child, seg, cand)
+            child_plan = _apply(env, plan, parent, child, seg, cand,
+                                by_reference=solver.by_reference)
             if child_plan is None:
                 continue
             done = solver.solve_plan(env, state, child_plan)
@@ -134,10 +144,29 @@ def parse_graphs(spec: str):
     return out
 
 
+def make_solver(vocab="base", max_iters=4000, max_frontier=40_000):
+    """Labeling solver for a plan-language vocabulary.
+
+    "base": the original static-support language (default; unchanged path).
+    "b1":   + transient supports (Lever B1, `heuristics.propose_b1`).
+    "b2":   + supports-by-reference (Lever B2, `AStar(by_reference=True)`).
+    Park repairs are NOT part of any labeling vocabulary: they are
+    deterministic search-time repairs proposed from realization failures,
+    never ranked by the networks (see analysis/b1_extension_notes.md), so
+    there is nothing for a net to learn about them. Cost-to-go labels are
+    vocabulary-relative; never mix vocabularies in one dataset.
+    """
+    if vocab not in ("base", "b1", "b2"):
+        raise ValueError(f"unknown vocab {vocab!r}")
+    propose = heuristics.propose if vocab == "base" else heuristics.propose_b1
+    return AStar(propose=propose, max_iters=max_iters,
+                 max_frontier=max_frontier, by_reference=(vocab == "b2"))
+
+
 def generate(graphs, per_graph, out, seed=0, max_candidates=None,
-             max_iters=4000, max_frontier=40_000):
+             max_iters=4000, max_frontier=40_000, vocab="base"):
     rng = random.Random(seed)
-    solver = AStar(max_iters=max_iters, max_frontier=max_frontier)
+    solver = make_solver(vocab, max_iters=max_iters, max_frontier=max_frontier)
     _, s0 = GridEnv.from_env(graphs[0])
     colors = [s0.target_robot.color] + [h.color for h in s0.helpers]
 
@@ -177,6 +206,9 @@ if __name__ == "__main__":
     p.add_argument("--out", default="nn/data/train.jsonl")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--max-candidates", type=int, default=None)
+    p.add_argument("--vocab", default="base", choices=["base", "b1", "b2"],
+                   help="plan-language vocabulary for labels (house rule: "
+                        "never mix vocabularies in one dataset)")
     a = p.parse_args()
     generate(parse_graphs(a.graphs), a.per_graph, a.out,
-             seed=a.seed, max_candidates=a.max_candidates)
+             seed=a.seed, max_candidates=a.max_candidates, vocab=a.vocab)

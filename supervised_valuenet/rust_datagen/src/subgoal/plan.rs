@@ -81,12 +81,16 @@ pub struct Node {
 }
 
 /// One edge; `u`/`v` are node indices into `PartialPlan::nodes`.
+/// `byref` mirrors the Python `byref=True` edge attribute (Lever B2: a
+/// subgoal wired to an EXISTING plan node serving as its support). Always
+/// false outside `vocab == "b2"` items, so default behavior is unchanged.
 #[derive(Clone, Copy, Debug)]
 pub struct EdgeRec {
     pub u: u32,
     pub v: u32,
     pub open: bool,
     pub cost: Option<i64>,
+    pub byref: bool,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -118,7 +122,17 @@ impl PartialPlan {
             !self.edges.iter().any(|e| e.u == u && e.v == v),
             "duplicate edge {u}->{v}"
         );
-        self.edges.push(EdgeRec { u, v, open, cost });
+        self.edges.push(EdgeRec { u, v, open, cost, byref: false });
+    }
+
+    /// Lever B2: `g.add_edge(sg, ref_node, status="fixed", cost=0,
+    /// byref=True)` — the shared-support / target-as-stopper reference edge.
+    pub fn add_edge_byref(&mut self, u: u32, v: u32, cost: Option<i64>) {
+        debug_assert!(
+            !self.edges.iter().any(|e| e.u == u && e.v == v),
+            "duplicate edge {u}->{v}"
+        );
+        self.edges.push(EdgeRec { u, v, open: false, cost, byref: true });
     }
 
     /// `g.remove_edge(u, v)` — removes the single (u, v) edge, preserving the
@@ -190,7 +204,10 @@ impl PartialPlan {
     /// `_sibling_support(plan, bottleneck)`: the support-node robot attached
     /// to the (unique) subgoal parent of `bottleneck`. Predecessor order is
     /// immaterial: bottleneck nodes have exactly one in-edge (sg → bn) and a
-    /// subgoal has exactly one support child.
+    /// subgoal has exactly one support child. Lever B2 second pass: the
+    /// subgoal's support may instead be a REFERENCED node (a mid-chain
+    /// bottleneck serving as the stopper), marked by the `byref` edge
+    /// attribute — only b2 plans contain such edges.
     pub fn sibling_support(&self, bottleneck: u32) -> Option<RobotAt> {
         for e in &self.edges {
             if e.v == bottleneck && self.nodes[e.u as usize].ntype == NType::Subgoal {
@@ -200,9 +217,52 @@ impl PartialPlan {
                         return self.nodes[e2.v as usize].robot;
                     }
                 }
+                for e2 in &self.edges {
+                    if e2.u == sg
+                        && e2.byref
+                        && self.nodes[e2.v as usize].ntype == NType::Bottleneck
+                    {
+                        return self.nodes[e2.v as usize].robot;
+                    }
+                }
             }
         }
         None
+    }
+
+    /// `_terminal_support(g, node)`: no support-typed predecessor moves the
+    /// robot off this cell later. (Python also checks park-typed
+    /// predecessors; park nodes never occur in the label engine.)
+    pub fn terminal_support(&self, node: u32) -> bool {
+        !self
+            .edges
+            .iter()
+            .any(|e| e.v == node && self.nodes[e.u as usize].ntype == NType::Support)
+    }
+
+    /// `_reaches(g, src, dst)`: DFS reachability along plan edges
+    /// (goal→leaf direction). Order-independent boolean.
+    pub fn reaches(&self, src: u32, dst: u32) -> bool {
+        if src == dst {
+            return true;
+        }
+        let mut seen = vec![false; self.nodes.len()];
+        seen[src as usize] = true;
+        let mut stack = vec![src];
+        while let Some(u) = stack.pop() {
+            for e in &self.edges {
+                if e.u == u {
+                    if e.v == dst {
+                        return true;
+                    }
+                    if !seen[e.v as usize] {
+                        seen[e.v as usize] = true;
+                        stack.push(e.v);
+                    }
+                }
+            }
+        }
+        false
     }
 
     /// Node index by id (replay-dump reconstruction only — never in search).

@@ -15,7 +15,7 @@ use serde_json::Value;
 
 use crate::types::Cell;
 
-use super::astar::{apply, initial_plan, segment, AStar};
+use super::astar::{apply, initial_plan, reference_helpers, segment, AStar};
 use super::grid_env::SubgoalEnv;
 use super::plan::{EdgeRec, NType, Node, NodeId, PartialPlan};
 use super::{color_slot, Candidate, RobotAt, State, Subgoal};
@@ -135,7 +135,7 @@ pub fn rollout_traced(
 
     while !plan.is_complete() {
         let (parent, child) = plan.first_open_edge().expect("incomplete plan has an open edge");
-        let seg = segment(&plan, state, parent, child);
+        let mut seg = segment(&plan, state, parent, child);
 
         // No decision when the segment pins to an exact path; just fix it.
         if env
@@ -146,7 +146,12 @@ pub fn rollout_traced(
             continue;
         }
 
-        let mut cands = env.propose(seg.end, &seg.mover, &seg.helpers, seg.support.as_ref());
+        // Lever B2: mirror `AStar._expand` / the extended `nn.generate.rollout`
+        // — reference helpers join the segment's helper list before proposing.
+        if solver.by_reference {
+            seg.helpers.extend(reference_helpers(&plan, seg.mover.color));
+        }
+        let mut cands = env.propose(seg.end, &seg.mover, &seg.helpers, seg.support.as_ref(), solver.b1);
         if let Some(mc) = max_candidates {
             // Python sorts (stably) and truncates ONLY when max_candidates
             // is given; otherwise the unsorted propose order is used.
@@ -163,7 +168,9 @@ pub fn rollout_traced(
         let (bn_ctx, sp_ctx, open_eps) = context(&plan);
         let mut labeled: Vec<(Candidate, PartialPlan, i64)> = Vec::new();
         for cand in &cands {
-            let Some(child_plan) = apply(env, &plan, parent, child, &seg, cand) else {
+            let Some(child_plan) =
+                apply(env, &plan, parent, child, &seg, cand, solver.by_reference)
+            else {
                 continue;
             };
             let out = solver.solve_plan(env, state, child_plan.clone());
@@ -241,6 +248,8 @@ pub struct ReplayCandidate {
 }
 
 /// A parsed `replay_backward_decision` work item (board handled separately).
+/// `b1` / `by_reference` come from the item's optional `vocab` field
+/// (default base — both false, behavior unchanged).
 pub struct ReplayDecision {
     pub state: State,
     pub plan: PartialPlan,
@@ -248,6 +257,8 @@ pub struct ReplayDecision {
     pub candidates: Vec<ReplayCandidate>,
     pub max_iters: u64,
     pub max_frontier: usize,
+    pub b1: bool,
+    pub by_reference: bool,
 }
 
 /// Per-candidate replay label: `rejected` = `_apply` refused it; `ctg: None`
@@ -280,6 +291,8 @@ pub fn replay_decision(env: &SubgoalEnv, item: &ReplayDecision) -> anyhow::Resul
     let solver = AStar {
         max_iters: item.max_iters,
         max_frontier: item.max_frontier,
+        b1: item.b1,
+        by_reference: item.by_reference,
         ..AStar::default()
     };
     let seg = segment(&item.plan, &item.state, parent, child);
@@ -298,7 +311,9 @@ pub fn replay_decision(env: &SubgoalEnv, item: &ReplayDecision) -> anyhow::Resul
             parent_support: c.parent_support,
             score: 0,
         };
-        let Some(child_plan) = apply(env, &item.plan, parent, child, &seg, &cand) else {
+        let Some(child_plan) =
+            apply(env, &item.plan, parent, child, &seg, &cand, item.by_reference)
+        else {
             labels.push(CandidateLabel { ctg: None, rejected: true });
             continue;
         };
@@ -397,7 +412,13 @@ pub fn parse_plan(v: &Value) -> anyhow::Result<PartialPlan> {
         plan.add_node(node);
     }
     for ev in v["edges"].as_array().ok_or_else(|| anyhow!("plan.edges not a list"))? {
-        let row = ev.as_array().filter(|a| a.len() == 4).ok_or_else(|| anyhow!("bad edge {ev}"))?;
+        // 4-element rows are the original dump shape; a 5th element `true`
+        // marks a Lever B2 `byref` edge (emitted by `ser_plan` only for b2
+        // plans, so old corpora parse unchanged).
+        let row = ev
+            .as_array()
+            .filter(|a| a.len() == 4 || a.len() == 5)
+            .ok_or_else(|| anyhow!("bad edge {ev}"))?;
         let uid = NodeId::parse(row[0].as_str().ok_or_else(|| anyhow!("bad edge u {ev}"))?)
             .ok_or_else(|| anyhow!("unknown edge u id {ev}"))?;
         let vid = NodeId::parse(row[1].as_str().ok_or_else(|| anyhow!("bad edge v {ev}"))?)
@@ -415,15 +436,22 @@ pub fn parse_plan(v: &Value) -> anyhow::Result<PartialPlan> {
         } else {
             Some(row[3].as_i64().ok_or_else(|| anyhow!("bad edge cost {ev}"))?)
         };
-        plan.edges.push(EdgeRec { u, v: vv, open, cost });
+        let byref = if row.len() == 5 {
+            row[4].as_bool().ok_or_else(|| anyhow!("bad edge byref {ev}"))?
+        } else {
+            false
+        };
+        plan.edges.push(EdgeRec { u, v: vv, open, cost, byref });
     }
     plan.nc = v["nc"].as_u64().ok_or_else(|| anyhow!("plan.nc missing"))? as u32;
     Ok(plan)
 }
 
 /// Parse a full `replay_backward_decision` line (minus the board, which the
-/// caller compiles/caches separately).
+/// caller compiles/caches separately). The optional `vocab` field selects
+/// the plan-language levers (absent → base, both flags false).
 pub fn parse_replay_decision(v: &Value) -> anyhow::Result<ReplayDecision> {
+    let (b1, by_reference) = super::astar::vocab_flags(v.get("vocab").and_then(|x| x.as_str()))?;
     let oe = v["open_edge"].as_array().filter(|a| a.len() == 2).ok_or_else(|| anyhow!("bad open_edge"))?;
     let ou = NodeId::parse(oe[0].as_str().ok_or_else(|| anyhow!("bad open_edge u"))?)
         .ok_or_else(|| anyhow!("bad open_edge u id"))?;
@@ -450,5 +478,7 @@ pub fn parse_replay_decision(v: &Value) -> anyhow::Result<ReplayDecision> {
         max_iters: v["max_iters"].as_u64().ok_or_else(|| anyhow!("max_iters missing"))?,
         max_frontier: v["max_frontier"].as_u64().ok_or_else(|| anyhow!("max_frontier missing"))?
             as usize,
+        b1,
+        by_reference,
     })
 }

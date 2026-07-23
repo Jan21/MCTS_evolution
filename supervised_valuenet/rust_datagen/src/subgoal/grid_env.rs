@@ -50,6 +50,10 @@ struct Caches {
     /// (goal, support?) -> bottleneck/support pairs
     /// (`_bottleneck_support_pairs_cache`, unified with the recompute branch).
     pairs: FxHashMap<(Cell, Option<Cell>), Rc<PairList>>,
+    /// Lever B1: (goal, support?) -> transient (wall-less-support) pairs
+    /// (`GridEnv._transient_pairs_cache`). Same collection rule as `pairs`
+    /// with the wall-adjacency test inverted; the two sets are disjoint.
+    transient_pairs: FxHashMap<(Cell, Option<Cell>), Rc<PairList>>,
 }
 
 /// Wrapper over a [`CompiledBoard`] mirroring `GridEnv`.
@@ -87,6 +91,7 @@ impl<'a> SubgoalEnv<'a> {
                 final_components: FxHashMap::default(),
                 extended: FxHashMap::default(),
                 pairs: FxHashMap::default(),
+                transient_pairs: FxHashMap::default(),
             }),
         }
     }
@@ -315,6 +320,53 @@ impl<'a> SubgoalEnv<'a> {
         pairs
     }
 
+    /// Lever B1 (`GridEnv._transient_support_pairs`): the same
+    /// final-component crossing rule as [`Self::pairs_for`] with the
+    /// wall-adjacency test INVERTED — only support cells WITHOUT an adjacent
+    /// wall. Python unions the two sets and iterates the union (set order);
+    /// the documented deterministic replacement appends the transient pairs
+    /// (in the same cell-index collection order) after the static ones. The
+    /// two sets are disjoint (the wall test partitions), so the union SET
+    /// equals Python's.
+    pub fn transient_pairs_for(&self, goal: Cell, support: Option<Cell>) -> Rc<PairList> {
+        let key = (goal, support);
+        if let Some(p) = self.caches.borrow().transient_pairs.get(&key) {
+            return Rc::clone(p);
+        }
+        let fc = match support {
+            None => self.final_component(goal),
+            Some(sup) => self.extended_final_component(goal, sup),
+        };
+        let goal_idx = self.idx(goal);
+        let member = |idx: usize| fc[idx] || idx == goal_idx;
+        let mut pairs: Vec<(Cell, Cell)> = Vec::new();
+        let mut seen: FxHashSet<(Cell, Cell)> = FxHashSet::default();
+        for y in 0..self.n as u16 {
+            for x in 0..self.n as u16 {
+                let v = (x, y);
+                if !member(self.idx(v)) {
+                    continue;
+                }
+                for e in self.board.in_edges(v) {
+                    if member(self.idx(e.u)) {
+                        continue;
+                    }
+                    if let Some(sup) = e.dependent {
+                        if !self.has_adjacent_wall(sup) && seen.insert((e.v, sup)) {
+                            pairs.push((e.v, sup));
+                        }
+                    }
+                }
+            }
+        }
+        let pairs = Rc::new(pairs);
+        self.caches
+            .borrow_mut()
+            .transient_pairs
+            .insert(key, Rc::clone(&pairs));
+        pairs
+    }
+
     // -- scoring and proposal -------------------------------------------------
 
     /// `GridEnv.subgoal_score`: independent[bn→goal] + relaxed(target→bn via
@@ -329,16 +381,30 @@ impl<'a> SubgoalEnv<'a> {
     /// `GridEnv.propose_subgoal_states`: (Subgoal, score) per pair × helper.
     /// The bottleneck robot carries the segment mover's color, the support
     /// robot the helper's color; positions on both are the PLANNED cells.
+    /// With `transient` (Lever B1) the pair list additionally includes the
+    /// wall-less-support pairs, appended after the static ones.
     pub fn propose_subgoal_states(
         &self,
         state: &State,
         support_robot: Option<&RobotAt>,
+        transient: bool,
     ) -> Vec<(Subgoal, i64)> {
         let goal = state.target;
         let target_color = state.target_robot.color;
-        let pairs = self.pairs_for(goal, support_robot.map(|r| r.pos));
-        let mut results = Vec::with_capacity(pairs.len() * state.helpers.len());
-        for &(bn_pos, sup_pos) in pairs.iter() {
+        let sup_key = support_robot.map(|r| r.pos);
+        let static_pairs = self.pairs_for(goal, sup_key);
+        let transient_pairs = if transient {
+            Some(self.transient_pairs_for(goal, sup_key))
+        } else {
+            None
+        };
+        let n_pairs =
+            static_pairs.len() + transient_pairs.as_ref().map_or(0, |p| p.len());
+        let mut results = Vec::with_capacity(n_pairs * state.helpers.len());
+        let all_pairs = static_pairs
+            .iter()
+            .chain(transient_pairs.iter().flat_map(|p| p.iter()));
+        for &(bn_pos, sup_pos) in all_pairs {
             for helper in &state.helpers {
                 let subgoal = Subgoal {
                     bottleneck: RobotAt { pos: bn_pos, color: target_color },
@@ -373,19 +439,22 @@ impl<'a> SubgoalEnv<'a> {
     /// retry pinned to each dependent support of `goal` × each helper), then
     /// parent_support resolution per candidate in order
     /// [pinned, None, dependent-supports-of-goal] — first exact hit wins.
+    /// `b1` threads the Lever B1 transient-support vocabulary
+    /// (`heuristics.propose(..., b1=True)` / `propose_b1`).
     pub fn propose(
         &self,
         goal: Cell,
         mover: &RobotAt,
         helpers: &[RobotAt],
         support: Option<&RobotAt>,
+        b1: bool,
     ) -> Vec<Candidate> {
         let segment = State {
             target: goal,
             target_robot: *mover,
             helpers: helpers.to_vec(),
         };
-        let mut raw = self.propose_subgoal_states(&segment, support);
+        let mut raw = self.propose_subgoal_states(&segment, support, b1);
 
         // Fallback: goal only reachable via a helper on one of its dependent
         // supports; retry pinned to each. NOTE the Python oddity, ported: the
@@ -395,7 +464,7 @@ impl<'a> SubgoalEnv<'a> {
             for sup_pos in self.dependent_supports(goal) {
                 for helper in helpers {
                     let pinned = RobotAt { pos: sup_pos, color: helper.color };
-                    raw.extend(self.propose_subgoal_states(&segment, Some(&pinned)));
+                    raw.extend(self.propose_subgoal_states(&segment, Some(&pinned), b1));
                 }
             }
         }

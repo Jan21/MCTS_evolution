@@ -284,7 +284,13 @@ def de_state(o):
 
 
 def ser_plan(plan) -> dict:
-    """Nodes and edges in insertion order + nc (DESIGN section 3)."""
+    """Nodes and edges in insertion order + nc (DESIGN section 3).
+
+    Lever B2 plans may carry `byref=True` edges (a subgoal wired to an
+    existing plan node as its support); those serialize as 5-element rows
+    [u, v, status, cost, true]. Plans without byref edges keep the original
+    4-element rows, so pre-B2 corpora are byte-identical.
+    """
     nodes = []
     for nid, d in plan.g.nodes(data=True):
         nt = d["ntype"]
@@ -297,6 +303,7 @@ def ser_plan(plan) -> dict:
         nodes.append([nid, nt, attrs])
     edges = [[u, v, d["status"],
               None if d["cost"] is None else int(d["cost"])]
+             + ([True] if d.get("byref") else [])
              for u, v, d in plan.g.edges(data=True)]
     return {"nodes": nodes, "edges": edges, "nc": int(plan.nc)}
 
@@ -313,9 +320,11 @@ def de_plan(o):
         else:
             plan.add_node(nid, nt, pos=de_xy(attrs["pos"]),
                           robot=de_robot(attrs["robot"]))
-    for u, v, status, cost in o["edges"]:
-        plan.add_edge(u, v, status=status,
-                      cost=None if cost is None else int(cost))
+    for row in o["edges"]:
+        u, v, status, cost = row[:4]
+        plan.g.add_edge(u, v, status=status,
+                        cost=None if cost is None else int(cost),
+                        **({"byref": True} if len(row) == 5 and row[4] else {}))
     plan.nc = int(o["nc"])
     return plan
 

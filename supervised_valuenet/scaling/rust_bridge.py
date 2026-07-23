@@ -68,6 +68,10 @@ def parse_args(argv=None):
                    help="engine threads (shared box; keep <= 16 unless briefly benchmarking)")
     p.add_argument("--score-candidates", action="store_true", help="forward only")
     p.add_argument("--max-candidates", type=int, default=14, help="backward only")
+    p.add_argument("--vocab", default="base", choices=["base", "b1", "b2"],
+                   help="backward only: plan-language vocabulary (house rule: "
+                        "never mix vocabularies in one dataset; name outputs "
+                        "by vocabulary, e.g. backward_b2.rust.jsonl)")
     p.add_argument("--budget-iters", type=int, default=None,
                    help="backward deterministic rollout budget "
                         "(default: engine default, calibrated >> 120 s of Python work)")
@@ -252,6 +256,7 @@ def _backward(a, cfg, ids, out, engine, work_dir, tag):
                         "max_iters": 4000,
                         "max_frontier": 40000,
                         "dependent_edge_weight": 2,
+                        **({"vocab": a.vocab} if a.vocab != "base" else {}),
                         **({"budget": {"solver_iters": a.budget_iters}}
                            if a.budget_iters is not None else {}),
                     })
@@ -285,6 +290,7 @@ def _backward(a, cfg, ids, out, engine, work_dir, tag):
         ep.close()
     with open(work_dir / f"{tag}.manifest.json", "w") as mf:
         json.dump({"config": cfg.name, "system": "backward", "seed": a.seed,
+                   "engine": "rust", "vocab": a.vocab,
                    "per_graph": a.per_graph, "nshards": a.nshards,
                    "shard": a.shard, "colors": colors,
                    "boards": manifest}, mf, indent=1)

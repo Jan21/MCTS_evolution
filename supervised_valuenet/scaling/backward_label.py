@@ -23,8 +23,7 @@ import time
 from pathlib import Path
 
 from GridEnv import GridEnv
-from nn.generate import parse_graphs, random_instance, rollout
-from skeleton.astar import AStar
+from nn.generate import make_solver, parse_graphs, random_instance, rollout
 
 
 class _Timeout(Exception):
@@ -44,11 +43,14 @@ def main():
     p.add_argument("--max-candidates", type=int, default=14)
     p.add_argument("--timeout", type=int, default=120,
                    help="per-instance rollout wall-time cap (s)")
+    p.add_argument("--vocab", default="base", choices=["base", "b1", "b2"],
+                   help="plan-language vocabulary for labels (house rule: "
+                        "never mix vocabularies in one dataset)")
     a = p.parse_args()
 
     graphs = parse_graphs(a.graphs)
     rng = random.Random(a.seed)
-    solver = AStar(max_iters=4000, max_frontier=40_000)
+    solver = make_solver(a.vocab, max_iters=4000, max_frontier=40_000)
     _, s0 = GridEnv.from_env(graphs[0])
     colors = [s0.target_robot.color] + [h.color for h in s0.helpers]
 
