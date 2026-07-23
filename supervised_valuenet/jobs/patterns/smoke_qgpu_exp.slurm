@@ -1,5 +1,8 @@
 #!/bin/bash
-# Smoke + shard-equivalence test on the 1-hour test partition.
+# Smoke + shard-equivalence test. 2026-07-23: repointed from the retired
+# karolina_bundle to the working repo, and moved to the qgpu partition with a
+# 24 h walltime per the owner's standing order (qgpu only; charge is
+# elapsed-only, so the job still costs only its actual minutes).
 # 1) KAROLINA_PROMPT §3 step 5 acceptance recipe (20 instances, both planners;
 #    origin machine scored 19/20 — expect the same).
 # 2) The same 20 instances as two 10-instance shards, merged with
@@ -7,23 +10,23 @@
 #    run's rows, proving sharded lanes are equivalent to unsharded ones.
 #SBATCH --job-name=rr-smoke
 #SBATCH -A open-37-42
-#SBATCH -p qgpu_exp
+#SBATCH -p qgpu
 #SBATCH --gpus 2
 #SBATCH --nodes=1
-#SBATCH --time=01:00:00
-#SBATCH --output=/scratch/project/open-37-42/petrhyner/karolina_bundle/runs/smoke/%x-%j.out
+#SBATCH --time=24:00:00
+#SBATCH --output=/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/smoke/%x-%j.out
 
 set -euo pipefail
 ml purge
 ml Python/3.11.5-GCCcore-13.2.0
 
-BUNDLE=/scratch/project/open-37-42/petrhyner/karolina_bundle
+REPO=/scratch/project/open-37-42/petrhyner/MCTS_evolution
 source /scratch/project/open-37-42/petrhyner/venv/bin/activate
-cd "$BUNDLE/MCTS_evolution/supervised_valuenet"
+cd "$REPO/supervised_valuenet"
 export PYTHONPATH=. OMP_NUM_THREADS=8 CUDA_VISIBLE_DEVICES="" PYTHONUNBUFFERED=1
 unset RR_GRID RR_ROBOTS RR_WALLS RR_ENV_DIR   # base 16x16/4 config
 
-RUN="$BUNDLE/runs/smoke"
+RUN="$REPO/runs/smoke"
 mkdir -p "$RUN"
 head -20 eval/data/bench450.jsonl >  "$RUN/bench20.jsonl"
 head -10 eval/data/bench450.jsonl >  "$RUN/bench20_a.jsonl"
