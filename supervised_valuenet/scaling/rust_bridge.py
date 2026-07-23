@@ -260,17 +260,34 @@ def _backward(a, cfg, ids, out, engine, work_dir, tag):
                         **({"budget": {"solver_iters": a.budget_iters}}
                            if a.budget_iters is not None else {}),
                     })
-                ep.send(items)
-                results = ep.collect([it["id"] for it in items])
-
+                # Send attempts in WAVES instead of all per_graph*4 at once:
+                # extended-vocabulary rollouts can wander (dropped at the
+                # iteration budget, but each wanderer still burns real time),
+                # and most boards reach their keeper target inside the first
+                # wave — sending everything up front multiplies wanderer
+                # exposure ~4x for nothing. The sampling ORDER is unchanged
+                # (all attempts presampled above, exactly as before), so
+                # kept_idx / attempts_consumed manifest semantics and the
+                # RNG-stream realignment are identical.
+                wave = max(2 * a.per_graph, a.threads)
+                results = []
                 kept_idx = []
                 consumed = budget
-                for i, r in enumerate(results):
-                    if r.get("status") == "ok" and r.get("records"):
-                        kept_idx.append(i)
-                        if len(kept_idx) == a.per_graph:
-                            consumed = i + 1
-                            break
+                done = False
+                for w0 in range(0, budget, wave):
+                    chunk = items[w0:w0 + wave]
+                    ep.send(chunk)
+                    results += ep.collect([it["id"] for it in chunk])
+                    for i in range(w0, len(results)):
+                        r = results[i]
+                        if r.get("status") == "ok" and r.get("records"):
+                            kept_idx.append(i)
+                            if len(kept_idx) == a.per_graph:
+                                consumed = i + 1
+                                done = True
+                                break
+                    if done:
+                        break
                 # realign the shared stream exactly as Python consumed it
                 rng.setstate(snap)
                 for _ in range(consumed):
