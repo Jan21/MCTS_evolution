@@ -413,6 +413,22 @@ scoped fix.
    formulation keeps solving at two orders of magnitude less cost. Source:
    `scaling/results/g32r4/comparison_ungraded.json`.
 
+18b. **Errata (2026-07-23).** Three discrepancies between this log's prose and
+   the source JSONs, surfaced by the rebuilt report generator's self-check
+   pass and re-verified by hand; in every case the JSON wins:
+   - §3's "2.15 extra moves" for the checked 450-puzzle row: the source
+     (`eval/results/final450_backward_prefix.json`) reads mean regret
+     **2.1446** — correct rounding is 2.14, not 2.15.
+   - §7's self-play probe arc "~1.10 → ~0.21": the cited per-round files
+     (`subgoal_selfplay/runs_warm_prefix/iter*_stats.json`) read strict
+     probe regret **0.724 (iter 0) → 0.222 (iter 5)**; the ~1.10 figure
+     matches a different arm's index headline, not the cited source.
+   - §6's oracle-failure curve (0% → 29.8% → 40.9% → 48.4% → 61.1%) omits
+     the 24×24/8 point, which at **64.2%** (289/450,
+     `scaling/data/g24r8/bench.jsonl.meta.json`) is the worst measured —
+     and the sequence concatenates two axes (robot count at 16×16, then
+     grid size); it should be read as two curves, not one ladder.
+
 ## Still open
 
 - Retraining the backward networks on the extended (B2) vocabulary — the
