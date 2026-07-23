@@ -3509,6 +3509,11 @@ def sec_scaling_details(D):
                        if ba.get("mean_expansions") else None)
             r_time = (fa["mean_seconds"] / ba["mean_seconds"]
                       if ba.get("mean_seconds") else None)
+            b2a = _sysagg(g24r8_files.get("comparison_ungraded_b2.json"),
+                          "backward")
+            tail = (f" With the full plan language the subgoal planner "
+                    f"reaches <b>{ffrac(b2a['solved'], b2a['n'])}</b>."
+                    if b2a else " A full-language rerun is computing.")
             reading += (
                 f'<div class="callout"><b>Big board and many robots at '
                 f"once.</b> On the {ba['n']} hardest 24×24, 8-robot puzzles, "
@@ -3518,7 +3523,7 @@ def sec_scaling_details(D):
                 f"{fnum(r_steps, 1)}× fewer search steps and "
                 f"{fnum(r_time, 1)}× less time — the move-by-move planner "
                 f"spends nearly its whole search budget per puzzle and still "
-                f"rarely finishes. A full-language rerun is computing.</div>")
+                f"rarely finishes.{tail}</div>")
     g16r6_files = D["scaling"].get("g16r6") or {}
     ug6 = g16r6_files.get("comparison_ungraded.json")
     ug6_b2 = g16r6_files.get("comparison_ungraded_b2.json")

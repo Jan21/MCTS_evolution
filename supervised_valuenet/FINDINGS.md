@@ -172,7 +172,7 @@ by move** on the real board.
    | 24×24, 8 robots | graded head-to-head | – | – |
    | 24×24, 8 robots | beyond the oracle (289) | 154 (53.3%) at 260 steps / 201 s | 44 (15.2%) at 1101 steps / 1166 s |
    | 32×32, 4 robots | graded head-to-head (175 gradable) | 147 (84.0%) at 13.8 steps / 10.2 s | 133 (76.0%) at 469 steps / 1379 s |
-   | 32×32, 4 robots | beyond the oracle (275) | – | – |
+   | 32×32, 4 robots | beyond the oracle (275) | 127 (46.2%) at 29.7 steps / 14.6 s | 2 (0.7%) at 1199 steps / 2380 s |
 
    All backward networks for every rung are trained; the pending cells wait on the
    forward retrains (24×24/8 and 32×32 in progress on the two granted GPUs) and the
@@ -371,19 +371,24 @@ by move** on the real board.
 
 ## Verdict so far against the goal
 
-**One-paragraph summary of where the thesis stands.** On puzzles easy enough for exact
-methods to grade, the move-by-move planner — properly trained — solves more puzzles
-with shorter solutions at every scale measured, while the subgoal planner is far
-cheaper per puzzle (up to 35× in time at 24×24). The subgoal case strengthens with
-scale on three measured fronts: the exact solver that move-by-move training depends on
-is dying (0% → 29.8% → 48.4% failures); the subgoal planner's self-play keeps training
-where that solver is gone; and on the hardest puzzles beyond the solver's reach the
-subgoal planner now solves more, faster. The move-by-move planner's remaining
-advantages are solution quality and its solve-rate lead inside the oracle's shrinking
-domain; the subgoal planner's remaining handicaps are longer solutions on the frontier
-and a residual gap between what its language now permits (99.6% after the B1+B2
-extensions, §§13/16) and what its current networks achieve (95.6%; retraining on the
-extended vocabulary is the scoped fix).
+**One-paragraph summary of where the thesis stands — the ladder now fully measured.**
+On small puzzles the properly trained move-by-move planner remains the quality
+champion (100% at base scale, near-optimal solutions), and it keeps a solve-rate edge
+on oracle-gradable sets up to 24×24. But every scaling trend runs one way. The exact
+solver its training depends on dies with scale (0% → 29.8% → 40.9% → 48.4% → 61.1%
+failures). Its per-puzzle cost explodes on the grid axis (23 minutes per gradable
+32×32 puzzle), and at 32×32 it loses the gradable set outright (76.0% vs the subgoal
+planner's 84.0% old-language / 88.0% full-language at 100×+ less time). Beyond the
+oracle's reach — the regime that defines scale — it collapses: 48.5% → 50.5% → 15.2%
+→ 0.7% down the ladder, while the subgoal planner with its full language reads 80.6%
+→ 88.6% → 55.7% → 71.3% at 3–40× fewer search steps. With the full language the
+subgoal planner also takes its first gradable-set win (8 robots: 98.5% vs 98.1% at 7×
+fewer steps). The move-by-move planner's remaining advantage is solution quality
+where it solves; the subgoal planner's remaining handicaps are longer frontier
+solutions and the measured gap between what its language permits (99.6% base ceiling,
+nothing proven impossible anywhere) and what its unretrained networks reach (95.6%
+base; small zero-shot gains at scale) — retraining on the extended vocabulary is the
+scoped fix.
 
 - **Efficiency: established.** Same puzzles, same rules: subgoals plan in a handful of
   search steps where move-by-move needs hundreds; at tiny budgets the gap is 79% vs
@@ -397,13 +402,25 @@ extended vocabulary is the scoped fix).
   exhaustive probe, not yet by the trained networks (95.6% achieved vs 99.6%
   permitted).
 
+18. **The ladder is complete (2026-07-23).** The last cell — 32×32 beyond the
+   oracle, the 275 hardest puzzles in the study — reads: **backward (old
+   language) 127 (46.2%) at 29.7 steps / 14.6 s vs the properly trained
+   forward control 2 (0.7%) at 1199 steps (budget-saturated) / 2380 s** —
+   forty minutes per puzzle to solve almost nothing. With the full language
+   (§17) the backward planner reaches **196 (71.3%) at 96 steps / 58 s**. On
+   the grid axis the move-by-move formulation is not merely slower — at the
+   frontier it has effectively stopped working, while the subgoal
+   formulation keeps solving at two orders of magnitude less cost. Source:
+   `scaling/results/g32r4/comparison_ungraded.json`.
+
 ## Still open
 
-- The three final scaling cells — 32×32 graded + beyond-oracle, 24×24/8-robot
-  beyond-oracle (sharded lanes queued on Karolina; FINDINGS §9 updates when they land).
-- The 6-robot B2 re-probe (the 14 not-yet-recovered instances; running) and the
-  escalated probe of the 2 base unresolved instances (idx 405, 427; queued).
-- Retraining the backward networks on B2-vocabulary labels (the 95.6%→ceiling gap);
-  quality-focused self-play on the extended stack (frontier solution length).
-- Rust datagen support for the extended vocabulary; `validate_plan.py` and the `park`
+- Retraining the backward networks on the extended (B2) vocabulary — the
+  measured gap between what the language permits (99.6% base ceiling) and what
+  unretrained ranking achieves (95.6% base; small zero-shot gains at scale)
+  — plus quality-focused self-play on the extended stack (frontier solution
+  length). Requires teaching `rust_datagen` the extended vocabulary first
+  (labels at 24×24/32×32 are impractical in Python).
+- Deciding the 2 frontier-bound base probe instances (idx 405, 427) via a
+  memory-shaped (depth-bounded) probe; `validate_plan.py` and the `park`
   node type.
