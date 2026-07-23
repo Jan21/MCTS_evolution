@@ -171,7 +171,7 @@ by move** on the real board.
    | 24×24, 4 robots | graded head-to-head (232) | 205 (88.4%) | 220 (94.8%) |
    | 24×24, 8 robots | graded head-to-head | – | – |
    | 24×24, 8 robots | beyond the oracle (289) | 154 (53.3%) at 260 steps / 201 s | 44 (15.2%) at 1101 steps / 1166 s |
-   | 32×32, 4 robots | graded head-to-head (175 gradable) | – | – |
+   | 32×32, 4 robots | graded head-to-head (175 gradable) | 147 (84.0%) at 13.8 steps / 10.2 s | 133 (76.0%) at 469 steps / 1379 s |
    | 32×32, 4 robots | beyond the oracle (275) | – | – |
 
    All backward networks for every rung are trained; the pending cells wait on the
