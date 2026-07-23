@@ -361,8 +361,13 @@ by move** on the real board.
    - **24×24/8 graded (161): 148 (91.9%) at 94.9 steps** (source:
      `scaling/results/g24r8/comparison_b2.json`; per-config nets + full
      language, zero-shot) — up from 89.4% old-language; forward control 97.5%
-     at 152 steps. The 24×24/8 extended frontier row is computing (sharded
-     rerun) and appends here when it lands.
+     at 152 steps. Frontier (289): **161 (55.7%) at 635 steps** (source:
+     `scaling/results/g24r8/comparison_ungraded_b2.json`) — vs 53.3%
+     old-language and the forward control's 15.2%. The zero-shot gain is
+     small at this scale (the per-config nets have never seen the new
+     candidate types); the series' consistent reading is that the language
+     ceiling has moved far ahead of what unretrained ranking can reach —
+     retraining on the extended vocabulary is the scoped next step.
 
 ## Verdict so far against the goal
 
