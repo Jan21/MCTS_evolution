@@ -47,6 +47,23 @@ def main():
                         "count (it has no CLI flag; larger grids exceed the "
                         "default 50 bins). Forward passes --num-classes "
                         "through after `--` instead.")
+    p.add_argument("--warm-start", default=None,
+                   help="backward-value only: load this checkpoint's "
+                        "state_dict into the freshly built net before "
+                        "training (cold value retrains are proven "
+                        "seed-unstable; the b1_retrain_chain WarmValueNet "
+                        "pattern). Path is repo-root-relative unless "
+                        "absolute. The architecture must match — combine "
+                        "with --num-classes when the predecessor used "
+                        "non-default bins (g32r4: 96).")
+    p.add_argument("--lr", type=float, default=None,
+                   help="backward systems only: override the trainer's "
+                        "learning-rate default (no CLI flag exists there; "
+                        "the >=6-robot low-lr launcher pattern, typically "
+                        "1e-4).")
+    p.add_argument("--torch-seed", type=int, default=None,
+                   help="torch.manual_seed before the trainer starts "
+                        "(the b1 retrain chain used 11)")
     p.add_argument("rest", nargs=argparse.REMAINDER,
                    help="args after `--` go to the underlying trainer")
     a = p.parse_args()
@@ -70,15 +87,64 @@ def main():
         print(f"[scaling.train] SPLITS rebound to {cfg.name} board ranges "
               f"{ {s: cfg.board_ranges[s] for s in ('train', 'val', 'test')} }")
 
-    if a.num_classes is not None:
-        if a.system != "backward-value":
-            raise SystemExit("--num-classes is a wrapper flag for "
-                             "backward-value only (forward: pass it after --)")
-        import functools
+    if a.num_classes is not None and a.system != "backward-value":
+        raise SystemExit("--num-classes is a wrapper flag for "
+                         "backward-value only (forward: pass it after --)")
+    if a.warm_start is not None and a.system != "backward-value":
+        raise SystemExit("--warm-start applies to backward-value only "
+                         "(proposal nets retrain cold by policy)")
+    if a.lr is not None and a.system == "forward":
+        raise SystemExit("--lr is a wrapper flag for the backward systems; "
+                         "forward uses the train_fwd_lowlr launcher pattern")
+
+    if a.torch_seed is not None:
+        import torch
+        torch.manual_seed(a.torch_seed)
+        print(f"[scaling.train] torch.manual_seed({a.torch_seed})")
+
+    if a.system == "backward-value" and (a.num_classes is not None
+                                         or a.lr is not None
+                                         or a.warm_start is not None):
+        import torch
         import train.looped_pc as looped_pc
-        looped_pc.LoopedValueNet = functools.partial(
-            looped_pc.LoopedValueNet, num_classes=a.num_classes)
-        print(f"[scaling.train] LoopedValueNet num_classes={a.num_classes}")
+        _orig_value = looped_pc.LoopedValueNet
+        extra = {}
+        if a.num_classes is not None:
+            extra["num_classes"] = a.num_classes
+        if a.lr is not None:
+            extra["lr"] = a.lr
+        warm = None
+        if a.warm_start is not None:
+            warm = Path(a.warm_start)
+            if not warm.is_absolute():
+                warm = (REPO / warm).resolve()
+            if not warm.exists():
+                raise SystemExit(f"--warm-start checkpoint not found: {warm}")
+
+        class WrappedValueNet(_orig_value):
+            def __init__(self, *args, **kw):
+                super().__init__(*args, **{**extra, **kw})
+                if warm is not None:
+                    ck = torch.load(warm, map_location="cpu")
+                    self.load_state_dict(ck["state_dict"])
+                    print(f"[scaling.train] value net warm-started from "
+                          f"{warm}", flush=True)
+
+        looped_pc.LoopedValueNet = WrappedValueNet
+        print(f"[scaling.train] LoopedValueNet wrapper: {extra}, "
+              f"warm_start={warm}")
+    elif a.system == "backward-policy" and a.lr is not None:
+        import train.policy_tf as policy_tf
+        _orig_policy = policy_tf.PolicyTF
+        _lr = a.lr
+
+        class WrappedPolicyTF(_orig_policy):
+            def __init__(self, *args, **kw):
+                kw.setdefault("lr", _lr)
+                super().__init__(*args, **kw)
+
+        policy_tf.PolicyTF = WrappedPolicyTF
+        print(f"[scaling.train] PolicyTF lr={_lr}")
 
     modname = ENTRYPOINTS[a.system]
     mod = importlib.import_module(modname)
