@@ -49,6 +49,7 @@ TABS = [
     ("base", "Base scale"),
     ("language", "The plan language"),
     ("scaling", "Scaling"),
+    ("fairness", "Is it fair?"),
     ("methods", "Methods & sources"),
 ]
 
@@ -59,6 +60,7 @@ def build_page(D):
         "base": story.tab_base(D),
         "language": story.tab_language(D),
         "scaling": scale.tab_scaling(D),
+        "fairness": scale.tab_fairness(D),
     }
     # methods LAST so its provenance + self-check tables see everything
     contents["methods"] = scale.tab_methods(D)

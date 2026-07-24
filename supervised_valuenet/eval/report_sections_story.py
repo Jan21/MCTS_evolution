@@ -368,8 +368,8 @@ def sec_verdict(D):
   <p class="small muted">How to read the rest: tab 2 details the base-scale
   head-to-head where both planners were perfected; tab 3 explains why plans
   fail and how extending the plan language fixed it; tab 4 walks the scaling
-  ladder rung by rung; tab 5 holds protocol, provenance and the machine
-  self-check.</p>
+  ladder rung by rung; tab 5 audits whether the comparison is compute-fair;
+  tab 6 holds protocol, provenance and the machine self-check.</p>
 </section>"""
     return html
 

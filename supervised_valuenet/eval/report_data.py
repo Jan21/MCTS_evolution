@@ -174,6 +174,23 @@ BASE_FUTURE = {
                       "final450_backward_b2retrained.json"],
 }
 
+# compute-fairness inputs (the "Is the comparison fair?" tab). Each entry:
+# (D key, relpath, note shown in provenance while the file is absent)
+FAIRNESS_FILES = [
+    ("budget_by_rung", "eval/results/budget_curves_by_rung.json",
+     "being reconstructed from archived per-instance expansion counts "
+     "(main session)"),
+    ("compute_accounting", "eval/results/compute_accounting.json",
+     "measurement queued: instrumented counters (NN calls by head, physics "
+     "slides in realization/prefix/park checks, free-fix expansions)"),
+    ("fwd_probe_g24r8", "scaling/results/g24r8/forward_probe_e6000.json",
+     "measurement queued: extended-budget (6,000-step) forward run on a "
+     "frontier subsample"),
+    ("fwd_probe_g32r4", "scaling/results/g32r4/forward_probe_e4800.json",
+     "measurement queued: extended-budget (4,800-step) forward run on a "
+     "frontier subsample"),
+]
+
 
 def load_rung_files(rung):
     """Load every distinct file a rung references; returns relpath->data."""
@@ -463,6 +480,14 @@ def collect():
         if r.get("base"):
             continue
         D["rungs"][r["key"]] = load_rung_files(r)
+
+    # compute-fairness inputs (each renders as a pending hook until it lands)
+    for key, rel, note in FAIRNESS_FILES:
+        if os.path.exists(rp(rel)):
+            D[key] = load_json(rel)
+        else:
+            D[key] = None
+            SOURCES.setdefault(rel, {"status": "missing", "note": note})
 
     # cross-file protocol sanity: every comparison file at the shared budget
     protos = []

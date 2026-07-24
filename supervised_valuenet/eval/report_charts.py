@@ -255,8 +255,10 @@ def grouped_hbars(groups, series, unit="", vmax=None, aria="",
                 f"{slabel}\t" + (label_fmt.format(v) + unit
                                  if v is not None else "not measured"))
         tip = esc("\n".join(tip_lines))
-        parts.append(f'<rect x="0" y="{y - gap_out / 2:.1f}" width="{W}" '
-                     f'height="{group_h + gap_out}" fill="transparent" '
+        hy0 = max(0.0, y - gap_out / 2)
+        hy1 = min(float(H), y + group_h + gap_out / 2)
+        parts.append(f'<rect x="0" y="{hy0:.1f}" width="{W}" '
+                     f'height="{hy1 - hy0:.1f}" fill="transparent" '
                      f'data-tt="{tip}" tabindex="0" role="img" '
                      f'aria-label="{tip}"/>')
         parts.append(f'<text x="{pad_l - 8}" y="{y + group_h / 2 + 4:.1f}" '
@@ -376,6 +378,108 @@ def line_chart(xlabels, series, unit="%", aria="", height=240,
                      f'role="img" aria-label="{tip}"/>')
     parts.append("</svg>")
     return "".join(parts)
+
+
+# ---------------------------------------------------------------------------
+# Dense budget curve (solve rate vs budget, log-x) — one small-multiple panel
+# ---------------------------------------------------------------------------
+
+def budget_curve_panel(series, aria="", width=430, height=170,
+                       xmax=1200, hover_budgets=(10, 30, 100, 300, 1200)):
+    """series: list of {fam, label, points: [(budget, rate_pct), ...]}.
+    Log-x from 1 to xmax; dense step curves are downsampled for the path;
+    hover columns at the canonical budgets list every series."""
+    import math
+    pad_l, pad_r, pad_t, pad_b = 40, 12, 8, 30
+    W, H = width, height + pad_t + pad_b
+    plot_w, plot_h = W - pad_l - pad_r, height
+
+    def X(b):
+        b = max(1.0, float(b))
+        return pad_l + plot_w * math.log(b) / math.log(xmax)
+
+    def Y(r):
+        return pad_t + plot_h * (1 - r / 100.0)
+
+    parts = [f'<svg viewBox="0 0 {W} {H}" '
+             f'style="max-width:{int(W * 1.15)}px" role="img" '
+             f'aria-label="{esc(aria)}" preserveAspectRatio="xMidYMid meet">']
+    for tv in (0, 50, 100):
+        y = Y(tv)
+        parts.append(f'<line x1="{pad_l}" y1="{y:.1f}" x2="{W - pad_r}" '
+                     f'y2="{y:.1f}" stroke="var(--grid)" stroke-width="1"/>')
+        parts.append(f'<text x="{pad_l - 6}" y="{y + 3.5:.1f}" '
+                     f'text-anchor="end" font-size="9.5" '
+                     f'fill="var(--faint)">{tv}%</text>')
+    for tb in (1, 10, 100, 1200):
+        x = X(tb)
+        parts.append(f'<line x1="{x:.1f}" y1="{pad_t}" x2="{x:.1f}" '
+                     f'y2="{pad_t + plot_h}" stroke="var(--grid)" '
+                     f'stroke-width="1"/>')
+        parts.append(f'<text x="{x:.1f}" y="{pad_t + plot_h + 14}" '
+                     f'text-anchor="middle" font-size="9.5" '
+                     f'fill="var(--faint)">{tb}</text>')
+    parts.append(f'<line x1="{pad_l}" y1="{pad_t + plot_h}" '
+                 f'x2="{W - pad_r}" y2="{pad_t + plot_h}" '
+                 f'stroke="var(--baseline)" stroke-width="1"/>')
+    parts.append(f'<text x="{pad_l + plot_w / 2:.1f}" y="{H - 4}" '
+                 f'text-anchor="middle" font-size="9.5" '
+                 f'fill="var(--faint)">search-step budget (log scale)</text>')
+    for s in series:
+        pts = sorted((b, r) for b, r in s["points"] if b and b <= xmax)
+        if not pts:
+            continue
+        # downsample: keep points where the x-position or rate moves visibly
+        kept, last = [], None
+        for b, r in pts:
+            if last is None or X(b) - X(last[0]) > 2.5 \
+                    or abs(r - last[1]) > 0.4:
+                kept.append((b, r))
+                last = (b, r)
+        if kept[-1] != pts[-1]:
+            kept.append(pts[-1])
+        # step curve: horizontal-then-up segments
+        d = [f"M{X(kept[0][0]):.1f},{Y(kept[0][1]):.1f}"]
+        for (b0, r0), (b1, r1) in zip(kept, kept[1:]):
+            d.append(f"L{X(b1):.1f},{Y(r0):.1f}")
+            d.append(f"L{X(b1):.1f},{Y(r1):.1f}")
+        parts.append(f'<path d="{" ".join(d)}" fill="none" '
+                     f'stroke="{FAMILY_VAR[s["fam"]]}" stroke-width="2" '
+                     f'stroke-linejoin="round"/>')
+        bE, rE = kept[-1]
+        parts.append(f'<circle cx="{X(bE):.1f}" cy="{Y(rE):.1f}" r="3.5" '
+                     f'fill="{FAMILY_VAR[s["fam"]]}" '
+                     f'stroke="var(--surface)" stroke-width="2"/>')
+    # hover columns at canonical budgets
+    hb = [b for b in hover_budgets if b <= xmax]
+    for i, b in enumerate(hb):
+        lines = [f"budget {b} steps"]
+        for s in series:
+            r = _rate_at(s["points"], b)
+            lines.append(f'{s["label"]}\t'
+                         + (f"{r:.1f}%" if r is not None else "—"))
+        tip = esc("\n".join(lines))
+        x0 = X(hb[i - 1]) if i else pad_l
+        x1 = X(hb[i + 1]) if i < len(hb) - 1 else W - pad_r
+        xm0, xm1 = (x0 + X(b)) / 2 if i else x0, (X(b) + x1) / 2 \
+            if i < len(hb) - 1 else x1
+        parts.append(f'<rect x="{xm0:.1f}" y="{pad_t}" '
+                     f'width="{xm1 - xm0:.1f}" height="{plot_h + 16}" '
+                     f'fill="transparent" data-tt="{tip}" tabindex="0" '
+                     f'role="img" aria-label="{tip}"/>')
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def _rate_at(points, budget):
+    """Solve rate at a given budget from a (budget, rate) step curve."""
+    best = None
+    for b, r in sorted(points):
+        if b <= budget:
+            best = r
+        else:
+            break
+    return best
 
 
 # ---------------------------------------------------------------------------

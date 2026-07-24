@@ -464,7 +464,458 @@ def tab_scaling(D):
 
 
 # ---------------------------------------------------------------------------
-# Tab 5 — Methods & sources
+# Tab 5 — Is the comparison fair? (compute accounting)
+# ---------------------------------------------------------------------------
+
+def sec_fair_matched(D):
+    exp_def = ""
+    for key in ("bwd_b2", "bwd_prefix", "fwd450"):
+        comp = D.get(key)
+        if comp and comp.get("protocol", {}).get("expansion_definition"):
+            exp_def = comp["protocol"]["expansion_definition"]
+            break
+    # paired instances: every file of a rung+set must pin the same instances
+    all_paired = True
+    n_groups = 0
+    for key, slots in D["rungs"].items():
+        by_group = {}
+        for (group, slot), (rel, comp, kind) in slots.items():
+            if comp and group in ("graded", "frontier"):
+                sha = comp.get("protocol", {}).get("instances_sha256")
+                if sha:
+                    by_group.setdefault(group, set()).add(sha)
+        for group, shas in by_group.items():
+            n_groups += 1
+            if len(shas) != 1:
+                all_paired = False
+    fact(f"paired instances: every result file of a rung+set pins the "
+         f"identical instance file (sha256 checked, {n_groups} groups)",
+         all_paired)
+    exp_html = (f'<p class="small muted">As recorded in every result file: '
+                f"“{esc(exp_def)}”</p>" if exp_def else "")
+    return kicker_h2(
+        "what is matched today",
+        "The protocol's matched unit: one search step, same everywhere",
+        "Both planners run under a cap of 1,200 search expansions per "
+        "puzzle with top-5 proposals per decision, on the identical pinned "
+        "instances (checksummed per rung and set).") + f"""
+  <p>One expansion means the same thing in both families: <b>pop the most
+  promising node and generate its candidate continuations — one
+  proposal-network pass plus one (batched) value-network pass</b>. That
+  makes the step budgets directly comparable at the network-call level:
+  neither planner gets more neural computation per step than the other.
+  Every head-to-head on this page is paired — the same puzzles, the same
+  caps, the same scoring.</p>
+  {exp_html}
+</section>"""
+
+
+def sec_fair_ledger(D):
+    acc = D.get("compute_accounting")
+    hook = ""
+    if acc:
+        hook = ("<p><b>Instrumented counters have landed</b> "
+                "(<code>eval/results/compute_accounting.json</code>) — "
+                "render support for this file's schema should be reviewed "
+                "in the next report build pass.</p>")
+    else:
+        hook = progress_tag(
+            "measurement queued: instrumented re-runs will publish "
+            "per-rung counters (network calls by head; physics-slide calls "
+            "inside realization, prefix checks and park repairs; free-fix "
+            "expansions) to eval/results/compute_accounting.json — this "
+            "section renders them automatically when the file lands")
+    return kicker_h2(
+        "the honest ledger",
+        "What the expansion counter does not see",
+        "The matched unit counts network passes. The subgoal planner also "
+        "does bookkeeping work that the counter does not meter — listed "
+        "here in full, because a fair comparison must either count all "
+        "work or measure the exclusion.") + f"""
+  <div class="cols2">
+    <div class="panel"><h3 class="ph">Physics checks inside the search</h3>
+    <p class="small">The checked search test-plays every <b>partial</b>
+    plan as it is built (the prefix filter). These are pure board-physics
+    slide simulations — no network calls — and they are not charged to the
+    expansion budget.</p></div>
+    <div class="panel"><h3 class="ph">“Free” forced-exact fixes</h3>
+    <p class="small">When a decision has exactly one viable candidate, the
+    search commits it without spending an expansion. Cheap by
+    construction, but uncounted.</p></div>
+    <div class="panel"><h3 class="ph">Zero-cost pops of unplayable
+    plans</h3><p class="small">A complete plan that fails its playback
+    test is discarded and the search continues; the pop-and-discard is not
+    charged as an expansion.</p></div>
+    <div class="panel"><h3 class="ph">Deterministic park repairs</h3>
+    <p class="small">The full-language search may repair a failed complete
+    plan by scheduling step-asides — a deterministic, network-free
+    procedure, also outside the counter.</p></div>
+  </div>
+  <p>Why this matters: the hierarchical-search literature's standard
+  (“What Matters in Hierarchical Search”, §4.3) is that a two-level method
+  must either <b>count all work at both levels</b> or <b>measure the
+  excluded work and show it is negligible</b>. The expansion counter here
+  meters exactly the network computation — the dominant cost by design —
+  but the four mechanisms above are real work done only on the subgoal
+  side, so the honest position is to measure them rather than assert
+  them away. Two complementary checks exist today: <b>wall-clock time</b>
+  (below), which counts everything including the unmetered bookkeeping,
+  and the <b>instrumented counters</b> now being collected.</p>
+  {hook}
+</section>"""
+
+
+def _read_budget_by_rung(data, D):
+    """Reader for eval/results/budget_curves_by_rung.json.
+
+    Schema (landed 2026-07-24): {"budgets": [B...], "method": str,
+    "sources": {relpath: {system_name: {"n": int, "solve_rate": [r per B],
+    "solve_rate_1200": r}}}}, rates as fractions.
+
+    The rows to plot are selected through the ladder cells (which already
+    carry each slot's source file and exact system name), so the same
+    control/withhold logic applies here: the collapsed 8-robot stock
+    forward run is present in the file but is never plotted.
+
+    Returns list of panels {key, label, set, n, series:[{fam,label,points,
+    final_frac, src, name}]} or None if the schema is unrecognized."""
+    if not isinstance(data, dict) or not isinstance(data.get("sources"),
+                                                    dict) \
+            or not isinstance(data.get("budgets"), list):
+        return None
+    budgets = data["budgets"]
+    sources = data["sources"]
+
+    def lookup(cell):
+        if not cell:
+            return None
+        rates = (sources.get(cell["src"]) or {}).get(cell["name"])
+        if not rates or not isinstance(rates.get("solve_rate"), list):
+            return None
+        pts = [(b, r * 100) for b, r in zip(budgets, rates["solve_rate"])]
+        return {"points": pts, "final_frac": rates.get("solve_rate_1200"),
+                "n": rates.get("n"), "src": cell["src"],
+                "name": cell["name"], "cell": cell}
+
+    panels = []
+    for e in D["ladder"]:
+        for group, gname in (("graded", "gradable set"),
+                             ("frontier", "beyond the oracle")):
+            cells = e.get(group) or {}
+            series = []
+            for slot, fam, lab in (
+                    ("bwd_old", "bwd-old", "subgoals, original language"),
+                    ("bwd_b2", "bwd", "subgoals, full language"),
+                    ("fwd", "fwd", "move-by-move")):
+                cand = cells.get(slot)
+                if slot == "bwd_b2" and not cand:
+                    cand = cells.get("bwd_b1")
+                    lab = "subgoals, extended language (B1)"
+                got = lookup(cand)
+                if got:
+                    got.update({"fam": fam, "label": lab})
+                    series.append(got)
+            if series:
+                panels.append({"key": e["key"], "label": e["label"],
+                               "set": gname, "n": series[0]["n"],
+                               "series": series})
+    return panels or None
+
+
+BUDGET_TWIN_CAPS = (5, 25, 100, 300, 1200)
+
+
+def sec_fair_budget(D):
+    head = kicker_h2(
+        "solve rate vs budget, every rung",
+        "What each planner does when the budget shrinks",
+        "The step cap of 1,200 is one point on a curve. Because both "
+        "searches are deterministic, a puzzle solved using e expansions is "
+        "solved at every budget B ≥ e — so the full solve-rate-vs-budget "
+        "curve for every budget up to 1,200 can be reconstructed exactly "
+        "from the archived per-instance expansion counts, with no new "
+        "compute.")
+    raw = D.get("budget_by_rung")
+    src = "eval/results/budget_curves_by_rung.json"
+    if raw is None:
+        return head + pending(
+            "eval/results/budget_curves_by_rung.json is being generated "
+            "(per-rung, per-system solve-rate-vs-budget reconstructed from "
+            "archived per-instance expansion counts); the small-multiple "
+            "charts render here automatically when it lands") + "</section>"
+    panels_data = _read_budget_by_rung(raw, D)
+    if not panels_data:
+        return head + pending(
+            f"{src} is present but its schema was not recognized by "
+            "report_sections_scale._read_budget_by_rung — extend the "
+            "reader") + "</section>"
+    # cross-file consistency: each curve's endpoint must equal the solve
+    # rate of the aggregate row this report renders elsewhere
+    worst = 0.0
+    for p in panels_data:
+        for s in p["series"]:
+            agg_rate = s["cell"]["agg"]["solve_rate"]
+            if s["final_frac"] is not None:
+                worst = max(worst, abs(agg_rate - s["final_frac"]))
+    fact("budget curves: every curve's endpoint equals its comparison "
+         f"file's aggregate solve rate (max deviation {worst:.2e})",
+         worst < 1e-9)
+    fams = []
+    for p in panels_data:
+        for s in p["series"]:
+            if (s["fam"], s["label"]) not in fams:
+                fams.append((s["fam"], s["label"]))
+    panels, twin_rows = [], []
+    for p in panels_data:
+        svg = C.budget_curve_panel(
+            p["series"], hover_budgets=BUDGET_TWIN_CAPS,
+            aria=f'Solve rate vs search-step budget, {p["label"]}, '
+                 f'{p["set"]}')
+        panels.append(
+            f'<div class="panel"><h3 class="ph">{esc(p["label"])}</h3>'
+            f'<p class="cellnote">{esc(p["set"])} — {p["n"]} puzzles</p>'
+            f"{svg}</div>")
+        for s in p["series"]:
+            row = [esc(f'{p["label"]}, {p["set"]} — {s["label"]}')]
+            for b in BUDGET_TWIN_CAPS:
+                v = C._rate_at(s["points"], b)
+                row.append(ck(f"{v:.1f}%", src,
+                              f'budget curve {p["key"]} {p["set"]} '
+                              f'{s["label"]} at {b}', raw=v)
+                           if v is not None else "—")
+            twin_rows.append(row)
+    twin = C.table_twin(
+        ["configuration, set — system"]
+        + [f"{b} steps" for b in BUDGET_TWIN_CAPS],
+        twin_rows, "reconstructed curves as a table (every panel)")
+    method = raw.get("method", "")
+    caption = (
+        f"Reconstruction method, as recorded in the file: “{esc(method)}” "
+        "No new runs are involved. Log-scale budget axis; the dot marks "
+        "each curve's endpoint at the full 1,200-step cap, which is "
+        "verified at build time to equal the aggregate solve rate "
+        "reported elsewhere on this page. Forward rows use the same "
+        "healthy-training selection as the rest of the report (the "
+        "collapsed 8-robot stock run is present in the file and excluded "
+        "here too).")
+    # derived readings (kept honest by computing them from the curves)
+    shares50 = []
+    for p in panels_data:
+        if p["set"] != "gradable set":
+            continue
+        for s in p["series"]:
+            if s["fam"] == "bwd" or (s["fam"] == "bwd-old" and not any(
+                    x["fam"] == "bwd" for x in p["series"])):
+                r50 = C._rate_at(s["points"], 50)
+                rf = C._rate_at(s["points"], 1200)
+                if r50 and rf:
+                    shares50.append(r50 / rf * 100)
+    gains = []   # (label, last-200-step gain) for frontier forward curves
+    for p in panels_data:
+        if p["set"] != "beyond the oracle":
+            continue
+        for s in p["series"]:
+            if s["fam"] == "fwd":
+                g = (C._rate_at(s["points"], 1200) or 0) \
+                    - (C._rate_at(s["points"], 1000) or 0)
+                gains.append((p["label"], g))
+    climbing = [f"{lab} (+{g:.1f} points)" for lab, g in gains if g >= 2]
+    flat = [f"{lab} (+{g:.1f})" for lab, g in gains if g < 2]
+    reading = ""
+    if shares50 and gains:
+        reading = f"""
+  <p class="small">Two readings, computed from the curves themselves.
+  <b>The efficiency gap is structural:</b> on gradable sets the best
+  subgoal curves reach {min(shares50):.0f}–{max(shares50):.0f}% of their
+  final solve rate within the first 50 steps, while the move-by-move
+  curves need hundreds. <b>The frontier picture is mixed and honest:</b>
+  the move-by-move frontier curves are still climbing at the cap at
+  {esc("; ".join(climbing)) if climbing else "no rung"} — more budget
+  plausibly helps there — but have gone nearly flat at
+  {esc("; ".join(flat)) if flat else "no rung"}, where the collapse does
+  not look like a cap artifact. The extended-budget probes below answer
+  this directly.</p>"""
+    return (head + C.line_legend(fams)
+            + f'<div class="cols2">{"".join(panels)}</div>'
+            + f'<figure class="chart"><figcaption>{caption}'
+            f'<span class="src">source: {esc(src)}</span></figcaption>'
+            f"{twin}</figure>" + reading + "</section>")
+
+
+def sec_fair_wallclock(D):
+    rows = []
+    pref = ["bwd_b2", "bwd_b1", "bwd_old"]
+    label_of = {"bwd_b2": "subgoals, full language",
+                "bwd_b1": "subgoals, extended language (B1)",
+                "bwd_old": "subgoals, original language"}
+    for e in D["ladder"]:
+        for group, gname in (("graded", "gradable set"),
+                             ("frontier", "beyond the oracle")):
+            cells = e.get(group) or {}
+            f = cells.get("fwd")
+            if not f:
+                continue
+            cand = [k for k in pref if cells.get(k)
+                    and cells[k]["machine"] == f["machine"]]
+            if not cand:
+                rows.append((e["label"], gname, None, None, None, None,
+                             "no same-machine pair yet"))
+                continue
+            b = cells[cand[0]]
+            bs, fs = b["agg"]["mean_seconds"], f["agg"]["mean_seconds"]
+            desc = f'wall-clock {e["key"]} {group}'
+            rows.append((
+                e["label"], gname, label_of[cand[0]],
+                ck(fnum(bs, 2), b["src"], desc + " backward s", raw=bs),
+                ck(fnum(fs, 2), f["src"], desc + " forward s", raw=fs),
+                f"{fs / bs:.1f}×" if bs else "—",
+                "Karolina" if b["machine"] == "karolina"
+                else "origin machine"))
+    body = []
+    for label, gname, bsys, bs, fs, ratio, mach in rows:
+        if bsys is None:
+            body.append(f"<tr><td><b>{esc(label)}</b>"
+                        f'<div class="cellnote">{esc(gname)}</div></td>'
+                        f'<td colspan="3" class="small muted">{esc(mach)}'
+                        "</td></tr>")
+            continue
+        body.append(
+            f"<tr><td><b>{esc(label)}</b>"
+            f'<div class="cellnote">{esc(gname)} · measured on {esc(mach)}'
+            f"</div></td>"
+            f'<td class="num">{bs}<div class="cellnote">{esc(bsys)}</div>'
+            "</td>"
+            f'<td class="num">{fs}</td>'
+            f'<td class="num"><b>{esc(ratio)}</b></td></tr>')
+    table = scroll(
+        "<table><thead><tr><th>configuration · set</th>"
+        "<th class='num'>" + dot("bwd") + "subgoals<br>seconds / puzzle</th>"
+        "<th class='num'>" + dot("fwd") + "move-by-move<br>seconds / puzzle"
+        "</th><th class='num'>time ratio</th></tr></thead><tbody>"
+        + "".join(body) + "</tbody></table>")
+    # data-driven closing paragraph (never assert what the table refutes)
+    numeric = [(label, gname, float(r[:-1]))
+               for (label, gname, bsys, bs, fs, r, m) in rows
+               if bsys is not None and r and r.endswith("×")]
+    scaling_ratios = [(la, g, v) for la, g, v in numeric
+                      if "16×16 board, 4 robots" not in la]
+    base_ratios = [(la, g, v) for la, g, v in numeric
+                   if "16×16 board, 4 robots" in la]
+    fact("wall-clock: subgoals faster on every same-machine pair beyond "
+         "the base scale", all(v > 1 for _, _, v in scaling_ratios))
+    closing = ""
+    if scaling_ratios:
+        lo = min(v for _, _, v in scaling_ratios)
+        hi = max(v for _, _, v in scaling_ratios)
+        base_note = ""
+        if base_ratios and base_ratios[0][2] < 1:
+            base_note = (
+                f" The one exception is the base scale "
+                f"({base_ratios[0][2]:.1f}×): on a 16×16 board a single "
+                "move-level step is cheap enough that the move-by-move "
+                "planner's many steps out-run the subgoal planner's few — "
+                "an exception that disappears as boards grow, which is the "
+                "thesis in miniature.")
+        closing = f"""
+  <p class="small">Wall-clock charges the subgoal planner for all of its
+  unmetered bookkeeping — and it still runs {lo:.1f}×–{hi:.0f}× faster
+  per puzzle on every same-machine pair at every scaling
+  rung.{base_note} The instrumented counters will put exact numbers on
+  the exclusions themselves.</p>"""
+    return kicker_h2(
+        "the complementary check: wall-clock",
+        "Time counts everything — and points the same way at scale",
+        "Wall-clock time meters every kind of work, including all the "
+        "bookkeeping the expansion counter excludes. It is only "
+        "comparable between runs on the same machine, so this table is "
+        "restricted to same-machine pairs (the fullest backward language "
+        "measured on the forward row's machine).") + table + closing \
+        + "</section>"
+
+
+def sec_fair_probes(D):
+    lad = {e["key"]: e for e in D["ladder"]}
+    sat_html = ""
+    ff32 = (lad.get("g32r4", {}).get("frontier") or {}).get("fwd")
+    ff24 = (lad.get("g24r8", {}).get("frontier") or {}).get("fwd")
+    if ff32:
+        me = ff32["agg"]["mean_expansions"]
+        cap = 1200
+        fact("32×32 frontier forward row is budget-saturated "
+             "(mean expansions > 99% of the cap)", me > 0.99 * cap)
+        e24 = ""
+        if ff24:
+            me24 = ff24["agg"]["mean_expansions"]
+            e24 = (f" (at 24×24 · 8 robots the same row averages "
+                   f"{ck(fnum(me24, 1), ff24['src'], 'saturation: g24r8 frontier fwd steps', raw=me24)}"
+                   f" steps)")
+        sat_html = f"""
+  <p><b>The caveat that motivates these probes:</b> the 32×32 frontier
+  move-by-move row is <b>budget-saturated</b> — it averages
+  {ck(fnum(me, 1), ff32["src"], "saturation: g32r4 frontier fwd steps",
+  raw=me)} of its {cap} allowed expansions{e24}. A saturated row shows the
+  planner failing <i>at this budget</i>; it cannot by itself distinguish
+  “cannot solve these puzzles” from “needs a larger budget”. The
+  extended-budget probes answer exactly that question on frontier
+  subsamples.</p>"""
+    probes = [
+        ("fwd_probe_g24r8", "scaling/results/g24r8/forward_probe_e6000.json",
+         "24×24 board, 8 robots", "6,000 steps (5× the standard cap)",
+         "is the 15.2% frontier solve rate a budget-cap artifact?"),
+        ("fwd_probe_g32r4", "scaling/results/g32r4/forward_probe_e4800.json",
+         "32×32 board, 4 robots", "4,800 steps (4× the standard cap)",
+         "is the 0.7% frontier collapse a budget-cap artifact?"),
+    ]
+    blocks = []
+    for dkey, rel, label, budget, question in probes:
+        comp = D.get(dkey)
+        if not comp:
+            blocks.append(f"""
+  <div class="panel"><h3 class="ph">{esc(label)} — move-by-move at
+  {esc(budget)}</h3>
+  <p class="small">Question: {esc(question)}</p>
+  {progress_tag(f"measurement queued — renders automatically from {rel} "
+                "when the run lands (a frontier-subsample comparison at "
+                "the extended budget)")}</div>""")
+            continue
+        from eval.report_data import pick, pick_name, machine_of, proto_date
+        agg = pick(comp, "forward")
+        rows = []
+        if agg:
+            rows.append({
+                "label": f"Move-by-move at {budget}", "family": "fwd",
+                "sub": f"frontier subsample; standard rows use 1,200 steps",
+                "agg": agg, "src": rel,
+                "machine": machine_of(comp),
+                "note": f"measured {proto_date(comp)[:10]}"})
+        b_agg = pick(comp, "backward")
+        if b_agg:
+            rows.append({
+                "label": "Subgoals on the same subsample (reference)",
+                "family": "bwd", "sub": "", "agg": b_agg, "src": rel,
+                "machine": machine_of(comp)})
+        blocks.append(f"""
+  <div class="panel"><h3 class="ph">{esc(label)} — move-by-move at
+  {esc(budget)}</h3>
+  <p class="small">Question: {esc(question)}</p>
+  {sys_table(rows, frontier=True)}</div>""")
+    return kicker_h2(
+        "extended-budget probes",
+        "Is the frontier collapse a budget artifact? The direct test",
+        "Two queued runs give the move-by-move planner several times its "
+        "standard budget on frontier subsamples. If its solve rate stays "
+        "flat, the collapse is real; if it climbs substantially, the "
+        "standard-budget frontier rows overstate the gap.") \
+        + sat_html + "".join(blocks) + "</section>"
+
+
+def tab_fairness(D):
+    return (sec_fair_matched(D) + sec_fair_ledger(D) + sec_fair_budget(D)
+            + sec_fair_wallclock(D) + sec_fair_probes(D))
+
+
+# ---------------------------------------------------------------------------
+# Tab 6 — Methods & sources
 # ---------------------------------------------------------------------------
 
 def sec_protocol(D):
