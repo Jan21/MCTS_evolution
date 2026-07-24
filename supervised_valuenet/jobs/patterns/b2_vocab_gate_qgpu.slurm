@@ -9,12 +9,16 @@
 #   4. 24x24/8,      vocab b2   (grid axis)
 # Python-side b2 rollouts can wander; every instance runs under the dumper's
 # SIGALRM cap, so each leg is time-bounded. CPU-only inside a 1-GPU job.
+# 2026-07-24: walltime trimmed to 3 h with the owner's explicit approval
+# (realistic total 1-2 h, timeout-bounded worst case ~5 h; short requests
+# backfill far sooner on a saturated queue). Legs are resumable: a completed
+# leg's dump is kept (tmp+mv atomic) and skipped on resubmission.
 #SBATCH --job-name=rr-b2gate
 #SBATCH -A open-37-42
 #SBATCH -p qgpu
 #SBATCH --gpus 1
 #SBATCH --nodes=1
-#SBATCH --time=24:00:00
+#SBATCH --time=03:00:00
 #SBATCH --output=/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/b2gate/%x-%j.out
 
 set -uo pipefail
