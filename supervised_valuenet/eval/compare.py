@@ -70,8 +70,11 @@ class _CountingGuide:
         return self._guide.eval_states(*args, **kwargs)
 
 
-def run_forward(ckpt, instances, k, budget, device, log=print):
+def run_forward(ckpt, instances, k, budget, device, log=print,
+                dump_moves=False):
     from move_planner.evaluate import nn_astar, Guide, walls_for
+    from move_planner.state import COLOR_ORDER
+    from simulate import DIRECTIONS
 
     guide = _CountingGuide(Guide(ckpt, device))
     walls = {}
@@ -90,14 +93,20 @@ def run_forward(ckpt, instances, k, budget, device, log=print):
                                target, wr, wd, k=k, max_iters=budget)
         dt = time.perf_counter() - t0
         expansions = max(0, (guide.calls - c0 - 1)) // 2
-        rows.append({
+        row = {
             "env_id": env_id, "d_star": d_star,
             "solved": cost is not None,
             "moves": cost,
             "regret": None if cost is None else cost - d_star,
             "expansions": expansions,
             "seconds": dt,
-        })
+        }
+        if dump_moves and cost is not None:
+            # "moves" is already the count here, so the sequence gets its own key
+            row["moves_seq"] = [[COLOR_ORDER[s], DIRECTIONS[d]]
+                                for s, d in _path]
+        row["accounting"] = {"nn_calls": guide.calls - c0}
+        rows.append(row)
         if log and (i + 1) % 50 == 0:
             log(f"  [forward {Path(ckpt).name}] {i+1}/{len(instances)}")
     return rows
@@ -109,7 +118,7 @@ def run_forward(ckpt, instances, k, budget, device, log=print):
 
 def _nn_astar_backward(env, state, solver, policy, value, env_id, dev,
                        k, max_expansions, realize_check=None,
-                       prefix_filter=None, park_hook=None):
+                       prefix_filter=None, park_hook=None, acct=None):
     """Local copy of eval.end2end.nn_astar with two changes: expansions are
     counted as pops that reach the propose step (capped at `max_expansions`;
     free exact-fix loops and the final complete-plan pop are free), and the
@@ -124,6 +133,8 @@ def _nn_astar_backward(env, state, solver, policy, value, env_id, dev,
     whose already-fixed segments cannot be played are dropped, so the budget is
     not spent completing doomed branches. Orthogonal to `realize_check` (which
     still governs what happens when a complete plan POPS).
+    `acct` (optional dict): compute-accounting counters incremented in place
+    (nn_policy_calls, nn_value_calls, free_exact_fix_expands); observational.
     Returns (plan | None, expansions_used, n_rejected, n_pruned)."""
     from skeleton.astar import _initial_plan, _segment, _apply
     from nn.generate import _context, _fixed_g
@@ -144,6 +155,8 @@ def _nn_astar_backward(env, state, solver, policy, value, env_id, dev,
             seg = _segment(plan, state, parent, child)
             if env.compute_exact_shortest_path_length(seg.start, seg.end,
                                                       seg.fix_support) is not None:
+                if acct is not None:
+                    acct["free_exact_fix_expands"] += 1
                 plan = solver._expand(env, state, plan)[0]
             else:
                 break
@@ -174,12 +187,16 @@ def _nn_astar_backward(env, state, solver, policy, value, env_id, dev,
             cps.append(cp)
         if not recs:
             continue
+        if acct is not None:
+            acct["nn_policy_calls"] += 1
         logp, _ = _policy_logp(policy, recs, dev)
         if logp is None:
             continue
         keys = [(_ix(r["cand_bottleneck"]), _ix(r["cand_support"]),
                  _hidx(state, r["cand_helper"][0])) for r in recs]
         order = sorted(range(len(recs)), key=lambda i: -logp.get(keys[i], -1e9))[:k]
+        if acct is not None:
+            acct["nn_value_calls"] += 1
         costs = _value_cost(value, [recs[i] for i in order], dev)
         for i, h in zip(order, costs):
             if prefix_filter is not None and not prefix_filter(cps[i]):
@@ -191,7 +208,7 @@ def _nn_astar_backward(env, state, solver, policy, value, env_id, dev,
 
 def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
                  log=print, anytime=False, prefix_check=False, b1=False,
-                 b2=False):
+                 b2=False, dump_moves=False):
     from GridEnv import GridEnv, State, Robot_at
     from skeleton.astar import AStar, park_repairs
     from skeleton import heuristics
@@ -232,15 +249,32 @@ def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
                      for j in range(len(positions)) if j != tidx])
         d_star = inst["d_star"]
         t0 = time.perf_counter()
+        # compute-accounting counters (observational; emitted per row). The
+        # physics_calls_* counters count ENTRY-POINT calls into the
+        # realize/park layer from their three compare.py call sites, not
+        # individual slide() invocations.
+        acct = {"nn_policy_calls": 0, "nn_value_calls": 0,
+                "free_exact_fix_expands": 0, "rejected_plan_pops": 0,
+                "physics_calls_prefix_check": 0,
+                "physics_calls_strict_realize": 0,
+                "physics_calls_park_repair": 0,
+                "park_plans_pushed": 0}
+        moves_cache = {}                              # id(plan) -> [color, dir] list
         check_cache = {}
         fail_cache = {}
         realize_check = None
         if anytime:
             def realize_check(p, _env=env, _st=st, _cache=check_cache,
-                              _fails=fail_cache):
+                              _fails=fail_cache, _acct=acct,
+                              _mvs=moves_cache):
                 fi = {}
-                m = strict_moves(_env, _st, p, log=None, fail_info=fi)
+                mv = [] if dump_moves else None
+                _acct["physics_calls_strict_realize"] += 1
+                m = strict_moves(_env, _st, p, log=None, fail_info=fi,
+                                 moves_out=mv)
                 _cache[id(p)] = m
+                if dump_moves and m is not None:
+                    _mvs[id(p)] = mv
                 if m is None:
                     _fails[id(p)] = fi
                 return m is not None
@@ -249,30 +283,36 @@ def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
             _wr, _wd = wall_sets(env.grid_data)
             _size = len(env.grid_data) ** 0.5
             def park_hook(p, _env=env, _st=st, _fails=fail_cache,
-                          _wr=_wr, _wd=_wd):
+                          _wr=_wr, _wd=_wd, _acct=acct):
                 fi = _fails.get(id(p))
                 if not fi:
                     return []
+                _acct["physics_calls_park_repair"] += 1
                 try:
-                    return park_repairs(_env, _st, p, fi, _wr, _wd,
-                                        int(round(_size)),
-                                        max_parks=2 if b2 else 1,
-                                        pairwise=b2, multi_slide=b2)
+                    rps = park_repairs(_env, _st, p, fi, _wr, _wd,
+                                       int(round(_size)),
+                                       max_parks=2 if b2 else 1,
+                                       pairwise=b2, multi_slide=b2)
                 except Exception:
                     return []
+                _acct["park_plans_pushed"] += len(rps)
+                return rps
         prefix_filter = None
         if prefix_check:
             pfx_cache = {}                                # per-instance memo
-            def prefix_filter(p, _env=env, _st=st, _cache=pfx_cache):
+            def prefix_filter(p, _env=env, _st=st, _cache=pfx_cache,
+                              _acct=acct):
                 key = prefix_key(p)
                 hit = _cache.get(key)
                 if hit is None:
+                    _acct["physics_calls_prefix_check"] += 1
                     hit = _cache[key] = prefix_playable(_env, _st, p)
                 return hit
         plan, expansions, rejected, pruned = _nn_astar_backward(
             env, st, solver, policy, value, env_id, device, k, budget,
             realize_check=realize_check, prefix_filter=prefix_filter,
-            park_hook=park_hook)
+            park_hook=park_hook, acct=acct)
+        acct["rejected_plan_pops"] = rejected
         dt = time.perf_counter() - t0
         row = {
             "env_id": env_id, "d_star": d_star,
@@ -286,13 +326,27 @@ def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
         if plan is not None:
             row["plan_cost_abstract"] = float(plan.cost())
             ab, _verified = abstract_moves(env, st, plan, log=log)
-            stx = check_cache.get(id(plan)) if anytime else strict_moves(env, st, plan, log=log)
-            if anytime and id(plan) not in check_cache:   # budget-exhausted fallback plan
-                stx = strict_moves(env, st, plan, log=None)
+            if anytime:
+                stx = check_cache.get(id(plan))
+                if id(plan) not in check_cache:           # budget-exhausted fallback plan
+                    mv = [] if dump_moves else None
+                    acct["physics_calls_strict_realize"] += 1
+                    stx = strict_moves(env, st, plan, log=None, moves_out=mv)
+                    if dump_moves and stx is not None:
+                        moves_cache[id(plan)] = mv
+            else:
+                mv = [] if dump_moves else None
+                acct["physics_calls_strict_realize"] += 1
+                stx = strict_moves(env, st, plan, log=log, moves_out=mv)
+                if dump_moves and stx is not None:
+                    moves_cache[id(plan)] = mv
             row["realized_abstract"] = ab
             row["realized_strict"] = stx
             row["solved"] = stx is not None               # strict realization success
             row["regret"] = None if stx is None else stx - d_star
+        if dump_moves and row["solved"]:
+            row["moves"] = moves_cache[id(plan)]
+        row["accounting"] = acct
         rows.append(row)
         if log and (i + 1) % 25 == 0:
             log(f"  [backward] {i+1}/{len(instances)}")
@@ -336,6 +390,10 @@ def aggregate(rows, moves_key="moves"):
         if "children_pruned" in rows[0]:
             agg["mean_children_pruned"] = _mean(
                 [r["children_pruned"] for r in rows])
+    if rows and "accounting" in rows[0]:                  # per-counter means
+        agg["accounting"] = {key: _mean([r["accounting"].get(key)
+                                         for r in rows])
+                             for key in rows[0]["accounting"]}
     return agg
 
 
@@ -486,6 +544,11 @@ def main():
                         "repairs (pairwise clearing, multi-slide destinations, "
                         "park cap 2); by-reference candidates are ranked "
                         "zero-shot by the B1 nets")
+    p.add_argument("--dump-moves", action="store_true",
+                   help="record each solved row's realized primitive-move "
+                        "sequence ([color, direction] per slide; backward key "
+                        "'moves', forward key 'moves_seq') for independent "
+                        "replay certification by eval/replay_validate.py")
     p.add_argument("--device", default="cpu")
     p.add_argument("--out", default="eval/results/comparison.json")
     p.add_argument("--md", default="COMPARISON.md")
@@ -540,7 +603,8 @@ def main():
                             a.k, a.expansions, a.device,
                             anytime=a.backward_anytime,
                             prefix_check=a.backward_prefix_check,
-                            b1=a.backward_b1, b2=a.backward_b2)
+                            b1=a.backward_b1, b2=a.backward_b2,
+                            dump_moves=a.dump_moves)
         systems[back_name] = {"kind": "backward",
                               "aggregate": aggregate(rows, "realized_strict"),
                               "rows": rows}
@@ -552,7 +616,8 @@ def main():
     for ckpt in fwd_ckpts:
         name = f"forward move planner ({ckpt})"
         print(f"[compare] forward: {ckpt}")
-        rows = run_forward(ckpt, instances, a.k, a.expansions, a.device)
+        rows = run_forward(ckpt, instances, a.k, a.expansions, a.device,
+                           dump_moves=a.dump_moves)
         systems[name] = {"kind": "forward", "aggregate": aggregate(rows),
                          "rows": rows}
         order.append(name)

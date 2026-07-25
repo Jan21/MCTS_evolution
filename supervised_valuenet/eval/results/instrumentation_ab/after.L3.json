@@ -1,0 +1,281 @@
+{
+  "protocol": {
+    "expansions": 1200,
+    "k": 5,
+    "instances_file": "/tmp/claude-9310/-scratch-project-open-37-42-petrhyner-MCTS-evolution/5bfd7077-39ee-44e5-9710-4bbcf51cfdff/scratchpad/ab/slice20.jsonl",
+    "instances_sha256": "35c82e77c81f74d8a9a02533f4e439a0263109bf179d6995cddcd19a266103ae",
+    "n_instances": 20,
+    "instances_meta": null,
+    "checkpoints": {
+      "move_planner/checkpoints/best.ckpt": "2026-07-07T14:48:13"
+    },
+    "device": "cpu",
+    "date": "2026-07-25T13:57:22",
+    "results_file": "/tmp/claude-9310/-scratch-project-open-37-42-petrhyner-MCTS-evolution/5bfd7077-39ee-44e5-9710-4bbcf51cfdff/scratchpad/ab/after.L3.json",
+    "command": "PYTHONPATH=. python -m eval.compare --instances /tmp/claude-9310/-scratch-project-open-37-42-petrhyner-MCTS-evolution/5bfd7077-39ee-44e5-9710-4bbcf51cfdff/scratchpad/ab/slice20.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts move_planner/checkpoints/best.ckpt --device cpu --out /tmp/claude-9310/-scratch-project-open-37-42-petrhyner-MCTS-evolution/5bfd7077-39ee-44e5-9710-4bbcf51cfdff/scratchpad/ab/after.L3.json --md /tmp/claude-9310/-scratch-project-open-37-42-petrhyner-MCTS-evolution/5bfd7077-39ee-44e5-9710-4bbcf51cfdff/scratchpad/ab/after.L3.md",
+    "expansion_definition": "one popped search node whose children are generated (= 1 policy pass + 1 batched value pass over <= k children, in both systems)"
+  },
+  "systems": {
+    "backward subgoal planner": {
+      "kind": "pending"
+    },
+    "forward move planner (move_planner/checkpoints/best.ckpt)": {
+      "kind": "forward",
+      "aggregate": {
+        "n": 20,
+        "solved": 19,
+        "solve_rate": 0.95,
+        "mean_regret": 0.47368421052631576,
+        "pct_optimal": 63.1578947368421,
+        "mean_moves": 6.2105263157894735,
+        "mean_expansions": 350.7,
+        "mean_seconds": 81.90169777035335,
+        "accounting": {
+          "nn_calls": 702.4
+        }
+      },
+      "rows": [
+        {
+          "env_id": 2400,
+          "d_star": 12,
+          "solved": true,
+          "moves": 12,
+          "regret": 0,
+          "expansions": 829,
+          "seconds": 193.00012328400044,
+          "accounting": {
+            "nn_calls": 1659
+          }
+        },
+        {
+          "env_id": 2400,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 81,
+          "seconds": 19.589747527992586,
+          "accounting": {
+            "nn_calls": 163
+          }
+        },
+        {
+          "env_id": 2400,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 361,
+          "seconds": 85.43867267298629,
+          "accounting": {
+            "nn_calls": 723
+          }
+        },
+        {
+          "env_id": 2401,
+          "d_star": 1,
+          "solved": true,
+          "moves": 1,
+          "regret": 0,
+          "expansions": 4,
+          "seconds": 1.035261854995042,
+          "accounting": {
+            "nn_calls": 9
+          }
+        },
+        {
+          "env_id": 2401,
+          "d_star": 4,
+          "solved": true,
+          "moves": 6,
+          "regret": 2,
+          "expansions": 410,
+          "seconds": 97.05618862999836,
+          "accounting": {
+            "nn_calls": 821
+          }
+        },
+        {
+          "env_id": 2401,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 404,
+          "seconds": 98.23817663098453,
+          "accounting": {
+            "nn_calls": 809
+          }
+        },
+        {
+          "env_id": 2402,
+          "d_star": 2,
+          "solved": true,
+          "moves": 2,
+          "regret": 0,
+          "expansions": 6,
+          "seconds": 1.6071568030165508,
+          "accounting": {
+            "nn_calls": 13
+          }
+        },
+        {
+          "env_id": 2402,
+          "d_star": 4,
+          "solved": true,
+          "moves": 5,
+          "regret": 1,
+          "expansions": 63,
+          "seconds": 15.80303879501298,
+          "accounting": {
+            "nn_calls": 127
+          }
+        },
+        {
+          "env_id": 2402,
+          "d_star": 10,
+          "solved": true,
+          "moves": 10,
+          "regret": 0,
+          "expansions": 644,
+          "seconds": 158.2057078279904,
+          "accounting": {
+            "nn_calls": 1289
+          }
+        },
+        {
+          "env_id": 2403,
+          "d_star": 6,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 282.1881120970065,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 2403,
+          "d_star": 1,
+          "solved": true,
+          "moves": 2,
+          "regret": 1,
+          "expansions": 11,
+          "seconds": 2.585669271997176,
+          "accounting": {
+            "nn_calls": 23
+          }
+        },
+        {
+          "env_id": 2403,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 75,
+          "seconds": 17.302398396015633,
+          "accounting": {
+            "nn_calls": 151
+          }
+        },
+        {
+          "env_id": 2404,
+          "d_star": 8,
+          "solved": true,
+          "moves": 8,
+          "regret": 0,
+          "expansions": 124,
+          "seconds": 27.869322921003914,
+          "accounting": {
+            "nn_calls": 249
+          }
+        },
+        {
+          "env_id": 2404,
+          "d_star": 5,
+          "solved": true,
+          "moves": 6,
+          "regret": 1,
+          "expansions": 121,
+          "seconds": 27.253359786001965,
+          "accounting": {
+            "nn_calls": 243
+          }
+        },
+        {
+          "env_id": 2404,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 1094,
+          "seconds": 248.4370031169965,
+          "accounting": {
+            "nn_calls": 2189
+          }
+        },
+        {
+          "env_id": 2405,
+          "d_star": 7,
+          "solved": true,
+          "moves": 8,
+          "regret": 1,
+          "expansions": 479,
+          "seconds": 109.0915889730095,
+          "accounting": {
+            "nn_calls": 959
+          }
+        },
+        {
+          "env_id": 2405,
+          "d_star": 3,
+          "solved": true,
+          "moves": 3,
+          "regret": 0,
+          "expansions": 15,
+          "seconds": 3.4098000840167515,
+          "accounting": {
+            "nn_calls": 31
+          }
+        },
+        {
+          "env_id": 2405,
+          "d_star": 7,
+          "solved": true,
+          "moves": 8,
+          "regret": 1,
+          "expansions": 344,
+          "seconds": 77.4778186790063,
+          "accounting": {
+            "nn_calls": 689
+          }
+        },
+        {
+          "env_id": 2406,
+          "d_star": 9,
+          "solved": true,
+          "moves": 11,
+          "regret": 2,
+          "expansions": 421,
+          "seconds": 98.11094528101967,
+          "accounting": {
+            "nn_calls": 843
+          }
+        },
+        {
+          "env_id": 2406,
+          "d_star": 6,
+          "solved": true,
+          "moves": 6,
+          "regret": 0,
+          "expansions": 328,
+          "seconds": 74.33386277401587,
+          "accounting": {
+            "nn_calls": 657
+          }
+        }
+      ]
+    }
+  }
+}

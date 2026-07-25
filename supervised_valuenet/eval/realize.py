@@ -187,11 +187,16 @@ def _topo(deps):
     return order if len(order) == n else None
 
 
-def _slide_bfs(start, end, blockers, wr, wd, size=16):
-    """Min slides start->end for ONE robot with static `blockers`; None if cut off."""
+def _slide_bfs(start, end, blockers, wr, wd, size=16, path_out=None):
+    """Min slides start->end for ONE robot with static `blockers`; None if cut off.
+
+    `path_out` (optional list): on success, extended with the directions of the
+    BFS's own shortest slide sequence. Purely observational -- expansion order,
+    counts and returns are unchanged (`seen` stores parent pointers instead of
+    a bare set; membership tests are identical)."""
     if start == end:
         return 0
-    seen = {start}
+    seen = {start: None}               # pos -> (prev pos, direction into pos)
     q = deque([(start, 0)])
     while q:
         cur, dist = q.popleft()
@@ -200,8 +205,14 @@ def _slide_bfs(start, end, blockers, wr, wd, size=16):
             if nxt == cur or nxt in seen:
                 continue
             if nxt == end:
+                if path_out is not None:
+                    path, node = [d], cur
+                    while seen[node] is not None:
+                        node, pd = seen[node]
+                        path.append(pd)
+                    path_out.extend(reversed(path))
                 return dist + 1
-            seen.add(nxt)
+            seen[nxt] = (cur, d)
             q.append((nxt, dist + 1))
     return None
 
@@ -228,8 +239,13 @@ def _two_phase_ucands(env, end, support, wr, wd, size=16):
 
 
 def _execute_schedule(g, state, segs, idx_by_parent, split, reorder,
-                      wr, wd, size, log, check_target=True):
+                      wr, wd, size, log, check_target=True, moves_out=None):
     """One deterministic execution attempt; segments in `split` run two-phase.
+
+    `moves_out` (optional list): on a fully executed attempt, extended with one
+    `[color, direction]` entry per slide, in execution order. Observational
+    only -- schedules, BFS choices and totals are unchanged (the chosen
+    approach leg's path is re-derived by an extra identical BFS).
 
     Units are (segment, phase). An unsplit segment is a single atomic unit
     (phase 0, exactly the historical behavior). A split segment is an
@@ -330,10 +346,13 @@ def _execute_schedule(g, state, segs, idx_by_parent, split, reorder,
                 log(f"[realize] strict_moves: segment start {tuple(s['start'])} != "
                     f"current {cur} for {color}; executing from current")
             if i not in split:                    # atomic segment
-                m = _slide_bfs(cur, end, blockers, wr, wd, size)
+                leg = [] if moves_out is not None else None
+                m = _slide_bfs(cur, end, blockers, wr, wd, size, path_out=leg)
                 if m is None:
                     return None, i, "atomic", ctx(color, end)
                 total += m
+                if moves_out is not None:
+                    moves_out.extend([color, d2] for d2 in leg)
                 pos[color] = end
                 done.add(i)
                 continue
@@ -379,12 +398,19 @@ def _execute_schedule(g, state, segs, idx_by_parent, split, reorder,
             if best is None:
                 return None, i, "approach", ctx(color, end)
             total += best[2]
+            if moves_out is not None:             # re-derive the chosen path
+                leg = []
+                _slide_bfs(cur, best[3], blockers, wr, wd, size, path_out=leg)
+                moves_out.extend([color, d2] for d2 in leg)
             pos[color] = best[3]
         else:                                     # bounce leg (support placed)
-            m = _slide_bfs(cur, end, blockers, wr, wd, size)
+            leg = [] if moves_out is not None else None
+            m = _slide_bfs(cur, end, blockers, wr, wd, size, path_out=leg)
             if m is None:
                 return None, i, "bounce", ctx(color, end)
             total += m
+            if moves_out is not None:
+                moves_out.extend([color, d2] for d2 in leg)
             pos[color] = end
             done.add(i)
 
@@ -435,7 +461,7 @@ def _reorder_choice(segs, fail_seg, ctx):
 
 
 def strict_moves(env, state, plan, size=None, log=print, two_phase=True,
-                 fail_info=None):
+                 fail_info=None, moves_out=None):
     # two_phase=True adopted as the default realizer 2026-07-10 after the offline
     # A/B (eval/results/realizer_twophase_ab.json): 0/239 regressions, 44/211 prior
     # failures newly realized. Pass two_phase=False to reproduce the atomic-only
@@ -443,6 +469,10 @@ def strict_moves(env, state, plan, size=None, log=print, two_phase=True,
     # adopted 2026-07-12 after the offline A/B
     # (eval/results/realizer_reorder_ab.json).
     """Total slides of a legal joint-game execution of `plan`, or None.
+
+    `moves_out` (optional list): on success, filled with the realized
+    `[color, direction]` slide sequence of the SUCCESSFUL attempt, in
+    execution order (len == returned total). Observational only.
 
     two_phase=False: every segment is atomic and a supported segment runs
     only after its support robot is placed -- the historical behavior,
@@ -497,7 +527,8 @@ def strict_moves(env, state, plan, size=None, log=print, two_phase=True,
     if not _annotate_segments(g, segs, log):
         return None
     return _realize_annotated(env, state, g, segs, wr, wd, size, log,
-                              two_phase, fail_info=fail_info)
+                              two_phase, fail_info=fail_info,
+                              moves_out=moves_out)
 
 
 def _annotate_segments(g, segs, log):
@@ -521,7 +552,7 @@ def _annotate_segments(g, segs, log):
 
 
 def _realize_annotated(env, state, g, segs, wr, wd, size, log, two_phase,
-                       check_target=True, fail_info=None):
+                       check_target=True, fail_info=None, moves_out=None):
     """Strict realization loop (atomic schedule + split/reorder retries) over an
     annotated segment list; returns total moves or None. Extracted verbatim from
     `strict_moves` so `prefix_playable` can run it on a segment SUBSET (with
@@ -541,9 +572,10 @@ def _realize_annotated(env, state, g, segs, wr, wd, size, log, two_phase,
     reorder = set()                     # (bef, bef_sel, aft, aft_sel) deps
     reordered = set()                   # blocked segs already retried once
     while True:
+        attempt_moves = [] if moves_out is not None else None
         total, fail_seg, kind, ctx = _execute_schedule(
             g, state, segs, idx_by_parent, split, reorder, wr, wd, size, log,
-            check_target=check_target)
+            check_target=check_target, moves_out=attempt_moves)
         if (fail_info is not None and kind is not None
                 and not fail_info.get("fail_seg")):
             # keep the FIRST segment-level failure: later retries can end in
@@ -557,6 +589,8 @@ def _realize_annotated(env, state, g, segs, wr, wd, size, log, two_phase,
                 "color": segs[fail_seg]["color"],
                 "support": segs[fail_seg]["support"]})
         if kind is None:
+            if moves_out is not None:             # successful attempt's slides
+                moves_out[:] = attempt_moves
             return total
         if kind == "cyclic" and log:
             log("[realize] strict_moves: cyclic segment ordering")
