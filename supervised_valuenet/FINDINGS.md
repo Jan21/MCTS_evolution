@@ -593,6 +593,58 @@ scoped fix.
    nothing else. Until they land, the "collapse is not a cap artifact" claim
    is proven on the grid axis only, and must be worded that way.
 
+25. **A matched physics-work unit exists, and it does not say what the
+   expansion headline says — in either direction (2026-07-25).** `simulate.slide`
+   is the single primitive both stacks bottom out in (forward successor
+   generation; backward realization / prefix-check / park-repair BFS), so
+   counting it measures both planners in one unit. `eval/slide_counter.py` +
+   `eval.compare --count-slides` does that, split into disjoint buckets, and
+   is proven inert on results (see below). Pilot, base scale, **the same five
+   bench450 puzzles run through both systems**:
+   | system | expansions | slide calls / puzzle (median) |
+   |---|---|---|
+   | backward, full language, anytime | 3.4 | 64 |
+   | forward (`best.ckpt`) | 337.0 | 40,448 |
+   The efficiency advantage therefore SURVIVES the matched unit and in fact
+   widens (≈630× on slide calls vs ≈99× on expansions) — the opposite of what
+   publishability objection 1.1 feared. But the mean tells a different story
+   and the difference is the finding: over the 20-instance slice the backward
+   planner's mean is **5,961 slide calls with a median of 74.5**, because a
+   single **unsolved** puzzle (env 2405) spent **106,817 slide calls, 96% of
+   them inside generalized park repair** — 89.6% of the whole slice's physics
+   work, and more than the most expensive puzzle the forward planner solved
+   (93,888). Two consequences, both to be honoured in the paper:
+   - Compute accounting must be reported as **median plus tail**, never mean
+     alone; a mean would hand a referee a number that misrepresents both
+     systems.
+   - **Park repair is the physics cost centre**, and it is the one component
+     the networks never rank (it fires only after a complete plan fails, and
+     its repairs re-enter the frontier on raw abstract cost with no value-net
+     score — verified in `_nn_astar_backward`). That makes the §19 decision
+     not to label park repairs defensible as a *labelling* decision and
+     simultaneously identifies where the planner's unbounded cost lives.
+   These are pilot numbers on 5–20 base puzzles with `best.ckpt` as the forward
+   arm; the definitive per-rung figures come from the Track 1 accounting pass.
+   Sources: `eval/results/instrumentation_ab/v2_slidepilot_{backward5,forward5}.json`,
+   `v2_n4_both.json`.
+
+   **Verification of the whole accounting branch, round 2** (same harness as
+   §21, baseline `instrumentation_ab/after.L1.json`): plain, `--dump-moves`,
+   `--count-slides` and both flags together are **4/4 byte-identical** on
+   results; `--dump-moves` no longer costs an extra BFS (the approach leg
+   reuses the candidate BFS's own path) and all 20 dumped sequences are
+   byte-identical to the re-derivation version; replay certification passes
+   **19/19** on both dumping lanes, **4/4** on a 16×16/8 frontier lane and
+   **5/5** on a forward lane — forward solves are now independently certified
+   too. The `d_star` placeholder sentinel (objection 0.6) fires on that
+   frontier lane: `d_star`/`regret` null per row, `mean_regret`, `pct_optimal`
+   and `n_negative_abstract_regret` suppressed, `protocol.d_star_placeholder`
+   recorded. This retires a live footgun — the stored g16r8 frontier B2 file
+   publishes `mean_regret: 17.81`, which is mean solution LENGTH, not regret.
+   Operational note for Track 1: `eval.replay_validate` needs `--env-dir`
+   (or `RR_ENV_DIR`) for any non-base configuration; it defaults to
+   `environments/` and will otherwise fail on a missing board.
+
 ## Still open
 
 - Retraining the backward networks on the extended (B2) vocabulary — the

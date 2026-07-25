@@ -193,3 +193,73 @@ The in-flight Track 0/1 campaign (B2 retraining + definitive backward rows)
 directly retires 0.11 and the provenance half of 1.3, and upgrades §17's
 zero-shot rows to trained rows — it should land before any submission draft.
 
+---
+
+## 6. Execution log and revisions to this assessment (2026-07-25)
+
+What has actually been done against the register above, and — separately —
+where working the objections changed the assessment itself. Recorded here
+rather than silently folded into §2, per the standing instruction that
+disagreement with a prior conclusion be argued, not inherited.
+
+### Retired
+
+| # | Status | Evidence |
+|---|---|---|
+| 0.1 | **DONE** | `eval/stats_tests.py` → `eval/results/stats_tests.json`; exact McNemar + board-clustered bootstrap (10,000 resamples, seed 0) over 40 cells. FINDINGS §22. |
+| 0.3 | **DONE (better than the proposed fix)** | The pooled graded+frontier union is computed for every rung; see the revision below. |
+| 0.6 | **DONE** | `eval.compare` detects an all-zero `d_star` instance file, nulls `d_star`/`regret` per row, suppresses `mean_regret`/`pct_optimal`/`n_negative_abstract_regret`, and records `protocol.d_star_placeholder`. |
+| 0.7 (audit half) | **DONE** | `analysis/dedup_audit.py`: 0 exact duplicates, 0 pairs at Jaccard ≥ 0.9, max J = 0.185 across train/val/bench for all six configs. FINDINGS §23. |
+| 1.4 | **DONE** | `eval/replay_validate.py` (imports `simulate.slide` + stdlib only), 19/19 PASS on every dumping lane; A/B proves `--dump-moves` changes no result. FINDINGS §21. |
+| 1.1 (instrument) | **DONE** | Counters committed and proven inert (3/3 lanes byte-identical); matched `slide`-call counter added under `--count-slides`. The *re-run* half awaits Track 1. |
+
+### Revisions to the assessment
+
+1. **0.3's fix is understated — the pooled union is not a mitigation, it is a
+   better headline.** §2 proposes reporting the union as one of three
+   mitigations for the frontier sets' adversarial selection. Measured, the
+   union is the strongest single result the study has: on the whole pinned
+   450-puzzle pool per rung — no selection to caveat — the full-language
+   backward planner wins **every** rung, +7.8 / +15.8 / +24.0 / +47.8 points,
+   all p < 0.0005, with the margin growing monotonically along both hardness
+   axes. It should lead the results section; the frontier split becomes the
+   mechanism that explains *where* the margin comes from, not the evidence
+   that carries it.
+
+2. **0.1 is worse than stated for two claims, not one.** §2 names only the
+   one-puzzle graded win. The 6-robot frontier old-language row — which
+   FINDINGS §6 calls "the first measured regime where the subgoal planner
+   beats a properly trained move-by-move planner on solve rate" — is also not
+   significant (p = 0.542), and its 8-robot counterpart runs the other way
+   (p = 0.583). Two headline sentences need rewriting, not one. The
+   full-language rows carry the regime claim on their own and are
+   overwhelming (p < 0.0001), so the thesis is unharmed; the wording is not.
+
+3. **1.2's fix was mis-targeted in execution, and the register should say
+   which rungs matter.** The queued probes (4592278/4592279) extend budget at
+   g24r8 and g32r4, whose curves are already flat (+1.0 and +0.4 points over
+   the last 200 expansions). The rungs that are *not* saturated are g16r6
+   (+6.0) and g16r8 (+4.3) — and g16r8 is where the decisive frontier win is
+   claimed. Probes submitted (4593491/4593492, ~1.2 nh). Until they land the
+   "not a cap artifact" claim holds on the grid axis only.
+
+4. **1.1's proposed counter set does not measure what the objection is
+   about.** "Instrument three counters" reads as bookkeeping; the objection is
+   really about a *commensurable unit*. Entry-point counts into the
+   realization layer are not commensurable with forward expansions, and the
+   forward planner's own physics is not counted at all. `simulate.slide` is
+   the single primitive both stacks bottom out in, so it is the unit — and
+   the first measurement (base scale, 20 instances) shows the backward
+   planner spending ~5,961 slide calls per puzzle at a mean of 2.05
+   expansions, 91% of it inside generalized park repair. Whatever the forward
+   comparison turns out to be, **no version of this paper may lead with
+   "5.3 vs 423 expansions" without the slide-call column beside it.** That is
+   a stronger conclusion than the register's "kSubS-style 'measured
+   negligible' sentence if <5%", which presumed the answer.
+
+5. **0.7 gains a finding in the study's favour that nobody had written
+   down.** Configurations differing only in robot count share their board
+   pool exactly (`grid_data` identical between `environments_g16r6`/`g16r8`
+   and `g24r4`/`g24r8`), so the robot axis is a controlled comparison on
+   identical walls. That belongs in the experimental-design paragraph.
+
