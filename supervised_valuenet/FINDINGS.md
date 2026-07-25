@@ -645,6 +645,50 @@ scoped fix.
    (or `RR_ENV_DIR`) for any non-base configuration; it defaults to
    `environments/` and will otherwise fail on a missing board.
 
+26. **The frontier margin is not a selection artifact: it holds in every
+   stratum (2026-07-25).** Frontier sets are the puzzles a move-level
+   exhaustive search failed to grade, so membership is defined by an oracle's
+   failure — adversarial to move-level planners by construction
+   (publishability objection 0.3). `analysis/frontier_strata.py` partitions
+   each frontier set by two proxies computed from the instance and its board
+   ALONE, never from d*, solver status or any result: whether the goal cell
+   has a wall on any side (an unbacked goal can only be reached by parking a
+   helper first — the domain's classic hardness signal) and the target robot's
+   Manhattan travel, split at each set's own terciles. Across 4 rungs and 44
+   strata the full-language backward planner leads the forward control in
+   **every single one**; 34 are significant at 0.05 and every insignificant
+   cell has n ≤ 13. No reversal anywhere. Two readings worth keeping:
+   - The margin is *largest* where the mechanism predicts. At both 16×16 rungs
+     the "goal OPEN" class (no wall behind the goal, so a helper must be
+     parked) is where the backward vocabulary should pay, and it does:
+     g16r8 goal-OPEN 87.6% vs 47.1% (+40.5, n=153) against goal-walled
+     93.5% vs 67.7% (+25.8, n=31).
+   - The easiest cell behaves as expected: g16r6 "goal walled / travel low"
+     (n=7) is 100% vs 100% — parity, not a manufactured win.
+   Source: `analysis/artifacts/frontier_strata.json`.
+
+   **Training-data budget, both systems, per configuration** (objection 0.9;
+   `analysis/data_budget.py` → `analysis/artifacts/data_budget.json`). The
+   units are not interchangeable — a backward record is one candidate at one
+   search decision, a forward record is one state on an optimal move
+   trajectory — so the table states the unit rather than pretending one number
+   compares. With that caveat the asymmetry is large and runs AGAINST the
+   backward planner:
+   | config | backward (decisions) | forward (moves) | ratio |
+   |---|---|---|---|
+   | 16×16 · 4r (base, old vocab) | 181,768 | 512,752 | 2.8× |
+   | 16×16 · 6r | 97,779 | 1,038,827 | 10.6× |
+   | 16×16 · 8r | 116,271 | 1,284,864 | 11.1× |
+   | 24×24 · 4r | 53,789 | 916,526 | 17.0× |
+   | 24×24 · 8r | 109,180 | 1,376,431 | 12.6× |
+   | 32×32 · 4r | 51,353 | 951,030 | 18.5× |
+   Every non-base configuration trains both systems on the same 700 boards;
+   the forward planner receives 10–19× more supervision records and still
+   loses the pooled union at 24×24/8 and 32×32 (§22). Stated with its unit
+   caveat this strengthens rather than weakens the comparison, and it is the
+   honest way to answer 0.9 — the sets are NOT comparable, and the imbalance
+   is not in the winner's favour.
+
 ## Still open
 
 - Retraining the backward networks on the extended (B2) vocabulary — the
