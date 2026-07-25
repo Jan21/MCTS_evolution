@@ -429,6 +429,56 @@ scoped fix.
      and the sequence concatenates two axes (robot count at 16×16, then
      grid size); it should be read as two curves, not one ladder.
 
+19. **The Rust label engine speaks the full B2 vocabulary — gated and adopted
+   (2026-07-25; work of 2026-07-23/24).** Both labeling engines were extended
+   to the current plan language: the Python labeler (`nn/generate.py
+   --vocab b2`, mirrored in `scaling/backward_label.py` and the gate dumper)
+   now emits transient-support AND supports-by-reference candidates with
+   exact committed costs — the labeled candidate set equals what the
+   solver's own `_expand` generates at each decision. Park repairs are
+   deliberately NOT labeled, matching B1 precedent: they are deterministic
+   realization-failure repairs the networks never rank. The Rust engine
+   gained the same vocabulary (transient pair enumeration; the three
+   by-reference shapes in `apply`; `byref` plan edges; a `vocab` field on
+   work items) and passed the VERIFICATION.md gate-3 pattern on NEW pinned
+   corpora: four legs (base b2, base b1, 16×16/8 b2, 24×24/8 b2), **68
+   pinned decisions, 894 candidate labels replayed Python-vs-Rust, zero
+   differences** (job 4591708, 21.5 min; corpora archived at
+   `rust_datagen/golden/b2gate/`). Default paths proven unchanged: the full
+   cargo suite including the original golden-corpus gates stays green, and
+   the base-vocabulary Python driver emits a record set identical to the
+   pre-change driver (the only difference is candidate order within
+   equal-score ties — the process-level set-iteration class already
+   adjudicated in `rust_datagen/ADOPTION.md`, reproduced by a HEAD-vs-HEAD
+   control). Operational calibration recorded for reuse: legitimate base B2
+   rollouts finish in ~60–1,700 solver iterations, while wandering rollouts'
+   per-iteration cost explodes with plan size — label jobs therefore carry
+   per-config iteration budgets (50k/100k/200k) and the bridge sends
+   attempts in waves (~4× less wanderer exposure; sampling order unchanged).
+   Setup validation on this machine also passed: the smoke + shard-
+   equivalence job scored 19/20 on both planners with byte-equal
+   sharded-vs-unsharded rows (job 4591696). Sources:
+   `runs/b2gate/rr-b2gate-4591708.out`, `rust_datagen/golden/b2gate/*.gz`,
+   `runs/smoke/rr-smoke-4591696.out`, commits 278bd6e..5f33330.
+
+20. **Budget curves for every budget ≤1200, reconstructed at zero compute
+   (2026-07-24).** Because both search families are deterministic and the
+   budget only truncates, solve-rate-vs-budget curves are derivable from the
+   archived per-instance expansion counts: 42 system curves across 29 result
+   files, every curve's 1200-point verified equal to its stored aggregate
+   (`eval/budget_curves_from_rows.py` →
+   `eval/results/budget_curves_by_rung.json`). Two honest readings, now in
+   the report's compute-accounting tab: (a) at the 32×32 frontier the
+   backward planner reaches 43.6% by budget 100 while the forward control is
+   at 0.0% even at budget 400; (b) the 16×16 frontier forward curves are
+   STILL CLIMBING at the 1200 cap (+4–6 points over the last 200 steps)
+   while 24×24/8 (+1.0) and 32×32 (+0.4) are nearly flat — so
+   budget-saturation is demonstrated on the grid axis but not the robot
+   axis; the extended-budget probe jobs (4592278/4592279) exist to decide
+   it. A second same-machine reading the report now states plainly: at base
+   scale wall-clock favors the FORWARD planner (0.99 vs 1.23 s/puzzle) —
+   the subgoal time advantage is real only at scale (1.4×–45×).
+
 ## Still open
 
 - Retraining the backward networks on the extended (B2) vocabulary — the
