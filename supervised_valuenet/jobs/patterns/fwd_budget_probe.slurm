@@ -6,6 +6,8 @@
 # so it does NOT wait for the B2 retraining chain. Usage:
 #   sbatch -J rr-fwdprobe-g24r8 jobs/patterns/fwd_budget_probe.slurm g24r8 6000 32
 #   sbatch -J rr-fwdprobe-g32r4 jobs/patterns/fwd_budget_probe.slurm g32r4 4800 24
+#   sbatch -J rr-fwdprobe-g16r6 jobs/patterns/fwd_budget_probe.slurm g16r6 4800 32
+#   sbatch -J rr-fwdprobe-g16r8 jobs/patterns/fwd_budget_probe.slurm g16r8 4800 32
 # arg1 = config, arg2 = expansion budget, arg3 = subsample size.
 # Subsample: seeded shuffle (seed 1) of bench.unsolved.jsonl, first N —
 # deterministic and recorded next to the output. Chunks of 2 instances,
@@ -34,6 +36,16 @@ case "$CFG" in
          FWD="lightning_logs/version_47/checkpoints/epoch=3-step=115144.ckpt" ;;
   g32r4) export RR_GRID=32 RR_ROBOTS=4 RR_WALLS=192 RR_ENV_DIR="$SV/environments_g32r4"
          FWD="lightning_logs/version_45/checkpoints/epoch=3-step=158564.ckpt" ;;
+  # The 16x16 rungs are the ones whose forward frontier curves are NOT
+  # saturated at the 1200 cap (+6.0 pts over the last 200 expansions at g16r6,
+  # +4.3 at g16r8, vs +1.0 / +0.4 on the grid axis -- FINDINGS 20/21). Each
+  # uses the SAME forward control checkpoint as its stored frontier row
+  # (scaling/results/<cfg>/comparison_ungraded.json protocol), so the probe
+  # extends that exact row's budget and nothing else.
+  g16r6) export RR_GRID=16 RR_ROBOTS=6 RR_WALLS=48 RR_ENV_DIR="$SV/environments_g16r6"
+         FWD="lightning_logs/version_43/checkpoints/epoch=7-step=43224.ckpt" ;;
+  g16r8) export RR_GRID=16 RR_ROBOTS=8 RR_WALLS=48 RR_ENV_DIR="$SV/environments_g16r8"
+         FWD="lightning_logs/version_44/checkpoints/epoch=6-step=46767.ckpt" ;;
   *) echo "unknown config $CFG"; exit 1 ;;
 esac
 

@@ -479,6 +479,120 @@ scoped fix.
    scale wall-clock favors the FORWARD planner (0.99 vs 1.23 s/puzzle) —
    the subgoal time advantage is real only at scale (1.4×–45×).
 
+21. **Compute-accounting instrumentation adopted, and claimed solves are now
+   independently certified (2026-07-25).** `eval/compare.py` + `eval/realize.py`
+   gained observational counters (NN calls split policy/value, free forced-exact
+   `_expand` calls, rejected complete-plan pops, park plans pushed, and entry
+   calls into the prefix-check / strict-realization / park-repair layers) plus
+   `--dump-moves`, which records every solved row's realized primitive-move
+   sequence. `eval/replay_validate.py` replays those sequences through the
+   `simulate.py` physics layer ALONE — no realizer, no plan classes, no
+   GridEnv — and requires every move to be a real slide, the length to equal
+   the claimed move count, and the target robot to finish on the goal.
+   Verification, reproduced this session on a 20-instance bench450 slice
+   against a `git worktree` checkout of the pre-instrumentation commit
+   (f1a0be9), three lanes — backward anytime-B2, the same plus prefix-check,
+   and forward:
+   - **3/3 lanes byte-identical** after stripping only the additive
+     `accounting` key and wall-clock/provenance fields (canonical
+     sort-key JSON, SHA-256 compared).
+   - **`--dump-moves` changes no result**: both backward lanes again identical
+     to their non-dumping counterparts once the added `moves` list is removed.
+   - **Replay certification 19/19 PASS** on each backward lane (the 20th row
+     is unsolved and correctly skipped).
+   Sources: `eval/results/instrumentation_ab/` (all nine result JSONs, the
+   pinned slice, and `ab_compare.py`, the normaliser that produced the
+   verdicts).
+   **Scope note, stated because the wording elsewhere promised more:** the
+   three `physics_calls_*` counters count ENTRY calls into those layers, not
+   individual `simulate.slide` invocations, so they are not yet a work unit
+   commensurable with the forward planner's physics (which the branch does not
+   count at all). A matched `slide`-level counter is the scoped follow-up;
+   until it lands, no "total accounted units" column may be published, and
+   `eval/report_data.py`'s provenance string overstates what is measured.
+
+22. **Every head-to-head cell now carries a paired test and a clustered
+   confidence interval — and two published claims do not survive them
+   (2026-07-25).** `eval/stats_tests.py` → `eval/results/stats_tests.json`:
+   exact two-sided McNemar on the discordant pairs, plus a 95% percentile
+   bootstrap CI (10,000 resamples, seed 0) that resamples BOARDS, not puzzles,
+   because up to three puzzles share one board's wall layout (bench450:
+   exactly 3 on each of 150 boards). Pairing is refused unless both result
+   files record the same `protocol.instances_sha256`. 40 cells; 8 are not
+   significant at 0.05. The two that matter:
+   - **§17's "the backward planner's first graded-set win" (8 robots, 262 vs
+     261) is a 5-vs-4 discordant split: +0.4 points, 95% CI [−1.9, +2.7],
+     p = 1.000.** It is parity, not a win. The honest sentence — parity at 7×
+     fewer search steps — is the stronger one anyway.
+   - **§6's "first measured regime where the subgoal planner beats a properly
+     trained move-by-move planner on solve rate" (6-robot frontier,
+     old language, 70 vs 65) is 24 vs 19 discordant: +3.7 points, CI
+     [−6.1, +13.8], p = 0.542** — not significant. The same rung's 8-robot
+     counterpart runs the other way and is equally insignificant (88 vs 93,
+     p = 0.583). The regime claim is earned only by the FULL-language rows
+     (+32.1 and +38.0 points, both p < 0.0001).
+   Also newly non-significant: B2-vs-old-language backward at 24×24/8 on both
+   sets (p = 0.42 graded, p = 0.46 frontier) and at 32×32 graded (p = 0.25) —
+   consistent with §17's own reading that zero-shot ranking gains little at
+   scale; and the old-language 32×32 graded row (84.0% vs 76.0%, p = 0.076),
+   so the Verdict's "at 32×32 it loses the gradable set outright" is supported
+   by the full-language row (88.0% vs 76.0%, p = 0.0038) but NOT by the
+   old-language row it also cites.
+   **The pooled graded+frontier union is the stronger headline.** Frontier
+   sets are selected by failure of a move-level exhaustive search, which is
+   adversarial to move-level planners by construction (objection 0.3); their
+   union with the graded half is the whole pinned 450-puzzle pool at that
+   rung and carries no such selection. Full-language backward wins it at
+   every rung measured, all p < 0.0005:
+   | rung | backward B2 | forward | difference (95% CI) |
+   |---|---|---|---|
+   | 16×16 · 6r | 414/450 = 92.0% | 379/450 = 84.2% | +7.8 [+4.2, +11.6] |
+   | 16×16 · 8r | 425/450 = 94.4% | 354/450 = 78.7% | +15.8 [+11.6, +20.0] |
+   | 24×24 · 8r | 309/450 = 68.7% | 201/450 = 44.7% | +24.0 [+19.6, +28.7] |
+   | 32×32 · 4r | 350/450 = 77.8% | 135/450 = 30.0% | +47.8 [+42.7, +52.7] |
+   The old-language backward planner loses the same union at both 16×16 rungs
+   (−7.6 and −8.0, p ≤ 0.0003) and wins it at 24×24/8 (+21.6) and 32×32
+   (+30.9) — the crossover, stated without any selection caveat to answer.
+
+23. **No wall-layout leakage between training and benchmark boards
+   (2026-07-25).** The ID ranges were already known disjoint; what had never
+   been checked is whether a bench board's wall layout is a near-copy of a
+   training board's, which would leak the test set regardless of IDs because
+   the networks see geometry, not IDs. `analysis/dedup_audit.py` compares
+   interior wall-segment sets (border excluded) by Jaccard similarity across
+   train/val/bench for all six configurations: **0 exact duplicates and 0
+   pairs at J ≥ 0.9 in every split pair, maximum J = 0.185 (base config,
+   train vs bench)**; the worst value anywhere is 0.200. Layouts are
+   effectively independent. Recorded alongside it, because it explains why the
+   16×16 rungs report identical figures: **configurations that differ only in
+   robot count share their board pool exactly** (`grid_data` identical between
+   `environments_g16r6`/`g16r8` and between `environments_g24r4`/`g24r8`), so
+   the robot axis is measured on the same walls — a property in the study's
+   favour that was never written down. Source:
+   `analysis/artifacts/dedup_audit.json`.
+
+24. **Correction to §20: the queued extended-budget probes test the grid axis,
+   not the robot axis they were justified by (2026-07-25).** §20 concluded
+   that budget-saturation is demonstrated on the grid axis but not the robot
+   axis, and stated that jobs 4592278/4592279 "exist to decide it". They do
+   not: those two jobs probe g24r8 and g32r4 — the two rungs already flat at
+   the cap. Reading the stored curves
+   (`eval/results/budget_curves_by_rung.json`), forward frontier solve rate
+   gained over the last 200 expansions before the 1200 cap:
+   **g16r6 +6.0 points (42.5% → 48.5%), g16r8 +4.3 (46.2% → 50.5%), g24r8
+   +1.0 (14.2% → 15.2%), g32r4 +0.4 (0.4% → 0.7%)**. The unsaturated rungs
+   had no probe, and g16r8 is precisely where §17 claims a decisive frontier
+   win (+75 puzzles over forward). The existing two jobs are kept — they turn
+   a flat extrapolation into a measurement at the rungs whose numbers (15.2%,
+   0.7%) attract the censoring objection hardest — and two more were submitted
+   at the rungs that actually decide the robot axis: **g16r6 and g16r8,
+   forward-only, budget 4800, 32-instance seeded frontier subsamples (jobs
+   4593491 and 4593492, ~1.2 node-hours together)** via the same
+   `jobs/patterns/fwd_budget_probe.slurm` recipe, using each rung's own stored
+   forward control checkpoint so the probe extends that exact row's budget and
+   nothing else. Until they land, the "collapse is not a cap artifact" claim
+   is proven on the grid axis only, and must be worded that way.
+
 ## Still open
 
 - Retraining the backward networks on the extended (B2) vocabulary — the
