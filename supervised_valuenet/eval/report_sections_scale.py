@@ -561,6 +561,20 @@ def sec_fair_ledger(D):
   them away. Two complementary checks exist today: <b>wall-clock time</b>
   (below), which counts everything including the unmetered bookkeeping,
   and the <b>instrumented counters</b> now being collected.</p>
+  <p><b>The exclusion is not one-sided, and saying so was an error.</b> The
+  expansion counter meters network passes, so it misses the forward
+  planner's physics too: generating one move-level successor set calls the
+  board simulator once per (robot, direction). Measured in the unit both
+  systems share — invocations of <code>simulate.slide</code> — a pilot over
+  five identical base puzzles reads <b>64 slide calls for the subgoal
+  planner against 40,448 for the move-level planner</b> (medians), so the
+  unmetered work is larger on the side the ledger above does not list. The
+  qualification that survives is about the <i>shape</i> of the subgoal
+  planner's cost rather than its size: its distribution is heavy-tailed,
+  and a single unsolved puzzle in that pilot consumed more physics than the
+  most expensive puzzle the move-level planner solved, almost all of it
+  inside park repair. Accounting is therefore reported as median plus tail,
+  never as a mean.</p>
   {hook}
 </section>"""
 
