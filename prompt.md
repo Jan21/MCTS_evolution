@@ -256,10 +256,9 @@ edits; all queued jobs use committed code only.
    retrained rows + probes land: the before/after-retraining dumbbell
    chart (hooks exist), browser-render QA, `scope` attrs on tables.
 6. **Owner-gated / owner-decision items — do NOT start without input:**
-   - **Krohn–Rhodes section** of publishability.md: blocked on the owner's
-     notes/collaborator material (asked repeatedly, no answer yet). The
-     drafting rule agreed: map states/generators/wreath-product levels
-     explicitly; mark proven vs speculative; no fabricated connections.
+   - **Krohn–Rhodes: DROPPED by owner decision (2026-07-25).** Do not
+     raise it, draft it, or ask about it. publishability.md §6 records the
+     closure.
    - Compute-tier experiments awaiting a go: seed study (~15–20 nh), lr
      sweep (~7), forward self-play control at g16r8 (~4), k-sweep (~2),
      g24r4 missing cells (~4), kSubS-style baseline (structural), second
@@ -329,9 +328,9 @@ edits; all queued jobs use committed code only.
 
 ## Owner-pending questions (ask again at the first natural opportunity)
 
-1. **Krohn–Rhodes:** what notes/collaborator material exists? Who is the
-   theory collaborator? Intended depth (motivating analogy / formal section
-   / precise conjecture)? Blocks publishability.md §6 only.
-2. **Compute-tier experiment go/no-go** (list + costs above and in
+1. **Compute-tier experiment go/no-go** (list + costs above and in
    publishability.md §5).
-3. **`karolina_bundle/` deletion** (safe now, but owner must say yes).
+2. **`karolina_bundle/` deletion** (safe now, but owner must say yes).
+
+(Krohn–Rhodes is NOT pending — the owner closed it on 2026-07-25. Never
+raise it.)
