@@ -1,0 +1,254 @@
+{
+  "protocol": {
+    "expansions": 1200,
+    "k": 5,
+    "instances_file": "/tmp/claude-9310/-scratch-project-open-37-42-petrhyner-MCTS-evolution/5bfd7077-39ee-44e5-9710-4bbcf51cfdff/scratchpad/ab2/slice5.jsonl",
+    "instances_sha256": "b7bb6ca9285b31a9b5b56d6f91c08f5a4b91a6994085f99015d3db1ddf0b52d2",
+    "n_instances": 5,
+    "instances_meta": null,
+    "checkpoints": {
+      "move_planner/checkpoints/best.ckpt": "2026-07-07T14:48:13"
+    },
+    "device": "cpu",
+    "d_star_placeholder": false,
+    "count_slides": true,
+    "dump_moves": true,
+    "date": "2026-07-25T14:44:30",
+    "results_file": "/tmp/claude-9310/-scratch-project-open-37-42-petrhyner-MCTS-evolution/5bfd7077-39ee-44e5-9710-4bbcf51cfdff/scratchpad/ab2/f_both.json",
+    "command": "PYTHONPATH=. python -m eval.compare --instances /tmp/claude-9310/-scratch-project-open-37-42-petrhyner-MCTS-evolution/5bfd7077-39ee-44e5-9710-4bbcf51cfdff/scratchpad/ab2/slice5.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts move_planner/checkpoints/best.ckpt --device cpu --dump-moves --count-slides --out /tmp/claude-9310/-scratch-project-open-37-42-petrhyner-MCTS-evolution/5bfd7077-39ee-44e5-9710-4bbcf51cfdff/scratchpad/ab2/f_both.json --md /dev/null",
+    "expansion_definition": "one popped search node whose children are generated (= 1 policy pass + 1 batched value pass over <= k children, in both systems)"
+  },
+  "systems": {
+    "backward subgoal planner": {
+      "kind": "pending"
+    },
+    "forward move planner (move_planner/checkpoints/best.ckpt)": {
+      "kind": "forward",
+      "aggregate": {
+        "n": 5,
+        "solved": 5,
+        "solve_rate": 1.0,
+        "d_star_placeholder": false,
+        "mean_regret": 0.4,
+        "pct_optimal": 80.0,
+        "mean_moves": 6.0,
+        "mean_expansions": 337.0,
+        "mean_seconds": 86.15193307679729,
+        "accounting": {
+          "nn_calls": 675.0,
+          "slide_calls": {
+            "forward_search": 38169.6
+          },
+          "slide_calls_total": 38169.6
+        }
+      },
+      "rows": [
+        {
+          "env_id": 2400,
+          "d_star": 12,
+          "solved": true,
+          "moves": 12,
+          "regret": 0,
+          "expansions": 829,
+          "seconds": 213.46692353798426,
+          "moves_seq": [
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1659,
+            "slide_calls": {
+              "forward_search": 93888
+            }
+          }
+        },
+        {
+          "env_id": 2400,
+          "d_star": 4,
+          "solved": true,
+          "moves": 4,
+          "regret": 0,
+          "expansions": 81,
+          "seconds": 21.02162875700742,
+          "moves_seq": [
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 163,
+            "slide_calls": {
+              "forward_search": 9088
+            }
+          }
+        },
+        {
+          "env_id": 2400,
+          "d_star": 7,
+          "solved": true,
+          "moves": 7,
+          "regret": 0,
+          "expansions": 361,
+          "seconds": 93.26354203699157,
+          "moves_seq": [
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 723,
+            "slide_calls": {
+              "forward_search": 40448
+            }
+          }
+        },
+        {
+          "env_id": 2401,
+          "d_star": 1,
+          "solved": true,
+          "moves": 1,
+          "regret": 0,
+          "expansions": 4,
+          "seconds": 1.1506772440043278,
+          "moves_seq": [
+            [
+              "Yellow",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 9,
+            "slide_calls": {
+              "forward_search": 1488
+            }
+          }
+        },
+        {
+          "env_id": 2401,
+          "d_star": 4,
+          "solved": true,
+          "moves": 6,
+          "regret": 2,
+          "expansions": 410,
+          "seconds": 101.85689380799886,
+          "moves_seq": [
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 821,
+            "slide_calls": {
+              "forward_search": 45936
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -369,10 +369,17 @@ def _execute_schedule(g, state, segs, idx_by_parent, split, reorder,
                        if bef == i and bsel == 0]
             sup = tuple(s["support"]) if s["support"] is not None else None
             best = None                           # (bad_guard, bad_bounce, m, u)
+            # Under `moves_out` the candidate BFS keeps its own path, so the
+            # winner's slides are already in hand; deriving them costs no extra
+            # BFS and a dumping run stays wall-clock-comparable to a plain one.
+            paths = {} if moves_out is not None else None
             for u in s["ucands"]:
-                m = _slide_bfs(cur, u, blockers, wr, wd, size)
+                leg = [] if paths is not None else None
+                m = _slide_bfs(cur, u, blockers, wr, wd, size, path_out=leg)
                 if m is None:
                     continue
+                if paths is not None:
+                    paths[u] = leg
                 bad_guard = bad_bounce = False
                 if reorder:
                     bad_bounce = not any(
@@ -398,10 +405,8 @@ def _execute_schedule(g, state, segs, idx_by_parent, split, reorder,
             if best is None:
                 return None, i, "approach", ctx(color, end)
             total += best[2]
-            if moves_out is not None:             # re-derive the chosen path
-                leg = []
-                _slide_bfs(cur, best[3], blockers, wr, wd, size, path_out=leg)
-                moves_out.extend([color, d2] for d2 in leg)
+            if moves_out is not None:             # the winner's own BFS path
+                moves_out.extend([color, d2] for d2 in paths[best[3]])
             pos[color] = best[3]
         else:                                     # bounce leg (support placed)
             leg = [] if moves_out is not None else None

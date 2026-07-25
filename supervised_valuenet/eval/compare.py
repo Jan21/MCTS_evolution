@@ -26,6 +26,7 @@ Use `--skip-backward` to run only the forward systems.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import heapq
 import itertools
@@ -54,6 +55,12 @@ def load_instances(path):
 # forward systems (move planner)
 # ---------------------------------------------------------------------------
 
+@contextlib.contextmanager
+def _nullctx():
+    """No-op stand-in so the counted and uncounted paths share one `with`."""
+    yield
+
+
 class _CountingGuide:
     """Wraps a move_planner Guide; counts eval_states calls (NN passes).
 
@@ -71,11 +78,14 @@ class _CountingGuide:
 
 
 def run_forward(ckpt, instances, k, budget, device, log=print,
-                dump_moves=False):
+                dump_moves=False, count_slides=False, placeholder_d_star=False):
     from move_planner.evaluate import nn_astar, Guide, walls_for
     from move_planner.state import COLOR_ORDER
     from simulate import DIRECTIONS
+    from eval import slide_counter
 
+    if count_slides:                    # after the imports above, so their
+        slide_counter.install()         # captured `slide` bindings get rebound
     guide = _CountingGuide(Guide(ckpt, device))
     walls = {}
     rows = []
@@ -88,16 +98,22 @@ def run_forward(ckpt, instances, k, budget, device, log=print,
         target = tuple(inst["target"])
         d_star = inst["d_star"]
         c0 = guide.calls
+        s0 = slide_counter.counts() if count_slides else None
         t0 = time.perf_counter()
-        cost, _path = nn_astar(guide, env_id, positions, inst["target_idx"],
-                               target, wr, wd, k=k, max_iters=budget)
+        with slide_counter.bucket("forward_search") if count_slides \
+                else _nullctx():
+            cost, _path = nn_astar(guide, env_id, positions,
+                                   inst["target_idx"], target, wr, wd,
+                                   k=k, max_iters=budget)
         dt = time.perf_counter() - t0
         expansions = max(0, (guide.calls - c0 - 1)) // 2
         row = {
-            "env_id": env_id, "d_star": d_star,
+            "env_id": env_id,
+            "d_star": None if placeholder_d_star else d_star,
             "solved": cost is not None,
             "moves": cost,
-            "regret": None if cost is None else cost - d_star,
+            "regret": (None if cost is None or placeholder_d_star
+                       else cost - d_star),
             "expansions": expansions,
             "seconds": dt,
         }
@@ -106,6 +122,8 @@ def run_forward(ckpt, instances, k, budget, device, log=print,
             row["moves_seq"] = [[COLOR_ORDER[s], DIRECTIONS[d]]
                                 for s, d in _path]
         row["accounting"] = {"nn_calls": guide.calls - c0}
+        if count_slides:
+            row["accounting"]["slide_calls"] = slide_counter.delta(s0)
         rows.append(row)
         if log and (i + 1) % 50 == 0:
             log(f"  [forward {Path(ckpt).name}] {i+1}/{len(instances)}")
@@ -208,7 +226,8 @@ def _nn_astar_backward(env, state, solver, policy, value, env_id, dev,
 
 def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
                  log=print, anytime=False, prefix_check=False, b1=False,
-                 b2=False, dump_moves=False):
+                 b2=False, dump_moves=False, count_slides=False,
+                 placeholder_d_star=False):
     from GridEnv import GridEnv, State, Robot_at
     from skeleton.astar import AStar, park_repairs
     from skeleton import heuristics
@@ -218,6 +237,11 @@ def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
     from move_planner.state import COLOR_ORDER
     from eval.realize import (abstract_moves, strict_moves, prefix_playable,
                               prefix_key)
+    from eval import slide_counter
+
+    if count_slides:                    # after the imports above, so their
+        slide_counter.install()         # captured `slide` bindings get rebound
+    ctx = slide_counter.bucket if count_slides else (lambda _name: _nullctx())
 
     policy = PolicyTF.load_from_checkpoint(policy_ckpt, map_location=device).to(device).eval()
     value = LoopedValueNet.load_from_checkpoint(value_ckpt, map_location=device).to(device).eval()
@@ -248,11 +272,14 @@ def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
             helpers=[Robot_at(position=positions[j], color=COLOR_ORDER[j])
                      for j in range(len(positions)) if j != tidx])
         d_star = inst["d_star"]
+        s0 = slide_counter.counts() if count_slides else None
         t0 = time.perf_counter()
         # compute-accounting counters (observational; emitted per row). The
         # physics_calls_* counters count ENTRY-POINT calls into the
-        # realize/park layer from their three compare.py call sites, not
-        # individual slide() invocations.
+        # realize/park layer from their three compare.py call sites; the
+        # per-slide unit that IS commensurable with the forward planner's
+        # physics is the separate `slide_calls` map, filled under
+        # --count-slides by eval/slide_counter.py.
         acct = {"nn_policy_calls": 0, "nn_value_calls": 0,
                 "free_exact_fix_expands": 0, "rejected_plan_pops": 0,
                 "physics_calls_prefix_check": 0,
@@ -270,8 +297,9 @@ def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
                 fi = {}
                 mv = [] if dump_moves else None
                 _acct["physics_calls_strict_realize"] += 1
-                m = strict_moves(_env, _st, p, log=None, fail_info=fi,
-                                 moves_out=mv)
+                with ctx("strict_realize"):
+                    m = strict_moves(_env, _st, p, log=None, fail_info=fi,
+                                     moves_out=mv)
                 _cache[id(p)] = m
                 if dump_moves and m is not None:
                     _mvs[id(p)] = mv
@@ -289,10 +317,11 @@ def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
                     return []
                 _acct["physics_calls_park_repair"] += 1
                 try:
-                    rps = park_repairs(_env, _st, p, fi, _wr, _wd,
-                                       int(round(_size)),
-                                       max_parks=2 if b2 else 1,
-                                       pairwise=b2, multi_slide=b2)
+                    with ctx("park_repair"):
+                        rps = park_repairs(_env, _st, p, fi, _wr, _wd,
+                                           int(round(_size)),
+                                           max_parks=2 if b2 else 1,
+                                           pairwise=b2, multi_slide=b2)
                 except Exception:
                     return []
                 _acct["park_plans_pushed"] += len(rps)
@@ -306,16 +335,19 @@ def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
                 hit = _cache.get(key)
                 if hit is None:
                     _acct["physics_calls_prefix_check"] += 1
-                    hit = _cache[key] = prefix_playable(_env, _st, p)
+                    with ctx("prefix_check"):
+                        hit = _cache[key] = prefix_playable(_env, _st, p)
                 return hit
-        plan, expansions, rejected, pruned = _nn_astar_backward(
-            env, st, solver, policy, value, env_id, device, k, budget,
-            realize_check=realize_check, prefix_filter=prefix_filter,
-            park_hook=park_hook, acct=acct)
+        with ctx("backward_search"):
+            plan, expansions, rejected, pruned = _nn_astar_backward(
+                env, st, solver, policy, value, env_id, device, k, budget,
+                realize_check=realize_check, prefix_filter=prefix_filter,
+                park_hook=park_hook, acct=acct)
         acct["rejected_plan_pops"] = rejected
         dt = time.perf_counter() - t0
         row = {
-            "env_id": env_id, "d_star": d_star,
+            "env_id": env_id,
+            "d_star": None if placeholder_d_star else d_star,
             "plan_found": plan is not None,
             "plan_cost_abstract": None, "realized_abstract": None,
             "realized_strict": None, "solved": False, "regret": None,
@@ -331,21 +363,27 @@ def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
                 if id(plan) not in check_cache:           # budget-exhausted fallback plan
                     mv = [] if dump_moves else None
                     acct["physics_calls_strict_realize"] += 1
-                    stx = strict_moves(env, st, plan, log=None, moves_out=mv)
+                    with ctx("strict_realize"):
+                        stx = strict_moves(env, st, plan, log=None,
+                                           moves_out=mv)
                     if dump_moves and stx is not None:
                         moves_cache[id(plan)] = mv
             else:
                 mv = [] if dump_moves else None
                 acct["physics_calls_strict_realize"] += 1
-                stx = strict_moves(env, st, plan, log=log, moves_out=mv)
+                with ctx("strict_realize"):
+                    stx = strict_moves(env, st, plan, log=log, moves_out=mv)
                 if dump_moves and stx is not None:
                     moves_cache[id(plan)] = mv
             row["realized_abstract"] = ab
             row["realized_strict"] = stx
             row["solved"] = stx is not None               # strict realization success
-            row["regret"] = None if stx is None else stx - d_star
+            row["regret"] = (None if stx is None or placeholder_d_star
+                             else stx - d_star)
         if dump_moves and row["solved"]:
             row["moves"] = moves_cache[id(plan)]
+        if count_slides:
+            acct["slide_calls"] = slide_counter.delta(s0)
         row["accounting"] = acct
         rows.append(row)
         if log and (i + 1) % 25 == 0:
@@ -365,13 +403,23 @@ def _mean(xs):
 def aggregate(rows, moves_key="moves"):
     n = len(rows)
     solved = [r for r in rows if r.get("solved")]
+    # Beyond-oracle ("frontier") sets have no known optimum. Their instance
+    # files historically carry d_star = 0, which silently turns regret into
+    # "solution length" and pct_optimal into "fraction solved in 0 moves" --
+    # publishability objection 0.6. When the driver detects that placeholder it
+    # nulls d_star per row, and every derived quantity is suppressed here
+    # rather than published as a number that means something else.
+    placeholder = bool(rows) and rows[0].get("d_star") is None
     agg = {
         "n": n,
         "solved": len(solved),
         "solve_rate": len(solved) / n if n else None,
-        "mean_regret": _mean([r["regret"] for r in solved]),
-        "pct_optimal": (100.0 * sum(1 for r in solved if r["regret"] == 0)
-                        / len(solved)) if solved else None,
+        "d_star_placeholder": placeholder,
+        "mean_regret": None if placeholder else _mean([r["regret"]
+                                                       for r in solved]),
+        "pct_optimal": None if placeholder or not solved else
+                       (100.0 * sum(1 for r in solved if r["regret"] == 0)
+                        / len(solved)),
         "mean_moves": _mean([r[moves_key] for r in solved]),
         "mean_expansions": _mean([r.get("expansions") for r in rows]),
         "mean_seconds": _mean([r["seconds"] for r in rows]),
@@ -383,7 +431,7 @@ def aggregate(rows, moves_key="moves"):
         agg["mean_plan_cost_abstract"] = _mean([r["plan_cost_abstract"] for r in found])
         agg["mean_realized_abstract"] = _mean([r["realized_abstract"] for r in found])
         agg["mean_realized_strict"] = _mean([r["realized_strict"] for r in solved])
-        agg["n_negative_abstract_regret"] = sum(
+        agg["n_negative_abstract_regret"] = None if placeholder else sum(
             1 for r in found
             if r["realized_abstract"] is not None
             and r["realized_abstract"] - r["d_star"] < 0)
@@ -391,9 +439,18 @@ def aggregate(rows, moves_key="moves"):
             agg["mean_children_pruned"] = _mean(
                 [r["children_pruned"] for r in rows])
     if rows and "accounting" in rows[0]:                  # per-counter means
-        agg["accounting"] = {key: _mean([r["accounting"].get(key)
-                                         for r in rows])
-                             for key in rows[0]["accounting"]}
+        acc = {}
+        for key in rows[0]["accounting"]:
+            if key == "slide_calls":                     # nested bucket -> mean
+                buckets = sorted({b for r in rows
+                                  for b in r["accounting"].get(key, {})})
+                acc[key] = {b: _mean([r["accounting"].get(key, {}).get(b, 0)
+                                      for r in rows]) for b in buckets}
+                acc["slide_calls_total"] = _mean(
+                    [sum(r["accounting"].get(key, {}).values()) for r in rows])
+            else:
+                acc[key] = _mean([r["accounting"].get(key) for r in rows])
+        agg["accounting"] = acc
     return agg
 
 
@@ -549,6 +606,14 @@ def main():
                         "sequence ([color, direction] per slide; backward key "
                         "'moves', forward key 'moves_seq') for independent "
                         "replay certification by eval/replay_validate.py")
+    p.add_argument("--count-slides", action="store_true",
+                   help="count simulate.slide invocations per instance, split "
+                        "by phase, in BOTH systems -- the matched physics-work "
+                        "unit of publishability objection 1.1. Adds a Python "
+                        "call to the hottest function in the codebase, so a "
+                        "counted run's wall-clock is NOT comparable to an "
+                        "uncounted one: run accounting passes separately from "
+                        "timing passes.")
     p.add_argument("--device", default="cpu")
     p.add_argument("--out", default="eval/results/comparison.json")
     p.add_argument("--md", default="COMPARISON.md")
@@ -558,6 +623,15 @@ def main():
     torch.manual_seed(0)
 
     instances, sha, meta = load_instances(a.instances)
+    # Beyond-oracle instance files carry d_star = 0 for every puzzle because no
+    # optimum is known. Detect that (a real puzzle never has d_star = 0: the
+    # target robot would already be on the goal) and null the derived fields
+    # instead of publishing solution length as "regret" -- objection 0.6.
+    placeholder_d_star = bool(instances) and all(
+        i.get("d_star") == 0 for i in instances)
+    if placeholder_d_star:
+        print(f"[compare] d_star placeholder detected in {a.instances}: "
+              "regret / pct_optimal suppressed for this run")
     fwd_ckpts = [c for c in a.forward_ckpts.split(",") if c.strip()]
     run_back = not a.skip_backward and a.backward_policy and a.backward_value
 
@@ -575,6 +649,9 @@ def main():
         "instances_meta": meta,
         "checkpoints": ckpt_info,
         "device": a.device,
+        "d_star_placeholder": placeholder_d_star,
+        "count_slides": a.count_slides,
+        "dump_moves": a.dump_moves,
         "date": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "results_file": a.out,
         "command": " ".join(["PYTHONPATH=. python -m eval.compare"]
@@ -604,7 +681,9 @@ def main():
                             anytime=a.backward_anytime,
                             prefix_check=a.backward_prefix_check,
                             b1=a.backward_b1, b2=a.backward_b2,
-                            dump_moves=a.dump_moves)
+                            dump_moves=a.dump_moves,
+                            count_slides=a.count_slides,
+                            placeholder_d_star=placeholder_d_star)
         systems[back_name] = {"kind": "backward",
                               "aggregate": aggregate(rows, "realized_strict"),
                               "rows": rows}
@@ -617,7 +696,9 @@ def main():
         name = f"forward move planner ({ckpt})"
         print(f"[compare] forward: {ckpt}")
         rows = run_forward(ckpt, instances, a.k, a.expansions, a.device,
-                           dump_moves=a.dump_moves)
+                           dump_moves=a.dump_moves,
+                           count_slides=a.count_slides,
+                           placeholder_d_star=placeholder_d_star)
         systems[name] = {"kind": "forward", "aggregate": aggregate(rows),
                          "rows": rows}
         order.append(name)
