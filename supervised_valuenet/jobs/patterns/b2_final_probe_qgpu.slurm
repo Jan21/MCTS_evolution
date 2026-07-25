@@ -1,4 +1,9 @@
 #!/bin/bash
+# 2026-07-25: repointed from the retired karolina_bundle to the working
+# repo (cold-start audit). HISTORICAL recipe: it uses the PRE-RETRAIN
+# nets and the old output filenames. For the Track 1 retrained rows,
+# author a fresh script per the repo-root prompt.md (exact filenames
+# are pinned by eval/report_data.py).
 # Canonical Lever B2 probe runs with the FINAL code (cycle guard in) and
 # generous caps:
 #  P1  base: all 11 B1-residual structural instances
@@ -13,14 +18,14 @@
 #SBATCH --gpus 4
 #SBATCH --nodes=1
 #SBATCH --time=06:00:00
-#SBATCH --output=/scratch/project/open-37-42/petrhyner/karolina_bundle/runs/b2/%x-%j.out
+#SBATCH --output=/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/b2/%x-%j.out
 
 set -euo pipefail
 ml purge
 ml Python/3.11.5-GCCcore-13.2.0
 
-BUNDLE=/scratch/project/open-37-42/petrhyner/karolina_bundle
-SV="$BUNDLE/MCTS_evolution/supervised_valuenet"
+BUNDLE=/scratch/project/open-37-42/petrhyner/MCTS_evolution
+SV="$BUNDLE/supervised_valuenet"
 source /scratch/project/open-37-42/petrhyner/venv/bin/activate
 cd "$SV"
 export PYTHONPATH=. OMP_NUM_THREADS=8 CUDA_VISIBLE_DEVICES="" PYTHONUNBUFFERED=1

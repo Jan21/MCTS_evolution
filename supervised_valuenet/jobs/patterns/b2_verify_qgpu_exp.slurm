@@ -1,4 +1,9 @@
 #!/bin/bash
+# 2026-07-25: repointed from the retired karolina_bundle to the working
+# repo (cold-start audit). HISTORICAL recipe: it uses the PRE-RETRAIN
+# nets and the old output filenames. For the Track 1 retrained rows,
+# author a fresh script per the repo-root prompt.md (exact filenames
+# are pinned by eval/report_data.py).
 # Lever B2 verification bundle (backward planner only, CPU):
 #  V1  probe --b1 on the 49-instance base failure set -> must match
 #      analysis/artifacts/ceiling_probe_results_b1.json per-row (B1 regression)
@@ -12,15 +17,15 @@
 #SBATCH --gpus 2
 #SBATCH --nodes=1
 #SBATCH --time=01:00:00
-#SBATCH --output=/scratch/project/open-37-42/petrhyner/karolina_bundle/runs/b2/%x-%j.out
+#SBATCH --output=/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/b2/%x-%j.out
 
 set -euo pipefail
 ml purge
 ml Python/3.11.5-GCCcore-13.2.0
 
-BUNDLE=/scratch/project/open-37-42/petrhyner/karolina_bundle
+BUNDLE=/scratch/project/open-37-42/petrhyner/MCTS_evolution
 source /scratch/project/open-37-42/petrhyner/venv/bin/activate
-cd "$BUNDLE/MCTS_evolution/supervised_valuenet"
+cd "$BUNDLE/supervised_valuenet"
 export PYTHONPATH=. OMP_NUM_THREADS=6 CUDA_VISIBLE_DEVICES="" PYTHONUNBUFFERED=1
 unset RR_GRID RR_ROBOTS RR_WALLS RR_ENV_DIR
 RUN="$BUNDLE/runs/b2"; mkdir -p "$RUN"

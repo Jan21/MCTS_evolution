@@ -1,4 +1,9 @@
 #!/bin/bash
+# 2026-07-25: repointed from the retired karolina_bundle to the working
+# repo (cold-start audit). HISTORICAL recipe: it uses the PRE-RETRAIN
+# nets and the old output filenames. For the Track 1 retrained rows,
+# author a fresh script per the repo-root prompt.md (exact filenames
+# are pinned by eval/report_data.py).
 # Smoke + shard-equivalence test. 2026-07-23: repointed from the retired
 # karolina_bundle to the working repo; qgpu partition per the owner's
 # standing order. 2026-07-24: walltime trimmed to 2 h with the owner's

@@ -1,4 +1,9 @@
 #!/bin/bash
+# 2026-07-25: repointed from the retired karolina_bundle to the working
+# repo (cold-start audit). HISTORICAL recipe: it uses the PRE-RETRAIN
+# nets and the old output filenames. For the Track 1 retrained rows,
+# author a fresh script per the repo-root prompt.md (exact filenames
+# are pinned by eval/report_data.py).
 # Sharded rerun of the 24x24/8 beyond-oracle EXTENDED-language backward row
 # (the single-process version outran its walltime). Reuses the g24u shard
 # files; banks each chunk; last pass merges to comparison_ungraded_b2.json.
@@ -8,14 +13,14 @@
 #SBATCH --nodes=1
 #SBATCH --time=08:00:00
 #SBATCH --job-name=rr-b2r-g24u-s
-#SBATCH --output=/scratch/project/open-37-42/petrhyner/karolina_bundle/runs/b2rows/%x-%j.out
+#SBATCH --output=/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/b2rows/%x-%j.out
 
 set -euo pipefail
 ml purge
 ml Python/3.11.5-GCCcore-13.2.0
 
-BUNDLE=/scratch/project/open-37-42/petrhyner/karolina_bundle
-SV="$BUNDLE/MCTS_evolution/supervised_valuenet"
+BUNDLE=/scratch/project/open-37-42/petrhyner/MCTS_evolution
+SV="$BUNDLE/supervised_valuenet"
 source /scratch/project/open-37-42/petrhyner/venv/bin/activate
 cd "$SV"
 export PYTHONPATH=. OMP_NUM_THREADS=8 CUDA_VISIBLE_DEVICES="" PYTHONUNBUFFERED=1
