@@ -193,10 +193,3 @@ The in-flight Track 0/1 campaign (B2 retraining + definitive backward rows)
 directly retires 0.11 and the provenance half of 1.3, and upgrades §17's
 zero-shot rows to trained rows — it should land before any submission draft.
 
-## 6. Krohn–Rhodes framing — CLOSED (owner decision, 2026-07-25)
-
-The 2026-07-23 handoff proposed tying the work to the Krohn–Rhodes theorem
-and gated the section on owner input. On 2026-07-25 the owner closed the
-item: it is dropped from the paper plan. Do not draft it, do not ask about
-it. The submission stands on the empirical contributions in §1; nothing
-else in this document depends on this section.

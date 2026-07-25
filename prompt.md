@@ -62,8 +62,7 @@ permitted gap is the mission). Since then, this session (2026-07-23..25):
 - **Track 2 WRITTEN** (`analysis/publishability.md`): synthesis of three
   independent referee simulations; verdict "major revisions as worded";
   costed objection register (free/cheap/moderate/structural tiers); venue
-  advice AIJ/JAIR over Neurocomputing. **Krohn–Rhodes section is a
-  deliberate placeholder — owner input required first (see Owner-pending).**
+  advice AIJ/JAIR over Neurocomputing.
 - **Track 3 REBUILT** (twice): `eval/build_report.py` + eight `report_*`
   modules → one self-contained offline `eval/results/report.html`, six
   guided tabs, **477 machine-checked numbers + 47 assertions**, light/dark
@@ -256,9 +255,6 @@ edits; all queued jobs use committed code only.
    retrained rows + probes land: the before/after-retraining dumbbell
    chart (hooks exist), browser-render QA, `scope` attrs on tables.
 6. **Owner-gated / owner-decision items — do NOT start without input:**
-   - **Krohn–Rhodes: DROPPED by owner decision (2026-07-25).** Do not
-     raise it, draft it, or ask about it. publishability.md §6 records the
-     closure.
    - Compute-tier experiments awaiting a go: seed study (~15–20 nh), lr
      sweep (~7), forward self-play control at g16r8 (~4), k-sweep (~2),
      g24r4 missing cells (~4), kSubS-style baseline (structural), second
@@ -331,6 +327,3 @@ edits; all queued jobs use committed code only.
 1. **Compute-tier experiment go/no-go** (list + costs above and in
    publishability.md §5).
 2. **`karolina_bundle/` deletion** (safe now, but owner must say yes).
-
-(Krohn–Rhodes is NOT pending — the owner closed it on 2026-07-25. Never
-raise it.)
