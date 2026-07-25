@@ -371,6 +371,11 @@ by move** on the real board.
 
 ## Verdict so far against the goal
 
+> **SUPERSEDED 2026-07-25 — read §27 instead.** The paragraph below is kept as
+> the record of what was claimed on 2026-07-23. Three of its sentences do not
+> survive the significance testing of §22 and the axis audit of §24. §27 is the
+> current verdict and states exactly what changed.
+
 **One-paragraph summary of where the thesis stands — the ladder now fully measured.**
 On small puzzles the properly trained move-by-move planner remains the quality
 champion (100% at base scale, near-optimal solutions), and it keeps a solve-rate edge
@@ -688,6 +693,70 @@ scoped fix.
    caveat this strengthens rather than weakens the comparison, and it is the
    honest way to answer 0.9 — the sets are NOT comparable, and the imbalance
    is not in the winner's favour.
+
+27. **Verdict, restated (2026-07-25).** Supersedes the 2026-07-23 paragraph
+   above. Every number here is from a result JSON named in §§21–26; the
+   changes from the previous wording are itemised at the end so nothing is
+   quietly dropped.
+
+   **Where the thesis stands.** On the puzzles an exact solver can still
+   grade, the properly trained move-by-move planner remains the quality
+   champion — 100% at base scale with near-optimal solutions, and a
+   solve-rate edge that is statistically real at 16×16/6 (−2.5 points,
+   p = 0.039) and 24×24/8 (−5.6, p = 0.035). At 16×16/8 the two systems are
+   **at parity** (98.5% vs 98.1%, p = 1.000) with the subgoal planner using 7×
+   fewer search steps. But on the whole pinned pool at each rung — graded and
+   beyond-oracle puzzles together, which is the only view free of any
+   selection — the full-language subgoal planner wins **every rung measured**,
+   by +7.8, +15.8, +24.0 and +47.8 points (16×16/6, 16×16/8, 24×24/8,
+   32×32/4), all p < 0.0005, with the margin growing monotonically along both
+   hardness axes. Beyond the oracle's reach the gap is 80.6 / 88.6 / 55.7 /
+   71.3% against forward's 48.5 / 50.5 / 15.2 / 0.7%, it holds in all 44
+   oracle-independent hardness strata with no reversal (§26), and it is
+   achieved while training on 10–19× fewer supervision records from the same
+   boards. The exact solver that the forward pipeline's supervision depends on
+   fails on 0 → 29.8 → 40.9% of puzzles along the robot axis and 48.4 → 64.2 →
+   61.1% along the grid axis — two curves, not one ladder (§18b).
+
+   **Efficiency: established, and it survives a matched unit.** Subgoal plans
+   take a handful of search steps where move-by-move needs hundreds, and the
+   advantage does not evaporate when both systems are measured in the same
+   physics unit: on identical base puzzles, 64 vs 40,448 median `slide` calls
+   (§25). The honest qualifications are that the backward planner's compute is
+   heavy-tailed — a single unsolved puzzle can cost more physics than the
+   forward planner's most expensive solved one, almost all of it in park
+   repair — and that at base scale wall-clock actually favours forward
+   (0.99 vs 1.23 s/puzzle); the time advantage is real only at scale.
+
+   **Honest weaknesses.** Forward still produces shorter solutions wherever
+   both solve, and a perfect base-scale solve rate. Frontier solutions run
+   long and have no known optimum. The extended language's ceiling (99.6% at
+   base) is realised by the exhaustive probe, not by the trained networks
+   (95.6%) — retraining is the scoped fix and is queued, not done. Budget
+   saturation is demonstrated on the grid axis only; the 16×16 forward
+   frontier curves are still climbing at the cap and their probes are pending
+   (§24). And the at-scale forward opponent is the oracle-supervised pipeline
+   only — forward self-play at scale is unmeasured, so no claim here is a
+   claim about move-level planning as such.
+
+   **What changed from the 2026-07-23 verdict, and why.**
+   - *"takes its first gradable-set win (8 robots: 98.5% vs 98.1%)"* →
+     **parity at 7× fewer search steps.** A 5-vs-4 discordant split,
+     p = 1.000 (§22). The replacement sentence is stronger and true.
+   - *"forward's small-scale solve-rate lead is gone by 6 robots"* →
+     **false as written**; forward's graded lead at 16×16/6 is significant
+     (p = 0.039). What is gone by 6 robots is the lead on the *pooled* pool.
+   - *"at 32×32 it loses the gradable set outright (76.0% vs 84.0%
+     old-language / 88.0% full-language)"* → keep the full-language half
+     (p = 0.0038), **drop the old-language half** (p = 0.076, not
+     significant).
+   - *"every scaling trend runs one way"* → **"every trend along the two
+     hardness axes bends the same way"**, with the graded-set exceptions named
+     above; the original sentence is contradicted by the study's own graded
+     rows.
+   - The frontier series is now reported with its selection mechanism stated,
+     its stratified breakdown (§26), and the pooled union as the headline —
+     because the union needs no caveat and says more.
 
 ## Still open
 
