@@ -83,17 +83,21 @@ wc -l "$OUT"
 # not at any robot's start position. Expected roughly 5-20%; base measured 13%.
 python3 - "$OUT" <<'EOF'
 import json, sys
+# Robot START positions are target_robot[0] plus every helpers[i][0]; there is
+# NO `robot_positions` field in the label schema (an earlier version of this
+# gate looked for one and would have reported 0.0% on every file). Validated
+# against the partial output of job 4591709: 5698/42348 = 13.5%, matching the
+# 13% recorded for base in FINDINGS 19.
 n = byref = 0
-with open(sys.argv[1]) as f:
-    for line in f:
-        if not line.strip():
-            continue
-        r = json.loads(line)
-        n += 1
-        helper = r.get("cand_helper")
-        starts = {tuple(p) for p in (r.get("robot_positions") or [])}
-        if helper and starts and tuple(helper[0]) not in starts:
-            byref += 1
+for line in open(sys.argv[1]):
+    if not line.strip():
+        continue
+    r = json.loads(line)
+    n += 1
+    starts = {tuple(r["target_robot"][0])}
+    starts |= {tuple(h[0]) for h in (r.get("helpers") or [])}
+    if tuple(r["cand_helper"][0]) not in starts:
+        byref += 1
 print(f"QC by-reference share: {byref}/{n} = {byref/n*100:.1f}%" if n else "QC: empty")
 EOF
 echo "B2LABELS $CFG shard $SHARD DONE"
