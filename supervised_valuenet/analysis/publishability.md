@@ -263,3 +263,47 @@ disagreement with a prior conclusion be argued, not inherited.
    and `g24r4`/`g24r8`), so the robot axis is a controlled comparison on
    identical walls. That belongs in the experimental-design paragraph.
 
+### Second pass (2026-07-26), after the probes and the 2×2 cell landed
+
+6. **1.2 is now a REJECT-level issue at the 16×16 rungs, upgraded from M.**
+   The extended-budget probes measured what §2 assumed would be a formality.
+   Forward gains **+21.9 points at g16r6 and +31.2 at g16r8** from 4× budget,
+   and the backward frontier lead falls from +31.2 (p = 0.021) and +50.0
+   (p < 0.0001) to +9.4 (p = 0.581) and +18.8 (p = 0.070). The register said
+   "if the curve stays flat at 4–10×, the collapse claim is airtight" — it is
+   not flat, so on the robot axis the claim is **not** airtight and any
+   sentence asserting the collapse is not a cap artifact must be scoped to the
+   grid axis. The matched-budget rows are unaffected; the *framing* is what
+   breaks. See FINDINGS §28 for the limits (n = 32; backward was not given the
+   larger budget, so this is a robustness probe, not a like-for-like row).
+
+7. **1.3 and 0.11 are retired by measurement, not by the pending retraining.**
+   The 2×2 cell (FINDINGS §29) shows the language effect at fixed base-B1 nets
+   is +7.6 / +20.9 / +11.3 / +37.0 points (all p < 0.0001) while the
+   net-provenance effect at fixed old language is +0.8 to +7.5 — and **every
+   sign favours the base nets**. §2 assumed the borrowed base nets were a
+   handicap the language gain had to overcome; they were a mild advantage.
+   The retrained rows will still be worth having, but they are no longer
+   load-bearing for this objection.
+
+8. **A new objection the register does not contain, and a referee would:
+   label-set construction is a tuned quantity.** The B2 label campaign as
+   designed costs ~441 node-hours (FINDINGS §30) and only becomes affordable
+   under a 5,000-iteration rollout cap, which drops the labeler's success rate
+   from 66.6% to 52.2% at base. That is not a throughput setting — it changes
+   *which* instances enter the training set, biasing it toward puzzles whose
+   rollout succeeds quickly, with no forward-side counterpart. It must be
+   declared wherever a retrained row is reported, and it belongs in the tuning
+   ledger (`analysis/tuning_ledger.md`), which now carries it. Add as **0.13,
+   severity M**.
+
+9. **0.8's ledger surfaced an asymmetry pointing the other way from the one
+   the register anticipated.** §2 frames the tuning imbalance as forward
+   getting lr rescues and backward getting warm-starts. The larger unstated
+   advantage is that the **base forward cell is the best of four independently
+   trained systems** (84.7 / 100.0 / 97.6 / 87.6%) against a single backward
+   run — and base is precisely where forward's headline advantage (100% vs
+   95.6%) is quoted. The scaling rungs carry no such asymmetry. Stating this
+   strengthens the paper's credibility at no cost to its thesis, since the
+   thesis lives at scale.
+
