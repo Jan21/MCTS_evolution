@@ -17,7 +17,11 @@
 #SBATCH -p qgpu
 #SBATCH --gpus 2
 #SBATCH --nodes=1
-#SBATCH --time=24:00:00
+# WALLTIME 16 h, not 24: the cooling reservation (MOTD, daily 10:00-18:00 CEST)
+# blocks any job requesting more than 16 hours from starting while it is in
+# effect. Every lane here is chunked/idempotent, so a 16 h cap costs at most
+# one chunk and a resubmit.
+#SBATCH --time=16:00:00
 #SBATCH --output=/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdprobe/%x-%j.out
 
 set -uo pipefail
