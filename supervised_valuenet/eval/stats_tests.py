@@ -56,8 +56,22 @@ BASE_SYSTEMS = {
     "fwd": ("comparison_forward.json", "forward:best"),
 }
 
+# The missing 2x2 cell (objection 1.3), measured 2026-07-26 by
+# jobs/patterns/basenets_oldvocab.slurm. Present only at the 16x16 rungs,
+# where the published rows confounded language with net provenance.
+EXTRA_SLOTS = {
+    "graded": {"bwd_basenets_old":
+               ("comparison_basenets_oldvocab.json", "backward")},
+    "frontier": {"bwd_basenets_old":
+                 ("comparison_ungraded_basenets_oldvocab.json", "backward")},
+}
+
 # Which pairs to test, in reporting order. (A, B) reads "A vs B".
 PAIRS = [
+    # language effect at FIXED nets: both sides are the base-B1 net pair
+    ("bwd_b2", "bwd_basenets_old"),
+    # net-provenance effect at FIXED (old) language: base-B1 vs per-config nets
+    ("bwd_basenets_old", "bwd_old"),
     ("bwd_b2", "fwd"),            # the headline full-language head-to-head
     ("bwd_retrained", "fwd"),     # Track 1's definitive row (when it lands)
     ("bwd_old", "fwd"),           # old-language like-for-like
@@ -70,6 +84,7 @@ LABELS = {
     "bwd_b1": "backward (B1)",
     "bwd_b2": "backward (B2, zero-shot ranking)",
     "bwd_retrained": "backward (B2, retrained)",
+    "bwd_basenets_old": "backward (base-B1 nets, OLD vocabulary)",
     "fwd": "forward control",
 }
 
@@ -179,6 +194,7 @@ def collect_sets():
         for set_name, inst in (("graded", "bench.solved.jsonl"),
                                ("frontier", "bench.unsolved.jsonl")):
             slots = dict(rung.get(set_name) or {})
+            slots.update(EXTRA_SLOTS.get(set_name, {}))
             fut_key = ("bwd_retrained" if set_name == "graded"
                        else "bwd_retrained_frontier")
             if fut_key in future:

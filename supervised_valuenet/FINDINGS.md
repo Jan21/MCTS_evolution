@@ -758,6 +758,112 @@ scoped fix.
      its stratified breakdown (§26), and the pooled union as the headline —
      because the union needs no caveat and says more.
 
+28. **The 16×16 frontier wins are budget-dependent — a negative result
+   (2026-07-26).** The probes §24 argued for landed (jobs 4593491/4593492,
+   COMPLETED in 1.6 h and 1.4 h; forward-only, budget 4800, seeded 32-instance
+   frontier subsamples; sources `scaling/results/g16r6/forward_probe_e4800.json`,
+   `scaling/results/g16r8/forward_probe_e4800.json`). On the SAME 32 instances,
+   matched against the stored rows:
+   | rung | backward B2 @1200 | forward @1200 | forward @4800 | bwd vs fwd@1200 | bwd vs fwd@4800 |
+   |---|---|---|---|---|---|
+   | 16×16 · 6r | 23/32 = 71.9% | 13/32 = 40.6% | **20/32 = 62.5%** | +31.2, p = 0.021 | +9.4, **p = 0.581** |
+   | 16×16 · 8r | 30/32 = 93.8% | 14/32 = 43.8% | **24/32 = 75.0%** | +50.0, p < 0.0001 | +18.8, **p = 0.070** |
+   Forward gains **+21.9 and +31.2 points from 4× budget**, so the 1200-cap
+   frontier rows at 16×16 are heavily censored, exactly as the still-climbing
+   curves predicted. Consequences, stated plainly:
+   - The **matched-budget** claim stands untouched — that is the protocol, and
+     at 1200/1200 both margins are significant.
+   - The claim that the frontier collapse "is not a cap artifact" is now
+     **proven false on the robot axis**. At 16×16 it substantially IS a cap
+     artifact. §17's "with its full language the subgoal planner wins the
+     8-robot frontier decisively" must be reworded to name the budget.
+   - What survives is the grid axis, where the curves are flat (+1.0 and +0.4
+     points over the last 200 expansions) and the extended probes
+     (4592278/4592279) are still running.
+   Honest limits of this probe: n = 32 gives modest power, so p = 0.070 at
+   g16r8 is underpowered rather than evidence of parity — the point estimate
+   still favours backward by 18.8 points; and backward was NOT given 4800, so
+   this is a robustness probe against a deliberately over-budgeted opponent,
+   not a like-for-like row. Both readings belong in the paper.
+
+29. **The 2×2 nets/language cell closes objection 1.3: the gain is language,
+   not net provenance (2026-07-26).** §17's 16×16 rows used base-trained B1
+   nets with the full language, while their old-language comparators used
+   per-config nets — confounding the two. Job 4593535 filled the missing cell
+   (base-B1 nets + OLD vocabulary, flags identical to `comparison_b2.json`
+   minus `--backward-b2`; 1 h 59 m, ~0.2 nh). Holding the nets fixed at the
+   base-B1 pair, the **language** effect is:
+   | rung / set | old vocabulary | B2 vocabulary | difference (95% CI) | p |
+   |---|---|---|---|---|
+   | 16×16 · 6r graded | 282/316 = 89.2% | 306 = 96.8% | +7.6 [+4.1, +11.3] | <0.0001 |
+   | 16×16 · 6r frontier | 80/134 = 59.7% | 108 = 80.6% | +20.9 [+13.0, +28.6] | <0.0001 |
+   | 16×16 · 8r graded | 232/266 = 87.2% | 262 = 98.5% | +11.3 [+7.3, +15.6] | <0.0001 |
+   | 16×16 · 8r frontier | 95/184 = 51.6% | 163 = 88.6% | +37.0 [+29.7, +44.2] | <0.0001 |
+   Holding the LANGUAGE fixed at the old vocabulary, the **net-provenance**
+   effect (base-B1 nets vs the rung's own per-config nets) is +2.2 (p = 0.065),
+   +7.5 (p = 0.006), +0.8 (p = 0.727) and +3.8 (p = 0.092) — small, and every
+   sign FAVOURS the base nets. So the borrowed base nets were not a handicap
+   the language gain had to overcome; if anything they were slightly better
+   than the per-config nets even at 6 and 8 robots. The language effect is
+   3–11× the provenance effect at every cell. Objection 0.11's "zero-shot means
+   two different things" is retired for the 16×16 rungs by measurement rather
+   than by the pending retraining. All 689 solved rows the job produced were
+   replay-certified, 0 failures. Sources:
+   `scaling/results/g16r{6,8}/comparison{,_ungraded}_basenets_oldvocab.json`,
+   `eval/results/stats_tests.json` (52 cells).
+
+30. **The B2 label campaign as configured is infeasible, and the cause is
+   measured (2026-07-26).** All five `rr-b2lab-*` jobs were run; two hit the
+   24 h walltime (4591709 base, 4591710 g16r6) and the rest were cancelled at
+   0.6–2.9% completion. Rates from the jobs' own logs — not extrapolated from
+   their opening graphs, which are 10–45× faster than the steady state and are
+   what misled the first projection:
+   | config | boards | done | s/graph | projected | node-hours |
+   |---|---|---|---|---|---|
+   | g16r4 | 2112 | 121 (5.7%) | 692 | 406 h | 50.7 |
+   | g16r6 | 1050 | 9 (0.9%) | 2,696 | 786 h | 98.3 |
+   | g16r8 | 1050 | 30 (2.9%) | 2,418 | 705 h | 88.1 |
+   | g24r8 | 1050 | 6 (0.6%) | 4,579 | 1,335 h | 166.9 |
+   | g32r4 | 1050 | 10 (1.0%) | 1,013 | 295 h | 36.9 |
+   **~441 node-hours for labels alone against ~879 remaining.** This is the
+   Rust engine at 16 threads, so there is no faster implementation to switch
+   to. The cause is diagnosable at zero compute from the engine's own
+   per-attempt records (`scaling/data/<cfg>/rust_work/backward_b2.results.jsonl`,
+   which carry `status` and `iters`):
+   | config | budget | `ok` | `empty` | `budget_exhausted` | share of ALL iterations spent on `budget_exhausted` |
+   |---|---|---|---|---|---|
+   | g16r4 | 50,000 | 66.6% | 24.6% | 8.8% | **65.1%** |
+   | g16r8 | 100,000 | 66.0% | 17.9% | 16.1% | **91.3%** |
+   Legitimate rollouts are cheap — median **342** iterations at base and
+   **174** at g16r8, p95 ≈ 16–20k — so the iteration budget sits 30–100× above
+   the legitimate median and a wandering rollout is free to burn all of it.
+   §19's calibration ("~60–1,700 iterations") described the median correctly
+   but the budget was set from the tail, and an iteration budget does not
+   bound wall-time. Capping the per-rollout budget buys, per the same records:
+   | cap | base: `ok` kept / speed-up | g16r8: `ok` kept / speed-up |
+   |---|---|---|
+   | 2,000 | 72.8% / **9.2×** | 81.8% / **24.7×** |
+   | 5,000 | 83.3% / 4.6× | 87.6% / 11.9× |
+   | 10,000 | 89.7% / 2.8× | 91.4% / 6.7× |
+   A cap does not cost instances one-for-one: the bridge draws `per_graph * 4`
+   = 80 attempts to keep 20, so at a 66% success rate there is ~2.6× headroom.
+   Per-board yield under a cap (from the recorded attempt streams, which are
+   truncated once 20 keepers are found and therefore pessimistic): at cap
+   10,000, 93.7% of base boards and 92% of g16r8 boards still reach 20
+   keepers. The second lever is `--per-graph`: B2 emits ~19.5 records per
+   instance, so 10 instances/board over all 2112 base boards still yields
+   ~410k records — nearly 4× `nn/data/combined_b1.jsonl` (108,902). What a cap
+   DOES change is which instances are labelled — it biases the training set
+   toward puzzles whose rollout succeeds quickly — and that must be stated
+   wherever the retrained rows are reported. Recommended configuration, to be
+   smoke-tested with `--limit` before any full submission: cap 5,000–10,000,
+   `--per-graph` 10, sharded ≤16 h per the cooling reservation.
+
+   **Operating rule adopted, at the cost of ~11 node-hours:** never size a
+   generation job from its opening graphs. Run `--limit`-bounded smoke tests
+   and project from the steady-state rate. The first projection here (58
+   s/graph from 8 graphs) was wrong by 12× at base and 42× at 24×24/8.
+
 ## Still open
 
 - Retraining the backward networks on the extended (B2) vocabulary — the
