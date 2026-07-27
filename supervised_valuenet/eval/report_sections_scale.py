@@ -568,8 +568,15 @@ def sec_fair_ledger(D):
   board simulator once per (robot, direction). Measured in the unit both
   systems share — invocations of <code>simulate.slide</code> — a pilot over
   five identical base puzzles reads <b>64 slide calls for the subgoal
-  planner against 40,448 for the move-level planner</b> (medians), so the
-  unmetered work is larger on the side the ledger above does not list. The
+  planner against 5,776 for the move-level planner</b> (medians, counting
+  search physics only), so the unmetered work is larger on the side the
+  ledger above does not list. That figure deliberately excludes a further
+  ~34,700 move-level slides per puzzle spent featurizing states for its
+  network: the raw totals are 983 against 40,448, but most of the
+  move-level total is network input encoding rather than search, while the
+  subgoal planner's own featurization reads precomputed tables and calls
+  the primitive never — quoting the raw ratio would pass featurization off
+  as physics. The
   qualification that survives is about the <i>shape</i> of the subgoal
   planner's cost rather than its size: its distribution is heavy-tailed,
   and a single unsolved puzzle in that pilot consumed more physics than the

@@ -101,10 +101,11 @@ def main():
 
     payload = {
         "unit": ("invocations of simulate.slide -- the one physics primitive "
-                 "both planners bottom out in (forward successor generation; "
-                 "backward realization / prefix-check / park-repair BFS). "
-                 "Measured with eval.compare --count-slides over a seeded "
-                 "subsample, both systems on the SAME instances."),
+                 "both planners bottom out in (forward successor generation "
+                 "and NN featurization; backward realization / prefix-check / "
+                 "park-repair BFS). Measured with eval.compare --count-slides "
+                 "over a seeded subsample, both systems on the SAME "
+                 "instances."),
         "reporting_rule": ("median and tail, never the mean alone: the "
                            "backward distribution is heavy-tailed because a "
                            "single unsolved puzzle can dominate a slice "
@@ -112,6 +113,52 @@ def main():
         "caveat": ("counted runs are not wall-clock comparable to uncounted "
                    "ones; the headline rows in track1_rows.slurm carry no "
                    "counter for exactly that reason."),
+        "caveat_featurization": (
+            "THE RAW CROSS-SYSTEM TOTAL IS NOT A PHYSICS-ONLY RATIO. Of the "
+            "~112 slides per forward expansion, ~16 are legal_moves successor "
+            "generation (search physics) and ~96 are dest_cells one-step-"
+            "lookahead NN featurization, plus a once-per-board _slide_fields "
+            "fill; the backward planner's counterpart featurization reads "
+            "precomputed graph/distance tables and NEVER calls slide, so it "
+            "contributes zero to its buckets. A ratio of raw totals therefore "
+            "conflates physics work with how each planner happens to "
+            "featurize states. Quote the forward_search-vs-backward-buckets "
+            "comparison for physics, or the total ONLY together with this "
+            "caveat. Records produced before the split (2026-07-27) lump "
+            "forward_encode into forward_search."),
+        "bucket_semantics": {
+            "forward_search": ("forward: slides outside NN featurization -- "
+                               "legal_moves successor generation (~16 per "
+                               "expansion at 4 robots). The physics-"
+                               "comparable forward bucket."),
+            "forward_encode": ("forward: slides inside Guide.eval_states -- "
+                               "dest_cells lookahead featurization (~96 per "
+                               "expansion at 4 robots, k=5) plus the cached "
+                               "per-board _slide_fields fill. NN input "
+                               "encoding, not search physics."),
+            "backward_search": ("backward: the subgoal search / proposal "
+                                "step itself. Plans over precomputed slide-"
+                                "graph and exact-distance tables and performs "
+                                "no slides -- measured zero in the pilot; a "
+                                "nonzero value here would be news."),
+            "strict_realize": ("backward: legal joint-state execution of a "
+                               "popped complete plan (the solve criterion)."),
+            "prefix_check": ("backward: Lever A in-search prefix "
+                             "realizability filter."),
+            "park_repair": ("backward: deterministic physics repairs of "
+                            "failed complete plans (B1/B2)."),
+            "abstract_scoring": ("backward: diagnostic blocker-clearing "
+                                 "re-cost of the found plan "
+                                 "(realized_abstract). Scoring of a result, "
+                                 "not search or realization work."),
+            "unbucketed": ("sentinel: slides made while no bucket was "
+                           "active. Kept so nothing is silently dropped "
+                           "from a number presented as a total; nonzero "
+                           "means an unattributed call path -- investigate "
+                           "before publishing. Absent in records from "
+                           "before 2026-07-27, when such calls were "
+                           "silently dropped."),
+        },
         "records": records,
     }
     Path(a.out).write_text(json.dumps(payload, indent=1))
@@ -130,7 +177,16 @@ def main():
               f"{r['mean_expansions']:8.1f} {sc['median']:11,.0f} "
               f"{sc['mean']:11,.0f} {sc['p90']:11,.0f} {sc['max']:11,.0f} "
               f"{sc['max_share_of_total']*100:8.1f}%")
+    for r in records:                       # sentinel: unattributed call paths
+        leak = r["slide_calls"]["by_phase_mean"].get("unbucketed", 0)
+        if leak:
+            print(f"WARNING {r['rung']}.{r['set']} {r['system']}: mean "
+                  f"{leak:.1f} unbucketed slides/instance -- unattributed "
+                  f"call path, investigate before publishing")
     print(f"\nwrote {a.out}  ({len(records)} records)")
+    print("NOTE: forward slide totals are mostly NN featurization "
+          "(forward_encode), not search physics -- see caveat_featurization "
+          "in the payload before quoting any cross-system ratio.")
 
 
 if __name__ == "__main__":

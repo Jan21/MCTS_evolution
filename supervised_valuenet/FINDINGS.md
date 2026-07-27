@@ -621,9 +621,30 @@ scoped fix.
    |---|---|---|
    | backward, full language, anytime | 3.4 | 64 |
    | forward (`best.ckpt`) | 337.0 | 40,448 |
-   The efficiency advantage therefore SURVIVES the matched unit and in fact
-   widens (≈630× on slide calls vs ≈99× on expansions) — the opposite of what
-   publishability objection 1.1 feared. But the mean tells a different story
+   **CORRECTED 2026-07-27 — the 40,448 figure is not physics.** An adversarial
+   review found that ~96 of the ~112 slides per forward expansion come from
+   `dest_cells` one-step-lookahead featurization of the states fed to the
+   networks (`move_planner/encode.py`), not from generating successors, while
+   the backward planner's counterpart featurization reads precomputed
+   graph/distance tables and calls `slide` never. The counter was correct; the
+   *interpretation* conflated "physics work" with "how each planner happens to
+   featurize states". `eval.compare --count-slides` now splits the forward
+   attribution into `forward_search` (physics) and `forward_encode`
+   (featurization), and the backward loop's diagnostic re-costing of a found
+   plan gets its own `abstract_scoring` bucket instead of leaking uncounted.
+   Re-measured on the SAME five puzzles:
+   | system | physics only (median) | including featurization / diagnostics |
+   |---|---|---|
+   | backward | **64** | 983 |
+   | forward | **5,776** | 40,448 |
+   So the honest physics-only ratio is **≈90×, not ≈630×** — against ≈99× on
+   expansions. The corrected reading is that the efficiency advantage
+   **survives the matched unit essentially unchanged**, neither widening nor
+   shrinking; the earlier "in fact widens" was an artifact of the conflation.
+   That is still a clear answer to publishability objection 1.1 — the concern
+   was that a matched unit would erase the advantage, and it does not — but it
+   is a materially weaker statement than the one first recorded here, and the
+   sentinel bucket now proves nothing is dropped from either total. But the mean tells a different story
    and the difference is the finding: over the 20-instance slice the backward
    planner's mean is **5,961 slide calls with a median of 74.5**, because a
    single **unsolved** puzzle (env 2405) spent **106,817 slide calls, 96% of

@@ -66,15 +66,31 @@ class _CountingGuide:
 
     `nn_astar` makes 1 root call, then exactly 2 calls (1 policy + 1 batched
     value) per expansion that has successors, so expansions ~= (calls - 1) // 2.
+
+    `encode_bucket` (a context-manager factory; set only under --count-slides,
+    None otherwise) re-attributes the slide calls made INSIDE eval_states to
+    their own slide-counter bucket. Everything eval_states slides for is NN
+    input featurization -- `dest_cells`' one-step lookahead per (robot, dir)
+    plus the once-per-board `_slide_fields` fill -- not search physics; at 4
+    robots and k=5 that is ~96 of the ~112 slides per forward expansion. The
+    backward planner's counterpart featurization reads precomputed
+    graph/distance tables and never calls slide, so leaving these in
+    `forward_search` would let a cross-system ratio pass featurization off as
+    physics work. Attribution only: the wrapped call itself is unchanged, and
+    with `encode_bucket=None` the call path is exactly the pre-split one.
     """
 
-    def __init__(self, guide):
+    def __init__(self, guide, encode_bucket=None):
         self._guide = guide
+        self._encode_bucket = encode_bucket
         self.calls = 0
 
     def eval_states(self, *args, **kwargs):
         self.calls += 1
-        return self._guide.eval_states(*args, **kwargs)
+        if self._encode_bucket is None:
+            return self._guide.eval_states(*args, **kwargs)
+        with self._encode_bucket():
+            return self._guide.eval_states(*args, **kwargs)
 
 
 def run_forward(ckpt, instances, k, budget, device, log=print,
@@ -86,7 +102,10 @@ def run_forward(ckpt, instances, k, budget, device, log=print,
 
     if count_slides:                    # after the imports above, so their
         slide_counter.install()         # captured `slide` bindings get rebound
-    guide = _CountingGuide(Guide(ckpt, device))
+    guide = _CountingGuide(
+        Guide(ckpt, device),
+        encode_bucket=((lambda: slide_counter.bucket("forward_encode"))
+                       if count_slides else None))
     walls = {}
     rows = []
     for i, inst in enumerate(instances):
@@ -357,7 +376,16 @@ def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
         }
         if plan is not None:
             row["plan_cost_abstract"] = float(plan.cost())
-            ab, _verified = abstract_moves(env, st, plan, log=log)
+            # `abstract_scoring` bucket: abstract_moves re-costs each segment
+            # of the FOUND plan under the blocker-clearing model to produce
+            # the diagnostic `realized_abstract` figure. That is scoring of a
+            # result, not search (no frontier is touched) and not realization
+            # (no legal joint-state execution is attempted), so it gets its
+            # own bucket rather than inflating backward_search or
+            # strict_realize -- previously these slides ran under no bucket
+            # at all and were silently missing from `slide_calls`.
+            with ctx("abstract_scoring"):
+                ab, _verified = abstract_moves(env, st, plan, log=log)
             if anytime:
                 stx = check_cache.get(id(plan))
                 if id(plan) not in check_cache:           # budget-exhausted fallback plan
@@ -609,11 +637,16 @@ def main():
     p.add_argument("--count-slides", action="store_true",
                    help="count simulate.slide invocations per instance, split "
                         "by phase, in BOTH systems -- the matched physics-work "
-                        "unit of publishability objection 1.1. Adds a Python "
-                        "call to the hottest function in the codebase, so a "
-                        "counted run's wall-clock is NOT comparable to an "
-                        "uncounted one: run accounting passes separately from "
-                        "timing passes.")
+                        "unit of publishability objection 1.1. Forward slides "
+                        "are split into forward_search (legal_moves physics) "
+                        "vs forward_encode (NN featurization; the majority -- "
+                        "see eval/slide_counter.py's caveat before quoting "
+                        "any cross-system ratio); calls under no bucket land "
+                        "in the 'unbucketed' sentinel instead of being "
+                        "dropped. Adds a Python call to the hottest function "
+                        "in the codebase, so a counted run's wall-clock is "
+                        "NOT comparable to an uncounted one: run accounting "
+                        "passes separately from timing passes.")
     p.add_argument("--device", default="cpu")
     p.add_argument("--out", default="eval/results/comparison.json")
     p.add_argument("--md", default="COMPARISON.md")
