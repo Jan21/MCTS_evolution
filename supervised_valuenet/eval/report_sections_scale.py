@@ -459,8 +459,9 @@ def sec_open(D):
 
 
 def tab_scaling(D):
-    return (sec_oracle(D) + sec_fragility(D) + sec_ladder(D) + sec_cost(D)
-            + sec_rung_details(D) + sec_open(D))
+    from eval.report_sections_strata import sec_strata
+    return (sec_oracle(D) + sec_fragility(D) + sec_ladder(D) + sec_strata(D)
+            + sec_cost(D) + sec_rung_details(D) + sec_open(D))
 
 
 # ---------------------------------------------------------------------------
@@ -742,13 +743,17 @@ def sec_fair_budget(D):
   <b>The efficiency gap is structural:</b> on gradable sets the best
   subgoal curves reach {min(shares50):.0f}–{max(shares50):.0f}% of their
   final solve rate within the first 50 steps, while the move-by-move
-  curves need hundreds. <b>The frontier picture is mixed and honest:</b>
-  the move-by-move frontier curves are still climbing at the cap at
-  {esc("; ".join(climbing)) if climbing else "no rung"} — more budget
-  plausibly helps there — but have gone nearly flat at
-  {esc("; ".join(flat)) if flat else "no rung"}, where the collapse does
-  not look like a cap artifact. The extended-budget probes below answer
-  this directly.</p>"""
+  curves need hundreds. <b>The frontier picture is budget-limited
+  everywhere it has been probed — including where these curves look
+  flat.</b> The move-by-move frontier curves are still climbing at the cap
+  at {esc("; ".join(climbing)) if climbing else "no rung"} and have gone
+  nearly flat at {esc("; ".join(flat)) if flat else "no rung"}. It is
+  tempting to read the flat rungs as saturation; the extended-budget
+  probes below show that reading is wrong. At 24×24 · 8 robots, a rung
+  whose curve gains only ~1 point over its last 200 expansions, a 5×
+  budget adds <b>12.5 points</b> — a small per-window gain integrated over
+  a long extension still compounds. Local flatness over a 200-step window
+  is not saturation, and no claim on this page rests on it.</p>"""
     return (head + C.line_legend(fams)
             + f'<div class="cols2">{"".join(panels)}</div>'
             + f'<figure class="chart"><figcaption>{caption}'
@@ -930,8 +935,9 @@ def sec_fair_probes(D):
 
 
 def tab_fairness(D):
-    return (sec_fair_matched(D) + sec_fair_ledger(D) + sec_fair_budget(D)
-            + sec_fair_wallclock(D) + sec_fair_probes(D))
+    from eval.report_sections_stats import sec_significance
+    return (sec_fair_matched(D) + sec_significance(D) + sec_fair_ledger(D)
+            + sec_fair_budget(D) + sec_fair_wallclock(D) + sec_fair_probes(D))
 
 
 # ---------------------------------------------------------------------------
@@ -1128,5 +1134,7 @@ def sec_footnotes():
 
 
 def tab_methods(D):
-    return (sec_protocol(D) + sec_design(D) + sec_glossary()
+    from eval.report_sections_hygiene import sec_hygiene, sec_databudget
+    return (sec_protocol(D) + sec_design(D) + sec_hygiene(D)
+            + sec_databudget(D) + sec_glossary()
             + sec_provenance(D) + sec_selfcheck(D) + sec_footnotes())

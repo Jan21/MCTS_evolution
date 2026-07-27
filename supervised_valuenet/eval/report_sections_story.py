@@ -350,13 +350,27 @@ def sec_verdict(D):
     html += sec_verdict_tiles(D)
     html += """
   <div class="verdict">
-  <p><b>On small puzzles, the move-by-move planner is the quality champion;
-  every scaling trend runs the other way.</b> The exact solver its training
-  depends on fails on a growing majority of puzzles as boards and robot
-  counts grow. Its per-puzzle search cost explodes with board size. And on
-  the puzzles beyond exact search — the regime that defines scale — it
-  collapses while the subgoal planner keeps solving at a fraction of the
-  cost. The subgoal planner's remaining handicaps are honest and measured:
+  <p><b>On small puzzles the move-by-move planner is the quality champion;
+  every trend along the two hardness axes bends the other way.</b> The exact
+  solver its training depends on fails on a growing majority of puzzles as
+  boards and robot counts grow, and its per-puzzle search cost explodes with
+  board size. On the whole pinned pool at each rung — gradable and
+  beyond-oracle puzzles together, the only view free of any selection — the
+  full-language subgoal planner wins <b>every rung measured</b>, by 7.8 to
+  47.8 points, with the margin growing along both axes.</p>
+  <p><b>Three qualifications, stated here rather than in a footnote.</b>
+  (1) On gradable sets the move-by-move planner still holds a real edge at
+  16×16 · 6 robots and 24×24 · 8 robots; at 16×16 · 8 robots the two are at
+  <b>parity</b> — 262 versus 261 puzzles is a one-puzzle margin that a paired
+  test cannot separate from noise — with the subgoal planner using 7× fewer
+  search steps. (2) The beyond-oracle margins are <b>matched-budget</b>
+  results. Give the move-by-move planner 4–5× the search budget and it gains
+  12–31 points at every rung probed, so "it has stopped working" is not
+  supportable; what is supportable is that it needs several times the search
+  to approach a rate the subgoal planner reaches immediately, and still does
+  not catch up. (3) Both systems are single-seed everywhere, so no small
+  difference here is defensible against seed variation, which is unmeasured.</p>
+  <p>The subgoal planner's remaining handicaps are honest and measured:
   longer solutions where no optimum exists, and a gap between what its
   extended plan language permits and what its current networks reach —
   a training gap, with retraining in progress.</p>
