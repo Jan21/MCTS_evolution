@@ -864,6 +864,46 @@ scoped fix.
    and project from the steady-state rate. The first projection here (58
    s/graph from 8 graphs) was wrong by 12× at base and 42× at 24×24/8.
 
+31. **The grid axis is budget-sensitive too — "saturated" was my inference,
+   not a measurement, and it was wrong (2026-07-27).** §20 read the
+   reconstructed curves as showing the 24×24/8 and 32×32 forward frontier
+   curves "nearly flat" at the 1200 cap (+1.0 and +0.4 points over the last
+   200 expansions) and §24 concluded saturation was *demonstrated* on the grid
+   axis. The extended probe (job 4592278, COMPLETED in 12.4 h) measures it
+   directly on the same 32 frontier instances at 24×24/8:
+   | | solve rate | vs backward @1200 |
+   |---|---|---|
+   | forward @1200 | 5/32 = 15.6% | +31.2, p = 0.0063 |
+   | **forward @6000** | **9/32 = 28.1%** | +18.8, **p = 0.146** |
+   | backward @1200 | 15/32 = 46.9% | — |
+   **+12.5 points at 5× budget**, and the backward lead stops being
+   significant on this subsample. Mean expansions used at the 6000 cap is
+   4,974, so a large share of instances are still exhausting the budget and
+   the curve is very likely still climbing.
+   **Where the reasoning failed, stated precisely.** The +1.0-point gain over
+   1000→1200 was real; calling it "nearly flat" was the error. That is ~1
+   point per 200 expansions, and the measured 1200→6000 gain averages ~0.52
+   points per 200 — the *same order*. A small per-window gain integrated over
+   a 4,800-step extension compounds into 12.5 points. Local flatness over a
+   200-step window is not saturation, and no budget curve should be read that
+   way again.
+   **Consequence for the thesis.** Combined with §28, forward's frontier
+   "collapse" is substantially budget-limited at **every rung probed so far**
+   — g16r6 +21.9, g16r8 +31.2, g24r8 +12.5 — so the claim must be retired in
+   general, not merely scoped to one axis. What remains true and is enough:
+   (a) at **matched budget**, which is the study's protocol, the backward lead
+   is real and significant at every rung; (b) the backward planner reaches its
+   rate at 1200 expansions while forward needs 5,000+ and still trails; (c)
+   the pooled-union result (§22) is unaffected, since it is a matched-budget
+   comparison. The sentence "at the frontier the move-level formulation has
+   effectively stopped working" (§18) is not supportable as written — the
+   supportable sentence is that it needs 4–5× the search budget to reach a
+   rate the subgoal planner reaches at 1×, and still does not catch up.
+   The 32×32 probe (4592279) is still running and will complete the set;
+   32×32 forward at 1200 solves 2/275, so even a large relative gain there
+   leaves the qualitative picture intact.
+   Source: `scaling/results/g24r8/forward_probe_e6000.json`.
+
 ## Still open
 
 - Retraining the backward networks on the extended (B2) vocabulary — the
