@@ -1014,6 +1014,13 @@ def sec_design(D):
 
 def sec_glossary():
     terms = [
+        ("rung / configuration", "one setting of board size and robot count "
+         "(for example 24\u00d724 with 8 robots). The study runs the same "
+         "comparison at six of them; \u201cthe ladder\u201d is all six "
+         "together"),
+        ("paired test", "both planners attempt the same puzzles, so each "
+         "puzzle gives a matched pair of outcomes; only the puzzles where "
+         "they disagree carry information about which is better"),
         ("search step (expansion)", "examine one position or partial plan "
          "and generate its candidate continuations; one pass of each "
          "network in either planner family"),

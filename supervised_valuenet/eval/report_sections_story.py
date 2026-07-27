@@ -342,12 +342,92 @@ def ladder_chart_graded(D):
                     "eval/results + scaling/results/*/comparison*.json", twin)
 
 
+
+def sec_headline_table(D):
+    """The one scoreboard a reader should take away: the whole pinned pool.
+
+    Every other table in this report slices the benchmark somehow. This one
+    does not -- it is all 450 puzzles at each configuration, gradable and
+    beyond-oracle together, which is the only view carrying no selection to
+    argue about. It therefore belongs above the fold rather than buried inside
+    the statistics section.
+    """
+    st = D.get("stats_tests")
+    if not st:
+        return ""
+    src = "eval/results/stats_tests.json"
+    names = {"g16r6": "16×16 board, 6 robots",
+             "g16r8": "16×16 board, 8 robots",
+             "g24r8": "24×24 board, 8 robots",
+             "g32r4": "32×32 board, 4 robots"}
+    cells = {c["rung"]: c for c in st.get("cells", [])
+             if not c.get("skipped") and c.get("set") == "pooled"
+             and c.get("a") == "bwd_b2" and c.get("b") == "fwd"}
+    rows = []
+    for key in ("g16r6", "g16r8", "g24r8", "g32r4"):
+        c = cells.get(key)
+        if not c:
+            continue
+        n = c["n"]
+        sa, sb = c["solved_a"], c["solved_b"]
+        ra = "%.1f%%" % (c["rate_a"] * 100)
+        rb = "%.1f%%" % (c["rate_b"] * 100)
+        diff = c["diff"] * 100
+        dtxt = "%+.1f pts" % diff
+        lo = c["ci95_lo"] * 100
+        hi = c["ci95_hi"] * 100
+        pv = c["mcnemar_p"]
+        pstr = "&lt;0.0001" if pv < 0.0001 else "%.4f" % pv
+        cell_a = ck(ra, src, "headline pooled subgoal " + key, raw=sa)
+        cell_b = ck(rb, src, "headline pooled forward " + key, raw=sb)
+        cell_d = ck(dtxt, src, "headline pooled diff " + key, raw=round(diff, 4))
+        rows.append(
+            "<tr><td><b>" + esc(names[key]) + "</b></td>"
+            + '<td class="num">' + cell_a
+            + '<div class="cellnote">' + str(sa) + " of " + str(n) + "</div></td>"
+            + '<td class="num">' + cell_b
+            + '<div class="cellnote">' + str(sb) + " of " + str(n) + "</div></td>"
+            + '<td class="num">' + cell_d
+            + '<div class="cellnote">95%% CI [%+.1f, %+.1f]</div></td>' % (lo, hi)
+            + '<td class="num">' + pstr + "</td></tr>")
+    if not rows:
+        return ""
+    table = scroll(
+        "<table><thead><tr><th>configuration</th>"
+        '<th class="num">subgoal planner</th>'
+        '<th class="num">move-by-move planner</th>'
+        '<th class="num">difference</th>'
+        '<th class="num">p</th></tr></thead><tbody>'
+        + "".join(rows) + "</tbody></table>")
+    need("headline table present", "the whole benchmark, nothing left out")
+    return (
+        '\n  <h3 class="ph">The headline: the whole benchmark, nothing left'
+        " out</h3>\n"
+        "  <p>Every other scoreboard in this report splits the benchmark in"
+        " two — the puzzles an exact solver could grade, and the harder"
+        " ones it could not. That split explains <i>why</i> the planners"
+        " differ, but the harder half is defined by the exact solver failing,"
+        " which is unfair to the move-by-move planner by construction. The"
+        " table below sidesteps it: <b>all 450 puzzles</b> at each board size,"
+        " both halves together, scored by the one rule that matters — a"
+        " puzzle counts only if the plan plays out legally, move by move.</p>\n"
+        + table
+        + '\n  <p class="small muted">Both planners get the same puzzles and'
+        " the same search budget. “Difference” is in percentage"
+        " points, with a 95% confidence interval; it and the p-value come from"
+        " a paired test that allows for several puzzles sharing one board. The"
+        " small-puzzle configuration (16×16, 4 robots) is absent because"
+        " its whole benchmark is gradable — the move-by-move planner wins"
+        " that one outright, 450 of 450 against 430.</p>\n")
+
+
 def sec_verdict(D):
     html = kicker_h2(
         "the verdict so far", "Where the evidence stands",
         "Every number below is measured; the one-paragraph verdict, then the "
         "whole ladder in two pictures.")
     html += sec_verdict_tiles(D)
+    html += sec_headline_table(D)
     html += """
   <div class="verdict">
   <p><b>On small puzzles the move-by-move planner is the quality champion;
