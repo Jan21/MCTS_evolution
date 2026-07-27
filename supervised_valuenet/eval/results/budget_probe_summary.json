@@ -1,0 +1,124 @@
+{
+ "note": "all three numbers per rung are on the SAME seeded subsample; the probe gives FORWARD a 4-5x budget while backward stays at 1,200, so 'bwd-fwd@probe' is a robustness check against an over-budgeted opponent, not a like-for-like row",
+ "probes": [
+  {
+   "rung": "g16r6",
+   "budget": 4800,
+   "status": "ok",
+   "n": 32,
+   "forward_1200": {
+    "solved": 13,
+    "rate": 0.40625
+   },
+   "forward_probe": {
+    "solved": 20,
+    "rate": 0.625,
+    "mean_expansions": 2599.4375
+   },
+   "backward_1200": {
+    "solved": 23,
+    "rate": 0.71875
+   },
+   "forward_climb": 0.21875,
+   "backward_vs_forward_1200": {
+    "diff": 0.3125,
+    "a_only": 13,
+    "b_only": 3,
+    "mcnemar_p": 0.021270751953125
+   },
+   "backward_vs_forward_probe": {
+    "diff": 0.09375,
+    "a_only": 8,
+    "b_only": 5,
+    "mcnemar_p": 0.5810546875
+   },
+   "sources": {
+    "probe": "scaling/results/g16r6/forward_probe_e4800.json",
+    "subsample": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdprobe/g16r6.e4800/subsample.jsonl",
+    "forward_1200": "scaling/results/g16r6/comparison_ungraded.json",
+    "backward_1200": "scaling/results/g16r6/comparison_ungraded_b2.json"
+   }
+  },
+  {
+   "rung": "g16r8",
+   "budget": 4800,
+   "status": "ok",
+   "n": 32,
+   "forward_1200": {
+    "solved": 14,
+    "rate": 0.4375
+   },
+   "forward_probe": {
+    "solved": 24,
+    "rate": 0.75,
+    "mean_expansions": 2141.59375
+   },
+   "backward_1200": {
+    "solved": 30,
+    "rate": 0.9375
+   },
+   "forward_climb": 0.3125,
+   "backward_vs_forward_1200": {
+    "diff": 0.5,
+    "a_only": 16,
+    "b_only": 0,
+    "mcnemar_p": 3.0517578125e-05
+   },
+   "backward_vs_forward_probe": {
+    "diff": 0.1875,
+    "a_only": 7,
+    "b_only": 1,
+    "mcnemar_p": 0.0703125
+   },
+   "sources": {
+    "probe": "scaling/results/g16r8/forward_probe_e4800.json",
+    "subsample": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdprobe/g16r8.e4800/subsample.jsonl",
+    "forward_1200": "scaling/results/g16r8/comparison_ungraded.json",
+    "backward_1200": "scaling/results/g16r8/comparison_ungraded_b2.json"
+   }
+  },
+  {
+   "rung": "g24r8",
+   "budget": 6000,
+   "status": "ok",
+   "n": 32,
+   "forward_1200": {
+    "solved": 5,
+    "rate": 0.15625
+   },
+   "forward_probe": {
+    "solved": 9,
+    "rate": 0.28125,
+    "mean_expansions": 4973.5625
+   },
+   "backward_1200": {
+    "solved": 15,
+    "rate": 0.46875
+   },
+   "forward_climb": 0.125,
+   "backward_vs_forward_1200": {
+    "diff": 0.3125,
+    "a_only": 11,
+    "b_only": 1,
+    "mcnemar_p": 0.00634765625
+   },
+   "backward_vs_forward_probe": {
+    "diff": 0.1875,
+    "a_only": 9,
+    "b_only": 3,
+    "mcnemar_p": 0.14599609375
+   },
+   "sources": {
+    "probe": "scaling/results/g24r8/forward_probe_e6000.json",
+    "subsample": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdprobe/g24r8.e6000/subsample.jsonl",
+    "forward_1200": "scaling/results/g24r8/comparison_ungraded.json",
+    "backward_1200": "scaling/results/g24r8/comparison_ungraded_b2.json"
+   }
+  },
+  {
+   "rung": "g32r4",
+   "budget": 4800,
+   "status": "not measured"
+  }
+ ]
+}

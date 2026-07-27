@@ -879,6 +879,12 @@ def sec_fair_probes(D):
         ("fwd_probe_g32r4", "scaling/results/g32r4/forward_probe_e4800.json",
          "32×32 board, 4 robots", "4,800 steps (4× the standard cap)",
          "is the 0.7% frontier collapse a budget-cap artifact?"),
+        ("fwd_probe_g16r6", "scaling/results/g16r6/forward_probe_e4800.json",
+         "16×16 board, 6 robots", "4,800 steps (4× the standard cap)",
+         "the robot axis: its curve was still climbing at the 1,200 cap"),
+        ("fwd_probe_g16r8", "scaling/results/g16r8/forward_probe_e4800.json",
+         "16×16 board, 8 robots", "4,800 steps (4× the standard cap)",
+         "the rung where the decisive frontier win is claimed"),
     ]
     blocks = []
     for dkey, rel, label, budget, question in probes:
