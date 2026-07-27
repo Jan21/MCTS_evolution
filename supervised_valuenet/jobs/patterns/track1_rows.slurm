@@ -109,8 +109,15 @@ elif [ -s "$OUT" ]; then
   rm -f "$OUT"
 fi
 
-RUN="$REPO/runs/track1/$CFG.$SET"
+# Chunk reuse is keyed on the banked checkpoint identity. Without this, a
+# rerun after re-banking (e.g. onto the cap-20000 nets) silently rebuilds the
+# merged row from chunks computed with the PREVIOUS nets -- wrong-provenance
+# results wearing a fresh timestamp. Changing either checkpoint starts a clean
+# chunk directory.
+STAMP=$(printf '%s\n%s\n' "$BP" "$BV" | sha256sum | cut -c1-12)
+RUN="$REPO/runs/track1/$CFG.$SET.$STAMP"
 mkdir -p "$RUN"
+printf 'policy=%s\nvalue=%s\n' "$BP" "$BV" > "$RUN/checkpoints.txt"
 # Chunks must stay in benchmark order -- merge_compare_shards.py requires it.
 [ -e "$RUN/chunk.000.jsonl" ] || \
   split -d -a 3 -l 8 "$INST" "$RUN/chunk." --additional-suffix=.jsonl
@@ -151,7 +158,12 @@ RC=$?
 # must never print over a failed certification. replay_validate exits 1 on any
 # replay failure and 2 when it validated nothing at all; both are lane failures.
 if [ "$RC" -ne 0 ]; then
-  echo "TRACK1 $CFG $SET REPLAY-FAILED rc=$RC"
+  # Quarantine the merged file. Leaving it at $OUT would let the resume gate
+  # accept it on the next submission -- parseable, rows present -- and print
+  # DONE without ever re-running certification, and $OUT is the exact path the
+  # report reads from.
+  mv -f "$OUT" "$OUT.uncertified" 2>/dev/null
+  echo "TRACK1 $CFG $SET REPLAY-FAILED rc=$RC (merged file quarantined at $OUT.uncertified)"
   exit 1
 fi
 echo "TRACK1 $CFG $SET DONE"

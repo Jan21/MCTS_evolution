@@ -662,8 +662,13 @@ scoped fix.
      simultaneously identifies where the planner's unbounded cost lives.
    These are pilot numbers on 5–20 base puzzles with `best.ckpt` as the forward
    arm; the definitive per-rung figures come from the Track 1 accounting pass.
-   Sources: `eval/results/instrumentation_ab/v2_slidepilot_{backward5,forward5}.json`,
-   `v2_n4_both.json`.
+   Sources: the corrected split figures are
+   `eval/results/instrumentation_ab/v3_split_{backward5,forward5}.json`
+   (re-measured 2026-07-27 with `forward_search`/`forward_encode`/
+   `abstract_scoring` separated); the original pre-split pilot is retained as
+   `v2_slidepilot_{backward5,forward5}.json` and `v2_n4_both.json`, whose
+   `forward_search` bucket lumps featurization in and must not be quoted as
+   physics.
 
    **Verification of the whole accounting branch, round 2** (same harness as
    §21, baseline `instrumentation_ab/after.L1.json`): plain, `--dump-moves`,
@@ -828,10 +833,10 @@ scoped fix.
    base-B1 pair, the **language** effect is:
    | rung / set | old vocabulary | B2 vocabulary | difference (95% CI) | p |
    |---|---|---|---|---|
-   | 16×16 · 6r graded | 282/316 = 89.2% | 306 = 96.8% | +7.6 [+4.1, +11.3] | <0.0001 |
-   | 16×16 · 6r frontier | 80/134 = 59.7% | 108 = 80.6% | +20.9 [+13.0, +28.6] | <0.0001 |
-   | 16×16 · 8r graded | 232/266 = 87.2% | 262 = 98.5% | +11.3 [+7.3, +15.6] | <0.0001 |
-   | 16×16 · 8r frontier | 95/184 = 51.6% | 163 = 88.6% | +37.0 [+29.7, +44.2] | <0.0001 |
+   | 16×16 · 6r graded | 282/316 = 89.2% | 306 = 96.8% | +7.6 [+4.2, +11.2] | <0.0001 |
+   | 16×16 · 6r frontier | 80/134 = 59.7% | 108 = 80.6% | +20.9 [+13.3, +28.8] | <0.0001 |
+   | 16×16 · 8r graded | 232/266 = 87.2% | 262 = 98.5% | +11.3 [+7.4, +15.5] | <0.0001 |
+   | 16×16 · 8r frontier | 95/184 = 51.6% | 163 = 88.6% | +37.0 [+29.9, +43.9] | <0.0001 |
    Holding the LANGUAGE fixed at the old vocabulary, the **net-provenance**
    effect (base-B1 nets vs the rung's own per-config nets) is +2.2 (p = 0.065),
    +7.5 (p = 0.006), +0.8 (p = 0.727) and +3.8 (p = 0.092) — small, and every
@@ -955,8 +960,13 @@ scoped fix.
    **The finding that matters more than the throughput.** The handoff's QC
    gate expects a by-reference share of roughly 5–20% (base measured 13%).
    Every new set sits at the very bottom of that band, and the cause is the
-   cap. Measured on the **same 111 base boards** (the cap-50,000 run also used
-   `--per-graph 20` against the production 10 — see the correction below):
+   cap. Measured on the **same 111 base boards**. The cap-50,000 run also used
+   `--per-graph 20` against the production 10, so this is not a single-variable
+   comparison; the bridge keeps the first `per_graph` successes in attempt
+   order, and restricting the old file to its first 10 keepers per board gives
+   **14.5%**, so the per-graph difference biases the comparison CONSERVATIVELY
+   — at matched settings the depletion is larger, not smaller. The §33
+   cap-20,000-vs-5,000 comparison is per-graph-matched and fully clean:
    | cap | by-reference share |
    |---|---|
    | 50,000 (original) | 5,698/42,348 = **13.5%** |
@@ -1064,12 +1074,33 @@ scoped fix.
    that vocabulary matters most. That is the ordering the depletion
    hypothesis predicts, on data collected before the hypothesis was tested,
    and it is now the primary reason to believe the cap rather than the
-   retraining recipe is at fault. It is still an association across four
-   points with other differences between them (base has 2112 boards and 377k
-   records against 1050 and ~210k; base warm-started from a B1 net, the others
-   from old-vocabulary per-config nets), so job 4597769 — the same
-   configuration retrained on the cap-20000 corpus — remains the controlled
-   test.
+   retraining recipe is at fault.
+   **Two confounds, one measured by this study and large enough to matter**
+   (added after an adversarial re-read; neither was named in the first
+   version of this entry):
+   - **Net lineage inflates the 16×16 regressions.** The zero-shot comparator
+     at both 16×16 rungs is the BASE-B1 net pair, which §29 measured as
+     *stronger* than the per-config lineage the retrained nets descend from —
+     **+7.5 points on this exact g16r6 frontier set** (p = 0.006), +2.2
+     graded, +3.8/+0.8 at g16r8. So of the −24.6 frontier points, roughly 7–8
+     are plausibly lineage rather than label depletion. The regression is
+     still large after that allowance, but "−24.6 caused by label depletion"
+     overstates it and must not be quoted that way.
+   - **Base cannot exhibit the signature.** The base configuration has no
+     beyond-oracle set, so its "+0.7, no regression" row is measured only on
+     the graded axis — where g16r6 also barely moved (−1.6, p = 0.33). The
+     dose-response reading therefore rests on the graded series alone
+     (+0.7 / −1.6 / −4.9), which is consistent with the hypothesis but weaker
+     than the frontier collapse makes it look, and is further confounded by
+     g16r8's zero-shot comparator sitting at 98.5%, near ceiling.
+   Also unequal: base has 2112 boards and 377k records against 1050 and
+   ~210k, and warm-started from a B1 net rather than an old-vocabulary
+   per-config one. Excluded as causes by the evidence: checkpoint selection
+   (cannot manufacture −24.6) and evaluation artifacts (protocols matched at
+   1200/k=5 with equal instance hashes, every row replay-certified). Job
+   4597769 — same configuration, same lineage, same recipe, cap-20000 corpus
+   — remains the controlled test, and is the only reading that holds lineage
+   fixed.
    Sources: `scaling/results/g16r{6,8}/comparison{_b2retrained,_ungraded_b2retrained}.json`,
    `eval/results/final450_backward_b2_retrained.json`, `eval/results/stats_tests.json`.
 

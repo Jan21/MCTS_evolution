@@ -1,0 +1,208 @@
+{
+  "protocol": {
+    "expansions": 1200,
+    "k": 5,
+    "instances_file": "eval/results/instrumentation_ab/v2_slice5.jsonl",
+    "instances_sha256": "b7bb6ca9285b31a9b5b56d6f91c08f5a4b91a6994085f99015d3db1ddf0b52d2",
+    "n_instances": 5,
+    "instances_meta": null,
+    "checkpoints": {
+      "checkpoints_backward/policy_b1.ckpt": "2026-07-19T10:07:58",
+      "checkpoints_backward/value_b1.ckpt": "2026-07-19T10:07:58"
+    },
+    "device": "cpu",
+    "d_star_placeholder": false,
+    "count_slides": true,
+    "dump_moves": false,
+    "date": "2026-07-27T23:04:56",
+    "results_file": "/tmp/claude-9310/-scratch-project-open-37-42-petrhyner-MCTS-evolution/5bfd7077-39ee-44e5-9710-4bbcf51cfdff/scratchpad/acctverify/bwd5.json",
+    "command": "PYTHONPATH=. python -m eval.compare --instances eval/results/instrumentation_ab/v2_slice5.jsonl --expansions 1200 --k 5 --backward-policy checkpoints_backward/policy_b1.ckpt --backward-value checkpoints_backward/value_b1.ckpt --backward-anytime --backward-b2 --forward-ckpts  --device cpu --count-slides --out /tmp/claude-9310/-scratch-project-open-37-42-petrhyner-MCTS-evolution/5bfd7077-39ee-44e5-9710-4bbcf51cfdff/scratchpad/acctverify/bwd5.json --md /dev/null",
+    "expansion_definition": "one popped search node whose children are generated (= 1 policy pass + 1 batched value pass over <= k children, in both systems)"
+  },
+  "systems": {
+    "backward subgoal planner (anytime realization-checked) [extended language B2]": {
+      "kind": "backward",
+      "aggregate": {
+        "n": 5,
+        "solved": 5,
+        "solve_rate": 1.0,
+        "d_star_placeholder": false,
+        "mean_regret": 1.6,
+        "pct_optimal": 80.0,
+        "mean_moves": 7.2,
+        "mean_expansions": 3.4,
+        "mean_seconds": 0.8354552761884406,
+        "plan_found": 5,
+        "plan_found_rate": 1.0,
+        "mean_plan_cost_abstract": 5.8,
+        "mean_realized_abstract": 5.8,
+        "mean_realized_strict": 7.2,
+        "n_negative_abstract_regret": 0,
+        "mean_children_pruned": 0.0,
+        "accounting": {
+          "nn_policy_calls": 2.4,
+          "nn_value_calls": 2.4,
+          "free_exact_fix_expands": 0.2,
+          "rejected_plan_pops": 0.0,
+          "physics_calls_prefix_check": 0.0,
+          "physics_calls_strict_realize": 1.0,
+          "physics_calls_park_repair": 0.0,
+          "park_plans_pushed": 0.0,
+          "slide_calls": {
+            "abstract_scoring": 904.8,
+            "strict_realize": 78.8,
+            "unbucketed": 0.0
+          },
+          "slide_calls_total": 983.6
+        }
+      },
+      "rows": [
+        {
+          "env_id": 2400,
+          "d_star": 12,
+          "plan_found": true,
+          "plan_cost_abstract": 13.0,
+          "realized_abstract": 13,
+          "realized_strict": 20,
+          "solved": true,
+          "regret": 8,
+          "expansions": 14,
+          "seconds": 3.2701215209672228,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "accounting": {
+            "nn_policy_calls": 9,
+            "nn_value_calls": 9,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "slide_calls": {
+              "strict_realize": 225,
+              "abstract_scoring": 1795,
+              "unbucketed": 0
+            }
+          }
+        },
+        {
+          "env_id": 2400,
+          "d_star": 4,
+          "plan_found": true,
+          "plan_cost_abstract": 4.0,
+          "realized_abstract": 4,
+          "realized_strict": 4,
+          "solved": true,
+          "regret": 0,
+          "expansions": 2,
+          "seconds": 0.6397152469726279,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "accounting": {
+            "nn_policy_calls": 2,
+            "nn_value_calls": 2,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "slide_calls": {
+              "strict_realize": 28,
+              "abstract_scoring": 1686,
+              "unbucketed": 0
+            }
+          }
+        },
+        {
+          "env_id": 2400,
+          "d_star": 7,
+          "plan_found": true,
+          "plan_cost_abstract": 7.0,
+          "realized_abstract": 7,
+          "realized_strict": 7,
+          "solved": true,
+          "regret": 0,
+          "expansions": 1,
+          "seconds": 0.2630884899990633,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "accounting": {
+            "nn_policy_calls": 1,
+            "nn_value_calls": 1,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "slide_calls": {
+              "strict_realize": 74,
+              "abstract_scoring": 909,
+              "unbucketed": 0
+            }
+          }
+        },
+        {
+          "env_id": 2401,
+          "d_star": 1,
+          "plan_found": true,
+          "plan_cost_abstract": 1.0,
+          "realized_abstract": 1,
+          "realized_strict": 1,
+          "solved": true,
+          "regret": 0,
+          "expansions": 0,
+          "seconds": 0.0040106470114551485,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "accounting": {
+            "nn_policy_calls": 0,
+            "nn_value_calls": 0,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "slide_calls": {
+              "strict_realize": 3,
+              "abstract_scoring": 6,
+              "unbucketed": 0
+            }
+          }
+        },
+        {
+          "env_id": 2401,
+          "d_star": 4,
+          "plan_found": true,
+          "plan_cost_abstract": 4.0,
+          "realized_abstract": 4,
+          "realized_strict": 4,
+          "solved": true,
+          "regret": 0,
+          "expansions": 0,
+          "seconds": 0.00034047599183395505,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "accounting": {
+            "nn_policy_calls": 0,
+            "nn_value_calls": 0,
+            "free_exact_fix_expands": 1,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "slide_calls": {
+              "strict_realize": 64,
+              "abstract_scoring": 128,
+              "unbucketed": 0
+            }
+          }
+        }
+      ]
+    }
+  }
+}

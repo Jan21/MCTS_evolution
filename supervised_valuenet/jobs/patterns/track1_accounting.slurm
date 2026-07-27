@@ -120,9 +120,16 @@ if [ ! -s "$RUN/forward.json" ]; then
 fi
 echo "forward accounting done $(date +%H:%M:%S)"
 
+CERT=0
 for s in backward forward; do
   echo "== replay_validate $s =="
-  python3 -m eval.replay_validate --compare "$RUN/$s.json" --env-dir "$ENVDIR" \
-    2>&1 | tail -1
+  # No `| tail -1`: it hid per-row FAIL lines AND discarded the exit status, so
+  # the grep-able DONE marker could print over a failed certification.
+  python3 -m eval.replay_validate --compare "$RUN/$s.json" --env-dir "$ENVDIR"
+  rc=$?
+  [ "$rc" -ne 0 ] && { echo "  certification FAILED for $s (rc=$rc)"; CERT=1; }
 done
+if [ "$CERT" -ne 0 ]; then
+  echo "ACCOUNTING $CFG $SET REPLAY-FAILED"; exit 1
+fi
 echo "ACCOUNTING $CFG $SET DONE"

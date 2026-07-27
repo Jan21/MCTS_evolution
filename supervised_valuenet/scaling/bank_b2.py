@@ -103,10 +103,31 @@ def probe(path):
     }
 
 
-def candidates(cfg, system):
-    """Every checkpoint under scaling/runs/<cfg>/backward-<system>-b2/."""
-    root = Path("scaling/runs") / cfg / f"backward-{system}-b2" / "lightning_logs"
-    return sorted(root.glob("version_*/checkpoints/*.ckpt")) if root.exists() else []
+def candidates(cfg, system, label_set=None):
+    """Every checkpoint under scaling/runs/<cfg>/backward-<system>-b2*/.
+
+    The trailing glob matters: `b2_retrain_one.slurm` suffixes the run
+    directory with the label set when one is given (`backward-value-b2-cap20000`),
+    so globbing only the bare `-b2` directory made the alternate-corpus nets --
+    the entire point of the provenance machinery -- invisible to the banker.
+    """
+    root = Path("scaling/runs") / cfg
+    if not root.exists():
+        return []
+    # --label-set names the corpus explicitly, which is strictly better than
+    # inferring provenance from mtimes: "" (default) is the bare -b2 dir,
+    # "cap20000" is -b2-cap20000. With it set there is exactly one candidate
+    # lineage, so the refusal path never has to fire.
+    if label_set is not None:
+        suffix = f"-{label_set}" if label_set else ""
+        run = root / f"backward-{system}-b2{suffix}"
+        return sorted((run / "lightning_logs").glob(
+            "version_*/checkpoints/*.ckpt")) if run.exists() else []
+    out = []
+    for run in sorted(root.glob(f"backward-{system}-b2*")):
+        out.extend(sorted((run / "lightning_logs").glob(
+            "version_*/checkpoints/*.ckpt")))
+    return out
 
 
 def provenance(cfg, info):
@@ -142,6 +163,12 @@ def main():
                    help="write scaling/runs/b2_banked.json from the best "
                         "candidate per config (still does not copy the base "
                         "checkpoints into checkpoints_backward/)")
+    p.add_argument("--label-set", default=None,
+                   help='bank only checkpoints trained on this corpus: "" for '
+                        'the default backward_b2.rust.jsonl run dirs, or e.g. '
+                        '"cap20000" for backward-<sys>-b2-cap20000. Makes '
+                        'provenance explicit instead of inferred from mtimes, '
+                        'so the mixed-provenance refusal never has to fire.')
     p.add_argument("--out", default="scaling/runs/b2_banked.json")
     p.add_argument("--force", action="store_true",
                    help="bank a config even when its value retrain carries "
@@ -170,7 +197,7 @@ def main():
 
         chosen, blockers = {}, []
         for system in ("policy", "value"):
-            cands = candidates(cfg, system)
+            cands = candidates(cfg, system, a.label_set)
             if not cands:
                 print(f"  {system}: no runs yet")
                 continue
