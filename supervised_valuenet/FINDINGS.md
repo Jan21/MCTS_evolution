@@ -904,6 +904,47 @@ scoped fix.
    leaves the qualitative picture intact.
    Source: `scaling/results/g24r8/forward_probe_e6000.json`.
 
+32. **The B2 label campaign is complete under the recalibrated settings — and
+   the cap that made it affordable depletes the very vocabulary it exists to
+   teach (2026-07-27).** All five configurations generated with the Rust
+   engine at `--budget-iters 5000 --per-graph 10` (base as 8 shards, merged):
+   | config | records | boards | boards at full keeper target | by-reference share |
+   |---|---|---|---|---|
+   | g16r4 | 376,912 | 2112 | 2110/2112 | 7.1% |
+   | g16r6 | 210,686 | 1050 | 1050/1050 | 5.2% |
+   | g16r8 | 218,248 | 1050 | 1050/1050 | 4.8% |
+   | g24r8 | 210,607 | 1050 | 1050/1050 | 5.1% |
+   | g32r4 | 176,593 | 1050 | — | — |
+   1.19M records in total, every manifest reading `engine: rust, vocab: b2,
+   per_graph: 10`. Cost ~5 node-hours against the ~441 the original settings
+   projected (§30).
+
+   **The finding that matters more than the throughput.** The handoff's QC
+   gate expects a by-reference share of roughly 5–20% (base measured 13%).
+   Every new set sits at the very bottom of that band, and the cause is the
+   cap. Measured on the **same 111 base boards**, changing only
+   `--budget-iters`:
+   | cap | by-reference share |
+   |---|---|
+   | 50,000 (original) | 5,698/42,348 = **13.5%** |
+   | 5,000 (recalibrated) | 757/16,301 = **4.6%** |
+   A ~3× depletion of exactly the candidate type the retraining exists to
+   teach. By-reference plans reuse a robot the plan has already placed, and
+   they evidently surface in longer rollouts, so a tight iteration cap removes
+   them first. This is a sharper version of the bias recorded in §30: the cap
+   does not merely change *which instances* are labelled, it changes the
+   *composition of the label set* against the new vocabulary.
+   **Why this had to be caught before retraining, not after.** Had the chain
+   run through, the likely outcome would have been a modest improvement in
+   by-reference ranking and the conclusion "retraining delivers less than B1
+   did". That conclusion would have been an artifact of label generation, not
+   a property of the method — and it would have been very hard to distinguish
+   from the real thing after the fact. Higher-cap label sets are being
+   generated at the two cheapest configurations to measure how much of the
+   13.5% returns and at what cost, before any retrained row is published.
+   Sources: `scaling/data/*/backward_b2.rust.jsonl` and their
+   `rust_work/*.manifest.json`; QC by `scaling/qc_byref.py`.
+
 ## Still open
 
 - Retraining the backward networks on the extended (B2) vocabulary — the

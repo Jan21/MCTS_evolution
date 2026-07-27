@@ -46,7 +46,11 @@ ml purge
 ml Python/3.11.5-GCCcore-13.2.0
 
 CFG="$1"; SHARD="${2:-0}"; NSHARDS="${3:-1}"
-CAP=5000
+# arg4 overrides the iteration cap. 5000 is the throughput optimum, but a
+# tighter cap also strips BY-REFERENCE candidates -- the very vocabulary the
+# retraining exists to teach. Measured on the same 111 base boards: the
+# by-reference share falls from 13.5% at cap 50k to 4.6% at cap 5k.
+CAP="${4:-5000}"
 PER_GRAPH=10
 REPO=/scratch/project/open-37-42/petrhyner/MCTS_evolution
 SV="$REPO/supervised_valuenet"
@@ -59,8 +63,11 @@ ENGINE=rust_datagen/target/release/datagen
 "$ENGINE" selftest > /dev/null 2>&1 || { echo "FATAL: engine selftest failed"; exit 1; }
 
 if [ "$NSHARDS" -eq 1 ]; then
-  OUT="scaling/data/$CFG/backward_b2.rust.jsonl"
-  TAG="backward_b2"
+  if [ "$CAP" -eq 5000 ]; then
+    OUT="scaling/data/$CFG/backward_b2.rust.jsonl"; TAG="backward_b2"
+  else
+    OUT="scaling/data/$CFG/backward_b2.cap${CAP}.rust.jsonl"; TAG="backward_b2_cap${CAP}"
+  fi
 else
   OUT="scaling/data/$CFG/backward_b2.rust.shard${SHARD}of${NSHARDS}.jsonl"
   TAG="backward_b2_s${SHARD}of${NSHARDS}"
