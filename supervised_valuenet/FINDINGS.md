@@ -1048,8 +1048,30 @@ scoped fix.
    labels must be regenerated at the higher budget (~50 node-hours). If it
    does not, the fault lies in the retraining recipe rather than the data, and
    that is a different and larger problem.
-   Sources: `scaling/results/g16r6/comparison{_b2retrained,_ungraded_b2retrained}.json`,
-   `eval/results/stats_tests.json`.
+   **Update, same day, as the other rungs landed — the pattern tracks the
+   by-reference share, which is the hypothesis's own prediction.** All rows
+   replay-certified (base 433/433, zero failures anywhere):
+   | rung | by-ref in its labels | retrained vs zero-shot B2 | p |
+   |---|---|---|---|
+   | g16r4 (base), graded 450 | **7.1%** | 96.2% vs 95.6% = **+0.7** | 0.508 |
+   | g16r6 graded | 5.2% | 95.3% vs 96.8% = −1.6 | 0.332 |
+   | g16r6 frontier | 5.2% | 56.0% vs 80.6% = **−24.6** | <0.0001 |
+   | g16r8 graded | 4.8% | 93.6% vs 98.5% = **−4.9** | 0.0010 |
+   Base — the only configuration whose labels retained a by-reference share
+   near the original — is the only one that did NOT regress; it improved
+   slightly, though not significantly. The two configurations with the
+   thinnest by-reference corpora regressed, most severely on the set where
+   that vocabulary matters most. That is the ordering the depletion
+   hypothesis predicts, on data collected before the hypothesis was tested,
+   and it is now the primary reason to believe the cap rather than the
+   retraining recipe is at fault. It is still an association across four
+   points with other differences between them (base has 2112 boards and 377k
+   records against 1050 and ~210k; base warm-started from a B1 net, the others
+   from old-vocabulary per-config nets), so job 4597769 — the same
+   configuration retrained on the cap-20000 corpus — remains the controlled
+   test.
+   Sources: `scaling/results/g16r{6,8}/comparison{_b2retrained,_ungraded_b2retrained}.json`,
+   `eval/results/final450_backward_b2_retrained.json`, `eval/results/stats_tests.json`.
 
 ## Still open
 
