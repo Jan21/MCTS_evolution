@@ -56,12 +56,16 @@ cd "$SV"
 export PYTHONPATH=. OMP_NUM_THREADS=4 CUDA_VISIBLE_DEVICES="" PYTHONUNBUFFERED=1
 unset RR_GRID RR_ROBOTS RR_WALLS RR_ENV_DIR
 
+# The lane is named "base" for readability but scaling/runs/b2_banked.json
+# is keyed by CONFIG, and the base config is g16r4. Job 4597369 died on
+# this mismatch ("no banked entry for base"), so map it explicitly.
+MKEY="$CFG"; [ "$CFG" = base ] && MKEY=g16r4
 MANIFEST=scaling/runs/b2_banked.json
 [ -s "$MANIFEST" ] || { echo "FATAL: $MANIFEST missing -- bank the nets first"; exit 1; }
 read -r BP BV < <(python3 -c "
 import json,sys
-m=json.load(open('$MANIFEST')).get('$CFG')
-if not m: sys.exit('FATAL: no banked entry for $CFG in $MANIFEST')
+m=json.load(open('$MANIFEST')).get('$MKEY')
+if not m: sys.exit('FATAL: no banked entry for $MKEY in $MANIFEST')
 print(m['policy'], m['value'])") || exit 1
 for c in "$BP" "$BV"; do
   [ -s "$c" ] || { echo "FATAL: banked checkpoint missing: $c"; exit 1; }
@@ -91,12 +95,24 @@ case "$CFG" in
          fi ;;
 esac
 [ -s "$INST" ] || { echo "FATAL: instances missing: $INST"; exit 1; }
-[ -s "$OUT" ] && { echo "already merged: $OUT"; echo "TRACK1 $CFG $SET DONE"; exit 0; }
+# A walltime kill during the merge (merge_compare_shards.py writes in place)
+# can leave truncated JSON. Accept an existing output only if it parses AND has
+# the expected row count, otherwise redo the merge.
+if [ -s "$OUT" ] && python3 -c "
+import json,sys
+d=json.load(open('$OUT'))
+rows=[len(s.get('rows') or []) for s in d['systems'].values() if s.get('rows')]
+sys.exit(0 if rows and min(rows)>0 else 1)" 2>/dev/null; then
+  echo "already merged and parseable: $OUT"; echo "TRACK1 $CFG $SET DONE"; exit 0
+elif [ -s "$OUT" ]; then
+  echo "existing $OUT is truncated or unparseable -- redoing the merge"
+  rm -f "$OUT"
+fi
 
 RUN="$REPO/runs/track1/$CFG.$SET"
 mkdir -p "$RUN"
 # Chunks must stay in benchmark order -- merge_compare_shards.py requires it.
-[ -e "$RUN/chunk.00.jsonl" ] || \
+[ -e "$RUN/chunk.000.jsonl" ] || \
   split -d -a 3 -l 8 "$INST" "$RUN/chunk." --additional-suffix=.jsonl
 
 run_chunk() {
@@ -130,5 +146,12 @@ python3 eval/merge_compare_shards.py --shards $(ls "$RUN"/chunk.*.json | sort) \
 
 echo "== independent replay certification =="
 python3 -m eval.replay_validate --compare "$OUT" --env-dir "$ENVDIR"
-echo "replay exit=$?"
+RC=$?
+# The DONE marker is grep-able and is the house rule's completion signal, so it
+# must never print over a failed certification. replay_validate exits 1 on any
+# replay failure and 2 when it validated nothing at all; both are lane failures.
+if [ "$RC" -ne 0 ]; then
+  echo "TRACK1 $CFG $SET REPLAY-FAILED rc=$RC"
+  exit 1
+fi
 echo "TRACK1 $CFG $SET DONE"

@@ -68,12 +68,16 @@ if [ "$CFG" != base ]; then
                       || INST="scaling/data/$CFG/bench.unsolved.jsonl"
 fi
 
+# The lane is named "base" for readability but scaling/runs/b2_banked.json
+# is keyed by CONFIG, and the base config is g16r4. Job 4597369 died on
+# this mismatch ("no banked entry for base"), so map it explicitly.
+MKEY="$CFG"; [ "$CFG" = base ] && MKEY=g16r4
 MANIFEST=scaling/runs/b2_banked.json
 [ -s "$MANIFEST" ] || { echo "FATAL: $MANIFEST missing -- bank the nets first"; exit 1; }
 read -r BP BV < <(python3 -c "
 import json,sys
-m=json.load(open('$MANIFEST')).get('$CFG')
-if not m: sys.exit('FATAL: no banked entry for $CFG')
+m=json.load(open('$MANIFEST')).get('$MKEY')
+if not m: sys.exit('FATAL: no banked entry for $MKEY')
 print(m['policy'], m['value'])") || exit 1
 
 RUN="$REPO/runs/accounting/$CFG.$SET"

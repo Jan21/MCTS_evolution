@@ -29,8 +29,23 @@ REPO=/scratch/project/open-37-42/petrhyner/MCTS_evolution
 source /scratch/project/open-37-42/petrhyner/venv/bin/activate
 cd "$REPO/supervised_valuenet"
 export PYTHONPATH=. PYTHONUNBUFFERED=1
-DATA="scaling/data/$CFG/backward_b2.rust.jsonl"
-[ -s "$DATA" ] || { echo "missing $DATA — run b2_labels_one first"; exit 1; }
+# arg2 optionally overrides the label set (e.g. cap20000) and suffixes the run
+# dirs, so a config can be retrained on two label sets without either run
+# overwriting the other. FINDINGS 32/33: the production cap-5000 labels carry
+# ~5% by-reference candidates against ~14% at the original budget, and the
+# first Track 1 row showed the cap-5000 retrain LOSING 24.6 points at the
+# g16r6 frontier -- so which label set is used is a live experimental variable,
+# not a detail.
+LABELSET="${2:-}"
+if [ -n "$LABELSET" ]; then
+  DATA="scaling/data/$CFG/backward_b2.${LABELSET}.rust.jsonl"
+  SUFFIX="-$LABELSET"
+else
+  DATA="scaling/data/$CFG/backward_b2.rust.jsonl"
+  SUFFIX=""
+fi
+[ -s "$DATA" ] || { echo "missing $DATA"; exit 1; }
+echo "[b2rt $CFG] label set: $DATA"
 
 # Per-config knobs. Value warm-start sources are the banked predecessors
 # (prompt.md Track 0 step 4); batch caps per the 40 GB A100 tables; low-lr
@@ -60,13 +75,13 @@ esac
 
 echo "[b2rt $CFG] proposal net, cold"
 python3 -m scaling.train --config "$CFG" --system backward-policy \
-    --run-dir "scaling/runs/$CFG/backward-policy-b2" $LOWLR \
+    --run-dir "scaling/runs/$CFG/backward-policy-b2$SUFFIX" $LOWLR \
     -- --data "$DATA" --epochs $PEPOCHS $PBATCH
 echo "[b2rt $CFG] policy done ($?)"
 
 echo "[b2rt $CFG] value net, warm-started from $WARM"
 python3 -m scaling.train --config "$CFG" --system backward-value \
-    --run-dir "scaling/runs/$CFG/backward-value-b2" $LOWLR $VBINS \
+    --run-dir "scaling/runs/$CFG/backward-value-b2$SUFFIX" $LOWLR $VBINS \
     --warm-start "$WARM" --torch-seed 11 \
     -- --data "$DATA" --epochs $VEPOCHS --warmup 0 $VBATCH
 echo "[b2rt $CFG] value done ($?)"

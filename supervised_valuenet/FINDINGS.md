@@ -557,7 +557,18 @@ scoped fix.
    | 32×32 · 4r | 350/450 = 77.8% | 135/450 = 30.0% | +47.8 [+42.7, +52.7] |
    The old-language backward planner loses the same union at both 16×16 rungs
    (−7.6 and −8.0, p ≤ 0.0003) and wins it at 24×24/8 (+21.6) and 32×32
-   (+30.9) — the crossover, stated without any selection caveat to answer.
+   (+30.9) — the crossover, with no selection caveat to answer.
+   **One caveat on that old-language row, added 2026-07-27 after an
+   adversarial re-check:** at g16r6 its two halves were run in different
+   planner modes — the graded half anytime realization-checked
+   (`comparison.json`), the frontier half prefix-check
+   (`comparison_ungraded.json`) — so that single pooled row mixes two backward
+   configurations. The other three rungs use prefix-check on both halves. The
+   direction is safe (anytime is the stronger mode, so a like-for-like row
+   would only deepen the loss) but the row is not as clean as the sentence
+   above implies. Every row involving `bwd_b2` or the forward control, which
+   is all of the headline table, was verified protocol-matched across halves:
+   identical checkpoints, expansions 1200, k 5.
 
 23. **No wall-layout leakage between training and benchmark boards
    (2026-07-25).** The ID ranges were already known disjoint; what had never
@@ -661,7 +672,8 @@ scoped fix.
    helper first — the domain's classic hardness signal) and the target robot's
    Manhattan travel, split at each set's own terciles. Across 4 rungs and 44
    strata the full-language backward planner leads the forward control in
-   **every single one**; 34 are significant at 0.05 and every insignificant
+   **43 and ties the 44th** (the n=7 cell named below); **39 are
+   significant at 0.05** and every insignificant
    cell has n ≤ 13. No reversal anywhere. Two readings worth keeping:
    - The margin is *largest* where the mechanism predicts. At both 16×16 rungs
      the "goal OPEN" class (no wall behind the goal, so a helper must be
@@ -805,7 +817,7 @@ scoped fix.
    sign FAVOURS the base nets. So the borrowed base nets were not a handicap
    the language gain had to overcome; if anything they were slightly better
    than the per-config nets even at 6 and 8 robots. The language effect is
-   3–11× the provenance effect at every cell. Objection 0.11's "zero-shot means
+   **2.8–15×** the provenance effect at every cell. Objection 0.11's "zero-shot means
    two different things" is retired for the 16×16 rungs by measurement rather
    than by the pending retraining. All 689 solved rows the job produced were
    replay-certified, 0 failures. Sources:
@@ -922,12 +934,12 @@ scoped fix.
    **The finding that matters more than the throughput.** The handoff's QC
    gate expects a by-reference share of roughly 5–20% (base measured 13%).
    Every new set sits at the very bottom of that band, and the cause is the
-   cap. Measured on the **same 111 base boards**, changing only
-   `--budget-iters`:
+   cap. Measured on the **same 111 base boards** (the cap-50,000 run also used
+   `--per-graph 20` against the production 10 — see the correction below):
    | cap | by-reference share |
    |---|---|
    | 50,000 (original) | 5,698/42,348 = **13.5%** |
-   | 5,000 (recalibrated) | 757/16,301 = **4.6%** |
+   | 5,000 (recalibrated) | 889/18,568 = **4.8%** |
    A ~3× depletion of exactly the candidate type the retraining exists to
    teach. By-reference plans reuse a robot the plan has already placed, and
    they evidently surface in longer rollouts, so a tight iteration cap removes
@@ -953,7 +965,7 @@ scoped fix.
    | config | cap 5,000 | cap 20,000 | cost ratio |
    |---|---|---|---|
    | g16r6 | 10,900/210,686 = 5.2% | 26,003/236,037 = **11.0%** | 9.3× |
-   | g16r8 | 10,446/218,248 = 4.8% | 25,567/246,762 = **10.4%** | 14× |
+   | g16r8 | 10,446/218,248 = 4.8% | 25,567/246,762 = **10.4%** | 12.5× |
    So §32's depletion is real and largely recoverable: the richer setting
    restores roughly the 13% the original 50,000-iteration budget produced,
    at 2.4× the absolute number of by-reference examples. Cost is trivial for
@@ -981,6 +993,42 @@ scoped fix.
    4 (g16r8, still training). The decisive test remains the benchmark itself.
    Recorded because a pre-registered criterion that turns out unsound has to
    be retracted in public, not quietly replaced.
+
+34. **The first Track 1 definitive row: retraining on the cap-5000 labels makes
+   the planner WORSE, and the frontier loss is severe (2026-07-27).** g16r6,
+   retrained B2 networks against the pinned sets, all rows replay-certified
+   (301/301 graded, 75/75 frontier, zero failures — the numbers are real, not
+   a harness artifact):
+   | set | retrained | zero-shot B2 | change | p |
+   |---|---|---|---|---|
+   | graded (316) | 301 = 95.3% | 306 = 96.8% | −1.6 | 0.332 |
+   | **frontier (134)** | **75 = 56.0%** | **108 = 80.6%** | **−24.6** | **<0.0001** |
+   | pooled (450) | 376 = 83.6% | 414 = 92.0% | −8.4 | <0.0001 |
+   Against the forward control the retrained planner still leads the frontier
+   (+7.5, p = 0.143) but no longer wins the pooled union (−0.7, p = 0.788),
+   where the zero-shot B2 planner won by +7.8.
+
+   **This is the failure §32 predicted, and it is the strongest evidence yet
+   that the label-generation cap is the problem.** The retrained networks were
+   trained on labels containing 5.2% by-reference candidates, against ~14% at
+   the original iteration budget (§33a). The damage is concentrated exactly
+   where by-reference plans matter most — the beyond-oracle set, where a
+   quarter of the previously-solved puzzles are lost — while the gradable set,
+   which the old vocabulary already handled, barely moves. A net trained on a
+   corpus that under-represents a candidate type appears to have learned to
+   under-rank it, undoing the zero-shot advantage the B2 machinery gave it.
+   **No retrained row may be published as a definitive result until this is
+   resolved.** §17's zero-shot rows remain the study's best full-language
+   numbers for now, and the framing "retraining is the scoped fix" (§16, §27)
+   is now a claim the evidence contradicts at this rung.
+   The decisive test is running: the same configuration retrained on the
+   cap-20000 label set (11.0% by-reference), job 4597769, ~0.6 node-hours. If
+   the frontier loss reverses, the cap is confirmed as the cause and base
+   labels must be regenerated at the higher budget (~50 node-hours). If it
+   does not, the fault lies in the retraining recipe rather than the data, and
+   that is a different and larger problem.
+   Sources: `scaling/results/g16r6/comparison{_b2retrained,_ungraded_b2retrained}.json`,
+   `eval/results/stats_tests.json`.
 
 ## Still open
 
