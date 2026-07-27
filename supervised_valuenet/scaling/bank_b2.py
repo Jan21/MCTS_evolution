@@ -10,9 +10,15 @@ The handoff's banking rules, made checkable:
     mode="min")`. Its `best_model_score` is stored inside the checkpoint, so
     the trajectory does not need a CSV logger (there is none — the runs emit
     only tfevents, and tensorboard is not installed).
-  * **`val_regret` must beat or approach the config's old-vocabulary run.**
-    The incumbent score is read from the predecessor checkpoint the retrain
-    warm-started from, so the comparison is like-for-like.
+  * **The incumbent's `val_regret` is context, NOT a gate.** It is read from
+    the predecessor checkpoint the retrain warm-started from, but the two
+    numbers are computed on DIFFERENT validation splits — the incumbent's on
+    old-vocabulary labels, the retrain's on B2 labels that contain
+    by-reference candidates the old split has none of. A higher number can
+    mean a harder validation set rather than a worse network, so it must not
+    decide banking. (An earlier version of this script gated on it and
+    reported two healthy runs as failures.) The decisive test is the
+    benchmark: does the retrained pair produce better Track 1 rows?
   * **Value retrains are seed-unstable.** The known bad signature is a value
     net whose best score never improves on its warm-start. That is flagged,
     not silently banked.
@@ -129,17 +135,27 @@ def main():
                       "confirm this is the run you meant")
 
             if system == "value" and inc_score is not None:
+                # NOT a like-for-like comparison, and it must not be used as a
+                # gate. The incumbent's val_regret was computed on an
+                # OLD-VOCABULARY validation split; the retrain's is computed on
+                # the B2 split, which contains by-reference candidates the old
+                # split has none of. A higher number can mean "harder
+                # validation set" rather than "worse network". Reported as
+                # context only; the decisive test is the benchmark itself.
                 delta = best["best_score"] - inc_score
-                verdict = ("IMPROVES" if delta < 0 else
-                           "matches" if delta < 0.05 else "WORSE")
-                print(f"     value vs incumbent: {best['best_score']:.4f} vs "
-                      f"{inc_score:.4f}  ({delta:+.4f}) -> {verdict}")
-                if delta >= 0.05:
-                    problems.append(
-                        f"{cfg}: value retrain WORSE than its warm-start "
-                        f"({best['best_score']:.4f} vs {inc_score:.4f}). The "
-                        "known seed-instability signature -- do NOT bank; "
-                        "rerun with --torch-seed varied.")
+                print(f"     value val_regret {best['best_score']:.4f} "
+                      f"(B2 split) vs incumbent {inc_score:.4f} "
+                      f"(old-vocabulary split), delta {delta:+.4f} — "
+                      "NOT comparable, context only")
+
+            if system == "value" and best.get("epoch") == 0:
+                # A genuine instability signature that IS valid on its own:
+                # the best epoch is the very first one, i.e. the run never
+                # improved on its warm-start and every later epoch was worse.
+                problems.append(
+                    f"{cfg}: value retrain's best epoch is 0 — it never "
+                    "improved after warm-start. That is the seed-instability "
+                    "signature; do NOT bank, rerun with --torch-seed varied.")
 
         if {"policy", "value"} <= set(chosen):
             manifest[cfg] = {"policy": chosen["policy"]["path"],

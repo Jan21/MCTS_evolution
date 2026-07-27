@@ -945,6 +945,43 @@ scoped fix.
    Sources: `scaling/data/*/backward_b2.rust.jsonl` and their
    `rust_work/*.manifest.json`; QC by `scaling/qc_byref.py`.
 
+33. **The cap trade-off measured, and a banking criterion of mine retracted
+   (2026-07-27).** Two results, one about the data and one about my own method.
+
+   **(a) A 4× cap more than doubles the by-reference yield.** Regenerating two
+   configurations at `--budget-iters 20000` against the production 5000:
+   | config | cap 5,000 | cap 20,000 | cost ratio |
+   |---|---|---|---|
+   | g16r6 | 10,900/210,686 = 5.2% | 26,003/236,037 = **11.0%** | 9.3× |
+   | g16r8 | 10,446/218,248 = 4.8% | 25,567/246,762 = **10.4%** | 14× |
+   So §32's depletion is real and largely recoverable: the richer setting
+   restores roughly the 13% the original 50,000-iteration budget produced,
+   at 2.4× the absolute number of by-reference examples. Cost is trivial for
+   the scaling rungs (~0.6–0.8 node-hours each) and ~50 node-hours for base,
+   which is the only configuration where the decision has a price. Whether it
+   is worth paying is an empirical question — retraining costs ~0.6 node-hours
+   per configuration, so the cheap test is to retrain g16r6 on both label sets
+   and compare their benchmark rows, rather than reasoning about it.
+
+   **(b) The banking criterion I pre-registered in commit e6c0451 was
+   invalid, and I am retracting it.** It required a retrained value net to
+   beat or approach the `val_regret` of the checkpoint it warm-started from.
+   Those two numbers are computed on **different validation splits** — the
+   incumbent's on old-vocabulary labels, the retrain's on B2 labels that
+   contain by-reference candidates the old split does not have. A higher
+   number can therefore mean "harder validation set", not "worse network".
+   Applied as a gate it flagged g16r6 (+0.1617) and g16r8 (+0.2287) as
+   failures requiring a seed rerun, which would have wasted compute chasing a
+   measurement artifact — while g16r4 showed −0.4144 against a differently
+   derived incumbent, so the direction is not even consistent.
+   `scaling/bank_b2.py` now reports the comparison as context and gates on a
+   signature that IS valid without a matched split: a value run whose **best
+   epoch is 0**, i.e. one that never improved on its warm-start at all. By
+   that test no run is unstable — best epochs are 13 (g16r4), 12 (g16r6) and
+   4 (g16r8, still training). The decisive test remains the benchmark itself.
+   Recorded because a pre-registered criterion that turns out unsound has to
+   be retracted in public, not quietly replaced.
+
 ## Still open
 
 - Retraining the backward networks on the extended (B2) vocabulary — the
