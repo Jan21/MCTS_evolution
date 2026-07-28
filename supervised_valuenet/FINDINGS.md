@@ -523,7 +523,7 @@ scoped fix.
    bootstrap CI (10,000 resamples, seed 0) that resamples BOARDS, not puzzles,
    because up to three puzzles share one board's wall layout (bench450:
    exactly 3 on each of 150 boards). Pairing is refused unless both result
-   files record the same `protocol.instances_sha256`. 40 cells; 8 are not
+   files record the same `protocol.instances_sha256`. 40 cells at the time of writing (the artifact now holds 77); 8 were not
    significant at 0.05. The two that matter:
    - **§17's "the backward planner's first graded-set win" (8 robots, 262 vs
      261) is a 5-vs-4 discordant split: +0.4 points, 95% CI [−1.9, +2.7],
@@ -1154,19 +1154,25 @@ scoped fix.
    confound the adversarial review raised: net lineage was estimated at 7–8 of
    the 24.6 points from §29's old-vocabulary contrast, but measured directly
    the residual after fixing the corpus is only −2.2 and not significant, so
-   lineage explains ~2 points, not 7–8. The label corpus explains essentially
-   all of it.
+   that residual bundles lineage, whatever corpus deficit remains at 11.0%
+   by-reference against the original ~14.5%, and noise. The defensible
+   statement is "all non-corpus factors together leave −2.2, not
+   significant" — not "lineage is worth 2 points". The corpus explains
+   essentially all of the collapse: +22.4 of the 24.6 points vanished with
+   only the corpus changed.
    **What this costs.** Every retrained row produced from the cap-5000 corpus
    is now known to be trained on a deficient corpus and must not be published:
    that is the base 450 row and both rows at g16r6, g16r8, g24r8 and g32r4.
    The corpus must be regenerated at the higher budget and the retrains
-   repeated — projected in the next entry.
+   repeated: measured cost ~0.7 node-hours per scaling configuration and
+   ~47.5 for base (380 h of generation, sharded 32 ways to fit the 16 h
+   walltime), against ~860 remaining.
    **Methodological note worth keeping.** The throughput optimum and the
    quality optimum were different settings, and nothing in the generation
    pipeline would have revealed it: the cheap corpus passed every QC gate the
    handoff specified (record counts, keeper targets, manifest fields) and its
-   by-reference share sat inside the expected 5–20% band, merely at the
-   bottom. Only comparing the trained result against a richer corpus exposed
+   by-reference share sat at the very bottom of that band and at g16r8 fell
+   BELOW it (4.8%) without the gate firing. Only comparing the trained result against a richer corpus exposed
    it. A QC gate on a data pipeline should assert a distribution, not a range.
    Sources: `scaling/results/g16r6/comparison{_b2retrained_cap20000,_ungraded_b2retrained_cap20000}.json`
    against `comparison{_b2retrained,_ungraded_b2retrained}.json` and
@@ -1219,6 +1225,29 @@ scoped fix.
    Source: read-only audit of `/scratch/project/open-37-42/petrhyner/karolina_bundle`
    against the live tree; rows from `eval/results/final450_backward_{prefix,b1,b2,b2_retrained}.json`
    and `scaling/results/g16r6/comparison{,_b1,_b2,_b2retrained_cap20000}{,_ungraded}.json`.
+
+38. **Two silent-failure incidents, recorded here because they lived only in
+   commit messages (2026-07-28).** A log that is about to be treated as final
+   should carry them.
+   - **g32r4 trained no value network for fifteen hours.** The retrain recipe
+     requested `--num-classes 96` while every available warm-start is
+     50-class; the run died on `size mismatch for head.4.bias: 50 vs 96` and
+     `b2_retrain_one.slurm` printed `B2RETRAIN g32r4 DONE` over it. The
+     configuration looked complete until a downstream lane could not find the
+     net. Settled from the labels rather than the recipe: g32r4's maximum
+     label cost is 71 and only 64 of 176,593 records (0.036%) exceed 50 bins,
+     so the warm-start is kept and the bins dropped. The script now exits
+     nonzero with `B2RETRAIN … FAILED`.
+   - **Two lanes measured nothing and reported success.** Jobs 4598158/59
+     loaded the correct cap-20000 checkpoints, hit the cap-5000 output file,
+     printed `already merged` and `TRACK1 … DONE`, and exited in 7 seconds.
+     Alternate corpora now derive their own output filenames from the
+     manifest name.
+   Both are the same defect class as the `DONE`-over-failed-certification bug
+   in the Track 1 lane: **a success marker printed without checking the state
+   behind it.** Three instances in one campaign is a pattern, and the standing
+   rule adopted from it is that a completion marker must be gated on the thing
+   it claims, never on a file existing or a prior stage's exit being ignored.
 
 ## Still open
 

@@ -257,8 +257,12 @@ def sec_ladder(D):
         "planner and a properly trained move-by-move planner are measured. "
         "“Beyond the oracle” rows have no move optima — solving there is "
         "self-certifying. The full-language rows run zero-shot (networks "
-        "never trained on the newest step type); their retrained "
-        "counterparts are computing now and will fill the third column.") \
+        "never trained on the newest step type). Retrained rows appear only "
+        "where the networks were trained on a corpus that actually contains "
+        "the new step type at its natural rate: a cheaper label corpus used "
+        "earlier stripped those examples and cost 22.4 points at the "
+        "beyond-oracle set, so rows trained on it are withheld rather than "
+        "shown as the method's performance.") \
         + table + """
   <p class="small muted">Full per-rung tables — with solution quality,
   seconds and source files — are in the “every rung in full” section
@@ -394,7 +398,9 @@ def _detail_rows(e, group):
     rc = cells.get("bwd_retrained")
     rows.append({"label": "Subgoals — full language, retrained networks",
                  "family": "bwd",
-                 "sub": "retraining on the extended vocabulary is running",
+                 "sub": ("trained on a corpus carrying the new step type at "
+                         "its natural rate; rows from the earlier, depleted "
+                         "corpus are withheld"),
                  "agg": rc["agg"] if rc else None,
                  "src": rc["src"] if rc else None,
                  "machine": rc["machine"] if rc else None,

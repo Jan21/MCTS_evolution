@@ -86,8 +86,11 @@ RUNGS = [
             "bwd_b2": ("comparison_ungraded_b2.json", "backward"),
             "fwd": ("comparison_ungraded.json", "forward"),
         },
-        "future": {"bwd_retrained": "comparison_b2retrained.json",
+        "future": {"bwd_retrained": "comparison_b2retrained_cap20000.json",
+                   "bwd_retrained_deficient": "comparison_b2retrained.json",
                    "bwd_retrained_frontier":
+                       "comparison_ungraded_b2retrained_cap20000.json",
+                   "bwd_retrained_frontier_deficient":
                        "comparison_ungraded_b2retrained.json"},
         "fwd_note": ("stability-controlled retrain (the stock recipe "
                      "destabilized; see the training-fragility section)"),
@@ -107,8 +110,11 @@ RUNGS = [
             "bwd_b2": ("comparison_ungraded_b2.json", "backward"),
             "fwd": ("comparison_ungraded.json", "forward"),
         },
-        "future": {"bwd_retrained": "comparison_b2retrained.json",
+        "future": {"bwd_retrained": "comparison_b2retrained_cap20000.json",
+                   "bwd_retrained_deficient": "comparison_b2retrained.json",
                    "bwd_retrained_frontier":
+                       "comparison_ungraded_b2retrained_cap20000.json",
+                   "bwd_retrained_frontier_deficient":
                        "comparison_ungraded_b2retrained.json"},
         "fwd_note": ("stability-controlled retrain (the stock recipe "
                      "collapsed to near-random; see training fragility)"),
@@ -125,8 +131,11 @@ RUNGS = [
             "bwd_b2": ("comparison_ungraded_b2.json", "backward"),
             "fwd": ("comparison_ungraded.json", "forward"),
         },
-        "future": {"bwd_retrained": "comparison_b2retrained.json",
+        "future": {"bwd_retrained": "comparison_b2retrained_cap20000.json",
+                   "bwd_retrained_deficient": "comparison_b2retrained.json",
                    "bwd_retrained_frontier":
+                       "comparison_ungraded_b2retrained_cap20000.json",
+                   "bwd_retrained_frontier_deficient":
                        "comparison_ungraded_b2retrained.json"},
         "fwd_note": "trained with the stock recipe (stable at this size)",
     },
@@ -142,8 +151,11 @@ RUNGS = [
             "bwd_b2": ("comparison_ungraded_b2.json", "backward"),
             "fwd": ("comparison_ungraded.json", "forward"),
         },
-        "future": {"bwd_retrained": "comparison_b2retrained.json",
+        "future": {"bwd_retrained": "comparison_b2retrained_cap20000.json",
+                   "bwd_retrained_deficient": "comparison_b2retrained.json",
                    "bwd_retrained_frontier":
+                       "comparison_ungraded_b2retrained_cap20000.json",
+                   "bwd_retrained_frontier_deficient":
                        "comparison_ungraded_b2retrained.json"},
         "fwd_note": ("stability-controlled retrain (the stock recipe "
                      "collapsed; see training fragility)"),
@@ -160,8 +172,11 @@ RUNGS = [
             "bwd_b2": ("comparison_ungraded_b2.json", "backward"),
             "fwd": ("comparison_ungraded.json", "forward"),
         },
-        "future": {"bwd_retrained": "comparison_b2retrained.json",
+        "future": {"bwd_retrained": "comparison_b2retrained_cap20000.json",
+                   "bwd_retrained_deficient": "comparison_b2retrained.json",
                    "bwd_retrained_frontier":
+                       "comparison_ungraded_b2retrained_cap20000.json",
+                   "bwd_retrained_frontier_deficient":
                        "comparison_ungraded_b2retrained.json"},
         "fwd_note": ("stability-controlled retrain (the stock recipe "
                      "collapsed; see training fragility)"),
@@ -169,9 +184,12 @@ RUNGS = [
 ]
 
 # base-scale future slots (eval/results/...)
+# Corpus-correct rows FIRST. The cap-5000 corpus stripped by-reference
+# candidates and cost 22.4 points at the beyond-oracle set (FINDINGS 36), so a
+# row trained on it is not the method's performance and is withheld -- the
+# cell renders as pending until the cap-20000 base corpus lands.
 BASE_FUTURE = {
-    "bwd_retrained": ["final450_backward_b2_retrained.json",
-                      "final450_backward_b2retrained.json"],
+    "bwd_retrained": ["final450_backward_b2_retrained_cap20000.json"],
 }
 
 # compute-fairness inputs (the "Is the comparison fair?" tab). Each entry:
