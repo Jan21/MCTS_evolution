@@ -429,6 +429,8 @@ def collect():
     # (FINDINGS 40; analysis/byref_topk_ablation.py, job 4599947)
     D["byref_topk_ablation"] = load_json(
         "analysis/artifacts/byref_topk_ablation.json")
+    # seed-robustness summary (analysis/seed_spread.py; seeds 21/37/53)
+    D["seed_spread"] = load_json("analysis/artifacts/seed_spread.json")
 
     # ---- base scale (16×16, 4 robots) ------------------------------------
     D["fwd450"] = load_json("eval/results/comparison_forward.json")

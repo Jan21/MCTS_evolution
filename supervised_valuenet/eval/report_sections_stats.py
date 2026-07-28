@@ -306,6 +306,58 @@ def _corpus_block(cells, D):
 
 
 # ---------------------------------------------------------------------------
+# 1d. Seed robustness (publishability objection 2.1)
+# ---------------------------------------------------------------------------
+
+def _seed_block(D):
+    ss = (D.get("seed_spread") or {}).get("sets") or {}
+    SS_SRC = "analysis/artifacts/seed_spread.json"
+    usable = {k: v for k, v in ss.items() if v.get("n_arms", 0) >= 2}
+    if not usable:
+        return ("<h3>Seed robustness</h3>" + progress_tag(
+            "three additional seeds of the g16r6 cap-20,000 retrain "
+            "(policy + warm-started value pair, production recipe, only "
+            "--torch-seed varied) are training; their per-seed benchmark "
+            "rows render here when analysis/artifacts/seed_spread.json "
+            "carries more than the production arm"))
+    body = []
+    order = {"production": 0, "seed21": 1, "seed37": 2, "seed53": 3}
+    for set_name in ("graded", "frontier"):
+        v = usable.get(set_name)
+        if not v:
+            continue
+        arms = sorted(v["arms"].items(), key=lambda kv: order.get(kv[0], 9))
+        cells = " · ".join(
+            esc(name) + " " + ck(str(a["solved"]), SS_SRC,
+                                 f"seed {set_name} {name}", raw=a["solved"])
+            for name, a in arms)
+        body.append(
+            f"<tr><td><b>16×16 · 6 robots</b>"
+            f'<div class="cellnote">{esc(_slabel(set_name))} — '
+            f'{arms[0][1]["n"]} puzzles</div></td>'
+            f'<td class="small">{cells}</td>'
+            '<td class="num">'
+            + ck(str(v["spread"]), SS_SRC, f"seed {set_name} spread",
+                 raw=v["spread"]) + "</td></tr>")
+    table = scroll(
+        "<table><thead><tr><th>configuration · set</th>"
+        "<th>solved, per seed</th>"
+        "<th class='num'>spread (max − min)</th></tr></thead><tbody>"
+        + "".join(body) + "</tbody></table>")
+    return ("<h3>Seed robustness — the retrain repeated under varied "
+            "seeds</h3>"
+            "<p>Every margin on this page was, until this table, "
+            "single-seed on both arms. The backward cap-20,000 retrain at "
+            "16×16 · 6 robots was repeated with only the torch seed "
+            "varied (production recipe: proposal net cold, value net "
+            "warm-started). A margin is defensible against seed noise "
+            "when it is large next to this spread. The forward arm "
+            "remains single-seed at scale — at base it is the best of "
+            "four independent trainings — and that asymmetry stands as a "
+            "limitation.</p>" + table)
+
+
+# ---------------------------------------------------------------------------
 # 2. What does not survive
 # ---------------------------------------------------------------------------
 
@@ -493,6 +545,7 @@ def sec_significance(D):
             + _pooled_block(cells, method)
             + _retrained_block(cells)
             + _corpus_block(cells, D)
+            + _seed_block(D)
             + _nonsig_block(cells)
             + _twobytwo_block(cells)
             + "</section>")
