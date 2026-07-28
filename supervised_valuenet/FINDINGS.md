@@ -1366,11 +1366,18 @@ scoped fix.
    reference helpers and passes `by_reference=True`). So the 99.6% ceiling
    is a genuine language measurement, the corpora genuinely contain
    by-reference labels — and the learned planner genuinely cannot see them.
-   An instrumented shadow probe (`analysis/byref_topk_ablation.py`, smoke:
-   5 frontier instances, budget 200) counts what properly wired generation
-   WOULD have offered: 20,391 by-reference candidates across 85% of
-   expansions, of which the as-shipped driver generated, ranked, and
-   expanded **zero**. Full-budget 134-instance census: job 4599947.
+   An instrumented shadow probe (`analysis/byref_topk_ablation.py`)
+   counts what properly wired generation WOULD have offered. Full-budget
+   census (job 4599947, all 134 g16r6 frontier instances, 1200
+   expansions, cap-20000 nets, 66 min): as-shipped **0** by-reference
+   candidates generated, ranked, shortlisted or expanded across 46,351
+   expansions and 4.58M candidate applications; correctly wired supply
+   would have been **2,451,324** candidates in **97.0%** of expansions,
+   on **134/134** instances. Convergent validity: the instrumented run
+   solves 105/134 — identical to the production row
+   (`comparison_ungraded_b2retrained_cap20000.json`), so the
+   instrumentation demonstrably did not perturb the search.
+   → `analysis/artifacts/byref_topk_ablation.json`.
 
    **What this changes.**
    - §16's and `eval/compare.py`'s description "the nets rank the new
