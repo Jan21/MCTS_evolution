@@ -62,15 +62,10 @@ BASE_SYSTEMS = {
 EXTRA_SLOTS = {
     "graded": {"bwd_basenets_old":
                ("comparison_basenets_oldvocab.json", "backward"),
-               # FINDINGS 36: the same config retrained on the cap-20000
-               # corpus, everything else held fixed. The comparison against
-               # `bwd_retrained` isolates the training corpus.
-               "bwd_retrained_cap20k":
-               ("comparison_b2retrained_cap20000.json", "backward")},
+               },
     "frontier": {"bwd_basenets_old":
                  ("comparison_ungraded_basenets_oldvocab.json", "backward"),
-                 "bwd_retrained_cap20k":
-                 ("comparison_ungraded_b2retrained_cap20000.json", "backward")},
+                 },
 }
 
 # Which pairs to test, in reporting order. (A, B) reads "A vs B".
@@ -209,10 +204,23 @@ def collect_sets():
                                ("frontier", "bench.unsolved.jsonl")):
             slots = dict(rung.get(set_name) or {})
             slots.update(EXTRA_SLOTS.get(set_name, {}))
-            fut_key = ("bwd_retrained" if set_name == "graded"
-                       else "bwd_retrained_frontier")
-            if fut_key in future:
-                slots["bwd_retrained"] = (future[fut_key], "backward")
+            # Filenames are pinned HERE, deliberately not read from
+            # report_data's `future` dict. That dict is a DISPLAY policy -- it
+            # was repointed at the cap-20000 files so the report would stop
+            # publishing corpus-deficient rows -- and inheriting it silently
+            # made `bwd_retrained` (labelled "cap-5,000") load cap-20000 data,
+            # collapsing the corpus-effect comparison to a self-comparison
+            # (310 vs 310, diff 0.0) and dropping 8 cells. Statistics must
+            # keep every arm addressable regardless of what the report shows.
+            for slot, fname in (
+                    ("bwd_retrained",
+                     "comparison_b2retrained.json" if set_name == "graded"
+                     else "comparison_ungraded_b2retrained.json"),
+                    ("bwd_retrained_cap20k",
+                     "comparison_b2retrained_cap20000.json"
+                     if set_name == "graded"
+                     else "comparison_ungraded_b2retrained_cap20000.json")):
+                slots[slot] = (fname, "backward")
             if not slots:
                 continue
             yield (cfg, set_name, str(SCALING_DATA / cfg / inst),
