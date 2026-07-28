@@ -460,7 +460,9 @@ def sec_open(D):
 
 def tab_scaling(D):
     from eval.report_sections_strata import sec_strata
-    return (sec_oracle(D) + sec_fragility(D) + sec_ladder(D) + sec_strata(D)
+    from eval.report_sections_budget import sec_budget_table
+    return (sec_oracle(D) + sec_fragility(D) + sec_ladder(D)
+            + sec_budget_table(D) + sec_strata(D)
             + sec_cost(D) + sec_rung_details(D) + sec_open(D))
 
 

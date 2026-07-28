@@ -1,0 +1,887 @@
+{
+ "method": "solve rate at budget B = #(solved and expansions <= B)/n, reconstructed from archived per-instance expansion counts; valid because both searches are deterministic and the budget only truncates. Backward = full plan language.",
+ "extended_note": "rows above 1,200 come from the extended-budget probe jobs: REAL runs on a seeded frontier subsample, not reconstructions, and not on the same instance set as the full-set columns",
+ "budgets": [
+  5,
+  10,
+  25,
+  50,
+  75,
+  100,
+  150,
+  200,
+  300,
+  400,
+  600,
+  800,
+  1000,
+  1200
+ ],
+ "rows": [
+  {
+   "rung": "g16r4",
+   "rung_label": "16\u00d716 \u00b7 4 robots (base)",
+   "set": "graded",
+   "budgets": [
+    5,
+    10,
+    25,
+    50,
+    75,
+    100,
+    150,
+    200,
+    300,
+    400,
+    600,
+    800,
+    1000,
+    1200
+   ],
+   "backward": {
+    "solve_rate": [
+     0.846667,
+     0.897778,
+     0.924444,
+     0.937778,
+     0.946667,
+     0.951111,
+     0.955556,
+     0.955556,
+     0.955556,
+     0.955556,
+     0.955556,
+     0.955556,
+     0.955556,
+     0.955556
+    ],
+    "n": 450,
+    "system": "backward subgoal planner (anytime realization-checked) [extended language B2]",
+    "source": "eval/results/final450_backward_b2.json"
+   },
+   "forward": {
+    "solve_rate": [
+     0.213333,
+     0.402222,
+     0.662222,
+     0.835556,
+     0.904444,
+     0.935556,
+     0.971111,
+     0.982222,
+     0.984444,
+     0.988889,
+     0.993333,
+     0.993333,
+     1.0,
+     1.0
+    ],
+    "n": 450,
+    "system": "forward move planner (move_planner/checkpoints/candidate_scored.ckpt)",
+    "source": "eval/results/comparison_forward.json"
+   },
+   "diff": [
+    0.633334,
+    0.49555599999999994,
+    0.26222200000000007,
+    0.10222200000000004,
+    0.04222300000000001,
+    0.015554999999999986,
+    -0.015554999999999986,
+    -0.02666600000000008,
+    -0.028888000000000025,
+    -0.03333300000000006,
+    -0.03777700000000006,
+    -0.03777700000000006,
+    -0.04444400000000004,
+    -0.04444400000000004
+   ]
+  },
+  {
+   "rung": "g16r6",
+   "rung_label": "16\u00d716 \u00b7 6 robots",
+   "set": "graded",
+   "budgets": [
+    5,
+    10,
+    25,
+    50,
+    75,
+    100,
+    150,
+    200,
+    300,
+    400,
+    600,
+    800,
+    1000,
+    1200
+   ],
+   "backward": {
+    "solve_rate": [
+     0.832278,
+     0.892405,
+     0.920886,
+     0.939873,
+     0.949367,
+     0.952532,
+     0.955696,
+     0.958861,
+     0.968354,
+     0.968354,
+     0.968354,
+     0.968354,
+     0.968354,
+     0.968354
+    ],
+    "n": 316,
+    "system": "backward subgoal planner (anytime realization-checked) [extended language B2]",
+    "source": "scaling/results/g16r6/comparison_b2.json"
+   },
+   "forward": {
+    "solve_rate": [
+     0.199367,
+     0.39557,
+     0.60443,
+     0.753165,
+     0.816456,
+     0.851266,
+     0.911392,
+     0.927215,
+     0.952532,
+     0.968354,
+     0.981013,
+     0.987342,
+     0.990506,
+     0.993671
+    ],
+    "n": 316,
+    "system": "forward move planner (lightning_logs/version_43/checkpoints/epoch=7-step=43224.ckpt)",
+    "source": "scaling/results/g16r6/comparison_forward_control.json"
+   },
+   "diff": [
+    0.632911,
+    0.496835,
+    0.31645599999999996,
+    0.18670799999999999,
+    0.132911,
+    0.10126600000000008,
+    0.04430400000000001,
+    0.03164599999999995,
+    0.015822000000000003,
+    0.0,
+    -0.012658999999999976,
+    -0.018988000000000005,
+    -0.02215199999999995,
+    -0.025316999999999923
+   ]
+  },
+  {
+   "rung": "g16r6",
+   "rung_label": "16\u00d716 \u00b7 6 robots",
+   "set": "frontier",
+   "budgets": [
+    5,
+    10,
+    25,
+    50,
+    75,
+    100,
+    150,
+    200,
+    300,
+    400,
+    600,
+    800,
+    1000,
+    1200
+   ],
+   "backward": {
+    "solve_rate": [
+     0.343284,
+     0.455224,
+     0.567164,
+     0.626866,
+     0.679104,
+     0.708955,
+     0.716418,
+     0.746269,
+     0.761194,
+     0.776119,
+     0.783582,
+     0.783582,
+     0.791045,
+     0.80597
+    ],
+    "n": 134,
+    "system": "backward subgoal planner (anytime realization-checked) [extended language B2]",
+    "source": "scaling/results/g16r6/comparison_ungraded_b2.json"
+   },
+   "forward": {
+    "solve_rate": [
+     0.0,
+     0.0,
+     0.0,
+     0.014925,
+     0.037313,
+     0.052239,
+     0.134328,
+     0.171642,
+     0.223881,
+     0.253731,
+     0.335821,
+     0.402985,
+     0.425373,
+     0.485075
+    ],
+    "n": 134,
+    "system": "forward move planner (lightning_logs/version_43/checkpoints/epoch=7-step=43224.ckpt)",
+    "source": "scaling/results/g16r6/comparison_ungraded.json"
+   },
+   "diff": [
+    0.343284,
+    0.455224,
+    0.567164,
+    0.6119410000000001,
+    0.641791,
+    0.656716,
+    0.58209,
+    0.574627,
+    0.537313,
+    0.5223880000000001,
+    0.447761,
+    0.380597,
+    0.365672,
+    0.320895
+   ]
+  },
+  {
+   "rung": "g16r8",
+   "rung_label": "16\u00d716 \u00b7 8 robots",
+   "set": "graded",
+   "budgets": [
+    5,
+    10,
+    25,
+    50,
+    75,
+    100,
+    150,
+    200,
+    300,
+    400,
+    600,
+    800,
+    1000,
+    1200
+   ],
+   "backward": {
+    "solve_rate": [
+     0.906015,
+     0.921053,
+     0.951128,
+     0.958647,
+     0.958647,
+     0.962406,
+     0.973684,
+     0.977444,
+     0.977444,
+     0.977444,
+     0.981203,
+     0.984962,
+     0.984962,
+     0.984962
+    ],
+    "n": 266,
+    "system": "backward subgoal planner (anytime realization-checked) [extended language B2]",
+    "source": "scaling/results/g16r8/comparison_b2.json"
+   },
+   "forward": {
+    "solve_rate": [
+     0.203008,
+     0.390977,
+     0.586466,
+     0.75188,
+     0.842105,
+     0.883459,
+     0.913534,
+     0.947368,
+     0.966165,
+     0.977444,
+     0.981203,
+     0.981203,
+     0.981203,
+     0.981203
+    ],
+    "n": 266,
+    "system": "forward move planner (lightning_logs/version_44/checkpoints/epoch=6-step=46767.ckpt)",
+    "source": "scaling/results/g16r8/comparison_forward_control.json"
+   },
+   "diff": [
+    0.703007,
+    0.530076,
+    0.36466199999999993,
+    0.20676700000000003,
+    0.11654200000000003,
+    0.07894699999999999,
+    0.06015000000000004,
+    0.03007599999999999,
+    0.011278999999999928,
+    0.0,
+    0.0,
+    0.003758999999999957,
+    0.003758999999999957,
+    0.003758999999999957
+   ]
+  },
+  {
+   "rung": "g16r8",
+   "rung_label": "16\u00d716 \u00b7 8 robots",
+   "set": "frontier",
+   "budgets": [
+    5,
+    10,
+    25,
+    50,
+    75,
+    100,
+    150,
+    200,
+    300,
+    400,
+    600,
+    800,
+    1000,
+    1200
+   ],
+   "backward": {
+    "solve_rate": [
+     0.391304,
+     0.5,
+     0.603261,
+     0.711957,
+     0.76087,
+     0.777174,
+     0.788043,
+     0.804348,
+     0.826087,
+     0.853261,
+     0.858696,
+     0.869565,
+     0.869565,
+     0.88587
+    ],
+    "n": 184,
+    "system": "backward subgoal planner (anytime realization-checked) [extended language B2]",
+    "source": "scaling/results/g16r8/comparison_ungraded_b2.json"
+   },
+   "forward": {
+    "solve_rate": [
+     0.0,
+     0.0,
+     0.0,
+     0.01087,
+     0.038043,
+     0.059783,
+     0.070652,
+     0.130435,
+     0.206522,
+     0.26087,
+     0.347826,
+     0.434783,
+     0.461957,
+     0.505435
+    ],
+    "n": 184,
+    "system": "forward move planner (lightning_logs/version_44/checkpoints/epoch=6-step=46767.ckpt)",
+    "source": "scaling/results/g16r8/comparison_ungraded.json"
+   },
+   "diff": [
+    0.391304,
+    0.5,
+    0.603261,
+    0.7010869999999999,
+    0.722827,
+    0.717391,
+    0.717391,
+    0.673913,
+    0.619565,
+    0.5923910000000001,
+    0.5108699999999999,
+    0.43478200000000006,
+    0.407608,
+    0.3804350000000001
+   ]
+  },
+  {
+   "rung": "g24r8",
+   "rung_label": "24\u00d724 \u00b7 8 robots",
+   "set": "graded",
+   "budgets": [
+    5,
+    10,
+    25,
+    50,
+    75,
+    100,
+    150,
+    200,
+    300,
+    400,
+    600,
+    800,
+    1000,
+    1200
+   ],
+   "backward": {
+    "solve_rate": [
+     0.751553,
+     0.801242,
+     0.850932,
+     0.881988,
+     0.881988,
+     0.888199,
+     0.900621,
+     0.906832,
+     0.906832,
+     0.913043,
+     0.913043,
+     0.913043,
+     0.919255,
+     0.919255
+    ],
+    "n": 161,
+    "system": "backward subgoal planner (anytime realization-checked) [extended language B2]",
+    "source": "scaling/results/g24r8/comparison_b2.json"
+   },
+   "forward": {
+    "solve_rate": [
+     0.167702,
+     0.279503,
+     0.360248,
+     0.496894,
+     0.596273,
+     0.645963,
+     0.732919,
+     0.770186,
+     0.875776,
+     0.913043,
+     0.931677,
+     0.944099,
+     0.962733,
+     0.975155
+    ],
+    "n": 161,
+    "system": "forward move planner (lightning_logs/version_47/checkpoints/epoch=3-step=115144.ckpt)",
+    "source": "scaling/results/g24r8/comparison.json"
+   },
+   "diff": [
+    0.583851,
+    0.521739,
+    0.490684,
+    0.385094,
+    0.28571499999999994,
+    0.242236,
+    0.16770200000000002,
+    0.13664599999999993,
+    0.031055999999999973,
+    0.0,
+    -0.01863399999999993,
+    -0.031055999999999973,
+    -0.043477999999999906,
+    -0.05589999999999995
+   ]
+  },
+  {
+   "rung": "g24r8",
+   "rung_label": "24\u00d724 \u00b7 8 robots",
+   "set": "frontier",
+   "budgets": [
+    5,
+    10,
+    25,
+    50,
+    75,
+    100,
+    150,
+    200,
+    300,
+    400,
+    600,
+    800,
+    1000,
+    1200
+   ],
+   "backward": {
+    "solve_rate": [
+     0.148789,
+     0.193772,
+     0.256055,
+     0.307958,
+     0.33564,
+     0.349481,
+     0.380623,
+     0.411765,
+     0.439446,
+     0.467128,
+     0.487889,
+     0.512111,
+     0.532872,
+     0.557093
+    ],
+    "n": 289,
+    "system": "backward subgoal planner (anytime realization-checked) [extended language B2]",
+    "source": "scaling/results/g24r8/comparison_ungraded_b2.json"
+   },
+   "forward": {
+    "solve_rate": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.00692,
+     0.013841,
+     0.017301,
+     0.024221,
+     0.051903,
+     0.096886,
+     0.121107,
+     0.141869,
+     0.152249
+    ],
+    "n": 289,
+    "system": "forward move planner (lightning_logs/version_47/checkpoints/epoch=3-step=115144.ckpt)",
+    "source": "scaling/results/g24r8/comparison_ungraded.json"
+   },
+   "diff": [
+    0.148789,
+    0.193772,
+    0.256055,
+    0.307958,
+    0.33564,
+    0.342561,
+    0.366782,
+    0.394464,
+    0.415225,
+    0.415225,
+    0.391003,
+    0.39100399999999996,
+    0.391003,
+    0.404844
+   ]
+  },
+  {
+   "rung": "g32r4",
+   "rung_label": "32\u00d732 \u00b7 4 robots",
+   "set": "graded",
+   "budgets": [
+    5,
+    10,
+    25,
+    50,
+    75,
+    100,
+    150,
+    200,
+    300,
+    400,
+    600,
+    800,
+    1000,
+    1200
+   ],
+   "backward": {
+    "solve_rate": [
+     0.525714,
+     0.554286,
+     0.651429,
+     0.72,
+     0.788571,
+     0.834286,
+     0.88,
+     0.88,
+     0.88,
+     0.88,
+     0.88,
+     0.88,
+     0.88,
+     0.88
+    ],
+    "n": 175,
+    "system": "backward subgoal planner (anytime realization-checked) [extended language B2]",
+    "source": "scaling/results/g32r4/comparison_b2.json"
+   },
+   "forward": {
+    "solve_rate": [
+     0.131429,
+     0.222857,
+     0.274286,
+     0.337143,
+     0.365714,
+     0.388571,
+     0.462857,
+     0.502857,
+     0.571429,
+     0.577143,
+     0.64,
+     0.697143,
+     0.731429,
+     0.76
+    ],
+    "n": 175,
+    "system": "forward move planner (lightning_logs/version_45/checkpoints/epoch=3-step=158564.ckpt)",
+    "source": "scaling/results/g32r4/comparison.json"
+   },
+   "diff": [
+    0.394285,
+    0.331429,
+    0.37714300000000006,
+    0.38285699999999995,
+    0.42285700000000004,
+    0.445715,
+    0.417143,
+    0.377143,
+    0.30857100000000004,
+    0.30285700000000004,
+    0.24,
+    0.18285700000000005,
+    0.148571,
+    0.12
+   ]
+  },
+  {
+   "rung": "g32r4",
+   "rung_label": "32\u00d732 \u00b7 4 robots",
+   "set": "frontier",
+   "budgets": [
+    5,
+    10,
+    25,
+    50,
+    75,
+    100,
+    150,
+    200,
+    300,
+    400,
+    600,
+    800,
+    1000,
+    1200
+   ],
+   "backward": {
+    "solve_rate": [
+     0.036364,
+     0.047273,
+     0.116364,
+     0.214545,
+     0.305455,
+     0.432727,
+     0.709091,
+     0.712727,
+     0.712727,
+     0.712727,
+     0.712727,
+     0.712727,
+     0.712727,
+     0.712727
+    ],
+    "n": 275,
+    "system": "backward subgoal planner (anytime realization-checked) [extended language B2]",
+    "source": "scaling/results/g32r4/comparison_ungraded_b2.json"
+   },
+   "forward": {
+    "solve_rate": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.003636,
+     0.007273
+    ],
+    "n": 275,
+    "system": "forward move planner (lightning_logs/version_45/checkpoints/epoch=3-step=158564.ckpt)",
+    "source": "scaling/results/g32r4/comparison_ungraded.json"
+   },
+   "diff": [
+    0.036364,
+    0.047273,
+    0.116364,
+    0.214545,
+    0.305455,
+    0.432727,
+    0.709091,
+    0.712727,
+    0.712727,
+    0.712727,
+    0.712727,
+    0.712727,
+    0.709091,
+    0.705454
+   ]
+  }
+ ],
+ "extended": [
+  {
+   "rung": "g16r6",
+   "budget": 4800,
+   "status": "ok",
+   "n": 32,
+   "forward_1200": {
+    "solved": 13,
+    "rate": 0.40625
+   },
+   "forward_probe": {
+    "solved": 20,
+    "rate": 0.625,
+    "mean_expansions": 2599.4375
+   },
+   "backward_1200": {
+    "solved": 23,
+    "rate": 0.71875
+   },
+   "forward_climb": 0.21875,
+   "backward_vs_forward_1200": {
+    "diff": 0.3125,
+    "a_only": 13,
+    "b_only": 3,
+    "mcnemar_p": 0.021270751953125
+   },
+   "backward_vs_forward_probe": {
+    "diff": 0.09375,
+    "a_only": 8,
+    "b_only": 5,
+    "mcnemar_p": 0.5810546875
+   },
+   "sources": {
+    "probe": "scaling/results/g16r6/forward_probe_e4800.json",
+    "subsample": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdprobe/g16r6.e4800/subsample.jsonl",
+    "forward_1200": "scaling/results/g16r6/comparison_ungraded.json",
+    "backward_1200": "scaling/results/g16r6/comparison_ungraded_b2.json"
+   }
+  },
+  {
+   "rung": "g16r8",
+   "budget": 4800,
+   "status": "ok",
+   "n": 32,
+   "forward_1200": {
+    "solved": 14,
+    "rate": 0.4375
+   },
+   "forward_probe": {
+    "solved": 24,
+    "rate": 0.75,
+    "mean_expansions": 2141.59375
+   },
+   "backward_1200": {
+    "solved": 30,
+    "rate": 0.9375
+   },
+   "forward_climb": 0.3125,
+   "backward_vs_forward_1200": {
+    "diff": 0.5,
+    "a_only": 16,
+    "b_only": 0,
+    "mcnemar_p": 3.0517578125e-05
+   },
+   "backward_vs_forward_probe": {
+    "diff": 0.1875,
+    "a_only": 7,
+    "b_only": 1,
+    "mcnemar_p": 0.0703125
+   },
+   "sources": {
+    "probe": "scaling/results/g16r8/forward_probe_e4800.json",
+    "subsample": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdprobe/g16r8.e4800/subsample.jsonl",
+    "forward_1200": "scaling/results/g16r8/comparison_ungraded.json",
+    "backward_1200": "scaling/results/g16r8/comparison_ungraded_b2.json"
+   }
+  },
+  {
+   "rung": "g24r8",
+   "budget": 6000,
+   "status": "ok",
+   "n": 32,
+   "forward_1200": {
+    "solved": 5,
+    "rate": 0.15625
+   },
+   "forward_probe": {
+    "solved": 9,
+    "rate": 0.28125,
+    "mean_expansions": 4973.5625
+   },
+   "backward_1200": {
+    "solved": 15,
+    "rate": 0.46875
+   },
+   "forward_climb": 0.125,
+   "backward_vs_forward_1200": {
+    "diff": 0.3125,
+    "a_only": 11,
+    "b_only": 1,
+    "mcnemar_p": 0.00634765625
+   },
+   "backward_vs_forward_probe": {
+    "diff": 0.1875,
+    "a_only": 9,
+    "b_only": 3,
+    "mcnemar_p": 0.14599609375
+   },
+   "sources": {
+    "probe": "scaling/results/g24r8/forward_probe_e6000.json",
+    "subsample": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdprobe/g24r8.e6000/subsample.jsonl",
+    "forward_1200": "scaling/results/g24r8/comparison_ungraded.json",
+    "backward_1200": "scaling/results/g24r8/comparison_ungraded_b2.json"
+   }
+  },
+  {
+   "rung": "g32r4",
+   "budget": 4800,
+   "status": "ok",
+   "n": 24,
+   "forward_1200": {
+    "solved": 0,
+    "rate": 0.0
+   },
+   "forward_probe": {
+    "solved": 1,
+    "rate": 0.041666666666666664,
+    "mean_expansions": 4733.125
+   },
+   "backward_1200": {
+    "solved": 12,
+    "rate": 0.5
+   },
+   "forward_climb": 0.041666666666666664,
+   "backward_vs_forward_1200": {
+    "diff": 0.5,
+    "a_only": 12,
+    "b_only": 0,
+    "mcnemar_p": 0.00048828125
+   },
+   "backward_vs_forward_probe": {
+    "diff": 0.4583333333333333,
+    "a_only": 11,
+    "b_only": 0,
+    "mcnemar_p": 0.0009765625
+   },
+   "sources": {
+    "probe": "scaling/results/g32r4/forward_probe_e4800.json",
+    "subsample": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdprobe/g32r4.e4800/subsample.jsonl",
+    "forward_1200": "scaling/results/g32r4/comparison_ungraded.json",
+    "backward_1200": "scaling/results/g32r4/comparison_ungraded_b2.json"
+   }
+  }
+ ]
+}
