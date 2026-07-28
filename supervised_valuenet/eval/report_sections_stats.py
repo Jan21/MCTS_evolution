@@ -30,7 +30,8 @@ SYS_SHORT = {
     "bwd_b2": "subgoals, full language",
     "bwd_old": "subgoals, original language",
     "bwd_basenets_old": "subgoals, base nets, original language",
-    "bwd_retrained": "subgoals, full language, retrained",
+    "bwd_retrained": "subgoals, retrained (depleted cap-5,000 corpus)",
+    "bwd_retrained_cap20k": "subgoals, retrained (cap-20,000 corpus)",
     "fwd": "move-by-move",
 }
 
@@ -171,6 +172,111 @@ def _pooled_block(cells, method):
             "help from the sampling. This is why the pooled table is the "
             "headline.</p>"
             + pooled_quote + table + base_note)
+
+
+# ---------------------------------------------------------------------------
+# 1b. The properly retrained planner vs the move-by-move control
+# ---------------------------------------------------------------------------
+
+def _retrained_block(cells):
+    rows_ = [c for c in cells
+             if c.get("a") == "bwd_retrained_cap20k" and c.get("b") == "fwd"]
+    if not rows_:
+        return ("<h3>With properly retrained networks</h3>" + progress_tag(
+            "no cap-20,000-corpus retrained rows are in "
+            "eval/results/stats_tests.json yet — this table renders "
+            "automatically as the regenerated-corpus Track 1 lanes land"))
+    body = []
+    for c in rows_:
+        d = f'retr20k {c["rung"]} {c["set"]} vs fwd'
+        body.append(
+            f'<tr><td><b>{esc(_rlabel(c["rung"]))}</b>'
+            f'<div class="cellnote">{esc(_slabel(c["set"]))} — '
+            f'{c["n"]} puzzles</div></td>'
+            '<td class="num">'
+            + ck(f'{c["solved_a"]}/{c["n"]}', SRC, d + " — retrained solved",
+                 raw=c["solved_a"])
+            + '<div class="cellnote">'
+            + ck(f'{c["rate_a"] * 100:.1f}%', SRC, d + " — retrained rate",
+                 raw=c["rate_a"]) + "</div></td>"
+            '<td class="num">'
+            + ck(f'{c["solved_b"]}/{c["n"]}', SRC, d + " — forward solved",
+                 raw=c["solved_b"])
+            + '<div class="cellnote">'
+            + ck(f'{c["rate_b"] * 100:.1f}%', SRC, d + " — forward rate",
+                 raw=c["rate_b"]) + "</div></td>"
+            f'<td class="num">{_diff_ci(c, d)}</td>'
+            f'<td class="num">{_pval(c, d)}</td></tr>')
+    table = scroll(
+        "<table><thead><tr><th>configuration · set</th>"
+        "<th class='num'>subgoals, retrained (rich corpus)<br>solved · rate"
+        "</th><th class='num'>move-by-move<br>solved · rate</th>"
+        "<th class='num'>difference, points [95% CI]</th>"
+        "<th class='num'>p (McNemar)</th></tr></thead><tbody>"
+        + "".join(body) + "</tbody></table>")
+    return ("<h3>With properly retrained networks</h3>"
+            "<p>The zero-shot rows above rank the newest step type with "
+            "networks that never saw it in training. These rows are the "
+            "planner after retraining on the regenerated (cap-20,000) "
+            "label corpus — the one that carries the new step type at its "
+            "natural rate. Rows retrained on the earlier depleted corpus "
+            "are a separate arm, shown in the label-budget experiment "
+            "below, never here.</p>" + table)
+
+
+# ---------------------------------------------------------------------------
+# 1c. The label-budget experiment (FINDINGS 34/36)
+# ---------------------------------------------------------------------------
+
+def _corpus_block(cells):
+    pair = [c for c in cells if c.get("a") == "bwd_retrained_cap20k"
+            and c.get("b") == "bwd_retrained"]
+    if not pair:
+        return ("<h3>The label-budget experiment</h3>" + progress_tag(
+            "corpus-effect cells (cap-20,000 vs cap-5,000 retrains of the "
+            "same configuration) are not in eval/results/stats_tests.json "
+            "yet — this table renders automatically when both arms of a "
+            "rung exist"))
+    body = []
+    for c in pair:
+        d = f'corpus {c["rung"]} {c["set"]}'
+        body.append(
+            f'<tr><td><b>{esc(_rlabel(c["rung"]))}</b>'
+            f'<div class="cellnote">{esc(_slabel(c["set"]))} — '
+            f'{c["n"]} puzzles</div></td>'
+            '<td class="num">'
+            + ck(f'{c["solved_a"]}/{c["n"]}', SRC, d + " — cap20k solved",
+                 raw=c["solved_a"])
+            + '<div class="cellnote">'
+            + ck(f'{c["rate_a"] * 100:.1f}%', SRC, d + " — cap20k rate",
+                 raw=c["rate_a"]) + "</div></td>"
+            '<td class="num">'
+            + ck(f'{c["solved_b"]}/{c["n"]}', SRC, d + " — cap5k solved",
+                 raw=c["solved_b"])
+            + '<div class="cellnote">'
+            + ck(f'{c["rate_b"] * 100:.1f}%', SRC, d + " — cap5k rate",
+                 raw=c["rate_b"]) + "</div></td>"
+            f'<td class="num">{_diff_ci(c, d)}</td>'
+            f'<td class="num">{_pval(c, d)}</td></tr>')
+    table = scroll(
+        "<table><thead><tr><th>configuration · set</th>"
+        "<th class='num'>retrained, cap-20,000 corpus<br>solved · rate</th>"
+        "<th class='num'>retrained, cap-5,000 corpus<br>solved · rate</th>"
+        "<th class='num'>difference, points [95% CI]</th>"
+        "<th class='num'>p (McNemar)</th></tr></thead><tbody>"
+        + "".join(body) + "</tbody></table>")
+    return ("<h3>The label-budget experiment — same networks, same "
+            "recipe, only the training corpus differs</h3>"
+            "<p>Each row pairs two retrains of the same configuration "
+            "that share the warm-start, recipe, learning rate and "
+            "evaluation protocol; the only difference is the per-attempt "
+            "budget of the label generator. The cheaper cap silently "
+            "stripped the plans that re-use an already-placed robot — the "
+            "very step type the full language added — and the networks "
+            "trained on that corpus learned to under-rank it. A "
+            "data-generation setting chosen for throughput masqueraded as "
+            "a method failure, and it passed every record-count QC gate; "
+            "only this controlled comparison exposed it.</p>" + table)
 
 
 # ---------------------------------------------------------------------------
@@ -359,6 +465,8 @@ def sec_significance(D):
                        + "</p>")
     return (head + method_html
             + _pooled_block(cells, method)
+            + _retrained_block(cells)
+            + _corpus_block(cells)
             + _nonsig_block(cells)
             + _twobytwo_block(cells)
             + "</section>")
