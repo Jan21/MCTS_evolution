@@ -62,15 +62,22 @@ unset RR_GRID RR_ROBOTS RR_WALLS RR_ENV_DIR
 ENGINE=rust_datagen/target/release/datagen
 "$ENGINE" selftest > /dev/null 2>&1 || { echo "FATAL: engine selftest failed"; exit 1; }
 
-if [ "$NSHARDS" -eq 1 ]; then
-  if [ "$CAP" -eq 5000 ]; then
-    OUT="scaling/data/$CFG/backward_b2.rust.jsonl"; TAG="backward_b2"
-  else
-    OUT="scaling/data/$CFG/backward_b2.cap${CAP}.rust.jsonl"; TAG="backward_b2_cap${CAP}"
-  fi
+# The cap tag must survive sharding. It previously did not: the sharded branch
+# wrote plain `backward_b2.rust.shard<S>of<N>.jsonl` whatever the cap, so a
+# cap-20000 base run would have produced 32 shards indistinguishable from
+# cap-5000 output, and b2_labels_merge.sh would have concatenated them straight
+# over the production corpus. Caught before any file was written (32 jobs
+# cancelled, 2026-07-28); the base name now always carries the cap.
+if [ "$CAP" -eq 5000 ]; then
+  STEM="backward_b2"
 else
-  OUT="scaling/data/$CFG/backward_b2.rust.shard${SHARD}of${NSHARDS}.jsonl"
-  TAG="backward_b2_s${SHARD}of${NSHARDS}"
+  STEM="backward_b2.cap${CAP}"
+fi
+if [ "$NSHARDS" -eq 1 ]; then
+  OUT="scaling/data/$CFG/${STEM}.rust.jsonl"; TAG="$STEM"
+else
+  OUT="scaling/data/$CFG/${STEM}.rust.shard${SHARD}of${NSHARDS}.jsonl"
+  TAG="${STEM}_s${SHARD}of${NSHARDS}"
 fi
 if [ -s "$OUT" ]; then
   echo "already present: $OUT"; echo "B2LABELS $CFG shard $SHARD DONE"; exit 0

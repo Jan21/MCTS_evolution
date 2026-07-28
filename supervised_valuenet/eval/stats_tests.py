@@ -61,9 +61,16 @@ BASE_SYSTEMS = {
 # where the published rows confounded language with net provenance.
 EXTRA_SLOTS = {
     "graded": {"bwd_basenets_old":
-               ("comparison_basenets_oldvocab.json", "backward")},
+               ("comparison_basenets_oldvocab.json", "backward"),
+               # FINDINGS 36: the same config retrained on the cap-20000
+               # corpus, everything else held fixed. The comparison against
+               # `bwd_retrained` isolates the training corpus.
+               "bwd_retrained_cap20k":
+               ("comparison_b2retrained_cap20000.json", "backward")},
     "frontier": {"bwd_basenets_old":
-                 ("comparison_ungraded_basenets_oldvocab.json", "backward")},
+                 ("comparison_ungraded_basenets_oldvocab.json", "backward"),
+                 "bwd_retrained_cap20k":
+                 ("comparison_ungraded_b2retrained_cap20000.json", "backward")},
 }
 
 # Which pairs to test, in reporting order. (A, B) reads "A vs B".
@@ -77,13 +84,17 @@ PAIRS = [
     ("bwd_old", "fwd"),           # old-language like-for-like
     ("bwd_b2", "bwd_old"),        # the language effect at fixed nets
     ("bwd_retrained", "bwd_b2"),  # the retraining effect at fixed language
+    # the label-corpus effect at fixed nets, recipe and lineage (FINDINGS 36)
+    ("bwd_retrained_cap20k", "bwd_retrained"),
+    ("bwd_retrained_cap20k", "bwd_b2"),
 ]
 
 LABELS = {
     "bwd_old": "backward (old language)",
     "bwd_b1": "backward (B1)",
     "bwd_b2": "backward (B2, zero-shot ranking)",
-    "bwd_retrained": "backward (B2, retrained)",
+    "bwd_retrained": "backward (B2, retrained on cap-5,000 labels)",
+    "bwd_retrained_cap20k": "backward (B2, retrained on cap-20,000 labels)",
     "bwd_basenets_old": "backward (base-B1 nets, OLD vocabulary)",
     "fwd": "forward control",
 }

@@ -1131,6 +1131,47 @@ scoped fix.
    Source: `eval/results/budget_probe_summary.json` (regenerated with all four
    probes by `eval/budget_probe_summary.py`).
 
+36. **DECISIVE: the regression was the label cap, and a 4× richer corpus
+   reverses it (2026-07-28).** g16r6 retrained a second time on the cap-20000
+   corpus (11.0% by-reference vs 5.2%), holding **everything else fixed** —
+   same warm-start, same recipe, same learning rate, same evaluation — so the
+   only variable is the training corpus. All rows replay-certified (310/310
+   graded, 105/105 frontier, zero failures):
+   | g16r6 | zero-shot B2 | retrained on cap-5,000 | retrained on cap-20,000 |
+   |---|---|---|---|
+   | graded (316) | 306 = 96.8% | 301 = 95.3% | **310 = 98.1%** |
+   | frontier (134) | 108 = 80.6% | 75 = 56.0% | **105 = 78.4%** |
+   Holding lineage fixed, the corpus alone is worth **+22.4 points at the
+   frontier** (95% CI [+14.2, +30.8], p < 0.0001) and **+2.8 graded**
+   ([+0.7, +5.1], p = 0.023). Against the zero-shot comparator the retrained
+   planner is now −2.2 at the frontier (p = 0.629) and +1.3 graded
+   (p = 0.388) — neither significant, i.e. the 24.6-point collapse of §34 is
+   **gone**.
+   **What this settles.** §32's diagnosis was right and §34's causal reading
+   was right in substance: a labelling cap chosen for throughput silently
+   stripped the candidate type the retraining existed to teach, and the
+   planner learned to under-rank it. The controlled test also sizes the
+   confound the adversarial review raised: net lineage was estimated at 7–8 of
+   the 24.6 points from §29's old-vocabulary contrast, but measured directly
+   the residual after fixing the corpus is only −2.2 and not significant, so
+   lineage explains ~2 points, not 7–8. The label corpus explains essentially
+   all of it.
+   **What this costs.** Every retrained row produced from the cap-5000 corpus
+   is now known to be trained on a deficient corpus and must not be published:
+   that is the base 450 row and both rows at g16r6, g16r8, g24r8 and g32r4.
+   The corpus must be regenerated at the higher budget and the retrains
+   repeated — projected in the next entry.
+   **Methodological note worth keeping.** The throughput optimum and the
+   quality optimum were different settings, and nothing in the generation
+   pipeline would have revealed it: the cheap corpus passed every QC gate the
+   handoff specified (record counts, keeper targets, manifest fields) and its
+   by-reference share sat inside the expected 5–20% band, merely at the
+   bottom. Only comparing the trained result against a richer corpus exposed
+   it. A QC gate on a data pipeline should assert a distribution, not a range.
+   Sources: `scaling/results/g16r6/comparison{_b2retrained_cap20000,_ungraded_b2retrained_cap20000}.json`
+   against `comparison{_b2retrained,_ungraded_b2retrained}.json` and
+   `comparison{_b2,_ungraded_b2}.json`.
+
 ## Still open
 
 - Retraining the backward networks on the extended (B2) vocabulary — the
