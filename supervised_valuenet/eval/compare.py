@@ -660,8 +660,12 @@ def main():
     # optimum is known. Detect that (a real puzzle never has d_star = 0: the
     # target robot would already be on the goal) and null the derived fields
     # instead of publishing solution length as "regret" -- objection 0.6.
+    # Beyond-oracle sets carry no optimum. Historically that was written as
+    # d_star = 0; a set derived as "bench minus the graded half" carries None.
+    # Both are placeholders and both must suppress regret -- None additionally
+    # would crash `cost - d_star` outright.
     placeholder_d_star = bool(instances) and all(
-        i.get("d_star") == 0 for i in instances)
+        i.get("d_star") in (0, None) for i in instances)
     if placeholder_d_star:
         print(f"[compare] d_star placeholder detected in {a.instances}: "
               "regret / pct_optimal suppressed for this run")
