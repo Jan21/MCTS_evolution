@@ -1337,6 +1337,75 @@ scoped fix.
      rows) submitted for both sets (jobs 4599924/4599925, ~2 nh). This
      completes the 6-rung ladder for the headline table.
 
+40. **DISCOVERY (2026-07-28, late): B2's by-reference machinery is dead code
+   in the benchmark driver — every learned "B2" row ever measured is B1 plus
+   generalized park repairs (independently spot-verified in source).** The
+   §37 ablation question ("does the trained net ever place a by-reference
+   candidate in its top-k?") dissolves before it can be asked: the answer is
+   structurally zero, for three independent reasons, each sufficient alone.
+   - **The eval loop never generates by-reference candidates.**
+     `eval/compare.py::_nn_astar_backward` calls `solver.propose(...)`
+     without injecting `_reference_helpers` and `_apply(...)` without
+     `by_reference=True` (compare.py ~215, ~219). The wiring exists only in
+     `skeleton/astar.py::_expand` (~105), which the NN loop reaches only on
+     the free-exact-fix branch — which returns at the exact-pin step, above
+     the by-reference block. `git log -S by_reference -- eval/compare.py`
+     shows only the commit that added the constructor argument.
+   - **The eval featurization cannot represent one.** `eval/end2end.py`'s
+     `_hidx` maps a candidate's helper by robot START position, and the
+     driver drops any candidate whose helper is not at a start — a
+     by-reference candidate never is, by definition (`scaling/qc_byref.py`).
+   - **The policy net never trained on one.** `train/policy_common.py`
+     silently skips any record whose `cand_helper` is not at a start, so
+     the policy trainer filtered out every by-reference record in every
+     corpus (only the value net, with raw cell-index featurization, saw
+     them).
+   In contrast, the **ceiling probe and the label engine use the correctly
+   wired solver** (`analysis/artifacts/ceiling_probe.py` via
+   `solver._expand` with `by_reference=B2`; `nn/generate.py` injects
+   reference helpers and passes `by_reference=True`). So the 99.6% ceiling
+   is a genuine language measurement, the corpora genuinely contain
+   by-reference labels — and the learned planner genuinely cannot see them.
+   An instrumented shadow probe (`analysis/byref_topk_ablation.py`, smoke:
+   5 frontier instances, budget 200) counts what properly wired generation
+   WOULD have offered: 20,391 by-reference candidates across 85% of
+   expansions, of which the as-shipped driver generated, ranked, and
+   expanded **zero**. Full-budget 134-instance census: job 4599947.
+
+   **What this changes.**
+   - §16's and `eval/compare.py`'s description "the nets rank the new
+     candidate type zero-shot" is **false for every measured row**. The only
+     live piece of B2 at eval time is the generalized park-repair pass
+     (max_parks=2, pairwise, multi-slide) — consistent with §16's own
+     observation that the base B2 gain was one puzzle recovered "by the
+     deterministic repair step", and with §37/§39's finding that B1→B2 is
+     +2/0 at fixed nets.
+   - **§36's corpus effect is real but its mechanism prose is wrong.** The
+     +22.4-point frontier recovery cannot operate through by-reference
+     candidates at eval (none ever appear). The by-reference share is the
+     visible MARKER of the generation budget, not the causal pathway: the
+     budget changes the whole label distribution (which attempts produce
+     labels, and what the policy/value nets see after the policy trainer's
+     silent by-reference filter), and the retrained nets' frontier recovery
+     must come from better ranking of ORDINARY candidates. "Learned to
+     under-rank that candidate type" should be retired; "trained on a
+     depleted corpus and mis-ranked frontier-relevant ordinary candidates,
+     with the by-reference share as the depletion's fingerprint" is what
+     the evidence supports.
+   - **Headline backward-vs-forward rows are unaffected** — they measure
+     the planner as it actually ran, every solve replay-certified.
+   - The honest paper framing of extension 2 becomes: a ceiling
+     (expressibility) result, PLUS an engineering gap — the by-reference
+     vocabulary was never integrated into the learned planner's proposal
+     path, featurization, or policy training. The measured shadow supply
+     (85% of expansions would offer one) and the open ceiling headroom
+     make wiring it the study's clearest next experiment: it needs a
+     helper-identity featurization that can name non-start cells, a policy
+     retrain without the silent filter, and ~5 lines in the driver.
+   Source: audit of 2026-07-28 (two independent agents; wiring claims
+   spot-verified by hand in `eval/compare.py` and `skeleton/astar.py`);
+   `analysis/byref_topk_ablation.py`; FINDINGS §16/§29/§34/§36/§37/§39.
+
 ## Still open
 
 - Retraining the backward networks on the extended (B2) vocabulary — the

@@ -290,13 +290,19 @@ def _corpus_block(cells, D):
             "<p>Each row pairs two retrains of the same configuration "
             "that share the warm-start, recipe, learning rate and "
             "evaluation protocol; the only difference is the per-attempt "
-            "budget of the label generator. The cheaper cap silently "
-            "stripped the plans that re-use an already-placed robot — the "
-            "very step type the full language added — and the networks "
-            "trained on that corpus learned to under-rank it. A "
-            "data-generation setting chosen for throughput masqueraded as "
-            "a method failure, and it passed every record-count QC gate; "
-            "only this controlled comparison exposed it.</p>" + table)
+            "budget of the label generator. The cheaper cap depleted the "
+            "corpus — most visibly its share of plans that re-use an "
+            "already-placed robot, the fingerprint quoted per rung below — "
+            "and networks trained on the depleted corpus mis-rank the "
+            "ordinary candidates that hard puzzles depend on. (The "
+            "fingerprint is a marker, not the mechanism: the learned "
+            "planner's proposal path never offers a re-use candidate at "
+            "evaluation time — see the plan-language section — so the "
+            "damage and the recovery both live in ordinary-candidate "
+            "ranking.) A data-generation setting chosen for throughput "
+            "masqueraded as a method failure, and it passed every "
+            "record-count QC gate; only this controlled comparison "
+            "exposed it.</p>" + table)
 
 
 # ---------------------------------------------------------------------------

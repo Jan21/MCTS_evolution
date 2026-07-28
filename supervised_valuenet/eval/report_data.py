@@ -425,6 +425,10 @@ def collect():
     # by-reference share of every merged B2 label corpus (the dose in the
     # label-budget dose-response; analysis/byref_shares.py)
     D["byref_shares"] = load_json("analysis/artifacts/byref_shares.json")
+    # instrumented census of by-reference candidate supply at eval time
+    # (FINDINGS 40; analysis/byref_topk_ablation.py, job 4599947)
+    D["byref_topk_ablation"] = load_json(
+        "analysis/artifacts/byref_topk_ablation.json")
 
     # ---- base scale (16×16, 4 robots) ------------------------------------
     D["fwd450"] = load_json("eval/results/comparison_forward.json")

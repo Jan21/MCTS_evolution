@@ -1135,13 +1135,22 @@ def sec_lang_b2(D):
     if a_b2 and cc2:
         ceil_pct = (450 - cc2.get("INCONCLUSIVE", 0)) / 450 * 100
         html += f"""
-  <p>The learned planner — <b>unchanged B1-trained networks</b> ranking the
-  new step type zero-shot, plus a deterministic repair pass — scores
+  <p>The learned planner — <b>unchanged B1-trained networks</b> plus the
+  generalized repair pass — scores
   <b>{ck(rate_txt(a_b2), "eval/results/final450_backward_b2.json",
   "b2: benchmark result", raw=a_b2["solved"])}</b>
-  ({a_b2["solved"]}/{a_b2["n"]}). Stated plainly: the language now permits
-  ~{ceil_pct:.1f}%; the achieved {rate_txt(a_b2)} is a training gap, and
-  label regeneration + retraining is the scoped next step.</p>"""
+  ({a_b2["solved"]}/{a_b2["n"]}). An honest wiring note: the re-use
+  permission itself is exercised by the exhaustive probe and the label
+  generator, but <b>not by the learned planner's proposal path</b> — its
+  featurization names helpers by robot start position, so a re-used robot
+  standing mid-plan cannot be represented, its policy trainer skipped every
+  such training record, and its search loop never offers such a candidate.
+  The only piece of this extension the learned rows exercise is the
+  generalized repair pass. Stated plainly: the language now permits
+  ~{ceil_pct:.1f}%; the shortfall from the ceiling is an integration gap
+  (proposal path, featurization, policy training), not a ranking failure —
+  no ranking of the new step type has ever been measured, because none was
+  possible.</p>"""
     html += progress_tag(
         "retraining on the full (B2) vocabulary is running; its rows appear "
         "in the tables automatically when the result files land")
@@ -1226,22 +1235,52 @@ def sec_lang_attribution(D):
         "<th class='num'>+ extension 2 (B2), zero-shot</th>"
         "<th>provenance</th></tr></thead><tbody>" + body + "</tbody></table>")
     abl = D.get("byref_topk_ablation")
-    abl_html = progress_tag(
-        "a ranking-side ablation — does the trained network ever place a "
-        "by-reference candidate in its top-k proposals? — distinguishes "
-        "‘vocabulary unused’ from ‘used and unhelpful’; "
-        "it renders here when analysis/artifacts/byref_topk_ablation.json "
-        "lands")
-    if abl:
-        abl_html = ""  # filled by the ablation subsection when the file lands
+    ABL_SRC = "analysis/artifacts/byref_topk_ablation.json"
+    if abl and abl.get("summary"):
+        s = abl["summary"]
+        t = s.get("totals") or {}
+        abl_html = (
+            "<h3>Why the second extension's step type never appears — an "
+            "instrumented census</h3>"
+            "<p>An instrumented re-run of the production search on the "
+            f'beyond-oracle set ({ck(str(s.get("n")), ABL_SRC, "ablation n", raw=s.get("n"))} '
+            "puzzles, production budget and networks) counted, at every "
+            "expansion, both what the as-shipped planner offered and what a "
+            "correctly wired robot-re-use proposal step "
+            "<i>would</i> have offered. The as-shipped planner generated, "
+            "ranked, shortlisted and expanded "
+            + ck(str(t.get("asis_byref_topk", 0)), ABL_SRC,
+                 "ablation as-is topk", raw=t.get("asis_byref_topk", 0))
+            + " re-use candidates — structurally zero — while the "
+            "counterfactual supply was "
+            + ck(f'{t.get("shadow_byref_generated", 0):,}', ABL_SRC,
+                 "ablation shadow generated",
+                 raw=t.get("shadow_byref_generated", 0))
+            + " candidates across "
+            + ck(str(t.get("shadow_groups_with_byref", 0)), ABL_SRC,
+                 "ablation shadow groups",
+                 raw=t.get("shadow_groups_with_byref", 0))
+            + " of "
+            + ck(str(t.get("asis_expansion_groups", 0)), ABL_SRC,
+                 "ablation groups", raw=t.get("asis_expansion_groups", 0))
+            + " expansions. The vocabulary is not under-ranked; it is "
+            "unreachable — the integration gap named above, measured.</p>")
+    else:
+        abl_html = progress_tag(
+            "an instrumented census of the missing step type (as-shipped "
+            "vs correctly wired candidate supply, production budget) is "
+            "running; it renders here when "
+            "analysis/artifacts/byref_topk_ablation.json lands")
     return (kicker_h2(
         "which extension carries the gain",
         "Nearly all of the executable-language gain is extension 1",
         "Holding the networks fixed, the first extension moves the solve "
         "count by tens of puzzles; adding the second moves it by 0–2. The "
         "second extension's value is what a plan can EXPRESS — the "
-        "ceiling — and its measured shortfall is a ranking question, not "
-        "an expressibility one.")
+        "ceiling — and its measured shortfall is an integration gap: the "
+        "re-use step type was never wired into the learned planner's "
+        "proposal path, featurization, or policy training, so no ranking "
+        "of it has ever been measured.")
         + table + abl_html + "</section>")
 
 

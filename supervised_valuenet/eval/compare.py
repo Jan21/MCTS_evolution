@@ -267,10 +267,16 @@ def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
     # B1 mode: candidates come from the extended vocabulary (wall-less transient
     # stoppers); failed complete plans additionally get deterministic park repairs
     # (below). Requires nets trained on B1-vocabulary labels for sensible ranking.
-    # B2 mode (implies the B1 vocabulary): supports-by-reference proposals
-    # (by_reference) plus generalized park repairs (pairwise clearing,
-    # multi-slide destinations, park cap 2). The nets have not seen
-    # by-reference candidates in training; they rank them zero-shot.
+    # B2 mode (implies the B1 vocabulary): generalized park repairs (pairwise
+    # clearing, multi-slide destinations, park cap 2). NOTE (FINDINGS 40): the
+    # AStar by_reference flag set below affects only solver._expand, which the
+    # NN loop reaches solely on the free-exact-fix branch -- _nn_astar_backward
+    # itself never injects _reference_helpers and never passes
+    # by_reference=True to _apply, and _hidx drops any candidate whose helper
+    # is not at a robot start. So by-reference candidates are structurally
+    # absent from every learned row this driver produces; the earlier claim
+    # here that "the nets rank them zero-shot" was false. The correctly wired
+    # by-reference path lives in nn/generate.py and the ceiling probe.
     if b2:
         b1 = True
     solver = AStar(propose=heuristics.propose_b1 if b1 else heuristics.propose,
