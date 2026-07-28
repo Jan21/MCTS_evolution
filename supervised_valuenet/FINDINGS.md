@@ -1406,6 +1406,52 @@ scoped fix.
    spot-verified by hand in `eval/compare.py` and `skeleton/astar.py`);
    `analysis/byref_topk_ablation.py`; FINDINGS §16/§29/§34/§36/§37/§39.
 
+41. **The corpus-effect recovery does NOT generalize: at g16r8, retraining
+   collapses the frontier under BOTH corpora, and the rich corpus makes it
+   significantly WORSE (2026-07-28, night).** The g16r8 cap-20000 Track 1
+   rows landed and certified (jobs 4599898/4599899; graded 244/244 replay
+   passes, frontier 63/63, zero failures). Alongside them, a row this log
+   never recorded: the g16r8 cap-5000 FRONTIER row has existed since 00:04
+   on 07-28 (job 4597748, `comparison_ungraded_b2retrained.json`) — §34
+   discussed only the graded leg. The full picture at 16×16 · 8 robots
+   (all cells `eval/results/stats_tests.json`, boot 10000 seed 0):
+   | set | zero-shot B2 | cap-5,000 retrain | cap-20,000 retrain | cap20k − cap5k |
+   |---|---|---|---|---|
+   | graded (266) | 262 = 98.5% | 249 = 93.6% | 244 = 91.7% | −1.9 [−4.9,+1.1], p=0.33 |
+   | frontier (184) | 163 = 88.6% | 78 = 42.4% | 63 = 34.2% | **−8.2 [−13.5,−2.8], p=0.0059** |
+   | pooled (450) | 425 = 94.4% | 327 = 72.7% | 307 = 68.2% | −4.4 [−7.1,−2.0], p=0.0037 |
+   Against forward, the cap-20000 retrained planner LOSES at this rung:
+   frontier −16.3 [−24.7,−8.0] p=0.0001, pooled −10.4 [−14.4,−6.4]
+   p<0.0001 — where the zero-shot planner wins pooled by +15.8.
+   - **What this does to §36.** §36's causal reading stands AT g16r6
+     (controlled, replicated, certified) but is now rung-local: the same
+     corpus swap that recovered 22.4 frontier points at g16r6 subtracts a
+     significant 8.2 at g16r8. §34's alternative hypothesis — "the fault
+     lies in the retraining recipe rather than the data, and that is a
+     different and larger problem" — is confirmed at g16r8: retraining
+     per se destroys frontier competence there (−46 to −54 points), with
+     the corpus a second-order modifier of either sign.
+   - **Mechanism note, via §40.** By-reference candidates never appear at
+     eval, so none of this can be about the new step type's usage. The
+     retrained arms are indecisive everywhere at the frontier: 902 (cap20k)
+     and 796 (cap5k) mean expansions per instance against 183 zero-shot —
+     broad value/policy mis-ranking, not a missing word. Note the g16r8
+     retrained arms descend from the per-config lineage while zero-shot
+     uses the base-B1 pair; §29 sized that lineage gap at only +3.8 on
+     this exact set, so lineage cannot explain −46.
+   - **Publication stance.** No retrained row is the headline backward arm
+     at 16×16 · 8r; zero-shot B2 remains the planner's best measured
+     configuration there (as §34 already ruled for cap-5000 rows). The
+     report renders the retrained cells honestly in their own tables.
+   - **What adjudicates.** Base, g24r8 and g32r4 cap-20000 retrains are
+     in flight tonight; their rows decide whether g16r6 (recovery) or
+     g16r8 (collapse) is the outlier. If retraining damages the frontier
+     at most rungs, the campaign's "retrain everywhere and publish
+     retrained rows" plan dies, and the paper's retraining section becomes
+     a negative result about imitation-retraining on self-generated
+     subgoal labels at scale — with the g16r6 corpus experiment as the
+     one controlled positive.
+
 ## Still open
 
 - **Integrating the by-reference step type into the learned planner**

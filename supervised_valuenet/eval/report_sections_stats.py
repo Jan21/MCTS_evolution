@@ -214,14 +214,21 @@ def _retrained_block(cells):
         "<th class='num'>difference, points [95% CI]</th>"
         "<th class='num'>p (McNemar)</th></tr></thead><tbody>"
         + "".join(body) + "</tbody></table>")
-    return ("<h3>With properly retrained networks</h3>"
-            "<p>The zero-shot rows above rank the newest step type with "
-            "networks that never saw it in training. These rows are the "
-            "planner after retraining on the regenerated (cap-20,000) "
-            "label corpus — the one that carries the new step type at its "
-            "natural rate. Rows retrained on the earlier depleted corpus "
-            "are a separate arm, shown in the label-budget experiment "
-            "below, never here.</p>" + table)
+    return ("<h3>After retraining on the regenerated corpus</h3>"
+            "<p>These rows are the planner after retraining on the "
+            "regenerated (cap-20,000) label corpus. Rows retrained on the "
+            "earlier depleted corpus are a separate arm, shown in the "
+            "label-budget experiment below, never here. Read the signs: "
+            "retraining is not uniformly an upgrade — at 16×16 · 6 robots "
+            "the retrained planner matches its zero-shot predecessor, "
+            "while at 16×16 · 8 robots retraining damages the "
+            "beyond-oracle set severely under either corpus (see the "
+            "label-budget section) and the zero-shot planner remains the "
+            "best measured backward configuration there. The whole-pool "
+            "headline above is therefore the zero-shot planner's; these "
+            "rows measure what imitation-retraining on self-generated "
+            "subgoal labels currently delivers, favourable or not.</p>"
+            + table)
 
 
 # ---------------------------------------------------------------------------
@@ -302,7 +309,18 @@ def _corpus_block(cells, D):
             "ranking.) A data-generation setting chosen for throughput "
             "masqueraded as a method failure, and it passed every "
             "record-count QC gate; only this controlled comparison "
-            "exposed it.</p>" + table)
+            "exposed it.</p>"
+            "<p><b>The effect is rung-heterogeneous, and the table must "
+            "be read with that.</b> At 16×16 · 6 robots the richer corpus "
+            "recovers the beyond-oracle collapse almost entirely; at "
+            "16×16 · 8 robots retraining collapses the beyond-oracle set "
+            "under BOTH corpora and the richer corpus is significantly "
+            "worse, not better — there the pathology is the retraining "
+            "itself (the retrained nets burn ~5× the search steps of "
+            "their zero-shot predecessor on the same puzzles), with the "
+            "corpus a second-order modifier. The rows landing from the "
+            "remaining rungs decide which pattern is the rule.</p>"
+            + table)
 
 
 # ---------------------------------------------------------------------------
