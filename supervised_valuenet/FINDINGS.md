@@ -1172,6 +1172,54 @@ scoped fix.
    against `comparison{_b2retrained,_ungraded_b2retrained}.json` and
    `comparison{_b2,_ungraded_b2}.json`.
 
+37. **B1 was only ever measured at two scales, the retired bundle adds
+   nothing — and at fixed nets B2 buys the LEARNED planner almost nothing over
+   B1 (2026-07-28).** Prompted by the question of whether the retired
+   `karolina_bundle/` held B1 rows the live repo lacks, a full read-only audit
+   of both trees: the bundle's `supervised_valuenet/` is a **strict subset** of
+   the live repo — 794 files vs 1640, **zero bundle-only files** of substance,
+   several payload files sharing an inode with live (hardlinks, not an
+   independent copy). Its git history confirms the only B1 result paths ever
+   touched are g16r6's. So:
+   - **The B1 arm exists at base (bench450) and g16r6 only.** There are no B1
+     rows, labels or checkpoints for g16r8, g24r4, g24r8 or g32r4 anywhere,
+     and none were ever generated. Documented here so the absence is a
+     recorded fact rather than an open question.
+   - **No per-config B1 network was ever trained.** All three B1 result files
+     record `checkpoints_backward/{policy,value}_b1.ckpt` — the base pair —
+     so the g16r6 B1 row is base-trained nets applied to 6-robot boards.
+   - **The bundle is safe to delete** on the evidence (nothing unique but two
+     stdout logs of probes whose JSON outputs are already in the repo). The
+     owner's standing question can be answered yes; this entry is the audit.
+
+   **The finding that matters more.** Because the g16r6 B1 and B2 rows use the
+   SAME base-B1 net pair, B1-vs-B2 there is a clean language comparison at
+   fixed networks — and B2 barely moves the learned planner:
+   | set | old | B1 | B2 zero-shot | B2 retrained (cap-20k) | old→B1 | B1→B2 |
+   |---|---|---|---|---|---|---|
+   | base 450 | 401 | 429 | 430 | 433 | **+28** | +1 / +4 |
+   | g16r6 graded (316) | 275 | 304 | 306 | 310 | **+29** | +2 / +6 |
+   | g16r6 frontier (134) | 70 | 108 | 108 | 105 | **+38** | **0 / −3** |
+   Essentially the whole measured language gain is **B1**. B2 adds +1 to +6
+   puzzles on graded sets and **nothing at the frontier** — zero zero-shot, −3
+   after proper retraining. This is not a contradiction of §16: B2 genuinely
+   lifts the CEILING from 97.6% to 99.6% at base, i.e. what a plan can
+   *express*. What §16 and the Verdict should not be read as claiming is that
+   the trained planner realises it. It does not, on any set measured, even
+   with a corpus that contains by-reference candidates at their natural rate.
+   **How the paper should say it:** the executable-language story is carried by
+   B1; B2 is a ceiling result plus a demonstration that the remaining gap is
+   ranking, not expressibility. Presenting B2 as the headline lift would
+   overstate what the learned system does with it.
+   **What would change this:** B2's by-reference candidates may need more than
+   a corpus rate — the retrained g16r6 net had 11.0% of them and still gained
+   nothing at the frontier. A ranking-side ablation (does the net ever place a
+   by-reference candidate in its top-k?) would say whether the vocabulary is
+   unused or used and unhelpful. That is cheap and unrun.
+   Source: read-only audit of `/scratch/project/open-37-42/petrhyner/karolina_bundle`
+   against the live tree; rows from `eval/results/final450_backward_{prefix,b1,b2,b2_retrained}.json`
+   and `scaling/results/g16r6/comparison{,_b1,_b2,_b2retrained_cap20000}{,_ungraded}.json`.
+
 ## Still open
 
 - Retraining the backward networks on the extended (B2) vocabulary — the
