@@ -1249,6 +1249,94 @@ scoped fix.
    rule adopted from it is that a completion marker must be gated on the thing
    it claims, never on a file existing or a prior stage's exit being ignored.
 
+39. **Successor audit (2026-07-28, late): §37's table has a mislabeled cell
+   and a confounded column; the B1-carries-the-gain conclusion survives both,
+   with corrected numbers (independently re-derived).** A fresh session
+   treated the 2026-07-28 handoff as claims to verify, not orders. Two
+   parallel re-audits of §37's sources (every count re-derived from the
+   result JSONs; checkpoint paths read out of `protocol`, and the base pair
+   md5-matched to its run dir):
+   - **The base "B2 retrained (cap-20k) = 433" cell is not a cap-20k run.**
+     `final450_backward_b2_retrained.json` records
+     `checkpoints_backward/{policy,value}_b2.ckpt`, which are byte-identical
+     to the ckpts in `scaling/runs/g16r4/backward-{policy,value}-b2/` — the
+     **unsuffixed, cap-5000** run dirs. No base cap-20000 retrain had ever
+     run (its corpus finished merging only tonight). The number is real but
+     belongs in the cap-5000 column; §34 always said so (base 7.1% by-ref,
+     +0.7). The genuine base cap-20k cell lands with the current pipeline.
+   - **§37's "old" column mixes provenances.** At g16r6 it uses the
+     per-config old-vocabulary nets (275 graded / 70 frontier) while the B1
+     and B2 columns use the base-B1 pair — §29 already measured that nets
+     difference (+7 graded / +10 frontier, favouring base nets). It also
+     mixes search variants (`--backward-prefix-check` in the base-450 and
+     g16r6-frontier old rows vs `--backward-anytime` elsewhere; at base both
+     variants happen to give 401). The clean fixed-nets, fixed-variant
+     language series at g16r6 is `comparison{,_ungraded}_basenets_oldvocab`
+     → B1 → B2: **graded 282 → 304 → 306, frontier 80 → 108 → 108**. So the
+     language gain old→B1 is **+22/+28** (not +29/+38), and B1→B2 stays
+     +2/0. The qualitative §37 conclusion — essentially the whole executable
+     language gain is B1; B2 is ceiling plus a ranking question — is
+     **confirmed** on the corrected decomposition. The paper table must be
+     built from the fixed-nets rows, and base old→B1 must be flagged as
+     nets+language (no base fixed-nets old row exists).
+   - Everything else in §37's table re-derives exactly (all 10 other cells
+     MATCH; shas, budget 1200, k=5 identical across compared columns;
+     aggregate vs row-level counts agree in every file).
+
+   **Same-night pipeline triage, same silent-success class as §38.** Found
+   live and defused: (a) the v1 unattended driver gated "retrain done" on a
+   checkpoint FILE existing — Lightning writes those minutes into training —
+   and had already banked g16r8 mid-training at 11:11 (manifest pointed at
+   `epoch=1-step=4166.ckpt`, later deleted by save_top_k; re-banked after
+   the retrain's sacct COMPLETED, value = epoch=25). Driver killed by PID,
+   replaced by `jobs/patterns/pipeline_driver_v2.sh`, which gates every
+   transition on `sacct` COMPLETED of a recorded job id. (b) Job 4599039 was
+   evaluating g32r4's frontier against **half-trained** cap-5000 checkpoints
+   (value at epoch 3 of a retrain still running) because the older
+   track1_driver gated on a stale job id; cancelled, chunk dir deleted — its
+   output would have landed on the default (cap-5000) filename and read as a
+   real contrast row. (c) Four requeued-held Track 1 lanes with dead
+   submission environments cancelled; g16r8's resubmitted clean (jobs
+   4599898/4599899).
+
+   **Successor judgments on the handoff's contested calls** (owner asked for
+   explicit agreement/disagreement):
+   - *Corpus regeneration at ~50 nh*: **agree** — §36 is decisive and
+     publishing deficient-corpus rows was never an option; the spend was
+     already sunk and mostly complete tonight.
+   - *Pooled union as headline*: **agree** — the frontier set is defined by
+     oracle failure and is adversarial to forward by construction; the
+     union needs no selection argument. Frontier stays as the mechanism
+     panel, budget caveats attached (§28/§31/§35 scoping).
+   - *Withholding cap-5000 retrained rows*: **agree for headline slots,
+     disagree with leaving them unused** — they are the contrast arm of the
+     study's best experiment (§36) and exist at g16r6, g16r8 (§34) and
+     g24r8; the g32r4 pair completes tonight if its retrain survives
+     walltime. The report should carry a corpus-effect section with the
+     cap-5000 vs cap-20000 pairs at every rung that has both: a measured
+     dose-response of planner quality on label-generation budget is
+     publishable methods content, not an embarrassment to hide.
+   - *B1-vs-B2 reframe*: **agree**, on the corrected numbers above.
+   - *kSubS-style learned-subgoal baseline*: **agree it is the referee's
+     strongest structural objection, disagree that it blocks this campaign**
+     — it is a different training paradigm, a project on its own, and the
+     within-study contrasts (language, corpus, budget, scale) are the
+     contribution. Scope the novelty claim; list it as future work.
+   - *Seed study*: design defect confirmed (cold value net where production
+     warm-starts — a spread measured on a recipe the study does not use);
+     **rewritten** to mirror `b2_retrain_one.slurm` exactly, varying only
+     `--torch-seed` on both trainings. Seeds 21/37/53 at g16r6/cap20000
+     submitted (jobs 4599909–11, ~2.1 nh) with a COMPLETED-gated
+     follow-through watcher for their Track 1 rows. Forward stays
+     single-seed at scale; base forward's best-of-4 spread is the
+     forward-side seed evidence and the asymmetry must be stated.
+   - *g24r4's missing rung*: the cancelled sequential lane was unrunnable
+     (51–90 h vs 16 h cap), but the fix was structural, not scientific:
+     chunked 8-wide lanes (`jobs/patterns/g24r4_rows.slurm`, protocol and
+     per-config-net convention identical to the g24r8/g32r4 zero-shot B2
+     rows) submitted for both sets (jobs 4599924/4599925, ~2 nh). This
+     completes the 6-rung ladder for the headline table.
+
 ## Still open
 
 - Retraining the backward networks on the extended (B2) vocabulary — the
