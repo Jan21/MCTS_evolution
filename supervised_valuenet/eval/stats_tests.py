@@ -49,6 +49,11 @@ BASE_SYSTEMS = {
     "bwd_b1": ("final450_backward_b1.json", "backward"),
     "bwd_b2": ("final450_backward_b2.json", "backward"),
     "bwd_retrained": ("final450_backward_b2_retrained.json", "backward"),
+    # The genuine base cap-20000 row (lands with the 2026-07-28 regeneration
+    # pipeline; FINDINGS 39: the unsuffixed file above is the CAP-5000 arm,
+    # despite what §37's table column briefly claimed).
+    "bwd_retrained_cap20k":
+        ("final450_backward_b2_retrained_cap20000.json", "backward"),
     # "forward:best" mirrors eval/report_data.py: the base forward cell is the
     # BEST forward system in the file (candidate_scored.ckpt, 450/450), not the
     # first one listed (best.ckpt, 381/450). Comparing against anything weaker
