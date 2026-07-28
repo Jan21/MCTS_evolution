@@ -60,7 +60,10 @@ unset RR_GRID RR_ROBOTS RR_WALLS RR_ENV_DIR
 # is keyed by CONFIG, and the base config is g16r4. Job 4597369 died on
 # this mismatch ("no banked entry for base"), so map it explicitly.
 MKEY="$CFG"; [ "$CFG" = base ] && MKEY=g16r4
-MANIFEST=scaling/runs/b2_banked.json
+# $BANK_MANIFEST lets a lane run against an alternate banking manifest (e.g.
+# the cap-20000 corpus) without disturbing the production one. Combined with
+# the checkpoint-keyed chunk directory, the two corpora's rows cannot mix.
+MANIFEST="${BANK_MANIFEST:-scaling/runs/b2_banked.json}"
 [ -s "$MANIFEST" ] || { echo "FATAL: $MANIFEST missing -- bank the nets first"; exit 1; }
 read -r BP BV < <(python3 -c "
 import json,sys
@@ -95,6 +98,17 @@ case "$CFG" in
          fi ;;
 esac
 [ -s "$INST" ] || { echo "FATAL: instances missing: $INST"; exit 1; }
+# An alternate banking manifest means an alternate CORPUS, so its rows must not
+# land on the production filenames -- otherwise the resume gate sees the
+# cap-5000 row already sitting at $OUT, prints DONE and the comparison silently
+# never runs. Derive a suffix from the manifest name.
+if [ -n "${BANK_MANIFEST:-}" ]; then
+  TAG=$(basename "$BANK_MANIFEST" .json); TAG="${TAG#b2_banked_}"
+  if [ "$TAG" != "b2_banked" ]; then
+    OUT="${OUT%.json}_${TAG}.json"
+    echo "[track1] alternate corpus '$TAG' -> $OUT"
+  fi
+fi
 # A walltime kill during the merge (merge_compare_shards.py writes in place)
 # can leave truncated JSON. Accept an existing output only if it parses AND has
 # the expected row count, otherwise redo the merge.

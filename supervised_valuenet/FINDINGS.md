@@ -1104,6 +1104,33 @@ scoped fix.
    Sources: `scaling/results/g16r{6,8}/comparison{_b2retrained,_ungraded_b2retrained}.json`,
    `eval/results/final450_backward_b2_retrained.json`, `eval/results/stats_tests.json`.
 
+35. **The last budget probe lands, and it partially restores the collapse claim
+   — at 32×32 the move-level planner really has stopped working (2026-07-28).**
+   §31 concluded from the 24×24/8 probe that budget-sensitivity was general and
+   the "not a cap artifact" claim should be retired everywhere. The 32×32 probe
+   (job 4596461, completed) shows that was one rung too sweeping. All four
+   probes, each on its rung's own seeded frontier subsample, backward always at
+   the standard 1,200 budget:
+   | rung | fwd @1200 | fwd @4×–5× | climb | bwd @1200 | bwd − fwd @probe |
+   |---|---|---|---|---|---|
+   | 16×16 · 6r | 40.6% | 62.5% | +21.9 | 71.9% | +9.4, p = 0.58 |
+   | 16×16 · 8r | 43.8% | 75.0% | +31.2 | 93.8% | +18.8, p = 0.070 |
+   | 24×24 · 8r | 15.6% | 28.1% | +12.5 | 46.9% | +18.8, p = 0.146 |
+   | **32×32 · 4r** | **0/24 = 0.0%** | **1/24 = 4.2%** | **+4.2** | 50.0% | **+45.8, p = 0.0010** |
+   At 32×32 four times the budget buys **one puzzle out of twenty-four**, mean
+   expansions used 4,733 of 4,800 — the search is still saturating, it simply
+   has nowhere to go. The backward planner's lead is the only one of the four
+   that remains significant against an opponent given 4× the search.
+   **The corrected claim, which is narrower than the original and wider than
+   §31's retraction:** budget-sensitivity is large on the robot axis and at
+   24×24, so no frontier margin at those rungs may be described as a collapse —
+   §31 stands there. At the largest grid scale the collapse is real and
+   survives the control. The general sentence "beyond the oracle the move-level
+   formulation has effectively stopped working" is supportable **only for
+   32×32**, and must be scoped to it rather than asserted across the ladder.
+   Source: `eval/results/budget_probe_summary.json` (regenerated with all four
+   probes by `eval/budget_probe_summary.py`).
+
 ## Still open
 
 - Retraining the backward networks on the extended (B2) vocabulary — the

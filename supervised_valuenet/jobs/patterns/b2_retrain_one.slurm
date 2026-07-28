@@ -68,7 +68,15 @@ case "$CFG" in
     VBATCH="--batch-size 4 --max-per-group 16"; PBATCH="--batch-size 8" ;;
   g32r4)
     WARM="scaling/runs/g32r4/backward-value/lightning_logs/version_1/checkpoints/epoch=15-step=52528.ckpt"
-    VBINS="--num-classes 96"
+    # NO --num-classes 96. The handoff recipe asked for 96 bins here, but every
+    # available warm-start is 50-class, so the two are incompatible: the
+    # 2026-07-27 run died with "size mismatch for head.4.bias: 50 vs 96" and
+    # left this config with a policy net and no value net. Measured from the
+    # actual labels, 50 bins truncate 64 of 176,593 records (0.036%, max cost
+    # 71), while going cold to get 96 bins would forfeit the warm-start that
+    # guards against the documented cold-value seed instability. Keeping the
+    # warm-start and accepting 0.036% truncation is the better trade.
+    VBINS=""
     VBATCH="--batch-size 2 --max-per-group 8"; PBATCH="--batch-size 16" ;;
   *) echo "unknown config $CFG"; exit 1 ;;
 esac
@@ -77,12 +85,21 @@ echo "[b2rt $CFG] proposal net, cold"
 python3 -m scaling.train --config "$CFG" --system backward-policy \
     --run-dir "scaling/runs/$CFG/backward-policy-b2$SUFFIX" $LOWLR \
     -- --data "$DATA" --epochs $PEPOCHS $PBATCH
-echo "[b2rt $CFG] policy done ($?)"
+PRC=$?
+echo "[b2rt $CFG] policy done ($PRC)"
 
 echo "[b2rt $CFG] value net, warm-started from $WARM"
 python3 -m scaling.train --config "$CFG" --system backward-value \
     --run-dir "scaling/runs/$CFG/backward-value-b2$SUFFIX" $LOWLR $VBINS \
     --warm-start "$WARM" --torch-seed 11 \
     -- --data "$DATA" --epochs $VEPOCHS --warmup 0 $VBATCH
-echo "[b2rt $CFG] value done ($?)"
+VRC=$?
+echo "[b2rt $CFG] value done ($VRC)"
+if [ "$PRC" -ne 0 ] || [ "$VRC" -ne 0 ]; then
+  # Do NOT print the grep-able DONE marker over a failed stage. The 2026-07-27
+  # g32r4 run exited 1 on the value net and still announced DONE, so the
+  # failure was only noticed when a downstream lane could not find the net.
+  echo "B2RETRAIN $CFG FAILED policy_rc=$PRC value_rc=$VRC"
+  exit 1
+fi
 echo "B2RETRAIN $CFG DONE"
