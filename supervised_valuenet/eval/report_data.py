@@ -422,6 +422,10 @@ def worked_example(probe_rows, want_idx=333):
 def collect():
     D = {}
 
+    # by-reference share of every merged B2 label corpus (the dose in the
+    # label-budget dose-response; analysis/byref_shares.py)
+    D["byref_shares"] = load_json("analysis/artifacts/byref_shares.json")
+
     # ---- base scale (16×16, 4 robots) ------------------------------------
     D["fwd450"] = load_json("eval/results/comparison_forward.json")
     D["bwd_before"] = load_json("eval/results/comparison_backward.json")

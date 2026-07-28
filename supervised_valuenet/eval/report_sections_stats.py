@@ -228,7 +228,7 @@ def _retrained_block(cells):
 # 1c. The label-budget experiment (FINDINGS 34/36)
 # ---------------------------------------------------------------------------
 
-def _corpus_block(cells):
+def _corpus_block(cells, D):
     pair = [c for c in cells if c.get("a") == "bwd_retrained_cap20k"
             and c.get("b") == "bwd_retrained"]
     if not pair:
@@ -237,13 +237,33 @@ def _corpus_block(cells):
             "same configuration) are not in eval/results/stats_tests.json "
             "yet — this table renders automatically when both arms of a "
             "rung exist"))
+    shares = D.get("byref_shares") or {}
+    SHARES_SRC = "analysis/artifacts/byref_shares.json"
+
+    def dose(rung):
+        hi = (shares.get(f"{rung}.cap20000") or {}).get("share_pct")
+        lo = (shares.get(f"{rung}.cap5000") or {}).get("share_pct")
+        if hi is None or lo is None:
+            return ""
+        return ('<div class="cellnote">labels '
+                + ck(f"{hi}%", SHARES_SRC,
+                     f"byref share {rung} cap20000", raw=hi)
+                + " vs "
+                + ck(f"{lo}%", SHARES_SRC,
+                     f"byref share {rung} cap5000", raw=lo)
+                + " by-reference</div>")
+
     body = []
+    seen_rungs = set()
     for c in pair:
         d = f'corpus {c["rung"]} {c["set"]}'
+        first = c["rung"] not in seen_rungs
+        seen_rungs.add(c["rung"])
         body.append(
             f'<tr><td><b>{esc(_rlabel(c["rung"]))}</b>'
             f'<div class="cellnote">{esc(_slabel(c["set"]))} — '
-            f'{c["n"]} puzzles</div></td>'
+            f'{c["n"]} puzzles</div>'
+            + (dose(c["rung"]) if first else "") + '</td>'
             '<td class="num">'
             + ck(f'{c["solved_a"]}/{c["n"]}', SRC, d + " — cap20k solved",
                  raw=c["solved_a"])
@@ -466,7 +486,7 @@ def sec_significance(D):
     return (head + method_html
             + _pooled_block(cells, method)
             + _retrained_block(cells)
-            + _corpus_block(cells)
+            + _corpus_block(cells, D)
             + _nonsig_block(cells)
             + _twobytwo_block(cells)
             + "</section>")
