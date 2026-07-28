@@ -1154,6 +1154,97 @@ def sec_lang_b2(D):
     return html
 
 
+def sec_lang_attribution(D):
+    """Which extension carries the gain -- the fixed-nets decomposition.
+
+    The counts here were independently re-derived from the result JSONs on
+    2026-07-28 (FINDINGS 39): the honest "old" comparator at g16r6 is the
+    base-nets/old-vocabulary control (fixed networks), not the per-config
+    row -- using the latter would fold a +7/+10 net-provenance effect into
+    the B1 language gain.
+    """
+    st = D.get("stats_tests") or {}
+    SRC = "eval/results/stats_tests.json"
+    cells = {(c.get("rung"), c.get("set"), c.get("a"), c.get("b")): c
+             for c in (st.get("cells") or []) if "skipped" not in c}
+
+    def fixed_old(rung, set_):
+        c = cells.get((rung, set_, "bwd_b2", "bwd_basenets_old"))
+        return (c or {}).get("solved_b"), (c or {}).get("n")
+
+    lad = {e["key"]: e for e in D.get("ladder", [])}
+
+    def slot_solved(rung, set_, slot):
+        cell = ((lad.get(rung) or {}).get(set_) or {}).get(slot)
+        if not cell:
+            return None, None, None
+        return cell["agg"]["solved"], cell["agg"]["n"], cell["src"]
+
+    rows = []
+    # base: no fixed-nets old row exists; the old row is old-vocabulary NETS
+    # as well as language, and the note says so.
+    a_old = bwd_agg(D.get("bwd_prefix"))
+    a_b1 = bwd_agg(D.get("bwd_b1"))
+    a_b2 = bwd_agg(D.get("bwd_b2"))
+    if a_old and a_b1 and a_b2:
+        rows.append((
+            "base 450",
+            ck(str(a_old["solved"]), "eval/results/final450_backward_prefix.json",
+               "lang-attrib base old", raw=a_old["solved"])
+            + '<div class="cellnote">old nets + old language</div>',
+            ck(str(a_b1["solved"]), "eval/results/final450_backward_b1.json",
+               "lang-attrib base b1", raw=a_b1["solved"]),
+            ck(str(a_b2["solved"]), "eval/results/final450_backward_b2.json",
+               "lang-attrib base b2", raw=a_b2["solved"]),
+            "nets + language change together — no fixed-nets base control"))
+    for set_, slabel in (("graded", "gradable 316"),
+                         ("frontier", "beyond-oracle 134")):
+        old_n, n = fixed_old("g16r6", set_)
+        b1_n, _, b1_src = slot_solved("g16r6", set_, "bwd_b1")
+        b2_n, _, b2_src = slot_solved("g16r6", set_, "bwd_b2")
+        if old_n is None or b1_n is None or b2_n is None:
+            continue
+        rows.append((
+            f"16×16 · 6r, {slabel}",
+            ck(str(old_n), SRC, f"lang-attrib g16r6 {set_} fixed-old",
+               raw=old_n)
+            + '<div class="cellnote">same nets, old language</div>',
+            ck(str(b1_n), b1_src, f"lang-attrib g16r6 {set_} b1", raw=b1_n),
+            ck(str(b2_n), b2_src, f"lang-attrib g16r6 {set_} b2", raw=b2_n),
+            "all three columns: the same base-trained network pair"))
+    if not rows:
+        return ""
+    body = "".join(
+        f"<tr><td><b>{esc(r[0])}</b></td>"
+        f'<td class="num">{r[1]}</td><td class="num">{r[2]}</td>'
+        f'<td class="num">{r[3]}</td>'
+        f'<td class="small muted">{esc(r[4])}</td></tr>' for r in rows)
+    table = scroll(
+        "<table><thead><tr><th>set</th>"
+        "<th class='num'>old language</th>"
+        "<th class='num'>+ extension 1 (B1)</th>"
+        "<th class='num'>+ extension 2 (B2), zero-shot</th>"
+        "<th>provenance</th></tr></thead><tbody>" + body + "</tbody></table>")
+    abl = D.get("byref_topk_ablation")
+    abl_html = progress_tag(
+        "a ranking-side ablation — does the trained network ever place a "
+        "by-reference candidate in its top-k proposals? — distinguishes "
+        "‘vocabulary unused’ from ‘used and unhelpful’; "
+        "it renders here when analysis/artifacts/byref_topk_ablation.json "
+        "lands")
+    if abl:
+        abl_html = ""  # filled by the ablation subsection when the file lands
+    return (kicker_h2(
+        "which extension carries the gain",
+        "Nearly all of the executable-language gain is extension 1",
+        "Holding the networks fixed, the first extension moves the solve "
+        "count by tens of puzzles; adding the second moves it by 0–2. The "
+        "second extension's value is what a plan can EXPRESS — the "
+        "ceiling — and its measured shortfall is a ranking question, not "
+        "an expressibility one.")
+        + table + abl_html + "</section>")
+
+
 def sec_worked(D):
     w = D.get("worked")
     if not w:
@@ -1316,4 +1407,5 @@ def sec_lang_scale(D):
 
 def tab_language(D):
     return (sec_lang_what(D) + sec_lang_ceiling(D) + sec_lang_b1(D)
-            + sec_lang_b2(D) + sec_worked(D) + sec_lang_scale(D))
+            + sec_lang_b2(D) + sec_lang_attribution(D) + sec_worked(D)
+            + sec_lang_scale(D))
