@@ -87,6 +87,9 @@ PAIRS = [
     # the label-corpus effect at fixed nets, recipe and lineage (FINDINGS 36)
     ("bwd_retrained_cap20k", "bwd_retrained"),
     ("bwd_retrained_cap20k", "bwd_b2"),
+    # THE headline row once the corpora are regenerated: the properly retrained
+    # backward planner against the forward control.
+    ("bwd_retrained_cap20k", "fwd"),
 ]
 
 LABELS = {
