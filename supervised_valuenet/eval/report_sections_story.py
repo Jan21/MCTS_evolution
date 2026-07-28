@@ -232,8 +232,9 @@ def sec_verdict_tiles(D):
   <div class="tile"><div class="tlabel">What the extended plan language
   permits vs what today's networks reach (base benchmark)</div>
   <div class="tvalue">{v1} <span class="vs">vs</span> {v2}</div>
-  <div class="tsub">the gap is a training gap, not a design wall — networks
-  are being retrained on the extended vocabulary now.</div></div>""")
+  <div class="tsub">the gap is an integration gap, not a design wall — the
+  newest step type was never wired into the learned planner's proposal
+  path or featurization (see the plan-language tab).</div></div>""")
 
     return f'<div class="kpirow">{"".join(tiles)}</div>'
 
@@ -453,7 +454,8 @@ def sec_verdict(D):
   <p>The subgoal planner's remaining handicaps are honest and measured:
   longer solutions where no optimum exists, and a gap between what its
   extended plan language permits and what its current networks reach —
-  a training gap, with retraining in progress.</p>
+  an integration gap: the newest step type is not yet wired into the
+  learned planner's proposal path or featurization.</p>
   </div>
 """
     html += ladder_chart_frontier(D)
@@ -991,8 +993,9 @@ def ceiling_meter_fig(D):
         "solve",
         "", svg,
         "The black tick is the measured ceiling. The remaining gap between "
-        "bar and tick is a training gap: the current networks have never "
-        "seen the newest step type (they rank it zero-shot). The B2 ceiling "
+        "bar and tick is an integration gap: the search that produced the "
+        "bars cannot offer the newest step type at all — its proposal "
+        "path, featurization and policy training all predate it. The B2 ceiling "
         "conservatively counts its 2 memory-capped probes as failures; "
         "nothing is proven impossible anymore.",
         "analysis/artifacts/ceiling_probe_results*.json · "

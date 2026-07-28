@@ -380,7 +380,9 @@ def _detail_rows(e, group):
         "bwd_b1": ("Subgoals — extended language (B1), retrained", "bwd",
                    "wall-less stoppers + step-asides; retrained networks"),
         "bwd_b2": ("Subgoals — full language (B2), same networks", "bwd",
-                   "adds re-use of placed robots; zero-shot ranking"),
+                   "generalized repairs live; the re-use step type is not "
+                   "reachable by the learned proposal path (plan-language "
+                   "tab)"),
         "fwd": ("Move-by-move", "fwd", ""),
     }
     rows = []
@@ -450,10 +452,13 @@ def sec_open(D):
     return kicker_h2(
         "still open", "What is running and what is next") + """
   <ul>
-    <li><b>Retraining on the full (B2) vocabulary</b> — closing the measured
-    gap between what the language permits and what zero-shot ranking
-    reaches. Every “in progress” row on this page fills automatically when
-    its result file lands.</li>
+    <li><b>Corpus-correct retrains</b> (running; every “in progress” row on
+    this page fills automatically when its result file lands) — and, next,
+    <b>integrating the re-use step type into the learned planner</b>
+    (helper featurization that can name non-start cells, a policy retrain
+    without the silent record filter, and the proposal-path wiring); the
+    measured candidate supply and the ceiling headroom are in the
+    plan-language tab.</li>
     <li><b>Quality-focused self-play on the extended stack</b> — frontier
     solutions run long (no optima exist there); self-play with a quality
     pressure is the scoped follow-up.</li>

@@ -1408,12 +1408,19 @@ scoped fix.
 
 ## Still open
 
-- Retraining the backward networks on the extended (B2) vocabulary — the
-  measured gap between what the language permits (99.6% base ceiling) and what
-  unretrained ranking achieves (95.6% base; small zero-shot gains at scale)
-  — plus quality-focused self-play on the extended stack (frontier solution
-  length). Requires teaching `rust_datagen` the extended vocabulary first
-  (labels at 24×24/32×32 are impractical in Python).
+- **Integrating the by-reference step type into the learned planner**
+  (FINDINGS 40) — the gap between the 99.6% ceiling and the learned rows is
+  an integration gap, not a ranking one: it needs (a) a helper-identity
+  featurization that can name non-start cells (`eval/end2end.py::_hidx`),
+  (b) a policy retrain without `train/policy_common.py`'s silent
+  by-reference record filter, and (c) the ~5-line proposal-path wiring in
+  `eval/compare.py::_nn_astar_backward` that `nn/generate.py` already has.
+  The corpora already carry the labels (10.4–11.0% by-reference); the
+  candidate supply at eval is measured (job 4599947).
+- Corpus-correct (cap-20000) retrains + Track 1 rows: g16r6 and g16r8 done;
+  base, g24r8, g32r4 in flight 2026-07-28 night (pipeline_driver_v2).
+- Quality-focused self-play on the extended stack (frontier solution
+  length).
 - Deciding the 2 frontier-bound base probe instances (idx 405, 427) via a
   memory-shaped (depth-bounded) probe; `validate_plan.py` and the `park`
   node type.
