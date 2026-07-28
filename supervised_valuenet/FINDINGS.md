@@ -1459,6 +1459,20 @@ scoped fix.
      subgoal labels at scale — with the g16r6 corpus experiment as the
      one controlled positive.
 
+42. **The g32r4 cap-5000 contrast arm is dropped (2026-07-29, 00:36).** Job
+   4598168 (the deficient-corpus retrain finish_rest.sh launched at 08:36)
+   hit its 16 h walltime with the policy stage complete (rc 0, best
+   epoch=11-step=9012) but the value net at epoch 3 of 30. Its
+   mid-training best checkpoint is quarantined
+   (`epoch=3-step=24452.ckpt.MIDTRAINING_TIMEOUT` + README in the run
+   dir) so no default-mode `bank_b2` glob can ever bank it — that exact
+   ckpt is the one the stray lane §39(b) was caught evaluating. Redoing
+   the value stage would cost ~10–12 h (~1.4 nh) for a fourth-priority
+   arm: after §41, the adjudicating rows are the CAP-20000 retrains
+   (g32r4's is in flight), and the corpus dose-response table already
+   gets both arms at four rungs (base, g16r6, g16r8, g24r8). Dropped as
+   uneconomical; the paper's corpus table simply has no g32r4 row.
+
 ## Still open
 
 - **Integrating the by-reference step type into the learned planner**
