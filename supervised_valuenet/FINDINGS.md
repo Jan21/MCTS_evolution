@@ -1581,6 +1581,22 @@ scoped fix.
    set with no frontier) are in `eval/results/stats_tests.json` and the
    report.
 
+   **Seed record for the paper (owner request, 2026-07-29).** Exact
+   seeds, so the methods section never has to reverse-engineer them:
+   - Production retrains (`b2_retrain_one.slurm`, every config): policy
+     net **unseeded** (torch default state — a reproducibility caveat to
+     state), value net `--torch-seed 11`.
+   - Seed study (`seed_study.slurm`, g16r6 cap-20000 pair retrains):
+     torch seeds **21, 37, 53** on BOTH nets; benchmark rows
+     `scaling/results/g16r6/comparison{,_ungraded}_b2retrained_cap20000_seed{21,37,53}.json`.
+   - Mode probes (value-only): g16r8 cap-20000 seeds **21, 37** (jobs
+     4601590/4601591), g16r6 cap-5000 seeds **21, 37** (jobs
+     4601592/4601593), run dirs `backward-value-b2*-vmode{21,37}`.
+   - Machine-readable summaries: `analysis/artifacts/seed_spread.json`
+     (per-seed solved counts), `analysis/artifacts/valnet_modes.json`
+     (per-run best val_regret); every per-seed result JSON carries its
+     checkpoints and instance shas in `protocol`.
+
 ## Still open
 
 - **Integrating the by-reference step type into the learned planner**
