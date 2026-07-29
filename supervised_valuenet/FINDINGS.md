@@ -1511,6 +1511,76 @@ scoped fix.
    With save_last in place the class is closed: a walltime kill now costs
    one resume link, not a retrain.
 
+44. **UNIFYING RESULT: value-net retraining is bistable; the mode — not the
+   corpus — separates every frontier recovery from every collapse, and the
+   mode is readable from val_regret at selection time (2026-07-29).** The
+   seed study landed, all six lanes replay-certified (zero failures). The
+   g16r6 cap-20000 retrain repeated under four torch seeds (production=11,
+   plus 21/37/53; identical recipe, warm-start, corpus):
+   | seed | value best val_regret | graded (316) | frontier (134) |
+   |---|---|---|---|
+   | 11 (production) | 0.744 | 310 | 105 = 78.4% |
+   | 21 | 0.800 | 311 | 102 = 76.1% |
+   | 37 | 2.336 | 298 | 69 = 51.5% |
+   | 53 | 2.336 | 293 | 67 = 50.0% |
+   Frontier spread **38 puzzles (28.4 points)**, and it is not a spread but
+   a **bimodality**: two seeds land near 78%, two near 50%. The policy
+   nets are indistinguishable across all four (val_regret 0.68–0.72) —
+   the mode lives entirely in the warm-started value net, whose val_regret
+   separates the basins by a factor of 3 **on the same validation split,
+   before any benchmarking**. → `analysis/artifacts/seed_spread.json`,
+   `analysis/artifacts/valnet_modes.json`.
+
+   **The mode maps one-to-one onto every retrained frontier row this
+   study has produced:**
+   | run | val_regret | frontier |
+   |---|---|---|
+   | g16r6 cap-20000 seeds 11/21 | 0.74 / 0.80 | 78.4% / 76.1% (recovered) |
+   | g16r6 cap-20000 seeds 37/53 | 2.34 / 2.34 | 51.5% / 50.0% (collapsed) |
+   | g16r6 cap-5,000 (seed 11) | 2.515 | 56.0% (collapsed — §34) |
+   | g16r8 cap-5,000 | 2.294 | 42.4% (collapsed — §41) |
+   | g16r8 cap-20,000 | 2.145 | 34.2% (collapsed — §41) |
+
+   **What this does to the standing entries.**
+   - **§36 ("DECISIVE: the corpus") is over-claimed.** Its two arms differ
+     by corpus at fixed seed — but the seed study shows the same
+     good↔bad flip occurs at FIXED corpus with only the seed changed, at
+     ~50% rate. With one draw per arm, "+22.4 from the corpus" and "a
+     lucky mode assignment" are observationally identical. What §36 still
+     shows: the mode is the mediator, and the recovery is achievable.
+     Whether corpus richness shifts the mode's PROBABILITY is open —
+     being tested now by two extra cap-5000 value seeds (jobs
+     4601592/4601593; if the depleted corpus also has a ~50% good rate,
+     the frontier corpus effect largely evaporates; if it is consistently
+     bad, §36's direction survives as a mode-odds effect).
+   - **§41's "g16r8 rung pathology" dissolves into two bad draws.** Both
+     g16r8 arms have bad-mode val_regret. Two extra g16r8 cap-20000
+     value seeds (jobs 4601590/4601591) test whether a good-mode draw
+     exists; if yes, banking best-by-val and rerunning its rows likely
+     flips the g16r8 retrained row from collapse to recovery.
+   - **§34's dose-response ordering** (damage tracks by-reference share)
+     was substantially mode-assignment coincidence.
+   - **The zero-shot headline is untouched** (no retraining involved),
+     and gains a stronger justification: retraining as currently
+     recipe'd is a coin flip at the frontier, so the zero-shot rows'
+     status as the planner's best measured configuration is not an
+     accident of laziness but the honest current state of the method.
+   - **Salvageable procedure, pre-stated:** train k value seeds, bank the
+     lowest val_regret (comparable within config+corpus — the §33b
+     objection does not apply within a split), then benchmark ONCE. If
+     the g16r8 probe validates it, retrained rows go into the report
+     labeled "best-of-k-by-val_regret, k=3".
+   - Pipeline consequence: the g24r8/g32r4 value chains now get a mode
+     gate before any banking or Track 1 submission (g24r8's killed
+     28-epoch run sat at 2.63; no within-config good-mode reference
+     exists yet at those rungs, so their thresholds must come from their
+     own extra seeds if the first draws look suspect).
+   Cost of the four mode probes: ~2.4 nh. All seed rows and the base
+   cap-20000 row (429/450 = 95.3%, corpus effect at base −0.9 p=0.34,
+   vs zero-shot −0.2 p=1.0 — a wash, as the mode theory predicts for a
+   set with no frontier) are in `eval/results/stats_tests.json` and the
+   report.
+
 ## Still open
 
 - **Integrating the by-reference step type into the learned planner**

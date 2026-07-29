@@ -431,6 +431,8 @@ def collect():
         "analysis/artifacts/byref_topk_ablation.json")
     # seed-robustness summary (analysis/seed_spread.py; seeds 21/37/53)
     D["seed_spread"] = load_json("analysis/artifacts/seed_spread.json")
+    # value-net mode diagnostic (analysis/valnet_modes.py; FINDINGS 44)
+    D["valnet_modes"] = load_json("analysis/artifacts/valnet_modes.json")
 
     # ---- base scale (16×16, 4 robots) ------------------------------------
     D["fwd450"] = load_json("eval/results/comparison_forward.json")

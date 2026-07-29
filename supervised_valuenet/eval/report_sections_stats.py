@@ -362,6 +362,36 @@ def _seed_block(D):
         "<th>solved, per seed</th>"
         "<th class='num'>spread (max − min)</th></tr></thead><tbody>"
         + "".join(body) + "</tbody></table>")
+    modes = D.get("valnet_modes") or {}
+    VM_SRC = "analysis/artifacts/valnet_modes.json"
+    mode_html = ""
+    mode_keys = [("seed 11 (production)", "g16r6/backward-value-b2-cap20000"),
+                 ("seed 21", "g16r6/backward-value-b2-cap20000-seed21"),
+                 ("seed 37", "g16r6/backward-value-b2-cap20000-seed37"),
+                 ("seed 53", "g16r6/backward-value-b2-cap20000-seed53")]
+    if all(k in modes for _, k in mode_keys):
+        cells_ = " · ".join(
+            esc(label) + " "
+            + ck(f'{modes[k]["best_val_regret"]:.2f}', VM_SRC,
+                 f"valmode {k}", raw=modes[k]["best_val_regret"])
+            for label, k in mode_keys)
+        mode_html = (
+            "<p><b>The spread is not noise — it is a bimodality, and it "
+            "is visible before any benchmarking.</b> The four runs' "
+            "value nets separate into two basins on the SAME validation "
+            "split (best val_regret: " + cells_ + "): the two runs near "
+            "0.7–0.8 recover the beyond-oracle set (~78%), the two near "
+            "2.3 collapse to ~50%. The policy nets are indistinguishable "
+            "across all four — the mode lives in the warm-started value "
+            "net. Every collapsed retrained row elsewhere on this page "
+            "(the cap-5,000 arm here, both 16×16 · 8-robot arms) carries "
+            "a bad-mode value net by the same criterion, so single-draw "
+            "comparisons between retraining recipes or corpora are not "
+            "interpretable at the beyond-oracle set without stating the "
+            "mode. A pre-stated selection rule — train k value seeds, "
+            "bank the lowest val_regret, benchmark once — turns "
+            "retraining from a coin flip into a procedure; its "
+            "out-of-config validation is in progress.</p>")
     return ("<h3>Seed robustness — the retrain repeated under varied "
             "seeds</h3>"
             "<p>Every margin on this page was, until this table, "
@@ -372,7 +402,7 @@ def _seed_block(D):
             "when it is large next to this spread. The forward arm "
             "remains single-seed at scale — at base it is the best of "
             "four independent trainings — and that asymmetry stands as a "
-            "limitation.</p>" + table)
+            "limitation.</p>" + table + mode_html)
 
 
 # ---------------------------------------------------------------------------
