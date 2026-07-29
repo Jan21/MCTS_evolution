@@ -327,6 +327,15 @@ def _corpus_block(cells, D):
 # 1d. Seed robustness (publishability objection 2.1)
 # ---------------------------------------------------------------------------
 
+def _vm(modes, key):
+    """A checked val_regret quote from analysis/artifacts/valnet_modes.json."""
+    v = (modes.get(key) or {}).get("best_val_regret")
+    if v is None:
+        return '<span class="muted">—</span>'
+    return ck(f"{v:.3f}", "analysis/artifacts/valnet_modes.json",
+              f"valmode {key}", raw=v)
+
+
 def _seed_block(D):
     ss = (D.get("seed_spread") or {}).get("sets") or {}
     SS_SRC = "analysis/artifacts/seed_spread.json"
@@ -388,10 +397,23 @@ def _seed_block(D):
             "a bad-mode value net by the same criterion, so single-draw "
             "comparisons between retraining recipes or corpora are not "
             "interpretable at the beyond-oracle set without stating the "
-            "mode. A pre-stated selection rule — train k value seeds, "
-            "bank the lowest val_regret, benchmark once — turns "
-            "retraining from a coin flip into a procedure; its "
-            "out-of-config validation is in progress.</p>")
+            "mode. Six additional value-only probes resolved the causal "
+            "question: on the depleted corpus the good basin was never "
+            "reached (3 of 3 seeds converge to one plateau, "
+            + _vm(modes, "g16r6/backward-value-b2-vmode37")
+            + "–" + _vm(modes, "g16r6/backward-value-b2")
+            + "), and at 16×16 · 8 robots not even the rich corpus "
+            "reaches it (3 of 3 at "
+            + _vm(modes, "g16r8/backward-value-b2-cap20000-vmode37")
+            + "–" + _vm(modes, "g16r8/backward-value-b2-cap20000")
+            + "). So the label-budget effect is real but acts by GATING "
+            "ACCESS to the good basin, and a pre-stated best-of-k-seeds "
+            "selection on val_regret can rescue retraining only where a "
+            "good basin exists — at 16×16 · 6 robots yes, at 8 robots "
+            "there is nothing to select. The counts (0/3 vs 2/4) are "
+            "too small for significance on their own; the near-zero "
+            "variance of the bad clusters across seeds is the decisive "
+            "signature.</p>")
     return ("<h3>Seed robustness — the retrain repeated under varied "
             "seeds</h3>"
             "<p>Every margin on this page was, until this table, "

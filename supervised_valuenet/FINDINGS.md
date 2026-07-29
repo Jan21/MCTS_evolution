@@ -1597,6 +1597,55 @@ scoped fix.
      (per-run best val_regret); every per-seed result JSON carries its
      checkpoints and instance shas in `protocol`.
 
+45. **Mode probes land: the corpus gates ACCESS to the good training basin
+   at g16r6, and no good basin exists at g16r8 under the current recipe —
+   so best-of-k selection can rescue retraining at 6 robots but nothing
+   can at 8 (2026-07-30).** Final census of every B2 value-net retrain's
+   best val_regret (`analysis/artifacts/valnet_modes.json`; comparable
+   only within config+corpus):
+   | config / corpus | draws (seeds) | best val_regret |
+   |---|---|---|
+   | g16r6 / cap-20,000 | 11, 21, 37, 53 | **0.744, 0.800** / 2.336, 2.336 |
+   | g16r6 / cap-5,000 | 11, 21, 37 | 2.515, 2.509, 2.507 |
+   | g16r8 / cap-20,000 | 11, 21, 37 | 2.145, 2.140, 2.140 |
+   | g16r8 / cap-5,000 | 11 | 2.294 |
+   | base / both | 11 | 0.174 / 0.247 |
+   Two signatures, and they carry the interpretation:
+   - **Bad-mode draws are nearly identical** (spreads 0.008 at
+     g16r6/cap-5000, 0.005 at g16r8/cap-20000 across different seeds):
+     the collapse is convergence to a corpus-determined degenerate
+     plateau, not noise. The good mode (0.74/0.80) is genuine learning.
+   - **The rich corpus makes the good basin reachable at g16r6 (2/4)
+     where the depleted corpus never reaches it (0/3)**; at g16r8 even
+     the rich corpus never does (0/3). Count-wise, 0/3 vs 2/4 is not
+     significant (Fisher p≈0.43) — the near-zero variance of the bad
+     clusters is the qualitatively decisive pattern, and the honest
+     phrasing is "no good-basin draw was observed in 3 attempts on the
+     depleted corpus, against 2 of 4 on the rich one".
+   **Consequences.**
+   - §36 final form: the label-budget effect is real but its mechanism
+     is basin-gating — a richer corpus turns an unreachable good basin
+     into a ~coin-flip one at g16r6. Its original "+22.4 points caused
+     by the corpus" phrasing survives as "the corpus made the recovered
+     mode reachable; the mode carries the 22.4 points".
+   - §41/§44 final form for g16r8: the collapse is a real rung effect
+     after all — three rich-corpus seeds land on one plateau — so
+     best-of-k-by-val_regret has nothing to select there and retraining
+     stays dead at 8 robots under this warm-start/recipe. (Open, not
+     pursued: cold value start, different warm source, lr, longer
+     schedules.)
+   - No Track 1 lanes for the probe nets: all four are bad-mode, and
+     benchmarking a net whose mode is already known adds nothing
+     (~1 nh saved). The g24r8/g32r4 chains continue; their draws will
+     be benchmarked as the recipe's products with their modes stated
+     (g24r8's rerun is tracking its killed sibling's trajectory —
+     2.641 vs 2.627 at matching depth — same seed, same plateau).
+   - The paper's retraining chapter, final shape: warm-started value
+     retraining is bistable; the corpus gates basin access; the basin,
+     not the corpus, carries the frontier points; at 8 robots the basin
+     is closed; the zero-shot planner remains the method's best measured
+     configuration at every rung, and every headline claim rests on it.
+
 ## Still open
 
 - **Integrating the by-reference step type into the learned planner**
