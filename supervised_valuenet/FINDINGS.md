@@ -1473,6 +1473,27 @@ scoped fix.
    gets both arms at four rungs (base, g16r6, g16r8, g24r8). Dropped as
    uneconomical; the paper's corpus table simply has no g32r4 row.
 
+43. **The pair-retrain recipe does not fit one 16 h job at the big-board
+   rungs; split and truncated, with the deviations named (2026-07-29).**
+   The g24r8 cap-20000 retrain (4599232) hit walltime with the policy done
+   and the value net at epoch 27 of 30 — best checkpoint at epoch 13,
+   unimproved for 14 straight epochs. Per the §42 rule its mid-training
+   best is quarantined, and a value-only rerun runs as job 4600942 with
+   `--epochs 28` — the walltime-forced truncation drops only the two
+   final epochs, far past the observed plateau. The queued single-job
+   g32r4 retrain was cancelled BEFORE starting (its cap-5000 sibling's
+   value stage ran ~47 min/epoch: 30 epochs ≈ 23 h alone) and split:
+   policy-only 4600943, then value-only 4600944 (afterok) with
+   `--epochs 14` — the maximum that fits 16 h after ~3 h of label
+   preprocessing. Recipe deviations, stated plainly: g24r8 value trains
+   28/30 epochs; g32r4 value trains 14/30. Supporting evidence that the
+   truncations are benign: g24r8's val plateaued at epoch 13; g32r4's
+   cap-5000 val plateaued at epoch 3. Counter-evidence to carry: g16r6's
+   value best was epoch 29 — late bests happen at 16×16 — so the g32r4
+   row must state its 14-epoch budget wherever it is quoted. Trainer
+   resume is impossible (save_top_k=1 keeps only best weights; no
+   last.ckpt), which is why truncation, not chaining. ~3.8 nh.
+
 ## Still open
 
 - **Integrating the by-reference step type into the learned planner**
