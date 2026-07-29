@@ -118,15 +118,18 @@ def candidates(cfg, system, label_set=None):
     # inferring provenance from mtimes: "" (default) is the bare -b2 dir,
     # "cap20000" is -b2-cap20000. With it set there is exactly one candidate
     # lineage, so the refusal path never has to fire.
+    # last.ckpt is trainer RESUME state (save_last=True since 2026-07-29),
+    # not a selected checkpoint -- never a banking candidate.
     if label_set is not None:
         suffix = f"-{label_set}" if label_set else ""
         run = root / f"backward-{system}-b2{suffix}"
-        return sorted((run / "lightning_logs").glob(
-            "version_*/checkpoints/*.ckpt")) if run.exists() else []
+        return sorted(p for p in (run / "lightning_logs").glob(
+            "version_*/checkpoints/*.ckpt")
+            if p.name != "last.ckpt") if run.exists() else []
     out = []
     for run in sorted(root.glob(f"backward-{system}-b2*")):
-        out.extend(sorted((run / "lightning_logs").glob(
-            "version_*/checkpoints/*.ckpt")))
+        out.extend(sorted(p for p in (run / "lightning_logs").glob(
+            "version_*/checkpoints/*.ckpt") if p.name != "last.ckpt"))
     return out
 
 

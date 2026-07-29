@@ -1494,6 +1494,23 @@ scoped fix.
    resume is impossible (save_top_k=1 keeps only best weights; no
    last.ckpt), which is why truncation, not chaining. ~3.8 nh.
 
+   **Superseded same day — the epoch truncations are retired.** The owner
+   pointed out the right fix: resumable checkpointing. `save_last=True` +
+   an RR_RESUME=1-gated `ckpt_path` resume landed in `train/looped_pc.py`
+   and `train/policy_tf.py` (explicit, never automatic — silent resume of
+   a stale last.ckpt is the §38 silent-success class), and `bank_b2` now
+   excludes `last.ckpt` from banking candidates. The truncated jobs were
+   cancelled BEFORE starting and replaced by full-recipe (30-epoch)
+   resumable chains via `jobs/patterns/value_retrain_link.slurm`, links
+   sharing an rc-0-gated marker: g24r8 4600949→4600950; g32r4
+   4600943 (policy) →4600951→4600952→4600953. No recipe deviation
+   remains. Compute ledger, stated honestly: the two 16 h timeouts burned
+   ~4 nh, of which the g32r4 one predates this session; the g24r8 one ran
+   under this session's watch with its 14.8 h sibling precedent visible —
+   the ~1.6 nh rerun premium was avoidable and is this session's miss.
+   With save_last in place the class is closed: a walltime kill now costs
+   one resume link, not a retrain.
+
 ## Still open
 
 - **Integrating the by-reference step type into the learned planner**

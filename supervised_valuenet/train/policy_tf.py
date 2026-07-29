@@ -11,7 +11,9 @@ candidate NOT marked -- it's generated); decode is a 3-step pointer head.
 from __future__ import annotations
 
 import argparse
+import glob
 import math
+import os
 from functools import lru_cache
 
 import numpy as np
@@ -226,10 +228,21 @@ def main():
     print(f"train decisions={len(tr)} val decisions={len(va)}", flush=True)
     dl = dict(batch_size=a.batch_size, collate_fn=collate, num_workers=a.num_workers)
     model = PolicyTF(d_model=a.d_model, recurrence=a.recurrence, heads=a.heads, temp=a.temp)
-    ckpt = pl.callbacks.ModelCheckpoint(monitor="val_regret", mode="min")
+    # save_last + explicit resume: see the matching comment in looped_pc.py.
+    ckpt = pl.callbacks.ModelCheckpoint(monitor="val_regret", mode="min",
+                                        save_last=True)
+    resume = None
+    if os.environ.get("RR_RESUME") == "1":
+        lasts = sorted(
+            glob.glob("lightning_logs/version_*/checkpoints/last.ckpt"),
+            key=os.path.getmtime)
+        resume = lasts[-1] if lasts else None
+        print(f"[resume] RR_RESUME=1 -> {resume or 'no last.ckpt, fresh start'}",
+              flush=True)
     pl.Trainer(max_epochs=a.epochs, accelerator="auto", devices=1,
                callbacks=[ckpt], log_every_n_steps=50).fit(
-        model, DataLoader(tr, shuffle=True, **dl), DataLoader(va, **dl))
+        model, DataLoader(tr, shuffle=True, **dl), DataLoader(va, **dl),
+        ckpt_path=resume)
 
 
 if __name__ == "__main__":
