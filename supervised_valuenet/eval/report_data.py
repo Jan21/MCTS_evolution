@@ -127,9 +127,14 @@ RUNGS = [
             "fwd": ("comparison.json", "forward"),
         },
         "frontier": {
+            # no old-language frontier row was ever measured at this rung;
+            # the 2026-07-29 chunked lane (g24r4_rows.slurm) produced the
+            # first frontier file, carrying BOTH systems -- the forward
+            # frontier cell reads from it, not from a comparison_ungraded.json
+            # that never existed.
             "bwd_old": ("comparison_ungraded.json", "backward"),
             "bwd_b2": ("comparison_ungraded_b2.json", "backward"),
-            "fwd": ("comparison_ungraded.json", "forward"),
+            "fwd": ("comparison_ungraded_b2.json", "forward"),
         },
         "future": {"bwd_retrained": "comparison_b2retrained_cap20000.json",
                    "bwd_retrained_deficient": "comparison_b2retrained.json",

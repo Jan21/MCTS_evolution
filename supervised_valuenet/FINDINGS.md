@@ -1646,6 +1646,26 @@ scoped fix.
      is closed; the zero-shot planner remains the method's best measured
      configuration at every rung, and every headline claim rests on it.
 
+46. **The ladder is complete — all six rungs, pooled, monotone
+   (2026-07-30).** The 24×24 · 4-robot frontier row landed certified
+   (job 4601157 resumed from 4599925's 18 chunks after a walltime kill;
+   140/140 replays, zero failures): backward zero-shot B2 **125/218 =
+   57.3%** at 110 mean expansions vs forward **15/218 = 6.9%** with the
+   budget exhausted (1163 of 1200 mean). The rung's cells
+   (`eval/results/stats_tests.json`, 96 cells now): graded −9.1
+   (forward's strongest graded win outside base, p=0.0003), frontier
+   +50.5 [+44.0, +57.1], **pooled +19.8 [+14.4, +25.1]**, both
+   p<0.0001. The whole-pool series over the six rungs is now: base
+   (forward wins, 450/450 vs 430/450) → +8.0 → +15.8 → **+19.8** →
+   +24.0 → +47.8 — monotone along both hardness axes with the new rung
+   slotting exactly between its neighbours. A wiring note recorded in
+   `eval/report_data.py`: this rung never had an old-language frontier
+   file; its forward frontier cell reads from the new two-system
+   `comparison_ungraded_b2.json`. One more language data point: at this
+   rung the full language adds nothing on the graded set (−2.6,
+   p=0.38) — consistent with §37/§39's finding that the language gain
+   is a frontier phenomenon.
+
 ## Still open
 
 - **Integrating the by-reference step type into the learned planner**
