@@ -1666,6 +1666,22 @@ scoped fix.
    p=0.38) — consistent with §37/§39's finding that the language gain
    is a frontier phenomenon.
 
+47. **g24r8's cap-20000 rows land and repeat the 8-robot pattern: retraining
+   damages the frontier under both corpora and the rich corpus is worse
+   (2026-07-30).** All rows certified (graded 150/150 replays, frontier
+   122/122, zero failures). Frontier at 24×24 · 8: zero-shot 161/289 =
+   55.7% → cap-5,000 137/289 = 47.4% → cap-20,000 **122/289 = 42.2%**
+   (cap20k-vs-cap5k −5.2 [−8.7, −1.7] p=0.013; vs zero-shot −13.5,
+   p<0.0001; mean expansions 635 → 744 → 809). Graded is a small wash
+   (150/161 = 93.2% vs cap-5k 148, zero-shot 152). Fits FINDINGS 44/45:
+   both g24r8 value draws sit on one plateau (2.63 — the full-recipe
+   rerun reproduced the killed run's best to four digits), and as at
+   g16r8, no good-basin draw has been observed at an 8-robot rung. The
+   corpus table is complete at four rungs; the retraining chapter's
+   summary stands: zero-shot remains the method's best configuration at
+   every rung measured. Only g32r4's chain remains (resume link running).
+   `eval/results/stats_tests.json` now 106 cells.
+
 ## Still open
 
 - **Integrating the by-reference step type into the learned planner**
