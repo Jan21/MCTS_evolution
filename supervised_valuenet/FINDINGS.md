@@ -1682,6 +1682,32 @@ scoped fix.
    every rung measured. Only g32r4's chain remains (resume link running).
    `eval/results/stats_tests.json` now 106 cells.
 
+48. **NN-labeler track opened: the size lock is out of the value net, and the
+   small-grid debug bed is built (2026-07-31).** Owner goal: replace the exact
+   solver as *labeler* with a net that generalizes across grid sizes (plans in
+   `nn_labeler/PLANS.md`; three candidate plans, recommendation = train-once
+   zero-shot with a per-rung audit gate). Phase 0 landed in one session:
+   (a) `nn_labeler/` — a size-parametric port of the backward-value stack whose
+   featurization matches the frozen pipeline EXACTLY (np.array_equal on real
+   g16r6 records and boards; `nn_labeler/tests/test_encode_dataset.py`), and a
+   `SizeFreeValueNet` that is `LoopedValueNet` minus its only grid-locked weight
+   (the learned `[G²+1,192]` positional embedding, replaced by runtime sin2d /
+   coord-channel / none variants) — one instance forwards at n=8 and n=24 in one
+   process (`nn_labeler/tests/test_model_smoke.py`, and a 1-epoch g16r6
+   micro-train whose checkpoint scores real 24×24 boards; val_regret 2.52 after
+   one epoch, `nn_labeler/train.py` log). (b) Four debug rungs g8r4/g9r4/g10r4/
+   g12r4 added to `scaling/configs.py` (walls 12/15/19/27 by the stock density
+   formula): 4×1200 boards and exact base-vocab labels for boards 0–1049 in
+   **84 s total** on login-node CPU via the gated Rust engine — record counts
+   105,413 / 102,972 / 101,824 / 98,225 (`scaling/data/g{8,9,10,12}r4/
+   backward.rust.jsonl`), 1050 boards each, optimal-share 0.227–0.246, max
+   cost_to_go 34/38/43/49 (rising with grid; validates the 96-bin value head —
+   g32r4's production max was 71). (c) `nn_labeler/audit.py` — the label-quality
+   audit gate (top1/regret/mae/bias, per-depth). Battery job 4606952 queued:
+   PE ablation × {8×8-only, mixed 8+9+10} + single-size references, each audited
+   zero-shot at 8/9/10/12/16 (legacy `nn/data/combined.jsonl` test split, 358
+   boards / 48,835 records, schema-identical) — results will be the next item.
+
 ## Still open
 
 - **Integrating the by-reference step type into the learned planner**
