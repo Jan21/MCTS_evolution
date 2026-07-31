@@ -115,6 +115,10 @@ CONFIGS = {c.name: c for c in [
     _std("g24r4", 24, 4, "Grid axis: 24x24 at stock wall density (108 walls)."),
     _std("g24r8", 24, 8, "Grid+robot axis: 24x24 with 8 robots."),
     _std("g32r4", 32, 4, "Stretch: 32x32 at stock wall density (192 walls)."),
+    _std("g8r4", 8, 4, "NN-labeler debug rung (2026-07-31): 8x8 pipeline shakeout."),
+    _std("g9r4", 9, 4, "NN-labeler debug rung (2026-07-31): odd-size step-up audit."),
+    _std("g10r4", 10, 4, "NN-labeler debug rung (2026-07-31): mixed-size training."),
+    _std("g12r4", 12, 4, "NN-labeler debug rung (2026-07-31): extrapolation audit."),
 ]}
 
 
