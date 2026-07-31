@@ -438,6 +438,8 @@ def collect():
     D["seed_spread"] = load_json("analysis/artifacts/seed_spread.json")
     # value-net mode diagnostic (analysis/valnet_modes.py; FINDINGS 44)
     D["valnet_modes"] = load_json("analysis/artifacts/valnet_modes.json")
+    # failure gallery for the hardest measured pool (analysis/failure_examples.py)
+    D["failure_examples"] = load_json("analysis/artifacts/failure_examples.json")
 
     # ---- base scale (16×16, 4 robots) ------------------------------------
     D["fwd450"] = load_json("eval/results/comparison_forward.json")

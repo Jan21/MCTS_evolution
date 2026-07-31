@@ -455,6 +455,90 @@ def sec_rung_details(D):
         + "".join(blocks) + "</section>"
 
 
+def sec_failure_gallery(D):
+    """What failure looks like at 24×24 · 8 robots — taxonomy + real boards."""
+    from eval.report_boards import board_svg, SLOT_VARS
+    fx = D.get("failure_examples")
+    if not fx:
+        return ""
+    SRC = "analysis/artifacts/failure_examples.json"
+    t = fx["taxonomy"]
+    intro = (
+        "<p>The hardest measured pool where both planners were run in "
+        "full is 24×24 · 8 robots, beyond the oracle: "
+        + ck(str(t["n_bwd_failed"]), SRC, "failgal n failed",
+             raw=t["n_bwd_failed"])
+        + " of "
+        + ck(str(t["n_set"]), SRC, "failgal n set", raw=t["n_set"])
+        + " puzzles defeat the subgoal planner. The anatomy of those "
+        "failures: "
+        + ck(str(t["never_completed"]), SRC, "failgal never",
+             raw=t["never_completed"])
+        + " never completed a single abstract plan within the search "
+        "budget — the planner ran out of budget proposing, not playing — "
+        "while only "
+        + ck(str(t["all_rejected"]), SRC, "failgal rejected",
+             raw=t["all_rejected"])
+        + " completed plans on paper whose every variant then failed the "
+        "move-by-move play-out. And only "
+        + ck(str(t["fwd_solved_of_bwd_failed"]), SRC, "failgal fwd solved",
+             raw=t["fwd_solved_of_bwd_failed"])
+        + " of the failures were solved by the move-by-move planner: "
+        "almost everything that defeats the subgoal planner here defeats "
+        "its opponent too. Three real boards from the set:</p>")
+
+    captions = {
+        "fwd_solved": ("The honest case — the move-by-move planner solved "
+                       "this one and the subgoal planner did not.",
+                       "the rarest failure kind"),
+        "all_rejected": ("Plans completed on paper; every one failed when "
+                         "played move by move.",
+                         "the play-out check doing its job"),
+        "never_completed": ("No abstract plan completed within budget — "
+                            "the common case.",
+                            "the typical failure"),
+    }
+    cards = []
+    for key in ("fwd_solved", "all_rejected", "never_completed"):
+        ex = (fx.get("examples") or {}).get(key)
+        if not ex:
+            continue
+        b = ex["board"]
+        robots = []
+        for ri, (x, y) in enumerate(b["positions"]):
+            robots.append((x, y, f"var({SLOT_VARS[ri % len(SLOT_VARS)]})",
+                           chr(ord('A') + ri), ri == b["target_idx"]))
+        svg = board_svg(b["size"],
+                       {tuple(w) for w in b["walls_right"]},
+                       {tuple(w) for w in b["walls_down"]},
+                       robots, rings=((b["target"][0], b["target"][1],
+                                       "var(--ink)"),),
+                       aria=f"24 by 24 board, puzzle {ex['env_id']}, "
+                            f"an unsolved case ({key})", max_px=340)
+        head, sub = captions[key]
+        stats = (f"subgoal planner: {ex['bwd']['expansions']} search steps, "
+                 f"{ex['bwd']['seconds']:.0f} s, "
+                 f"{ex['bwd']['plans_rejected']} paper plans rejected · "
+                 "move-by-move planner: "
+                 + ("solved" if ex['fwd']['solved'] else "also failed"))
+        cards.append(
+            '<div style="flex:1 1 300px;max-width:360px">'
+            f"<p><b>{esc(head)}</b><br>"
+            f'<span class="small muted">{esc(sub)} — board {ex["env_id"]}, '
+            "the lettered piece must reach the outlined cell"
+            f"</span></p>{svg}"
+            f'<p class="small muted">{esc(stats)}</p></div>')
+    return kicker_h2(
+        "what failure looks like",
+        "Three unsolved boards from the hardest measured pool",
+        "Failure here is overwhelmingly the search not finishing a plan "
+        "under its budget — not plans that break when played. Every "
+        "count and board below comes from the archived per-puzzle rows.") \
+        + intro \
+        + '<div style="display:flex;flex-wrap:wrap;gap:18px">' \
+        + "".join(cards) + "</div></section>"
+
+
 def sec_open(D):
     return kicker_h2(
         "still open", "What is running and what is next") + """
@@ -484,7 +568,8 @@ def tab_scaling(D):
     from eval.report_sections_budget import sec_budget_table
     return (sec_oracle(D) + sec_fragility(D) + sec_ladder(D)
             + sec_budget_table(D) + sec_strata(D)
-            + sec_cost(D) + sec_rung_details(D) + sec_open(D))
+            + sec_cost(D) + sec_failure_gallery(D) + sec_rung_details(D)
+            + sec_open(D))
 
 
 # ---------------------------------------------------------------------------
