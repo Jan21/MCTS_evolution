@@ -257,13 +257,20 @@ def sec_ladder(D):
         "planner and a properly trained move-by-move planner are measured. "
         "“Beyond the oracle” rows have no move optima — solving there is "
         "self-certifying. The full-language rows run zero-shot (networks "
-        "never trained on the newest step type). Retrained rows appear only "
-        "where the networks were trained on a corpus that actually contains "
-        "the new step type at its natural rate: a cheaper label corpus used "
-        "earlier stripped those examples and cost 22.4 points at the "
-        "beyond-oracle set, so rows trained on it are withheld rather than "
-        "shown as the method's performance.") \
+        "never trained on the newest step type). Retrained rows show the "
+        "regenerated-corpus retrain wherever it completed; read them with "
+        "the fairness tab's seed-robustness section, which found retraining "
+        "outcomes are decided by which of two training basins the value "
+        "network lands in — a retrained row can sit far below its zero-shot "
+        "sibling for that reason, and the zero-shot rows remain the "
+        "method's best measured configuration. Rows from the earlier "
+        "depleted label corpus appear only inside the fairness tab's "
+        "label-budget experiment, never here.") \
         + table + """
+  <p class="small muted">Where a retrained cell sits far below its
+  zero-shot sibling (the 8-robot rungs), the cause is a collapsed
+  value-network training run — detectable before benchmarking, measured
+  in the fairness tab — not a property of the puzzles.</p>"""  + """
   <p class="small muted">Full per-rung tables — with solution quality,
   seconds and source files — are in the “every rung in full” section
   below.</p>
@@ -452,8 +459,10 @@ def sec_open(D):
     return kicker_h2(
         "still open", "What is running and what is next") + """
   <ul>
-    <li><b>Corpus-correct retrains</b> (running; every “in progress” row on
-    this page fills automatically when its result file lands) — and, next,
+    <li><b>Corpus-correct retrains</b> landed at five of six
+    configurations (the 32×32 pair is finishing); the outcome was mixed —
+    matched zero-shot at 6 robots, regressed at the 8-robot rungs — see
+    the fairness tab's seed-robustness section. Next,
     <b>integrating the re-use step type into the learned planner</b>
     (helper featurization that can name non-start cells, a policy retrain
     without the silent record filter, and the proposal-path wiring); the
@@ -462,9 +471,10 @@ def sec_open(D):
     <li><b>Quality-focused self-play on the extended stack</b> — frontier
     solutions run long (no optima exist there); self-play with a quality
     pressure is the scoped follow-up.</li>
-    <li><b>The 24×24 · 4-robot full-language rows</b> and the two base
-    probe instances whose ceiling status is unresolved at current probe
-    memory (a depth-bounded probe redesign is scoped).</li>
+    <li><b>The two base probe instances</b> whose ceiling status is
+    unresolved at current probe memory (a depth-bounded probe redesign is
+    scoped). The 24×24 · 4-robot full-language rows, previously listed
+    here, landed 2026-07-29/30 and appear in every table above.</li>
   </ul>
 </section>"""
 
@@ -529,9 +539,11 @@ def sec_fair_ledger(D):
     hook = ""
     if acc:
         hook = ("<p><b>Instrumented counters have landed</b> "
-                "(<code>eval/results/compute_accounting.json</code>) — "
-                "render support for this file's schema should be reviewed "
-                "in the next report build pass.</p>")
+                "(<code>eval/results/compute_accounting.json</code>): "
+                "per-rung counts of network calls and physics-slide calls "
+                "for both planners, measured in separate instrumented "
+                "runs so the headline rows' timings stay uncontaminated. "
+                "The pilot numbers quoted below agree with them.</p>")
     else:
         hook = progress_tag(
             "measurement queued: instrumented re-runs will publish "
@@ -574,7 +586,7 @@ def sec_fair_ledger(D):
   side, so the honest position is to measure them rather than assert
   them away. Two complementary checks exist today: <b>wall-clock time</b>
   (below), which counts everything including the unmetered bookkeeping,
-  and the <b>instrumented counters</b> now being collected.</p>
+  and the <b>instrumented counters</b> already collected (<code>compute_accounting.json</code>).</p>
   <p><b>The exclusion is not one-sided, and saying so was an error.</b> The
   expansion counter meters network passes, so it misses the forward
   planner's physics too: generating one move-level successor set calls the
@@ -830,7 +842,7 @@ def sec_fair_wallclock(D):
         "<table><thead><tr><th>configuration · set</th>"
         "<th class='num'>" + dot("bwd") + "subgoals<br>seconds / puzzle</th>"
         "<th class='num'>" + dot("fwd") + "move-by-move<br>seconds / puzzle"
-        "</th><th class='num'>time ratio</th></tr></thead><tbody>"
+        "</th><th class='num'>time ratio<br>(move-by-move ÷ subgoals)</th></tr></thead><tbody>"
         + "".join(body) + "</tbody></table>")
     # data-driven closing paragraph (never assert what the table refutes)
     numeric = [(label, gname, float(r[:-1]))
@@ -859,7 +871,7 @@ def sec_fair_wallclock(D):
   <p class="small">Wall-clock charges the subgoal planner for all of its
   unmetered bookkeeping — and it still runs {lo:.1f}×–{hi:.0f}× faster
   per puzzle on every same-machine pair at every scaling
-  rung.{base_note} The instrumented counters will put exact numbers on
+  rung.{base_note} The instrumented counters put exact numbers on
   the exclusions themselves.</p>"""
     return kicker_h2(
         "the complementary check: wall-clock",
@@ -947,10 +959,11 @@ def sec_fair_probes(D):
     return kicker_h2(
         "extended-budget probes",
         "Is the frontier collapse a budget artifact? The direct test",
-        "Two queued runs give the move-by-move planner several times its "
-        "standard budget on frontier subsamples. If its solve rate stays "
-        "flat, the collapse is real; if it climbs substantially, the "
-        "standard-budget frontier rows overstate the gap.") \
+        "Four measured runs gave the move-by-move planner several times its "
+        "standard budget on frontier subsamples. Where its solve rate "
+        "stayed flat, the collapse is real; where it climbed, the "
+        "standard-budget frontier rows overstate the gap — both happened, "
+        "at different scales.") \
         + sat_html + "".join(blocks) + "</section>"
 
 
@@ -1150,9 +1163,10 @@ def sec_footnotes():
     this report, and the published 8-robot rows use the stability-controlled
     retrain.</li>
     <li><b>Zero-shot full-language rows</b> use networks never trained on
-    the newest candidate type; their gains are a lower bound on what the
-    language is worth. Retrained rows will replace the “in progress” cells
-    automatically.</li>
+    the newest candidate type. Retraining did not improve on them — the
+    fairness tab's seed-robustness section explains why (a bistable
+    value-network training), so the zero-shot rows stand as the method's
+    best measured configuration.</li>
     <li><b>Sources of truth:</b> where a document and a result file
     disagree, the result file wins. This page renders result files only.
     </li>

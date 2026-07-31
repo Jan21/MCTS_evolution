@@ -216,7 +216,9 @@ def _retrained_block(cells):
         + "".join(body) + "</tbody></table>")
     return ("<h3>After retraining on the regenerated corpus</h3>"
             "<p>These rows are the planner after retraining on the "
-            "regenerated (cap-20,000) label corpus. Rows retrained on the "
+            "regenerated label corpus (“cap-20,000” — the cap is the "
+            "search budget each labelling attempt gets; the earlier "
+            "corpus used a 4× cheaper cap). Rows retrained on that "
             "earlier depleted corpus are a separate arm, shown in the "
             "label-budget experiment below, never here. Read the signs: "
             "retraining is not uniformly an upgrade — at 16×16 · 6 robots "
@@ -252,13 +254,13 @@ def _corpus_block(cells, D):
         lo = (shares.get(f"{rung}.cap5000") or {}).get("share_pct")
         if hi is None or lo is None:
             return ""
-        return ('<div class="cellnote">labels '
+        return ('<div class="cellnote">'
                 + ck(f"{hi}%", SHARES_SRC,
                      f"byref share {rung} cap20000", raw=hi)
                 + " vs "
                 + ck(f"{lo}%", SHARES_SRC,
                      f"byref share {rung} cap5000", raw=lo)
-                + " by-reference</div>")
+                + " of label plans re-use an already-placed robot</div>")
 
     body = []
     seen_rungs = set()
@@ -385,18 +387,25 @@ def _seed_block(D):
                  f"valmode {k}", raw=modes[k]["best_val_regret"])
             for label, k in mode_keys)
         mode_html = (
-            "<p><b>The spread is not noise — it is a bimodality, and it "
-            "is visible before any benchmarking.</b> The four runs' "
-            "value nets separate into two basins on the SAME validation "
-            "split (best val_regret: " + cells_ + "): the two runs near "
-            "0.7–0.8 recover the beyond-oracle set (~78%), the two near "
-            "2.3 collapse to ~50%. The policy nets are indistinguishable "
-            "across all four — the mode lives in the warm-started value "
-            "net. Every collapsed retrained row elsewhere on this page "
-            "(the cap-5,000 arm here, both 16×16 · 8-robot arms) carries "
-            "a bad-mode value net by the same criterion, so single-draw "
-            "comparisons between retraining recipes or corpora are not "
-            "interpretable at the beyond-oracle set without stating the "
+            "<p><b>The spread is not noise — training has two distinct "
+            "outcomes, and which one you got is visible before any "
+            "benchmarking.</b> The signal is the value network's "
+            "validation error (“val_regret” — its average scoring error "
+            "on held-out puzzles, lower is better; all four runs share "
+            "the same held-out set, so their numbers are directly "
+            "comparable). The four runs split cleanly: " + cells_ + ". "
+            "The two runs near 0.7–0.8 recover the beyond-oracle set "
+            "(~78% solved); the two near 2.3 collapse to ~50%. The "
+            "proposal networks are indistinguishable across all four — "
+            "the difference lives entirely in the value network, which "
+            "is initialized from an earlier model (“warm-started”) and "
+            "then either genuinely learns or settles into a degenerate "
+            "solution. Every collapsed retrained row elsewhere on this "
+            "page (the cap-5,000 arm here, both 16×16 · 8-robot arms) "
+            "carries a bad-outcome value net by the same criterion, so "
+            "single-draw comparisons between retraining recipes or "
+            "corpora are not interpretable at the beyond-oracle set "
+            "without stating the "
             "mode. Six additional value-only probes resolved the causal "
             "question: on the depleted corpus the good basin was never "
             "reached (3 of 3 seeds converge to one plateau, "
@@ -589,11 +598,14 @@ def sec_significance(D):
         "Which differences survive a test",
         "Every head-to-head on this page is paired — both planners face "
         "the same puzzles under the same budget — so each comparison is "
-        "tested with an exact two-sided McNemar test on the discordant "
-        "pairs (the puzzles exactly one side solved). The 95% confidence "
-        "intervals come from a bootstrap that resamples boards rather "
-        "than puzzles, because up to three puzzles share a board's wall "
-        "layout and are not independent.")
+        "tested with an exact two-sided McNemar test — a paired yes/no "
+        "test that uses only the puzzles where the two planners disagree. "
+        "The 95% confidence intervals come from a bootstrap that "
+        "resamples boards rather than puzzles, because up to three "
+        "puzzles share a board's wall layout and are not independent. "
+        "Set names: “gradable” = the exact solver produced an optimum "
+        "for the puzzle; “beyond the oracle” (elsewhere: the frontier) = "
+        "it could not.")
     st = D.get("stats_tests")
     if not st:
         return head + progress_tag(

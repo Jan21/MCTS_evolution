@@ -265,7 +265,7 @@ def ladder_chart_frontier(D, small=False):
                      f'{pct(c["agg"]):.1f}')
     series = [("bwd_old", "bwd-old", "subgoals, original language"),
               ("bwd_b2", "bwd", "subgoals, full language (same networks)"),
-              ("fwd", "fwd", "move-by-move (control-trained)")]
+              ("fwd", "fwd", "move-by-move (stabilized training recipe — scaling tab)")]
     svg = C.grouped_columns(
         groups, [(k, f, l) for k, f, l in series], unit="%",
         aria="Solve rates beyond the exact solver's reach, per configuration")
@@ -282,7 +282,9 @@ def ladder_chart_frontier(D, small=False):
                "itself by playing out. No move optima exist here, so solve "
                "rate (bars), search steps and time (tooltips) are the only "
                "meaningful measures. The full-language rows run the SAME "
-               "trained networks with a richer plan vocabulary, zero-shot.")
+               "trained networks with a richer plan vocabulary, zero-shot — i.e. the "
+               "networks were never trained on the newest step type and "
+               "rank it unseen.")
     srcs = "scaling/results/*/comparison_ungraded*.json"
     return C.figure("Beyond the exact solver's reach, the subgoal planner "
                     "takes over", "solved (playable), % of each pool — "
@@ -312,7 +314,7 @@ def ladder_chart_graded(D):
                        "values": vals, "tips": tips})
     series = [("bwd_old", "bwd-old", "subgoals, original language"),
               ("bwd_b2", "bwd", "subgoals, full language (same networks)"),
-              ("fwd", "fwd", "move-by-move (best healthy training)")]
+              ("fwd", "fwd", "move-by-move (stabilized training recipe — scaling tab)")]
     svg = C.grouped_columns(
         groups, series, unit="%",
         aria="Solve rates on the oracle-gradable puzzles, per configuration")
@@ -334,8 +336,7 @@ def ladder_chart_graded(D):
     caption = ("Puzzles the exact solver can still grade. Move-by-move "
                "planning holds a small solve-rate lead until the board "
                "grows: at 32×32 it drops to third while its per-puzzle cost "
-               "explodes (see the scaling tab). The 24×24 · 4r full-language "
-               "bar is not yet measured (dashed placeholder).")
+               "explodes (see the scaling tab).")
     return C.figure("On puzzles exact search can grade, the lead changes "
                     "hands at 32×32", "solved (playable), % of each gradable "
                     "set — higher is better",
@@ -359,13 +360,14 @@ def sec_headline_table(D):
     src = "eval/results/stats_tests.json"
     names = {"g16r6": "16×16 board, 6 robots",
              "g16r8": "16×16 board, 8 robots",
+             "g24r4": "24×24 board, 4 robots",
              "g24r8": "24×24 board, 8 robots",
              "g32r4": "32×32 board, 4 robots"}
     cells = {c["rung"]: c for c in st.get("cells", [])
              if not c.get("skipped") and c.get("set") == "pooled"
              and c.get("a") == "bwd_b2" and c.get("b") == "fwd"}
     rows = []
-    for key in ("g16r6", "g16r8", "g24r8", "g32r4"):
+    for key in ("g16r6", "g16r8", "g24r4", "g24r8", "g32r4"):
         c = cells.get(key)
         if not c:
             continue
@@ -404,19 +406,22 @@ def sec_headline_table(D):
     return (
         '\n  <h3 class="ph">The headline: the whole benchmark, nothing left'
         " out</h3>\n"
-        "  <p>Every other scoreboard in this report splits the benchmark in"
+        "  <p>This is the opening table again, now with its uncertainty."
+        " Most other scoreboards in this report split each benchmark in"
         " two — the puzzles an exact solver could grade, and the harder"
         " ones it could not. That split explains <i>why</i> the planners"
         " differ, but the harder half is defined by the exact solver failing,"
-        " which is unfair to the move-by-move planner by construction. The"
-        " table below sidesteps it: <b>all 450 puzzles</b> at each board size,"
+        " which is unfair to the move-by-move planner by construction. This"
+        " table sidesteps it: <b>all 450 puzzles</b> at each board size,"
         " both halves together, scored by the one rule that matters — a"
         " puzzle counts only if the plan plays out legally, move by move.</p>\n"
         + table
         + '\n  <p class="small muted">Both planners get the same puzzles and'
         " the same search budget. “Difference” is in percentage"
-        " points, with a 95% confidence interval; it and the p-value come from"
-        " a paired test that allows for several puzzles sharing one board. The"
+        " points. The p-value is an exact paired test (McNemar — it uses"
+        " only the puzzles where the two planners disagree); the 95%"
+        " confidence interval comes from a bootstrap that allows for"
+        " several puzzles sharing one board. The"
         " small-puzzle configuration (16×16, 4 robots) is absent because"
         " its whole benchmark is gradable — the move-by-move planner wins"
         " that one outright, 450 of 450 against 430.</p>\n")
@@ -426,7 +431,8 @@ def sec_verdict(D):
     html = kicker_h2(
         "the verdict so far", "Where the evidence stands",
         "Every number below is measured; the one-paragraph verdict, then the "
-        "whole ladder in two pictures.")
+        "whole ladder — the six board-size/robot-count configurations — in two "
+        "pictures.")
     html += sec_verdict_tiles(D)
     html += sec_headline_table(D)
     html += """
@@ -446,11 +452,16 @@ def sec_verdict(D):
   test cannot separate from noise — with the subgoal planner using 7× fewer
   search steps. (2) The beyond-oracle margins are <b>matched-budget</b>
   results. Give the move-by-move planner 4–5× the search budget and it gains
-  12–31 points at every rung probed, so "it has stopped working" is not
-  supportable; what is supportable is that it needs several times the search
-  to approach a rate the subgoal planner reaches immediately, and still does
-  not catch up. (3) Both systems are single-seed everywhere, so no small
-  difference here is defensible against seed variation, which is unmeasured.</p>
+  4–31 points depending on the rung — a large recovery at 16×16, a modest
+  one at 24×24, and almost none at 32×32 (four times the budget buys one
+  extra puzzle in twenty-four there). So "it has stopped working" is
+  supportable only at the largest boards; elsewhere the honest statement is
+  that it needs several times the search to approach a rate the subgoal
+  planner reaches immediately, and still does not catch up. (3) The headline
+  arms are single-seed on both sides. Where seed sensitivity HAS been
+  measured — the retrained backward networks, see the fairness tab — it is
+  large, so no small difference on this page should be read as real; the
+  headline margins are 8–48 points.</p>
   <p>The subgoal planner's remaining handicaps are honest and measured:
   longer solutions where no optimum exists, and a gap between what its
   extended plan language permits and what its current networks reach —
@@ -487,7 +498,8 @@ def sec_headline_first(D):
              if "skipped" not in c and c.get("a") == "bwd_b2"
              and c.get("b") == "fwd"}
     order = [("g16r4", "graded", "16×16 board · 4 robots",
-              "the smallest size — every puzzle exactly gradable"),
+              "the smallest size — the optimal move count is known for "
+              "every puzzle here"),
              ("g16r6", "pooled", "16×16 board · 6 robots", ""),
              ("g16r8", "pooled", "16×16 board · 8 robots", ""),
              ("g24r4", "pooled", "24×24 board · 4 robots", ""),
@@ -502,7 +514,7 @@ def sec_headline_first(D):
         diff = c["diff"] * 100
         winner = ("bwd" if diff > 0 else "fwd")
         reads = (f'{abs(diff):.1f} points to the '
-                 + ("sub-goal planner" if diff > 0
+                 + ("subgoal planner" if diff > 0
                     else "move-by-move planner"))
         body.append(
             f'<tr><td><b>{esc(label)}</b>'
@@ -524,7 +536,7 @@ def sec_headline_first(D):
         return ""
     table = scroll(
         "<table><thead><tr><th>puzzle set (450 puzzles each)</th>"
-        "<th class='num'>sub-goal planner<br>solved · rate</th>"
+        "<th class='num'>subgoal planner<br>solved · rate</th>"
         "<th class='num'>move-by-move planner<br>solved · rate</th>"
         "<th class='num'>who wins, by how much</th></tr></thead><tbody>"
         + "".join(body) + "</tbody></table>")
@@ -533,19 +545,19 @@ def sec_headline_first(D):
         "One table before anything else",
         "Two planners solve the same fixed pools of 450 Ricochet Robots "
         "puzzles under the same search budget. One plans move by move; "
-        "the other plans in sub-goals, working backward from the goal. A "
+        "the other plans in subgoals, working backward from the goal. A "
         "puzzle counts as solved only if the plan plays out legally, "
         "move by move, on the real board — every solved row was "
         "independently replayed through the physics alone.")
         + table
         + '<p class="small">On the smallest board the move-by-move '
-        "planner is the champion. From six robots up, the sub-goal "
-        "planner wins every size, by a margin that grows with both "
-        "board size and robot count — every difference below clears a "
-        "paired statistical test at p&nbsp;&lt;&nbsp;0.0001. The rest "
-        "of this page explains the puzzle, the two planners, how the "
-        "scoring stays honest, and every caveat we know of.</p>"
-        "</section>")
+        "planner is the champion. On every other configuration the "
+        "subgoal planner wins, by a margin that grows with both "
+        "board size and robot count — every difference in the table "
+        "clears a paired statistical test at p&nbsp;&lt;&nbsp;0.0001. "
+        "The rest of this page explains the puzzle, the two planners, "
+        "how the scoring stays honest, and every caveat we know "
+        "of.</p></section>")
 
 
 def tab_overview(D):
@@ -616,12 +628,25 @@ def sec_base_headline(D):
                          "agg": a, "src": src, "hl": hl, "note": note,
                          "machine": ("karolina" if proto_date(comp)[:10]
                                      >= "2026-07-20" else "origin")})
-    rows.append({
-        "label": "Subgoals — full plan language, retrained networks",
-        "family": "bwd", "sub": "labels for the full vocabulary are being "
-        "generated and the networks retrained", "agg": None,
-        "pending_msg": "expected at eval/results/"
-        "final450_backward_b2_retrained.json"})
+    a_rc = bwd_agg(D.get("bwd_retrained"))
+    if a_rc:
+        rows.append({
+            "label": "Subgoals — full plan language, retrained networks",
+            "family": "bwd",
+            "sub": ("retrained on the regenerated full-vocabulary corpus; "
+                    "matches the zero-shot row above — retraining is not "
+                    "currently an upgrade (fairness tab, seed robustness)"),
+            "agg": a_rc, "src": D.get("bwd_retrained_src",
+                                      "eval/results/"
+                                      "final450_backward_b2_retrained_cap20000.json"),
+            "hl": False, "machine": "karolina"})
+    else:
+        rows.append({
+            "label": "Subgoals — full plan language, retrained networks",
+            "family": "bwd", "sub": "labels for the full vocabulary are being "
+            "generated and the networks retrained", "agg": None,
+            "pending_msg": "expected at eval/results/"
+            "final450_backward_b2_retrained_cap20000.json"})
 
     html = kicker_h2(
         "every system, one benchmark",
@@ -736,7 +761,9 @@ def sec_base_climb(D):
         "how the subgoal planner earned its score",
         f"From {t0} honest to {t1}: repairs, then checking, then vocabulary",
         "The subgoal planner's historical “99.6% solved” counted plans "
-        "complete in its own notation that could not be played. Forced to "
+        "complete in its own notation that could not be played (a "
+        "self-grading figure, unrelated to the 99.6% language ceiling "
+        "discussed in the plan-language tab). Forced to "
         "play every plan out it scored " + start_txt
         + " — the honest starting point. Everything after that is measured "
           "recovery.")
@@ -1233,9 +1260,15 @@ def sec_lang_b2(D):
   (proposal path, featurization, policy training), not a ranking failure —
   no ranking of the new step type has ever been measured, because none was
   possible.</p>"""
-    html += progress_tag(
-        "retraining on the full (B2) vocabulary is running; its rows appear "
-        "in the tables automatically when the result files land")
+    html += ("<p class='small'>Retraining on the full-vocabulary corpus has "
+             "since landed at four of six configurations. The outcome is "
+             "mixed and is reported in full in the fairness tab: the "
+             "retrained planner matches its zero-shot predecessor at "
+             "16×16 · 6 robots and regresses at the 8-robot rungs — "
+             "training turned out to be seed-fragile, and the newest step "
+             "type never reaches the learned planner regardless (the "
+             "integration gap above). The zero-shot rows remain the "
+             "method's best measured configuration everywhere.</p>")
     if os.path.exists(rp("eval", "results", "plan_structures.html")):
         html += ("<p class='small muted'>All five plan diagrams, with full "
                  "board layouts, are also drawn in the "
@@ -1339,11 +1372,11 @@ def sec_lang_attribution(D):
                  "ablation shadow generated",
                  raw=t.get("shadow_byref_generated", 0))
             + " candidates across "
-            + ck(str(t.get("shadow_groups_with_byref", 0)), ABL_SRC,
+            + ck(f'{t.get("shadow_groups_with_byref", 0):,}', ABL_SRC,
                  "ablation shadow groups",
                  raw=t.get("shadow_groups_with_byref", 0))
             + " of "
-            + ck(str(t.get("asis_expansion_groups", 0)), ABL_SRC,
+            + ck(f'{t.get("asis_expansion_groups", 0):,}', ABL_SRC,
                  "ablation groups", raw=t.get("asis_expansion_groups", 0))
             + " expansions. The vocabulary is not under-ranked; it is "
             "unreachable — the integration gap named above, measured.</p>")

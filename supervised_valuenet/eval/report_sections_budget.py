@@ -44,8 +44,11 @@ def sec_budget_table(D):
                     "%.1f%%" % v, src,
                     f"budget {budgets[i]} {r['rung']} {r['set']} {arm}",
                     raw=round(v, 4)))
+            set_label = {"graded": "gradable set",
+                         "frontier": "beyond the oracle"}.get(
+                r["set"], r["set"])
             first = (f'<td rowspan="3"><b>{esc(r["rung_label"])}</b></td>'
-                     f'<td rowspan="3">{esc(r["set"])}'
+                     f'<td rowspan="3">{esc(set_label)}'
                      f'<div class="cellnote">n={n}</div></td>'
                      if arm == "backward" else "")
             body.append(f"<tr>{first}<td>{esc(label)}</td>"
@@ -62,8 +65,11 @@ def sec_budget_table(D):
         for e in bt["extended"]:
             if e.get("status") != "ok":
                 continue
+            rl = {"g16r6": "16×16 · 6 robots", "g16r8": "16×16 · 8 robots",
+                  "g24r4": "24×24 · 4 robots", "g24r8": "24×24 · 8 robots",
+                  "g32r4": "32×32 · 4 robots"}.get(e["rung"], e["rung"])
             erows.append(
-                f"<tr><td><b>{esc(e['rung'])}</b></td>"
+                f"<tr><td><b>{esc(rl)}</b></td>"
                 f'<td class="num">{e["n"]}</td>'
                 f'<td class="num">{e["forward_1200"]["rate"]*100:.1f}%</td>'
                 f'<td class="num">{e["forward_probe"]["rate"]*100:.1f}%</td>'

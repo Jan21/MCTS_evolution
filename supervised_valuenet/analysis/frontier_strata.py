@@ -41,7 +41,7 @@ from eval.stats_tests import mcnemar_exact
 
 # (rung, forward file/system, backward file/system) — the full-language
 # backward row against its forward control, on each rung's frontier set.
-RUNGS = ["g16r6", "g16r8", "g24r8", "g32r4"]
+RUNGS = ["g16r6", "g16r8", "g24r4", "g24r8", "g32r4"]
 ENV_DIR = {"g16r4": "environments"}
 
 
@@ -107,8 +107,13 @@ def main():
                  if l.strip()]
         bwd = solved_of(f"scaling/results/{cfg}/comparison_ungraded_b2.json",
                         "backward")
-        fwd = solved_of(f"scaling/results/{cfg}/comparison_ungraded.json",
-                        "forward")
+        # g24r4 never had an old-language frontier file; its forward frontier
+        # rows live in the same two-system comparison_ungraded_b2.json
+        # (2026-07-29 chunked lane) -- mirror of eval/report_data.py.
+        fwd_file = (f"scaling/results/{cfg}/comparison_ungraded_b2.json"
+                    if cfg == "g24r4"
+                    else f"scaling/results/{cfg}/comparison_ungraded.json")
+        fwd = solved_of(fwd_file, "forward")
         if not bwd or not fwd or len(bwd) != len(insts) != len(fwd):
             print(f"{cfg:7s} SKIPPED (rows missing or misaligned)")
             continue
