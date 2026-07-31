@@ -70,6 +70,7 @@ def audit_groups(model, groups, batch_size, device):
                 "top1_optimal": bool(opts[chosen]),
                 "regret": float(ctgs[chosen] - ctgs.min()),
                 "depth": int(depth),
+                "spread": float(preds.std(correction=0)) if len(preds) > 1 else 0.0,
             })
             abs_err += (preds - ctgs).abs().tolist()
             sgn_err += (preds - ctgs).tolist()
@@ -123,6 +124,9 @@ def main():
             "regret": sum(r["regret"] for r in rows) / len(rows),
             "mae": sum(abs_err) / len(abs_err),
             "bias": sum(sgn_err) / len(sgn_err),
+            # ~0 = constant-value collapse (battery 1 signature); healthy nets
+            # spread several cost units within a candidate group.
+            "pred_group_spread": sum(r["spread"] for r in rows) / len(rows),
             "regret_by_depth": {str(d): round(sum(v) / len(v), 4)
                                 for d, v in sorted(by_depth.items())},
         }

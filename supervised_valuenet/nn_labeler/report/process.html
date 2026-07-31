@@ -167,12 +167,35 @@ completions were <em>exactly optimal 93% of the time</em> (mean gap 0.20) &mdash
 <span class="src">nn_labeler/results (session scratchpad copies); sidecar manifests.</span></p></div>
 
 <h2>6. Debug battery — PE ablation &times; mixed-size training</h2>
-<div class="card pending"><span class="tag">pending — job 4606952 queued</span>
-<p>8 trainings of the size-free net on the debug bed (20 epochs, seed 11, 96 bins): position-signal
-ablation {sin2d, coord, none} on 8&times;8-only and on mixed {8,9,10}; single-size references at 10
-and 12. After each: audit at 8/9/10/12 and zero-shot 16&times;16 (legacy corpus test split, 358
-boards / 48,835 records). Deliverable: the first <strong>extrapolation curves</strong> (label
-regret vs grid size per arm) and the PE decision. Projected cost &le;1.75 nh.</p></div>
+<div class="card done"><span class="tag">battery 1 done — job 4606952, 6h11m (0.77 nh)</span>
+<p>8 trainings (20 epochs, seed 11, 96 bins): position-signal ablation {sin2d, coord, none} on
+8&times;8-only and mixed {8,9,10}; single-size references. Each audited at grids 8/9/10/12 and
+zero-shot 16. Three findings (FINDINGS &sect;50):</p>
+<ol>
+  <li><strong>The size-free net works, and the best encoding is NO position signal at all.</strong>
+  pe=none trained on 8&times;8 alone: test label regret
+  <strong>0.20 / 0.21 / 0.25 / 0.28</strong> at grids 8/9/10/12 (top-1 optimal 90.5&rarr;88.7%) —
+  an essentially flat zero-shot curve to 1.5&times; the training size — then a collapse at
+  16&times;16 (regret 3.39). <em>One-step extrapolation is nearly free; two-step is where zero-shot
+  dies</em> — the first direct evidence on the ladder-shape question (favors the stepwise plan
+  over train-once-jump-everywhere, pending battery 2).</li>
+  <li><strong>7 of 8 runs never trained</strong>: they sat on a constant-value plateau for all 20
+  epochs (three different architectures with byte-identical best val_regret 1.9154 — impossible
+  for trained nets, diagnostic for collapse). Root cause: the port dropped the frozen trainer's
+  curriculum warmup; the one healthy arm's 8&times;8-only data was a natural curriculum. Fixed:
+  curriculum ported (default on), collapse made machine-visible
+  (<code>val_group_spread</code> / <code>pred_group_spread</code> metrics).</li>
+  <li><strong>Accidental control:</strong> a collapsed net's audit measures the hand-written
+  candidate-ordering heuristic — regret 0.72/0.85/0.93/1.18 at 8/9/10/12. The trained net beats
+  it 3.5&times; in-domain.</li>
+</ol>
+<p class="src">nn_labeler/results/audit_d1_*.json, audit_d2_*.json;
+runs/nnlab/debug_battery_4606952.out; per-run metrics.csv.</p></div>
+<div class="card pending"><span class="tag">pending — battery 2, job 4607697</span>
+<p>Same bed with the curriculum on: seed-robustness pairs for pe=none (8&times;8-only and mixed
+{8,9,10}), PE-rescue arms (does sin2d recover with curriculum?), pe=none single-size references.
+Decides the production encoding and whether mixed-size training extends the flat extrapolation
+region. Projected &le;1.75 nh.</p></div>
 
 <h2>7. Descent quality gate</h2>
 <div class="card pending"><span class="tag">pending — runs after the battery</span>

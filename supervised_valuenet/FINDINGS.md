@@ -1706,11 +1706,14 @@ scoped fix.
    audit gate (top1/regret/mae/bias, per-depth). Battery job 4606952 queued:
    PE ablation × {8×8-only, mixed 8+9+10} + single-size references, each audited
    zero-shot at 8/9/10/12/16 (legacy `nn/data/combined.jsonl` test split, 358
-   boards / 48,835 records, schema-identical) — results will be the next item.
+   boards / 48,835 records, schema-identical) — results land in item 50.
 
-48. **The no-network control: at the eval budget the hand-written scorer
+49. **The no-network control: at the eval budget the hand-written scorer
    loses 8–23 points to the networks — the learned planner is not the
-   labeler replayed (2026-07-31, owner-requested).** The owner asked
+   labeler replayed (2026-07-31, owner-requested).** *(Numbering note: this
+   item's commit message says "FINDINGS 48" — two concurrent sessions assigned
+   48 the same day; resolved chronologically, item 48 = the NN-labeler track
+   opening.)* The owner asked
    whether the backward results are "basically the score of the naive
    solver", since the labels come from the hand-written search. Direct
    measurement (`analysis/heuristic_baseline.py`, job 4606791): the exact
@@ -1739,6 +1742,40 @@ scoped fix.
      frontier, learned ranking to win everywhere.
    Rendered: fairness tab ("the no-network control") + a row in the base
    systems table. Cells in `eval/results/stats_tests.json` (118 cells).
+
+50. **NN-labeler battery 1: the size-free net works — and 7/8 cold trainings
+   collapsed because the port dropped the curriculum (2026-07-31).** Job
+   4606952 (8 runs × 20 epochs, 6h11m ≈ 0.77 nh). Three results:
+   (a) **The one healthy run is the headline.** pe=none (NO position signal —
+   graph-masked attention only), trained on 8×8 alone: test-split label regret
+   **0.20 / 0.21 / 0.25 / 0.28** at grids 8/9/10/12 (top-1 optimal
+   0.905→0.887) — an essentially FLAT zero-shot curve out to 1.5× the training
+   size — then a collapse at 16×16 (3.39, top-1 0.311, bias swinging from
+   −0.5 to +3.1). One-step extrapolation is nearly free; two-step is where
+   zero-shot dies: the first direct evidence on the ladder-shape question in
+   `nn_labeler/PLANS.md` (favors stepwise-B over jump-C, pending battery 2's
+   mixed-size runs).
+   (b) **Every other run (both PE arms, all three mixed runs, both refs)
+   never left the constant-value plateau**: val_regret oscillating 1.9–2.7
+   for all 20 epochs, and the three mixed runs' best byte-identical at
+   **1.9154** across three DIFFERENT architectures — impossible for trained
+   nets, diagnostic for collapse (constant predictions ⇒ argmin falls to
+   candidate order ⇒ metrics are checkpoint-independent). Root cause: the
+   `nn_labeler` port dropped the reference's `Curriculum` warmup
+   (`train/looped_pc.py:218-224`); the healthy arm's 8×8-only corpus was a
+   natural curriculum (short plans first), the mixed corpus was not, and the
+   additive-PE arms were harder still.
+   (c) **The collapse is an accidental control row**: a collapsed net's audit
+   IS the propose-order heuristic baseline — regret 0.72/0.85/0.93/1.18 at
+   8/9/10/12 and 2.59–2.88 at 16. The trained pe=none net beats that baseline
+   3.5× in-domain. Fixes landed: curriculum ported (frac gate in
+   `GroupDataset` + sampler cutoff, `--warmup 8` default, gating unit-tested),
+   collapse now machine-visible (`val_group_spread` training metric,
+   `pred_group_spread` in every audit). Battery 2 = job 4607697 (curriculum
+   on; seed pairs for pe=none; PE-rescue arms; pe=none refs).
+   Sources: `nn_labeler/results/audit_d1_*.json`, `audit_d2_*.json`,
+   `audit_d3_*.json`, `runs/nnlab/debug_battery_4606952.out`,
+   `nn_labeler/runs/*/lightning_logs/version_0/metrics.csv`.
 
 ## Still open
 

@@ -59,6 +59,11 @@ def main():
     p.add_argument("--d-model", type=int, default=192)
     p.add_argument("--recurrence", type=int, default=12)
     p.add_argument("--heads", type=int, default=4)
+    p.add_argument("--warmup", type=int, default=8,
+                   help="curriculum warmup epochs (easy-groups-first ramp, "
+                        "train/looped_pc.py::Curriculum port); 0 disables. "
+                        "Battery 1 (job 4606952): without it, 7/8 cold "
+                        "trainings collapsed to the constant-value plateau")
     p.add_argument("--torch-seed", type=int, default=None)
     p.add_argument("--limit-records", type=int, default=None,
                    help="per corpus; for smoke runs")
@@ -133,6 +138,14 @@ def main():
     # (two 16 h walltime kills in FINDINGS 43 each cost a full retrain without it).
     ckpt = pl.callbacks.ModelCheckpoint(monitor="val_regret", mode="min",
                                         save_top_k=1, save_last=True)
+
+    class Curriculum(pl.Callback):
+        # port of train/looped_pc.py::Curriculum (218-224): frac ramps
+        # 0.3 -> 1.0 over the first `warmup` epochs, easiest groups first.
+        def on_train_epoch_start(self, trainer, _):
+            f = 1.0 if a.warmup <= 0 else min(
+                1.0, 0.3 + 0.7 * trainer.current_epoch / a.warmup)
+            tr_ds.set_frac(f)
     # Resume is EXPLICIT (RR_RESUME=1), never automatic: silently resuming a stale
     # last.ckpt after a data or recipe change is the silent-success class
     # FINDINGS 38 documents.
@@ -147,7 +160,8 @@ def main():
 
     accel = {"auto": "auto", "cpu": "cpu", "cuda": "gpu"}[a.device]
     trainer = pl.Trainer(max_epochs=a.epochs, accelerator=accel, devices=1,
-                         default_root_dir=str(out_dir), callbacks=[ckpt],
+                         default_root_dir=str(out_dir),
+                         callbacks=[ckpt, Curriculum()],
                          log_every_n_steps=50)
     trainer.fit(model, dl_tr, dl_va, ckpt_path=resume)
 

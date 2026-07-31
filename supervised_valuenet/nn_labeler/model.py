@@ -232,8 +232,14 @@ class SizeFreeValueNet(pl.LightningModule):
         top1 = sum(min(v)[1] for v in gr.values()) / len(gr)
         regret = sum(min(v)[2] - min(c for _, _, c, _ in v) for v in gr.values()) / len(gr)
         mae = sum(abs(p - c) for _, _, _, p, c, _ in self._val) / len(self._val)
-        self.log_dict({"val_top1_optimal": top1, "val_regret": regret, "val_mae": mae},
-                      prog_bar=True)
+        # collapse detector: a net on the constant-value plateau has ~zero
+        # within-group prediction spread (battery 1, job 4606952 -- 7/8 runs).
+        def _std(xs):
+            m = sum(xs) / len(xs)
+            return (sum((x - m) ** 2 for x in xs) / len(xs)) ** 0.5
+        spread = sum(_std([p for p, _, _, _ in v]) for v in gr.values()) / len(gr)
+        self.log_dict({"val_top1_optimal": top1, "val_regret": regret, "val_mae": mae,
+                       "val_group_spread": spread}, prog_bar=True)
         # mixed-corpus training is the point of this fork: whole-pool regret hides
         # a rung that is being carried by the others.
         per_cfg = {}

@@ -111,11 +111,26 @@ class GroupDataset(Dataset):
     the model's collate's job now, because it needs the per-record `_n`.
     """
 
-    def __init__(self, groups, max_per_group: int | None = 32, sample: bool = True):
+    def __init__(self, groups, max_per_group: int | None = 32, sample: bool = True,
+                 frac: float = 1.0):
         self.groups = sorted(groups, key=lambda g: min(r["cost_to_go"] for r in g))
         self.max_per_group, self.sample = max_per_group, sample
+        self.frac = frac
         # one size per group (all records of a decision share a board)
         self.sizes = [g[0]["_n"] for g in self.groups]
+
+    def set_frac(self, f: float) -> None:
+        """Curriculum gate, ported from train/looped_pc.py::DenseDataset.set_frac
+        (66-67): only the easiest `frac` of the min-ctg-sorted groups are
+        trainable this epoch. Battery 1 (job 4606952) showed why it exists:
+        without the ramp, 7/8 cold trainings never left the constant-value
+        plateau (three architectures with byte-identical best val_regret
+        1.9154), while the one arm whose data was a natural curriculum (8x8
+        only, pe=none) trained fine (0.198)."""
+        self.frac = max(0.05, min(1.0, f))
+
+    def cutoff(self) -> int:
+        return max(1, int(len(self.groups) * self.frac))
 
     def group_n(self, i: int) -> int:
         return self.sizes[i]
@@ -164,9 +179,15 @@ class SizeBucketBatchSampler(Sampler):
         self._epoch = int(epoch)
 
     def _batches(self, rng) -> list[list[int]]:
+        # Respect the dataset's curriculum cutoff (indices are in the dataset's
+        # min-ctg sort order, so "< cutoff" keeps exactly the easiest slice).
+        cut = self.dataset.cutoff() if hasattr(self.dataset, "cutoff") \
+            else len(self.dataset)
         out = []
         for n in sorted(self.buckets):
-            idx = list(self.buckets[n])
+            idx = [i for i in self.buckets[n] if i < cut]
+            if not idx:
+                continue
             if rng is not None:
                 rng.shuffle(idx)
             out += [idx[i:i + self.batch_size]
