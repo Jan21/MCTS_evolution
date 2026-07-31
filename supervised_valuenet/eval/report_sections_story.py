@@ -470,8 +470,87 @@ def sec_verdict(D):
     return html
 
 
+def sec_headline_first(D):
+    """The whole-study result, first — before any exposition.
+
+    Six board sizes, whole pinned 450-puzzle pool each, both planners under
+    the same search budget; solved = the plan plays out legally move by
+    move on the real board, and every solved row was independently
+    replayed. Numbers from eval/results/stats_tests.json (pooled cells;
+    base uses its graded cell, which IS its whole pool)."""
+    st = D.get("stats_tests")
+    if not st:
+        return ""
+    SRC = "eval/results/stats_tests.json"
+    cells = {(c.get("rung"), c.get("set")): c
+             for c in (st.get("cells") or [])
+             if "skipped" not in c and c.get("a") == "bwd_b2"
+             and c.get("b") == "fwd"}
+    order = [("g16r4", "graded", "16×16 board · 4 robots",
+              "the smallest size — every puzzle exactly gradable"),
+             ("g16r6", "pooled", "16×16 board · 6 robots", ""),
+             ("g16r8", "pooled", "16×16 board · 8 robots", ""),
+             ("g24r4", "pooled", "24×24 board · 4 robots", ""),
+             ("g24r8", "pooled", "24×24 board · 8 robots", ""),
+             ("g32r4", "pooled", "32×32 board · 4 robots", "")]
+    body = []
+    for rung, set_, label, note in order:
+        c = cells.get((rung, set_))
+        if not c:
+            continue
+        d = f"headline {rung}"
+        diff = c["diff"] * 100
+        winner = ("bwd" if diff > 0 else "fwd")
+        reads = (f'{abs(diff):.1f} points to the '
+                 + ("sub-goal planner" if diff > 0
+                    else "move-by-move planner"))
+        body.append(
+            f'<tr><td><b>{esc(label)}</b>'
+            + (f'<div class="cellnote">{esc(note)}</div>' if note else "")
+            + '</td><td class="num">'
+            + ck(f'{c["solved_a"]}/{c["n"]}', SRC, d + " — subgoal solved",
+                 raw=c["solved_a"])
+            + '<div class="cellnote">'
+            + ck(f'{c["rate_a"] * 100:.1f}%', SRC, d + " — subgoal rate",
+                 raw=c["rate_a"]) + "</div></td>"
+            '<td class="num">'
+            + ck(f'{c["solved_b"]}/{c["n"]}', SRC, d + " — forward solved",
+                 raw=c["solved_b"])
+            + '<div class="cellnote">'
+            + ck(f'{c["rate_b"] * 100:.1f}%', SRC, d + " — forward rate",
+                 raw=c["rate_b"]) + "</div></td>"
+            f'<td class="num">{dot(winner)} {esc(reads)}</td></tr>')
+    if not body:
+        return ""
+    table = scroll(
+        "<table><thead><tr><th>puzzle set (450 puzzles each)</th>"
+        "<th class='num'>sub-goal planner<br>solved · rate</th>"
+        "<th class='num'>move-by-move planner<br>solved · rate</th>"
+        "<th class='num'>who wins, by how much</th></tr></thead><tbody>"
+        + "".join(body) + "</tbody></table>")
+    return (kicker_h2(
+        "the result",
+        "One table before anything else",
+        "Two planners solve the same fixed pools of 450 Ricochet Robots "
+        "puzzles under the same search budget. One plans move by move; "
+        "the other plans in sub-goals, working backward from the goal. A "
+        "puzzle counts as solved only if the plan plays out legally, "
+        "move by move, on the real board — every solved row was "
+        "independently replayed through the physics alone.")
+        + table
+        + '<p class="small">On the smallest board the move-by-move '
+        "planner is the champion. From six robots up, the sub-goal "
+        "planner wins every size, by a margin that grows with both "
+        "board size and robot count — every difference below clears a "
+        "paired statistical test at p&nbsp;&lt;&nbsp;0.0001. The rest "
+        "of this page explains the puzzle, the two planners, how the "
+        "scoring stays honest, and every caveat we know of.</p>"
+        "</section>")
+
+
 def tab_overview(D):
-    return (sec_puzzle() + sec_two_ideas() + sec_rules() + sec_verdict(D))
+    return (sec_headline_first(D) + sec_puzzle() + sec_two_ideas()
+            + sec_rules() + sec_verdict(D))
 
 
 # ---------------------------------------------------------------------------
