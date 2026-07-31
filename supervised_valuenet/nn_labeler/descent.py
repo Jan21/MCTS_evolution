@@ -313,6 +313,9 @@ def main():
     with open(tmp, "w") as f:
         if a.instances_from:
             inst = instances_from_corpus(a.instances_from)
+            if a.graphs:  # replay only the requested boards' instances
+                want = set(graphs)
+                inst = [(e, s) for e, s in inst if e in want]
             if a.limit_instances:
                 inst = inst[:a.limit_instances]
             by_env = {}

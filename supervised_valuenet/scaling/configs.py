@@ -118,7 +118,11 @@ CONFIGS = {c.name: c for c in [
     _std("g8r4", 8, 4, "NN-labeler debug rung (2026-07-31): 8x8 pipeline shakeout."),
     _std("g9r4", 9, 4, "NN-labeler debug rung (2026-07-31): odd-size step-up audit."),
     _std("g10r4", 10, 4, "NN-labeler debug rung (2026-07-31): mixed-size training."),
+    _std("g11r4", 11, 4, "NN-labeler interpolation control (2026-07-31): held out of training."),
     _std("g12r4", 12, 4, "NN-labeler debug rung (2026-07-31): extrapolation audit."),
+    _std("g13r4", 13, 4, "NN-labeler interpolation control (2026-07-31): held out of training."),
+    _std("g14r4", 14, 4, "NN-labeler training-mix rung (2026-07-31)."),
+    _std("g15r4", 15, 4, "NN-labeler interpolation control (2026-07-31): held out of training."),
 ]}
 
 
