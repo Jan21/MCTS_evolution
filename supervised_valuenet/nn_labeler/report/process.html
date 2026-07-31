@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NN Labeler — replacing the exact solver for data labeling across grid sizes</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #666; --line: #d8d8d8;
+    --accent: #0b6e4f; --warn: #a15c00; --card: #f6f6f4; --code: #f0f0ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a; --fg: #e6e6e3; --muted: #9a9a95; --line: #3a3d42;
+      --accent: #5bc899; --warn: #e0a458; --card: #1d2025; --code: #22252b;
+    }
+  }
+  html { color-scheme: light dark; }
+  body { margin: 0 auto; max-width: 60rem; padding: 2rem 1.25rem 6rem;
+         background: var(--bg); color: var(--fg);
+         font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 .3rem; }
+  h2 { font-size: 1.25rem; margin: 2.4rem 0 .6rem; border-bottom: 1px solid var(--line);
+       padding-bottom: .25rem; }
+  h3 { font-size: 1.02rem; margin: 1.6rem 0 .4rem; }
+  .sub { color: var(--muted); margin: 0 0 1.6rem; }
+  table { border-collapse: collapse; margin: .8rem 0; font-size: .92rem; width: 100%; }
+  .twrap { overflow-x: auto; }
+  th, td { border: 1px solid var(--line); padding: .3rem .55rem; text-align: left; }
+  th { background: var(--card); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  code, pre { font: .86em/1.45 ui-monospace, "SF Mono", Consolas, monospace;
+              background: var(--code); border-radius: 4px; }
+  code { padding: .08em .35em; }
+  pre { padding: .7rem .9rem; overflow-x: auto; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+          padding: .9rem 1.1rem; margin: 1rem 0; }
+  .pending { border-left: 4px solid var(--warn); }
+  .pending .tag { color: var(--warn); font-weight: 600; font-size: .8rem;
+                  text-transform: uppercase; letter-spacing: .05em; }
+  .done .tag { color: var(--accent); font-weight: 600; font-size: .8rem;
+               text-transform: uppercase; letter-spacing: .05em; }
+  .src { color: var(--muted); font-size: .82rem; }
+  ul { padding-left: 1.3rem; }
+  li { margin: .25rem 0; }
+</style>
+</head>
+<body>
+
+<h1>NN Labeler: replacing the exact solver for data labeling across grid sizes</h1>
+<p class="sub">Ricochet Robots planner study &middot; process report &middot; started 2026-07-31 &middot;
+local document, updated as milestones land. Every number traces to a named file in the repo.</p>
+
+<h2>1. The problem</h2>
+<p>All training data in this study is labeled by exact solvers, and the exact solvers do not
+scale. Two measured walls (sources: <code>FINDINGS.md</code> &sect;30&ndash;34, bench meta sidecars):</p>
+<ul>
+  <li><strong>Backward (subgoal) labels</strong> price every candidate at every decision with a
+  full plan-space A* solve. The extended-vocabulary label campaign as first configured projected
+  <strong>~441 node-hours</strong> (against ~879 then remaining) &mdash; on the Rust engine at 16
+  threads, i.e. with no faster implementation left. Capping solver iterations rescued the cost
+  (~5 nh) but <em>depleted exactly the candidate type the labels exist to teach</em>
+  (by-reference share 13.5% &rarr; 4.8%; the retrain then lost &minus;24.6 points on the frontier).
+  Cost rises along the grid axis: median legitimate-rollout iterations 170&ndash;253 (16&times;16)
+  &rarr; 465 (24&times;24) &rarr; 1,062 (32&times;32).</li>
+  <li><strong>Forward labels and benchmark grading</strong> use a move-space A* whose state space is
+  (G&sup2;)<sup>R</sup>. At fixed caps its failure rate is 0% (16&times;16, 4 robots) &rarr; 29.8%
+  (6r) &rarr; 40.9% (8r) &rarr; 48.4% (24&times;24/4r) &rarr; 64.2% (24&times;24/8r) &rarr; 61.1%
+  (32&times;32/4r).</li>
+</ul>
+<p>The owner's goal: train a neural network that generalizes across grid sizes, then walk up the
+ladder (17&times;17, 18&times;18, &hellip; 32&times;32) <em>generating labeled data with the net</em>.
+Debug the whole pipeline on small boards (8&times;8) first. One GPU at a time, small experiments
+before big ones, &le;16 h walltimes (data-center cooling regime).</p>
+
+<h2>2. What made this feasible (research pass, 2026-07-31)</h2>
+<ul>
+  <li><strong>The nets were one tensor away from size-invariance.</strong> The backward value net is
+  a weight-tied looped transformer over per-cell tokens with slide-graph-masked attention; its only
+  grid-locked weight is a learned absolute positional embedding of shape [G&sup2;+1, 192]
+  (<code>train/looped_pc.py:146</code>). Everything else &mdash; encoder, the ~741k-parameter looped
+  block, readout &mdash; is size-agnostic.</li>
+  <li><strong>Zero-shot transfer already worked once:</strong> base-trained (16&times;16/4r) nets ran
+  unchanged on 6- and 8-robot boards and were slightly <em>better</em> than per-config nets
+  (FINDINGS &sect;29). Retraining on same-size data repeatedly hurt (&sect;34, &sect;47) &mdash;
+  evidence favoring a train-once approach.</li>
+  <li><strong>Verifiability:</strong> a completed backward plan can be realized to a real move
+  sequence and replayed through pure physics (<code>eval/realize.py::strict_moves</code>,
+  <code>simulate.py</code>). NN-produced labels never need to be trusted &mdash; they can be
+  <em>certified playable</em>, and their optimality gap audited wherever the exact solver still
+  works.</li>
+  <li><strong>Board generation is size-generic</strong> (<code>RR_GRID</code> env; walls scale as
+  <code>round(48&middot;(G/16)&sup2;)</code>); the Rust labeling engine is size-parametric to
+  n&le;64.</li>
+</ul>
+
+<h2>3. Three plans, one recommendation</h2>
+<p>Full text: <code>supervised_valuenet/nn_labeler/PLANS.md</code> (committed
+<code>bb85450</code>).</p>
+<div class="twrap"><table>
+  <tr><th></th><th>A: guided exact solver</th><th>B: per-rung expert iteration</th><th>C: train once, zero-shot</th></tr>
+  <tr><td>label semantics</td><td>exact / bounded</td><td>certified upper bounds</td><td>certified upper bounds</td></tr>
+  <tr><td>per-rung retraining</td><td>optional</td><td>yes, audit-gated</td><td>no</td></tr>
+  <tr><td>biggest risk</td><td>speedup insufficient</td><td>compounding drift</td><td>extrapolation cliff</td></tr>
+  <tr><td>est. node-hours</td><td class="num">20&ndash;45</td><td class="num">15&ndash;35</td><td class="num">13&ndash;25</td></tr>
+</table></div>
+<p><strong>Recommendation adopted:</strong> run C's spine (one size-invariant net trained on mixed
+small grids, zero-shot up the ladder), keep B armed per-rung wherever the audit gate fails, hold A
+in reserve. The audit walks the ladder rung by rung either way.</p>
+
+<h2>4. Phase 0 — infrastructure (done 2026-07-31)</h2>
+<div class="card done"><span class="tag">done</span>
+<ul>
+  <li><code>nn_labeler/encode.py</code> + <code>dataset.py</code>: size-parametric ports of the
+  frozen featurization &mdash; verified <strong>exactly equal</strong> (<code>np.array_equal</code>)
+  to the frozen pipeline on real 16&times;16 data; multi-corpus loading with config namespacing
+  (fixes <code>env_id</code> collisions); size-homogeneous batch sampling.
+  <span class="src">Test: nn_labeler/tests/test_encode_dataset.py (parity 50/50 records, 3/3 boards).</span></li>
+  <li><code>nn_labeler/model.py</code> + <code>train.py</code>: <code>SizeFreeValueNet</code> &mdash;
+  the value net minus its positional embedding, replaced by runtime <em>sin2d</em> /
+  <em>coord-channel</em> / <em>none</em> variants; one instance forwards at n=8 and n=24 in one
+  process; 96 value bins (production max cost observed: 71 at 32&times;32); mixed-corpus trainer
+  with per-config metrics, save_last + explicit resume.
+  <span class="src">Test: tests/test_model_smoke.py; 1-epoch 16&times;16 micro-train scores real 24&times;24 boards.</span></li>
+  <li><code>nn_labeler/audit.py</code>: the label-quality gate &mdash; top-1-optimal / regret / MAE
+  / signed bias, per depth, per config, on any corpus split, against any checkpoint.</li>
+  <li><strong>Debug data bed</strong>: nine grid sizes 8&ndash;16 with exact base-vocabulary labels
+  (below). Total login-node cost: minutes.</li>
+</ul></div>
+
+<div class="twrap"><table>
+  <tr><th>config</th><th class="num">boards</th><th class="num">records</th><th class="num">label wall-clock</th><th class="num">max cost_to_go</th><th>role</th></tr>
+  <tr><td>g8r4</td><td class="num">1200</td><td class="num">105,413</td><td class="num">15 s</td><td class="num">34</td><td>debug / train mix</td></tr>
+  <tr><td>g9r4</td><td class="num">1200</td><td class="num">102,972</td><td class="num">16 s</td><td class="num">38</td><td>train mix</td></tr>
+  <tr><td>g10r4</td><td class="num">1200</td><td class="num">101,824</td><td class="num">21 s</td><td class="num">43</td><td>train mix</td></tr>
+  <tr><td>g11r4</td><td class="num">1200</td><td class="num">99,596</td><td class="num">27 s</td><td class="num">&mdash;</td><td>interpolation control</td></tr>
+  <tr><td>g12r4</td><td class="num">1200</td><td class="num">98,225</td><td class="num">32 s</td><td class="num">49</td><td>extrapolation audit</td></tr>
+  <tr><td>g13r4</td><td class="num">1200</td><td class="num">97,337</td><td class="num">38 s</td><td class="num">&mdash;</td><td>interpolation control</td></tr>
+  <tr><td>g14r4</td><td class="num">1200</td><td class="num">97,377</td><td class="num">47 s</td><td class="num">&mdash;</td><td>train mix</td></tr>
+  <tr><td>g15r4</td><td class="num">1200</td><td class="num">96,012</td><td class="num">56 s</td><td class="num">&mdash;</td><td>interpolation control</td></tr>
+  <tr><td>g16r4 (legacy)</td><td class="num">pre-existing</td><td class="num">181,768</td><td class="num">&mdash;</td><td class="num">&mdash;</td><td>2-step extrapolation audit</td></tr>
+</table></div>
+<p class="src">Sources: <code>scaling/data/g&lt;n&gt;r4/backward.rust.jsonl</code> (wc -l),
+<code>nn/data/combined.jsonl</code>; generation logs in the session scratchpad; FINDINGS &sect;48.</p>
+
+<h2>5. The certified-descent labeler</h2>
+<p><code>nn_labeler/descent.py</code> &mdash; the engine of Plans B/C. At each decision it
+enumerates candidates exactly as the exact labeler does (same <code>propose</code>, same top-14
+score truncation), but prices each candidate by <strong>greedy NN completion</strong> instead of an
+exact solve: commit the candidate, then repeatedly take the value net's best-scored next candidate
+(keeping the exact-shortest-path fast path, and pruning with the proven
+<code>prefix_playable</code> check) until the plan completes. The completed plan is
+<strong>realized under full physics</strong>; only candidates whose completion actually plays out
+are labeled. Labels are certified upper bounds in the exact labeler's own plan-cost units;
+<code>is_optimal</code> = argmin of certified bounds. Records keep the frozen 18-field schema plus
+provenance (<code>n</code>, <code>label_source</code>, <code>ctg_certified</code>,
+<code>label_model</code>, <code>label_model_sha</code>) so they are drop-in for the existing
+trainers and can never be silently confused with exact labels.</p>
+<div class="card done"><span class="tag">done</span>
+<p><strong>Plumbing validated at 8&times;8</strong> with a deliberately weak 1-epoch net:
+6/8 RNG instances kept, 11/12 corpus-replay instances kept, ~0.3&ndash;0.8 s/instance on CPU.
+The label-comparison tool (<code>nn_labeler/audit_descent.py</code>) passed an identity self-audit
+(3040/3040 groups, 20,000/20,000 candidates, all gaps zero) and, against the weak net's labels:
+zero negative gaps (upper-bound property holds), and on exact-optimal candidates the weak net's
+completions were <em>exactly optimal 93% of the time</em> (mean gap 0.20) &mdash; the structure
+(exact-pin fast path + candidate enumeration) carries much of the weight even before training.
+<span class="src">nn_labeler/results (session scratchpad copies); sidecar manifests.</span></p></div>
+
+<h2>6. Debug battery — PE ablation &times; mixed-size training</h2>
+<div class="card pending"><span class="tag">pending — job 4606952 queued</span>
+<p>8 trainings of the size-free net on the debug bed (20 epochs, seed 11, 96 bins): position-signal
+ablation {sin2d, coord, none} on 8&times;8-only and on mixed {8,9,10}; single-size references at 10
+and 12. After each: audit at 8/9/10/12 and zero-shot 16&times;16 (legacy corpus test split, 358
+boards / 48,835 records). Deliverable: the first <strong>extrapolation curves</strong> (label
+regret vs grid size per arm) and the PE decision. Projected cost &le;1.75 nh.</p></div>
+
+<h2>7. Descent quality gate</h2>
+<div class="card pending"><span class="tag">pending — runs after the battery</span>
+<p>Pre-authored (<code>nn_labeler/jobs/descent_gate.slurm</code>): replay the exact corpora's
+test-range instances through the descent labeler with the battery's winning checkpoint; compare
+labels decision-by-decision against exact (in-domain 8/10, one-step 12, two-step 16). Gate
+thresholds (provisional, from PLANS.md): mean certified-label regret &le;0.5 on the audit stratum,
+&le;10% is_optimal disagreement.</p></div>
+
+<h2>8. The ladder — 17&times;17 to 32&times;32</h2>
+<div class="card pending"><span class="tag">pending</span>
+<p>Production step per the adopted plan: train the production mixed-size net (winning PE arm;
+sizes {8,9,10,12,14,16} &times; available robot counts; interpolation controls 11/13/15 held out),
+measure the extrapolation curve, then walk 17&rarr;32 generating certified labeled data at each
+rung with per-rung audits (exact-solver spot-checks on the recoverable stratum). Fine-tune only
+where the audit gate fails.</p></div>
+
+<h2>9. Cost ledger</h2>
+<div class="twrap"><table>
+  <tr><th>item</th><th class="num">node-hours</th><th>notes</th></tr>
+  <tr><td>research + Phase 0 + debug bed</td><td class="num">0 (login CPU)</td><td>boards + labels for 9 sizes: minutes of login-node time</td></tr>
+  <tr><td>debug battery (job 4606952)</td><td class="num">&le;1.75 projected</td><td>1 GPU, 14 h walltime cap</td></tr>
+  <tr><td>descent gate</td><td class="num">&le;1.25 projected</td><td>1 GPU, 10 h cap</td></tr>
+  <tr><td>remaining (production train + ladder)</td><td class="num">~10&ndash;20 projected</td><td>PLANS.md Plan C estimate</td></tr>
+</table></div>
+<p class="src">Allocation state at track start: ~816 node-hours remaining of 1000 (it4ifree,
+2026-07-31).</p>
+
+<h2>10. Provenance</h2>
+<ul>
+  <li>Plans: <code>nn_labeler/PLANS.md</code> (commit <code>bb85450</code>)</li>
+  <li>Phase 0 code + debug bed: commits <code>ea3aaff</code>, <code>a0b0993</code>, <code>93b628f</code></li>
+  <li>Running log: <code>FINDINGS.md</code> &sect;48+</li>
+  <li>Jobs: <code>nn_labeler/jobs/debug_battery.slurm</code> (4606952),
+      <code>nn_labeler/jobs/descent_gate.slurm</code></li>
+</ul>
+
+</body>
+</html>
