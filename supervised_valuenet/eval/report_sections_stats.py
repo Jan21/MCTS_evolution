@@ -437,6 +437,60 @@ def _seed_block(D):
 
 
 # ---------------------------------------------------------------------------
+# 1e. The no-network control (FINDINGS 48)
+# ---------------------------------------------------------------------------
+
+def _heuristic_block(cells):
+    pair_nn = [c for c in cells if c.get("a") == "bwd_b2"
+               and c.get("b") == "bwd_heuristic"]
+    if not pair_nn:
+        return ""
+    body = []
+    for c in pair_nn:
+        d = f'heur {c["rung"]} {c["set"]}'
+        body.append(
+            f'<tr><td><b>{esc(_rlabel(c["rung"]))}</b>'
+            f'<div class="cellnote">{esc(_slabel(c["set"]))} — '
+            f'{c["n"]} puzzles</div></td>'
+            '<td class="num">'
+            + ck(f'{c["solved_a"]}/{c["n"]}', SRC, d + " — nets solved",
+                 raw=c["solved_a"])
+            + '<div class="cellnote">'
+            + ck(f'{c["rate_a"] * 100:.1f}%', SRC, d + " — nets rate",
+                 raw=c["rate_a"]) + "</div></td>"
+            '<td class="num">'
+            + ck(f'{c["solved_b"]}/{c["n"]}', SRC, d + " — heuristic solved",
+                 raw=c["solved_b"])
+            + '<div class="cellnote">'
+            + ck(f'{c["rate_b"] * 100:.1f}%', SRC, d + " — heuristic rate",
+                 raw=c["rate_b"]) + "</div></td>"
+            f'<td class="num">{_diff_ci(c, d)}</td>'
+            f'<td class="num">{_pval(c, d)}</td></tr>')
+    table = scroll(
+        "<table><thead><tr><th>configuration · set</th>"
+        "<th class='num'>neural networks<br>solved · rate</th>"
+        "<th class='num'>hand-written scorer<br>solved · rate</th>"
+        "<th class='num'>difference, points [95% CI]</th>"
+        "<th class='num'>p (McNemar)</th></tr></thead><tbody>"
+        + "".join(body) + "</tbody></table>")
+    return ("<h3>The no-network control — what do the networks actually "
+            "add?</h3>"
+            "<p>The subgoal planner's training labels come from a "
+            "hand-written search, so a fair question is whether the "
+            "learned planner is just that hand-written solver again. "
+            "This control runs the EXACT production search loop — same "
+            "candidate pool, same budget, same shortlist width, same "
+            "play-out checking and repairs — with the two neural scoring "
+            "points swapped back to the hand-written scorer. The "
+            "difference column is therefore the networks' entire "
+            "contribution at matched compute. (Context: the hand-written "
+            "scorer needs budgets orders of magnitude larger to reach "
+            "its ceiling — it generated the training labels at ~17× this "
+            "budget per attempt.) Every solved row was independently "
+            "replay-certified.</p>" + table)
+
+
+# ---------------------------------------------------------------------------
 # 2. What does not survive
 # ---------------------------------------------------------------------------
 
@@ -628,6 +682,7 @@ def sec_significance(D):
             + _retrained_block(cells)
             + _corpus_block(cells, D)
             + _seed_block(D)
+            + _heuristic_block(cells)
             + _nonsig_block(cells)
             + _twobytwo_block(cells)
             + "</section>")

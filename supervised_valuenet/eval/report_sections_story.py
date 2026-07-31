@@ -614,8 +614,14 @@ def sec_base_headline(D):
          "networks retrained on it", False),
         (D.get("bwd_b2"), "eval/results/final450_backward_b2.json",
          "Subgoals — full plan language (same networks, zero-shot)",
-         "adds re-use of already-placed robots; the retrained-on-B1 networks "
-         "rank the new step type unseen", True),
+         "adds generalized repairs; the re-use step type itself never "
+         "reaches the learned search (see the plan-language tab)", True),
+        (D.get("bwd_heuristic"),
+         "eval/results/final450_backward_heuristic_baseline.json",
+         "Subgoals — hand-written scoring only (no neural networks)",
+         "the same search loop, budget and candidate pool with the "
+         "labeler's hand-written scorer; the gap to the row above is the "
+         "networks' whole contribution", False),
     ]
     for comp, src, label, sub, hl in stages:
         a = bwd_agg(comp)

@@ -54,6 +54,9 @@ BASE_SYSTEMS = {
     # despite what §37's table column briefly claimed).
     "bwd_retrained_cap20k":
         ("final450_backward_b2_retrained_cap20000.json", "backward"),
+    # the no-network control: hand-written scorer, same loop/budget/pool
+    # (analysis/heuristic_baseline.py, job 4606791, FINDINGS 48)
+    "bwd_heuristic": ("final450_backward_heuristic_baseline.json", "backward"),
     # "forward:best" mirrors eval/report_data.py: the base forward cell is the
     # BEST forward system in the file (candidate_scored.ckpt, 450/450), not the
     # first one listed (best.ckpt, 381/450). Comparing against anything weaker
@@ -67,9 +70,13 @@ BASE_SYSTEMS = {
 EXTRA_SLOTS = {
     "graded": {"bwd_basenets_old":
                ("comparison_basenets_oldvocab.json", "backward"),
+               "bwd_heuristic":
+               ("comparison_heuristic_baseline.json", "backward"),
                },
     "frontier": {"bwd_basenets_old":
                  ("comparison_ungraded_basenets_oldvocab.json", "backward"),
+                 "bwd_heuristic":
+                 ("comparison_ungraded_heuristic_baseline.json", "backward"),
                  },
 }
 
@@ -90,6 +97,9 @@ PAIRS = [
     # THE headline row once the corpora are regenerated: the properly retrained
     # backward planner against the forward control.
     ("bwd_retrained_cap20k", "fwd"),
+    # the learning effect at fixed search: neural vs hand-written scoring
+    ("bwd_b2", "bwd_heuristic"),
+    ("bwd_heuristic", "fwd"),
 ]
 
 LABELS = {
@@ -100,6 +110,7 @@ LABELS = {
     "bwd_retrained_cap20k": "backward (B2, retrained on cap-20,000 labels)",
     "bwd_basenets_old": "backward (base-B1 nets, OLD vocabulary)",
     "fwd": "forward control",
+    "bwd_heuristic": "backward (hand-written scorer, no networks)",
 }
 
 

@@ -1708,6 +1708,38 @@ scoped fix.
    zero-shot at 8/9/10/12/16 (legacy `nn/data/combined.jsonl` test split, 358
    boards / 48,835 records, schema-identical) — results will be the next item.
 
+48. **The no-network control: at the eval budget the hand-written scorer
+   loses 8–23 points to the networks — the learned planner is not the
+   labeler replayed (2026-07-31, owner-requested).** The owner asked
+   whether the backward results are "basically the score of the naive
+   solver", since the labels come from the hand-written search. Direct
+   measurement (`analysis/heuristic_baseline.py`, job 4606791): the exact
+   production eval loop with only the two neural scoring points replaced
+   by the labeler's hand-written scorer (`heuristics.score` shortlist,
+   `plan.cost()` frontier) — same candidate pool, budget 1200, k=5, same
+   anytime play-out check and generalized parks. All solved rows
+   replay-certified in-job (394+276+77, zero failures).
+   | set | networks | hand-written | nets − heuristic |
+   |---|---|---|---|
+   | base 450 | 430 = 95.6% | 394 = 87.6% | +8.0 [+5.6, +10.7], p<0.0001 |
+   | g16r6 graded (316) | 306 = 96.8% | 276 = 87.3% | +9.5 [+5.7, +13.7], p<0.0001 |
+   | g16r6 frontier (134) | 108 = 80.6% | 77 = 57.5% | +23.1 [+15.4, +31.2], p<0.0001 |
+   | g16r6 pooled (450) | 414 = 92.0% | 353 = 78.4% | +13.6 [+10.2, +17.1], p<0.0001 |
+   Two readings, both useful for the paper:
+   - **The networks earn their keep at matched compute**, most where it
+     matters (the beyond-oracle set: +23.1). The labeler only ever solved
+     anything with ~17× this per-attempt budget; the nets compress that
+     into 1,200 steps.
+   - **The formulation alone is already potent**: the no-network subgoal
+     search still beats the trained forward planner on the g16r6 frontier
+     (57.5% vs 48.5%, +9.0 [−2.3, +20.1], p=0.14 — point estimate ahead,
+     underpowered) though it loses the graded sets badly (−12 pts vs
+     forward) and the pooled union (−5.8, p=0.0095). So the scaling
+     story needs BOTH ingredients: subgoal structure to survive the
+     frontier, learned ranking to win everywhere.
+   Rendered: fairness tab ("the no-network control") + a row in the base
+   systems table. Cells in `eval/results/stats_tests.json` (118 cells).
+
 ## Still open
 
 - **Integrating the by-reference step type into the learned planner**

@@ -449,6 +449,8 @@ def collect():
     D["bwd_prefix"] = load_json("eval/results/final450_backward_prefix.json")
     D["bwd_b1"] = load_json("eval/results/final450_backward_b1.json")
     D["bwd_b2"] = load_json("eval/results/final450_backward_b2.json")
+    D["bwd_heuristic"] = load_json(
+        "eval/results/final450_backward_heuristic_baseline.json")
     D["bwd_retrained"] = None
     for fname in BASE_FUTURE["bwd_retrained"]:
         rel = "eval/results/" + fname
