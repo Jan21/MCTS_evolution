@@ -10,7 +10,7 @@
 # Battery 1 found 7/8 cold trainings stuck on the constant-value plateau (three
 # architectures, byte-identical best val_regret 1.9154); the port had dropped
 # the reference's Curriculum warmup. This battery reruns the informative arms
-# WITH the curriculum (--warmup 8, now the default) plus seed-robustness runs
+# WITH the two-phase curriculum (--warmup 4) plus seed-robustness runs
 # and pe=none single-size references. Idempotent per-run (DONE markers).
 #
 #   sbatch supervised_valuenet/nn_labeler/jobs/debug_battery2.slurm
@@ -25,7 +25,7 @@ export PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS=16
 nvidia-smi -L
 
-COMMON="--num-classes 96 --epochs 20 --batch-size 8 --max-per-group 32 --warmup 8 --device cuda"
+COMMON="--num-classes 96 --epochs 20 --batch-size 8 --max-per-group 32 --warmup 4 --device cuda"
 D8=g8r4=scaling/data/g8r4/backward.rust.jsonl
 D9=g9r4=scaling/data/g9r4/backward.rust.jsonl
 D10=g10r4=scaling/data/g10r4/backward.rust.jsonl

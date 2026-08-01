@@ -59,11 +59,14 @@ def main():
     p.add_argument("--d-model", type=int, default=192)
     p.add_argument("--recurrence", type=int, default=12)
     p.add_argument("--heads", type=int, default=4)
-    p.add_argument("--warmup", type=int, default=8,
-                   help="curriculum warmup epochs (easy-groups-first ramp, "
-                        "train/looped_pc.py::Curriculum port); 0 disables. "
-                        "Battery 1 (job 4606952): without it, 7/8 cold "
-                        "trainings collapsed to the constant-value plateau")
+    p.add_argument("--warmup", type=int, default=4,
+                   help="curriculum warmup EPOCHS spent on the easiest 30%% of "
+                        "decision groups before the full fit (two static "
+                        "phases; the reference's per-epoch frac ramp is not "
+                        "implementable with this Lightning version's length "
+                        "caching, FINDINGS 52). 0 disables. Battery 1: without "
+                        "a curriculum, 7/8 cold trainings collapsed to the "
+                        "constant-value plateau")
     p.add_argument("--torch-seed", type=int, default=None)
     p.add_argument("--limit-records", type=int, default=None,
                    help="per corpus; for smoke runs")
@@ -138,14 +141,6 @@ def main():
     # (two 16 h walltime kills in FINDINGS 43 each cost a full retrain without it).
     ckpt = pl.callbacks.ModelCheckpoint(monitor="val_regret", mode="min",
                                         save_top_k=1, save_last=True)
-
-    class Curriculum(pl.Callback):
-        # port of train/looped_pc.py::Curriculum (218-224): frac ramps
-        # 0.3 -> 1.0 over the first `warmup` epochs, easiest groups first.
-        def on_train_epoch_start(self, trainer, _):
-            f = 1.0 if a.warmup <= 0 else min(
-                1.0, 0.3 + 0.7 * trainer.current_epoch / a.warmup)
-            tr_ds.set_frac(f)
     # Resume is EXPLICIT (RR_RESUME=1), never automatic: silently resuming a stale
     # last.ckpt after a data or recipe change is the silent-success class
     # FINDINGS 38 documents.
@@ -159,11 +154,39 @@ def main():
               flush=True)
 
     accel = {"auto": "auto", "cpu": "cpu", "cuda": "gpu"}[a.device]
-    trainer = pl.Trainer(max_epochs=a.epochs, accelerator=accel, devices=1,
-                         default_root_dir=str(out_dir),
-                         callbacks=[ckpt, Curriculum()],
+    # Curriculum = two STATIC fit phases (see dataset.py docstring for why not
+    # a per-epoch frac ramp). Phase A: easiest 30% of groups (GroupDataset is
+    # min-ctg sorted) for --warmup epochs, no checkpointing — its only job is
+    # to steer cold training away from the constant-value plateau (battery 1,
+    # FINDINGS 50). Phase B: the full corpus, monitored checkpointing. A
+    # resume (RR_RESUME=1 with a last.ckpt present) skips phase A: the
+    # last.ckpt is already past it.
+    warm_epochs = min(a.warmup, max(a.epochs - 1, 0))
+    if warm_epochs > 0 and resume is None:
+        cut = max(1, int(len(tr_ds.groups) * 0.3))
+        easy_ds = dataset.GroupDataset(
+            [g for g in tr_ds.groups[:cut]], a.max_per_group, True)
+        dl_easy = DataLoader(easy_ds, collate_fn=coll,
+                             num_workers=a.num_workers,
+                             batch_sampler=dataset.SizeBucketBatchSampler(
+                                 easy_ds, a.batch_size, True, seed))
+        print(f"[nnlab] warmup fit: {warm_epochs} epochs on the easiest "
+              f"{cut}/{len(tr_ds.groups)} groups", flush=True)
+        warm = pl.Trainer(max_epochs=warm_epochs, accelerator=accel, devices=1,
+                          default_root_dir=str(out_dir), log_every_n_steps=50,
+                          enable_checkpointing=False)
+        warm.fit(model, dl_easy, dl_va)
+        if "val_regret" not in warm.callback_metrics:
+            raise SystemExit("NNLAB TRAIN FAILED: warmup validation never ran")
+
+    trainer = pl.Trainer(max_epochs=max(a.epochs - warm_epochs, 1),
+                         accelerator=accel, devices=1,
+                         default_root_dir=str(out_dir), callbacks=[ckpt],
                          log_every_n_steps=50)
     trainer.fit(model, dl_tr, dl_va, ckpt_path=resume)
+    if "val_regret" not in trainer.callback_metrics:
+        raise SystemExit("NNLAB TRAIN FAILED: validation never ran "
+                         "(no val_regret in callback metrics)")
 
     metrics = {k: round(float(v), 4) for k, v in trainer.callback_metrics.items()
                if torch.is_tensor(v) or isinstance(v, (int, float))}

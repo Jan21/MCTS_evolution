@@ -1777,8 +1777,9 @@ scoped fix.
    `audit_d3_*.json`, `runs/nnlab/debug_battery_4606952.out`,
    `nn_labeler/runs/*/lightning_logs/version_0/metrics.csv`.
 
-49. **g32r4's cap-20000 pair is banked by hand, and the campaign's last two
-   lanes are running (2026-08-01).** The three-link value chain completed
+51. **g32r4's cap-20000 pair is banked by hand, and the campaign's last two
+   lanes are running (2026-08-01).** *(Renumbered from 49 — see item 49's
+   numbering note; two sessions append concurrently.)* The three-link value chain completed
    (marker-gated DONE; best val_regret 4.7435 across the three same-split
    versions). `bank_b2` refused to auto-pick the policy: TWO legitimate
    candidates exist — version_0 from the cancelled single-job retrain
@@ -1794,6 +1795,34 @@ scoped fix.
    the campaign; the mode caveat stands (no within-rung good/bad
    reference exists at g32r4 — its value training plateaued early at
    every link, like the other big rungs).
+
+52. **NN-labeler battery 2 false start: a curriculum sampler that under-yields
+   its declared length silently disables Lightning validation; fixed as two
+   static fit phases (2026-08-01).** Job 4607697 (cancelled at ~40 min,
+   ~0.08 nh): the first curriculum implementation gated batches inside the
+   batch sampler while `len()` kept reporting the full count — Lightning
+   schedules end-of-epoch validation from `len(dataloader)` (`is_last_batch`),
+   so validation NEVER ran: no val metrics, no checkpoints, silent. Caught by
+   a 7-minute health check (metrics.csv had no val columns), job killed. Two
+   further dead ends measured before the fix: an honest dynamic `len()` does
+   not help (this Lightning caches the length at fit start —
+   `reload_dataloaders_every_n_epochs=1` did not re-read it: three 47-batch
+   epochs where 47/102/156 were expected), and it does not call `set_epoch`
+   on custom batch samplers either. Adopted design: curriculum = **two static
+   fits** in `nn_labeler/train.py` — a warmup fit on the easiest 30% of
+   min-ctg-sorted groups (`--warmup` epochs, checkpointing off), then the
+   full monitored fit; every length is honest by construction, and a
+   post-fit guard exits nonzero if `val_regret` is absent (this failure class
+   can never be silent again). Integration test (mini 8×8 corpus, CPU):
+   warmup epochs 47 batches → full epochs 156, validation every epoch in
+   both phases, best val_regret 0.592 in 5 total epochs vs 0.737 without
+   warmup at matched budget. Battery 2 resubmitted with `--warmup 4`.
+   Sources: `runs/nnlab/debug_battery2_4607697.out`, session-scratchpad
+   integration runs (`curric_it*/lightning_logs/*/metrics.csv`).
+
+<!-- NUMBERING NOTE for concurrent sessions: two Claude sessions append here
+     the same day. Before adding an item, take max(existing item number)+1 —
+     grep -E '^[0-9]+\. ' FINDINGS.md | tail -1. Next free number: 53. -->
 
 ## Still open
 

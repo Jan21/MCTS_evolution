@@ -200,7 +200,9 @@ def test_val_metrics():
     m.on_validation_epoch_end()
 
     assert set(seen) == {"val_top1_optimal", "val_regret", "val_mae",
+                         "val_group_spread",
                          "val_regret/cfgA", "val_regret/cfgB"}, sorted(seen)
+    assert seen["val_group_spread"] > 0, seen  # non-constant preds must spread
     assert close(seen["val_regret"], 7 / 4), seen          # (2+0+0+5)/4
     assert close(seen["val_top1_optimal"], 0.5), seen      # 2 of 4 decisions
     assert close(seen["val_mae"], 26.9 / 8, 1e-5), seen
