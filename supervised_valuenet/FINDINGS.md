@@ -1777,6 +1777,24 @@ scoped fix.
    `audit_d3_*.json`, `runs/nnlab/debug_battery_4606952.out`,
    `nn_labeler/runs/*/lightning_logs/version_0/metrics.csv`.
 
+49. **g32r4's cap-20000 pair is banked by hand, and the campaign's last two
+   lanes are running (2026-08-01).** The three-link value chain completed
+   (marker-gated DONE; best val_regret 4.7435 across the three same-split
+   versions). `bank_b2` refused to auto-pick the policy: TWO legitimate
+   candidates exist — version_0 from the cancelled single-job retrain
+   4600294, whose policy stage had already completed before the cancel,
+   and version_1 from the chain link 4601425 — and checkpoint hparams
+   record no data provenance, so the §33b refusal fired exactly as
+   designed. Both Slurm logs confirm the same training file
+   (`backward_b2.cap20000.rust.jsonl`); the hand-banked pick is the
+   marker-backed chain product, which is also the lower val_regret of
+   the two (0.907 vs 0.973). The pick and its evidence are recorded
+   inside the manifest entry itself (`_hand_banked` note). Track 1
+   lanes 4608110 (graded) / 4608111 (frontier) are the last compute of
+   the campaign; the mode caveat stands (no within-rung good/bad
+   reference exists at g32r4 — its value training plateaued early at
+   every link, like the other big rungs).
+
 ## Still open
 
 - **Integrating the by-reference step type into the learned planner**
