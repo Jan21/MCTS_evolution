@@ -1820,9 +1820,39 @@ scoped fix.
    Sources: `runs/nnlab/debug_battery2_4607697.out`, session-scratchpad
    integration runs (`curric_it*/lightning_logs/*/metrics.csv`).
 
+53. **Battery 2b: pe=none is the encoding (sin2d is untrainable even with
+   curriculum), mixing sizes helps, seeds agree — and the "16×16 cliff" was a
+   legacy-corpus artifact: zero-shot label quality is flat to 1.6× the
+   training size on same-pipeline data (2026-08-02).** Job 4608951 (8 runs ×
+   20 epochs, two-phase curriculum, COMPLETED; audits
+   `nn_labeler/results/audit_c2_*.json`).
+   (a) All six pe=none arms trained healthily (pred_group_spread 2.0–2.2) and
+   the seed pairs agree to ±0.03 regret everywhere — the collapse mode is
+   gone and the arm is seed-robust. Both pe=sin2d arms stayed collapsed
+   (spread 0.00, metrics = the propose-order baseline) even WITH the
+   curriculum: the additive sinusoid itself blocks this recipe, so
+   **pe=none — the slide-graph attention masks alone — is the production
+   encoding**, which is also the most size-portable possible choice.
+   (b) Mixed {8,9,10} beats single-size training at every audit size
+   (test regret 0.16/0.17/0.21/0.24 at 8/9/10/12 vs 0.20–0.22/…/0.31–0.34
+   for 8×8-only; seed 37: 0.13/0.18/0.17/0.22).
+   (c) Every arm still showed ~3.3–3.5 regret on the 16×16 audit — but that
+   audit point is the LEGACY corpus (`nn/data/combined.jsonl`). A follow-up
+   audit of the same mixed pe=none checkpoint on FRESH standard-pipeline
+   corpora (`audit_c2_mix_none_s11_fullcurve.json`) reads
+   **0.233 / 0.298 / 0.269 / 0.298 at grids 11/13/14/15** (top-1 0.89–0.90,
+   rungs never seen in training) and **0.465 / top-1 0.848 at g16r6** — a
+   16×16 corpus from the standard pipeline WITH a simultaneous robot-count
+   shift to 6. The extrapolation curve on same-pipeline data is near-flat
+   through 1.6× the training size; the legacy point's 3.3 measures corpus
+   shift (legacy instance generation), not board size. Next: the same
+   checkpoint audited on the existing exact base-vocab corpora at 24×24 and
+   32×32 (2.4×/3.2×; zero generation cost), plus the certified-descent gate
+   (job 4609679) — together these decide the ladder shape.
+
 <!-- NUMBERING NOTE for concurrent sessions: two Claude sessions append here
      the same day. Before adding an item, take max(existing item number)+1 —
-     grep -E '^[0-9]+\. ' FINDINGS.md | tail -1. Next free number: 53. -->
+     grep -E '^[0-9]+\. ' FINDINGS.md | tail -1. Next free number: 54. -->
 
 ## Still open
 
