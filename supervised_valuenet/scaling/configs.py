@@ -123,6 +123,20 @@ CONFIGS = {c.name: c for c in [
     _std("g13r4", 13, 4, "NN-labeler interpolation control (2026-07-31): held out of training."),
     _std("g14r4", 14, 4, "NN-labeler training-mix rung (2026-07-31)."),
     _std("g15r4", 15, 4, "NN-labeler interpolation control (2026-07-31): held out of training."),
+    _std("g17r4", 17, 4, "NN-labeler ladder rung (2026-08-02)."),
+    _std("g18r4", 18, 4, "NN-labeler ladder rung (2026-08-02)."),
+    _std("g19r4", 19, 4, "NN-labeler ladder rung (2026-08-02)."),
+    _std("g20r4", 20, 4, "NN-labeler ladder rung (2026-08-02)."),
+    _std("g21r4", 21, 4, "NN-labeler ladder rung (2026-08-02)."),
+    _std("g22r4", 22, 4, "NN-labeler ladder rung (2026-08-02)."),
+    _std("g23r4", 23, 4, "NN-labeler ladder rung (2026-08-02)."),
+    _std("g25r4", 25, 4, "NN-labeler ladder rung (2026-08-02)."),
+    _std("g26r4", 26, 4, "NN-labeler ladder rung (2026-08-02)."),
+    _std("g27r4", 27, 4, "NN-labeler ladder rung (2026-08-02)."),
+    _std("g28r4", 28, 4, "NN-labeler ladder rung (2026-08-02)."),
+    _std("g29r4", 29, 4, "NN-labeler ladder rung (2026-08-02)."),
+    _std("g30r4", 30, 4, "NN-labeler ladder rung (2026-08-02)."),
+    _std("g31r4", 31, 4, "NN-labeler ladder rung (2026-08-02)."),
 ]}
 
 
