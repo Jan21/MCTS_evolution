@@ -1869,9 +1869,40 @@ scoped fix.
    legacy corpus excluded per §53, 30 epochs, seed 11, ~1.3–2 nh; seed 37
    contingent — battery seed pairs agreed to ±0.03).
 
+55. **The certified-descent gate passes on every fresh rung; the NN-labeler
+   path decision is made: train-once + per-rung audit gates, no per-rung
+   retraining, exact solver retired from bulk labeling (2026-08-02).** Job
+   4609679 (descent replay of the exact corpora's test-range instances with
+   the battery's mixed pe=none checkpoint, then decision-by-decision
+   comparison; `nn_labeler/results/dgate_mix_none_s11_*.json`):
+   | gate | mean gap | share gap=0 | on-optimal gap / =0 | argmin agree |
+   |---|---|---|---|---|
+   | 8×8 in-domain | 0.347 | 85.2% | 0.221 / 92.3% | 86.9% |
+   | 10×10 in-domain | 0.367 | 85.6% | 0.248 / 91.2% | 87.4% |
+   | 12×12 one-step | 0.453 | 85.3% | 0.325 / 90.3% | 86.9% |
+   (gap = certified descent label − exact optimal cost-to-go; median 0 and
+   p90 ≤ 1 everywhere; depth-0 instance coverage 100%). All three pass the
+   provisional PLANS.md gate (mean ≤ 0.5); argmin disagreement 13% vs the
+   provisional 10% is the one borderline cell — expected to tighten with the
+   production net. Caveats recorded: (i) descent labels ~66% of the exact
+   candidate set (failed/uncertified completions are dropped — a yield cost,
+   not a correctness cost); (ii) 1/7/6 negative gaps per rung (~0.08%) —
+   consistent with depth>0 group-key collisions (the key omits plan context),
+   to be re-checked once, not a blocker; (iii) the 16×16-legacy leg is
+   discarded as a gate (candidate groups up to 50 vs the 14-cap, 342
+   pseudo-negative gaps — the legacy corpus is generation-incompatible,
+   reaffirming §53). **Path decision (PLANS.md): Plan C's spine with Plan B's
+   gates.** Zero-shot value quality is flat to 32×32 (§54) and certified
+   descent converts it into labels matching the exact optimum on 85% of
+   candidates — so: one production net (job 4609800, queued), per-rung audit
+   gates (exact spot-sets via the Rust engine stay affordable at r4/base all
+   the way to 32×32 — the ladder deliberately sits where ground truth exists
+   so every rung's labels are verifiable), per-rung fine-tuning only on gate
+   failure, and Plan A (NN-guided exact solver) shelved.
+
 <!-- NUMBERING NOTE for concurrent sessions: two Claude sessions append here
      the same day. Before adding an item, take max(existing item number)+1 —
-     grep -E '^[0-9]+\. ' FINDINGS.md | tail -1. Next free number: 55. -->
+     grep -E '^[0-9]+\. ' FINDINGS.md | tail -1. Next free number: 56. -->
 
 ## Still open
 
