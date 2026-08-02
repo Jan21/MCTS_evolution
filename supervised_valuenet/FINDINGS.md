@@ -1904,6 +1904,38 @@ scoped fix.
      the same day. Before adding an item, take max(existing item number)+1 —
      grep -E '^[0-9]+\. ' FINDINGS.md | tail -1. Next free number: 56. -->
 
+50. **CAMPAIGN COMPLETE (2026-08-02). The last rows land, and they invert
+   the retraining story at the largest scale: at 32×32 the cap-20000
+   retrain improves BOTH sets and produces the study's largest margin.**
+   g32r4 retrained rows certified (graded 171/171 replays, frontier
+   214/214, zero failures; the graded lane needed one resubmit through
+   the recurring requeued-held env flake):
+   | g32r4 | zero-shot B2 | cap-20000 retrained | difference |
+   |---|---|---|---|
+   | graded (175) | 154 = 88.0% | **171 = 97.7%** | +9.7 [+5.5, +14.5], p<0.0001 |
+   | frontier (275) | 196 = 71.3% | **214 = 77.8%** | +6.5 [+2.2, +10.9], p=0.0064 |
+   | pooled (450) | 350 = 77.8% | **385 = 85.6%** | +7.8 [+4.7, +11.1], p<0.0001 |
+   Retrained vs forward, pooled: **+55.6 [+50.9, +60.0]** — the largest
+   whole-pool margin in the study (85.6% vs 30.0%).
+   **The final retraining picture, all six rungs (retrained-vs-zero-shot,
+   pooled):** base −0.2 (wash) · g16r6 +0.2 (wash; good-basin draw) ·
+   g16r8 −26.2 (collapse) · g24r8 −13.5-frontier-led collapse · g32r4
+   **+7.8 (improvement)**. The split runs along the ROBOT axis: both
+   8-robot rungs collapse (no good-basin draw ever observed there), both
+   larger-board 4-robot outcomes are wash-or-better, and the biggest
+   board benefits most — consistent with zero-shot ranking being weakest
+   exactly where the board outgrows the base nets' world. Also settled:
+   g32r4's early val_regret plateau (4.74) is a GOOD mode for its scale —
+   confirming §45's rule that val_regret is only interpretable
+   within-config, never across.
+   **Campaign totals.** 118 statistical cells (10k-board-bootstrap,
+   seeded); report 1355+ machine-checked numbers; every solved row in
+   every published table independently replay-certified with zero
+   failures anywhere; ~24 node-hours spent this session against the
+   1000-hour allocation (~800 remain). The headline remains the
+   zero-shot planner (measured identically at all six rungs); the
+   retrained rows stand beside it with their per-rung story stated.
+
 ## Still open
 
 - **Integrating the by-reference step type into the learned planner**
