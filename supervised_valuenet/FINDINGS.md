@@ -1850,9 +1850,28 @@ scoped fix.
    32×32 (2.4×/3.2×; zero generation cost), plus the certified-descent gate
    (job 4609679) — together these decide the ladder shape.
 
+54. **The extrapolation curve has no cliff: zero-shot label quality degrades
+   gracefully out to 3.2× the training size (2026-08-02).** The same mixed
+   {8,9,10} pe=none checkpoint, audited zero-shot on the study's EXISTING
+   fresh exact base-vocab corpora at scale
+   (`nn_labeler/results/audit_c2_mix_none_s11_bigboards.json`, test splits):
+   **24×24 regret 0.497 / top-1 0.872; 32×32 regret 0.707 / top-1 0.814**
+   (bias −0.70 / −1.94 — the one systematic drift: long costs are
+   underestimated at scale, the natural target for wider training sizes).
+   The full fresh-corpus curve 8→32:
+   0.16 / 0.17 / 0.21 / 0.23 / 0.24 / 0.30 / 0.27 / 0.30 / 0.47(16,r6) /
+   0.50(24) / 0.71(32) — no cliff anywhere; a net that never saw a board
+   larger than 10×10 ranks candidates at 32×32 with 81% top-1 optimality.
+   This validates the train-once spine of `nn_labeler/PLANS.md` (Plan C) on
+   the value-quality axis; the certified-descent gate (job 4609679) covers
+   the label-generation axis. Production net submitted: job 4609800
+   (pe=none, all fresh corpora ≤16 incl. g16r6/g16r8 robot variants,
+   legacy corpus excluded per §53, 30 epochs, seed 11, ~1.3–2 nh; seed 37
+   contingent — battery seed pairs agreed to ±0.03).
+
 <!-- NUMBERING NOTE for concurrent sessions: two Claude sessions append here
      the same day. Before adding an item, take max(existing item number)+1 —
-     grep -E '^[0-9]+\. ' FINDINGS.md | tail -1. Next free number: 54. -->
+     grep -E '^[0-9]+\. ' FINDINGS.md | tail -1. Next free number: 55. -->
 
 ## Still open
 
