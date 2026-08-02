@@ -191,46 +191,211 @@ zero-shot 16. Three findings (FINDINGS &sect;50):</p>
 </ol>
 <p class="src">nn_labeler/results/audit_d1_*.json, audit_d2_*.json;
 runs/nnlab/debug_battery_4606952.out; per-run metrics.csv.</p></div>
-<div class="card pending"><span class="tag">pending — battery 2, job 4607697</span>
-<p>Same bed with the curriculum on: seed-robustness pairs for pe=none (8&times;8-only and mixed
-{8,9,10}), PE-rescue arms (does sin2d recover with curriculum?), pe=none single-size references.
-Decides the production encoding and whether mixed-size training extends the flat extrapolation
-region. Projected &le;1.75 nh.</p></div>
+<div class="card done"><span class="tag">battery 2 done — false start 4607697 (0.08 nh) + rerun 4608951 (5h31m, 0.69 nh)</span>
+<p>The first battery-2 submission uncovered a second infrastructure failure mode: a curriculum
+batch-sampler that yields fewer batches than its declared length <em>silently disables</em>
+Lightning's end-of-epoch validation — no metrics, no checkpoints, no error. Caught by a 7-minute
+health check; the curriculum was rebuilt as two static fit phases (warmup on the easiest 30% of
+decision groups, then the full monitored fit) with a post-fit guard that makes silent
+no-validation impossible (FINDINGS &sect;52). The rerun then settled everything
+(FINDINGS &sect;53):</p>
+<ul>
+  <li><strong>pe=none is the production encoding</strong> — all six no-position-signal arms
+  trained healthily and the seed pairs agree to &plusmn;0.03 regret; both sin2d arms stayed
+  collapsed <em>even with</em> the curriculum (the additive sinusoid itself blocks this recipe).</li>
+  <li><strong>Mixed-size training helps everywhere</strong>: {8,9,10} reaches test regret
+  0.16/0.17/0.21/0.24 at grids 8/9/10/12 vs 0.20&ndash;0.34 for single-size training.</li>
+  <li><strong>The "16&times;16 cliff" was a legacy-corpus artifact.</strong> On fresh
+  standard-pipeline corpora the same checkpoint reads 0.23/0.30/0.27/0.30 at grids 11/13/14/15
+  and 0.47 at 16&times;16-with-6-robots; the legacy corpus's 3.3 measures corpus shift, not
+  board size.</li>
+</ul>
+<p class="src">nn_labeler/results/audit_c2_*.json, audit_c2_mix_none_s11_fullcurve.json.</p></div>
+
+<h2>6b. The extrapolation curve — no cliff to 3.2&times; the training size</h2>
+<div class="card done"><span class="tag">done — FINDINGS &sect;54</span>
+<p>The decisive measurement: the mixed {8,9,10}-trained pe=none net, audited zero-shot on fresh
+exact corpora up to 32&times;32 (using the study's existing 24&times;24 and 32&times;32 exact
+base-vocab corpora as free audit points). A net that never saw a board larger than 10&times;10
+ranks candidates at 32&times;32 with 81.4% top-1 optimality. The only systematic drift is a
+growing negative bias at scale (&minus;1.9 at 32&times;32: long costs are underestimated) —
+the natural target for the production net's wider training sizes.</p>
+
+<figure class="viz-root" style="margin:1rem 0">
+<style>
+  .viz-root { --s1: #2a78d6; --s2: #eb6834; }
+  @media (prefers-color-scheme: dark) { .viz-root { --s1: #3987e5; --s2: #d95926; } }
+  .viz-root svg { max-width: 100%; height: auto; display: block; }
+  .viz-root .grid line { stroke: var(--line); stroke-width: 1; }
+  .viz-root .axis text, .viz-root .lbl { fill: var(--muted); font-size: 12px; }
+  .viz-root .dlab { fill: var(--fg); font-size: 12px; font-weight: 600; }
+  .viz-root .s1 { stroke: var(--s1); } .viz-root .s1f { fill: var(--s1); }
+  .viz-root .s2 { stroke: var(--s2); } .viz-root .s2f { fill: var(--s2); }
+  .viz-root .band { fill: var(--s1); opacity: .08; }
+  .viz-root .hit { fill: transparent; cursor: pointer; }
+  .viz-root .tip { position: absolute; pointer-events: none; background: var(--card);
+    border: 1px solid var(--line); border-radius: 6px; padding: .3rem .55rem;
+    font-size: .8rem; color: var(--fg); display: none; white-space: nowrap; }
+  .viz-legend { display: flex; gap: 1.2rem; font-size: .85rem; color: var(--muted);
+    margin: .3rem 0 0 3rem; }
+  .viz-legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px;
+    vertical-align: middle; margin-right: .4rem; }
+</style>
+<div style="position:relative">
+<svg viewBox="0 0 640 300" role="img"
+     aria-label="Mean label regret versus grid size: the NN zero-shot curve stays below 0.71 from 8 to 32, the hand-written heuristic baseline rises from 0.72 to 1.18 by grid 12">
+  <!-- plot area x:60-620 y:20-260; x linear 8..32; y 0..1.3 -->
+  <rect class="band" x="60" y="20" width="46.7" height="240"/>
+  <text class="lbl" x="63" y="34">training sizes 8&ndash;10</text>
+  <g class="grid">
+    <line x1="60" y1="260" x2="620" y2="260"/>
+    <line x1="60" y1="167.7" x2="620" y2="167.7"/>
+    <line x1="60" y1="75.4" x2="620" y2="75.4"/>
+  </g>
+  <g class="axis">
+    <text x="52" y="264" text-anchor="end">0</text>
+    <text x="52" y="171.7" text-anchor="end">0.5</text>
+    <text x="52" y="79.4" text-anchor="end">1.0</text>
+    <text x="30" y="150" text-anchor="middle" transform="rotate(-90 30 150)">mean label regret (moves)</text>
+    <text x="60" y="280">8</text><text x="153" y="280">12</text><text x="246" y="280">16</text>
+    <text x="340" y="280">20</text><text x="433" y="280">24</text><text x="526" y="280">28</text>
+    <text x="611" y="280">32</text>
+    <text x="340" y="297" text-anchor="middle">grid size</text>
+  </g>
+  <!-- heuristic baseline (propose-order): (8,.72)(9,.85)(10,.93)(12,1.18) -->
+  <polyline class="s2" fill="none" stroke-width="2"
+    points="60,127.1 83.3,103.1 106.7,88.3 153.3,42.2"/>
+  <g class="s2f">
+    <circle cx="60" cy="127.1" r="4"/><circle cx="83.3" cy="103.1" r="4"/>
+    <circle cx="106.7" cy="88.3" r="4"/><circle cx="153.3" cy="42.2" r="4"/>
+  </g>
+  <text class="dlab" x="162" y="38">hand-written scorer 1.18</text>
+  <!-- NN zero-shot: (8,.16)(9,.17)(10,.21)(11,.233)(12,.24)(13,.298)(14,.269)(15,.298)(16,.465)(24,.497)(32,.707) -->
+  <polyline class="s1" fill="none" stroke-width="2"
+    points="60,230.5 83.3,228.6 106.7,221.2 130,217.0 153.3,215.7 176.7,205.0 200,210.3 223.3,205.0 246.7,174.2 433.3,168.3 620,129.5"/>
+  <g class="s1f">
+    <circle cx="60" cy="230.5" r="4"/><circle cx="83.3" cy="228.6" r="4"/>
+    <circle cx="106.7" cy="221.2" r="4"/><circle cx="130" cy="217.0" r="4"/>
+    <circle cx="153.3" cy="215.7" r="4"/><circle cx="176.7" cy="205.0" r="4"/>
+    <circle cx="200" cy="210.3" r="4"/><circle cx="223.3" cy="205.0" r="4"/>
+    <circle cx="246.7" cy="174.2" r="4"/><circle cx="433.3" cy="168.3" r="4"/>
+    <circle cx="620" cy="129.5" r="4"/>
+  </g>
+  <text class="dlab" x="560" y="118" text-anchor="end">NN zero-shot 0.71</text>
+  <!-- hover hit targets -->
+  <g class="hit" id="vizhits">
+    <circle cx="60" cy="230.5" r="10" data-t="8&times;8 &middot; regret 0.16 &middot; top-1 92%"/>
+    <circle cx="83.3" cy="228.6" r="10" data-t="9&times;9 &middot; regret 0.17 &middot; top-1 92%"/>
+    <circle cx="106.7" cy="221.2" r="10" data-t="10&times;10 &middot; regret 0.21 &middot; top-1 91%"/>
+    <circle cx="130" cy="217.0" r="10" data-t="11&times;11 &middot; regret 0.23 &middot; top-1 90%"/>
+    <circle cx="153.3" cy="215.7" r="10" data-t="12&times;12 &middot; regret 0.24 &middot; top-1 90%"/>
+    <circle cx="176.7" cy="205.0" r="10" data-t="13&times;13 &middot; regret 0.30 &middot; top-1 90%"/>
+    <circle cx="200" cy="210.3" r="10" data-t="14&times;14 &middot; regret 0.27 &middot; top-1 89%"/>
+    <circle cx="223.3" cy="205.0" r="10" data-t="15&times;15 &middot; regret 0.30 &middot; top-1 89%"/>
+    <circle cx="246.7" cy="174.2" r="10" data-t="16&times;16 (6 robots) &middot; regret 0.47 &middot; top-1 85%"/>
+    <circle cx="433.3" cy="168.3" r="10" data-t="24&times;24 &middot; regret 0.50 &middot; top-1 87%"/>
+    <circle cx="620" cy="129.5" r="10" data-t="32&times;32 &middot; regret 0.71 &middot; top-1 81%"/>
+    <circle cx="60" cy="127.1" r="10" data-t="8&times;8 &middot; heuristic baseline 0.72"/>
+    <circle cx="83.3" cy="103.1" r="10" data-t="9&times;9 &middot; heuristic baseline 0.85"/>
+    <circle cx="106.7" cy="88.3" r="10" data-t="10&times;10 &middot; heuristic baseline 0.93"/>
+    <circle cx="153.3" cy="42.2" r="10" data-t="12&times;12 &middot; heuristic baseline 1.18"/>
+  </g>
+</svg>
+<div class="tip" id="viztip"></div>
+</div>
+<div class="viz-legend">
+  <span><i style="background:var(--s1)"></i>NN zero-shot (trained on 8&ndash;10 only)</span>
+  <span><i style="background:var(--s2)"></i>hand-written scorer (propose order)</span>
+</div>
+<figcaption class="src" style="margin-top:.4rem">Mean label regret on exact-labeled test splits
+(lower is better). NN series: fresh standard-pipeline corpora; 16&times;16 point carries a
+simultaneous robot-count shift to 6. Baseline measured at 8&ndash;12 (battery-1 collapsed-net
+control = the candidate-ordering heuristic). Hover any point for exact values; the full table is
+in FINDINGS &sect;53&ndash;54 and audit_c2_mix_none_s11_*.json.</figcaption>
+<script>
+(function () {
+  var hits = document.getElementById("vizhits"), tip = document.getElementById("viztip");
+  if (!hits || !tip) return;
+  hits.addEventListener("mouseover", function (e) {
+    var t = e.target.getAttribute && e.target.getAttribute("data-t");
+    if (!t) return;
+    tip.innerHTML = t; tip.style.display = "block";
+  });
+  hits.addEventListener("mousemove", function (e) {
+    var r = tip.parentNode.getBoundingClientRect();
+    tip.style.left = (e.clientX - r.left + 14) + "px";
+    tip.style.top = (e.clientY - r.top - 10) + "px";
+  });
+  hits.addEventListener("mouseout", function () { tip.style.display = "none"; });
+})();
+</script>
+</figure>
+</div>
 
 <h2>7. Descent quality gate</h2>
-<div class="card pending"><span class="tag">pending — runs after the battery</span>
-<p>Pre-authored (<code>nn_labeler/jobs/descent_gate.slurm</code>): replay the exact corpora's
-test-range instances through the descent labeler with the battery's winning checkpoint; compare
-labels decision-by-decision against exact (in-domain 8/10, one-step 12, two-step 16). Gate
-thresholds (provisional, from PLANS.md): mean certified-label regret &le;0.5 on the audit stratum,
-&le;10% is_optimal disagreement.</p></div>
+<div class="card done"><span class="tag">done — job 4609679, 58 min (0.12 nh); FINDINGS &sect;55</span>
+<p>The exact corpora's test-range instances were replayed through the certified-descent labeler
+(battery checkpoint), then compared label-by-label against the exact solver's records:</p>
+<div class="twrap"><table>
+  <tr><th>gate</th><th class="num">mean gap</th><th class="num">share gap=0</th>
+      <th class="num">on-optimal gap / =0</th><th class="num">argmin agree</th></tr>
+  <tr><td>8&times;8 (in-domain)</td><td class="num">0.347</td><td class="num">85.2%</td><td class="num">0.221 / 92.3%</td><td class="num">86.9%</td></tr>
+  <tr><td>10&times;10 (in-domain)</td><td class="num">0.367</td><td class="num">85.6%</td><td class="num">0.248 / 91.2%</td><td class="num">87.4%</td></tr>
+  <tr><td>12&times;12 (one-step)</td><td class="num">0.453</td><td class="num">85.3%</td><td class="num">0.325 / 90.3%</td><td class="num">86.9%</td></tr>
+</table></div>
+<p>Gap = certified descent label &minus; exact optimal cost-to-go; median 0 and p90 &le; 1
+everywhere. All three pass the pre-registered mean &le; 0.5 gate; the one borderline cell is
+argmin disagreement (13% vs the provisional 10%). Honest costs: descent labels ~66% of the exact
+candidate set (candidates whose completion fails or does not survive physics replay are dropped,
+not mislabeled), and a ~0.08% negative-gap tail traces to a group-key subtlety in the audit
+tool, not the labels. The 16&times;16-legacy leg was discarded: its corpus predates the
+14-candidate cap (groups up to 50) and is generation-incompatible — the same artifact FINDINGS
+&sect;53 unmasked.</p></div>
 
 <h2>8. The ladder — 17&times;17 to 32&times;32</h2>
-<div class="card pending"><span class="tag">pending</span>
-<p>Production step per the adopted plan: train the production mixed-size net (winning PE arm;
-sizes {8,9,10,12,14,16} &times; available robot counts; interpolation controls 11/13/15 held out),
-measure the extrapolation curve, then walk 17&rarr;32 generating certified labeled data at each
-rung with per-rung audits (exact-solver spot-checks on the recoverable stratum). Fine-tune only
-where the audit gate fails.</p></div>
+<div class="card done"><span class="tag">path decided — FINDINGS &sect;55</span>
+<p><strong>Adopted: Plan C's train-once spine with Plan B's per-rung audit gates; Plan A
+shelved; the exact solver retired from bulk labeling but retained as the per-rung referee.</strong>
+The ladder deliberately sits in the regime (4 robots, base vocabulary) where the Rust exact
+solver remains affordable to 32&times;32, so every rung's NN-generated labels stay verifiable
+against ground truth — the method's value transfers to the regimes where the exact solver dies
+(extended vocabularies, 8 robots, beyond 32&times;32).</p></div>
+<div class="card pending"><span class="tag">in motion — single-GPU chain</span>
+<p>(1) Production net (job 4609800 + chained resume 4613403): pe=none, all fresh corpora
+&le;16&times;16 — grids 8&ndash;15 at 4 robots plus 16&times;16 at 6 and 8 robots, ~1M records,
+103,283 decision groups. (2) Ladder prep (job 4610118): boards for the 14 new rungs g17&ndash;g23,
+g25&ndash;g31 + each rung's Rust-exact test-split reference set. (3) Per-rung jobs
+(<code>ladder_rung.slurm</code>): chunked idempotent descent labeling of 9,000 instances per rung
+with the frozen production net, then the two-part gate (value audit + label-by-label descent
+comparison) against the rung's exact reference. Fine-tuning only on gate failure.</p></div>
 
 <h2>9. Cost ledger</h2>
 <div class="twrap"><table>
   <tr><th>item</th><th class="num">node-hours</th><th>notes</th></tr>
-  <tr><td>research + Phase 0 + debug bed</td><td class="num">0 (login CPU)</td><td>boards + labels for 9 sizes: minutes of login-node time</td></tr>
-  <tr><td>debug battery (job 4606952)</td><td class="num">&le;1.75 projected</td><td>1 GPU, 14 h walltime cap</td></tr>
-  <tr><td>descent gate</td><td class="num">&le;1.25 projected</td><td>1 GPU, 10 h cap</td></tr>
-  <tr><td>remaining (production train + ladder)</td><td class="num">~10&ndash;20 projected</td><td>PLANS.md Plan C estimate</td></tr>
+  <tr><td>research + Phase 0 + debug bed + all audits &le;16</td><td class="num">~0 (login CPU)</td><td>boards + exact labels for 13 sizes, parity tests, curve audits</td></tr>
+  <tr><td>debug battery 1 (4606952)</td><td class="num">0.77</td><td>6h11m, 1 GPU; found the collapse mode + the encoding answer</td></tr>
+  <tr><td>battery 2 false start (4607697)</td><td class="num">0.08</td><td>killed at 40 min by the health check</td></tr>
+  <tr><td>battery 2 rerun (4608951)</td><td class="num">0.69</td><td>5h31m; PE decision, seed robustness, curve</td></tr>
+  <tr><td>descent gate (4609679)</td><td class="num">0.12</td><td>58 min; 3 gates passed</td></tr>
+  <tr><td>production net (4609800 + 4613403)</td><td class="num">~1.4&ndash;2.2 projected</td><td>~17&ndash;19 h training + audits, resume-chained</td></tr>
+  <tr><td>ladder prep (4610118)</td><td class="num">&le;0.75 projected</td><td>boards + exact reference sets, CPU inside 1-GPU job</td></tr>
+  <tr><td>ladder rungs &times;16</td><td class="num">~5&ndash;10 projected</td><td>~0.5&ndash;2 s/instance measured at gate; sequential chain</td></tr>
 </table></div>
-<p class="src">Allocation state at track start: ~816 node-hours remaining of 1000 (it4ifree,
-2026-07-31).</p>
+<p class="src">Total spent so far on this track: <strong>1.66 nh</strong>; projected total
+&asymp; 9&ndash;14 nh — inside the PLANS.md Plan-C envelope (13&ndash;25). Allocation at track
+start: ~816 node-hours remaining of 1000 (it4ifree, 2026-07-31).</p>
 
 <h2>10. Provenance</h2>
 <ul>
   <li>Plans: <code>nn_labeler/PLANS.md</code> (commit <code>bb85450</code>)</li>
   <li>Phase 0 code + debug bed: commits <code>ea3aaff</code>, <code>a0b0993</code>, <code>93b628f</code></li>
-  <li>Running log: <code>FINDINGS.md</code> &sect;48+</li>
-  <li>Jobs: <code>nn_labeler/jobs/debug_battery.slurm</code> (4606952),
-      <code>nn_labeler/jobs/descent_gate.slurm</code></li>
+  <li>Batteries, curriculum fix, curve, gate, decision: commits <code>27c4273</code>,
+      <code>20c8e32</code>, <code>3022caf</code>, <code>ac665e2</code>, <code>2ecf0e0</code>;
+      ladder machinery <code>42605ed</code>, <code>ba822b7</code></li>
+  <li>Running log: <code>FINDINGS.md</code> &sect;48, 50, 52&ndash;55 (49 and 51 belong to the
+      concurrent Track-1 session)</li>
+  <li>Jobs: batteries 4606952 / 4607697 / 4608951, gate 4609679, production 4609800 + 4613403,
+      ladder prep 4610118; scripts under <code>nn_labeler/jobs/</code></li>
 </ul>
 
 </body>
