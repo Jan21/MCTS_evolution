@@ -360,14 +360,38 @@ The ladder deliberately sits in the regime (4 robots, base vocabulary) where the
 solver remains affordable to 32&times;32, so every rung's NN-generated labels stay verifiable
 against ground truth — the method's value transfers to the regimes where the exact solver dies
 (extended vocabularies, 8 robots, beyond 32&times;32).</p></div>
-<div class="card pending"><span class="tag">in motion — single-GPU chain</span>
-<p>(1) Production net (job 4609800 + chained resume 4613403): pe=none, all fresh corpora
-&le;16&times;16 — grids 8&ndash;15 at 4 robots plus 16&times;16 at 6 and 8 robots, ~1M records,
-103,283 decision groups. (2) Ladder prep (job 4610118): boards for the 14 new rungs g17&ndash;g23,
-g25&ndash;g31 + each rung's Rust-exact test-split reference set. (3) Per-rung jobs
-(<code>ladder_rung.slurm</code>): chunked idempotent descent labeling of 9,000 instances per rung
-with the frozen production net, then the two-part gate (value audit + label-by-label descent
-comparison) against the rung's exact reference. Fine-tuning only on gate failure.</p></div>
+<div class="card done"><span class="tag">production net v1 — trained, collapsed at epoch 2, best epoch banked (FINDINGS &sect;57)</span>
+<p>Job 4609800 (~2.0 nh): warmup fit healthy (val_regret 0.734&rarr;0.471), full fit epochs 0&ndash;1
+healthy (0.267 / 0.276, <code>val_group_spread</code> 2.12, top-1 0.89), then <strong>constant-value
+collapse at epoch 2 held for 24 epochs</strong> (spread exactly 0.00, top-1 0.12&ndash;0.24). This is
+FINDINGS &sect;44's value-net bistability with a new signature — mid-training rather than cold-start —
+and the spread metric added after battery 1 diagnosed it from the metrics file alone.</p>
+<p><code>ModelCheckpoint(min val_regret)</code> had already saved epoch 0, so nothing was lost. That
+checkpoint is banked with provenance at <code>nn_labeler/banked/prod_v1_s11.ckpt</code>
+(sha dd0e7211b1cbd39f) and is <strong>the best labeler measured to date</strong>:</p>
+<div class="twrap"><table>
+  <tr><th>audit (test split)</th><th class="num">8&times;8</th><th class="num">12&times;12</th>
+      <th class="num">16&times;16 (6r)</th><th class="num">24&times;24</th></tr>
+  <tr><td>banked v1 — regret / top-1</td><td class="num">0.178 / 0.915</td><td class="num">0.254 / 0.898</td>
+      <td class="num">0.432 / 0.852</td><td class="num"><strong>0.425 / 0.883</strong></td></tr>
+  <tr><td>battery net (previous best)</td><td class="num">0.16 / 0.92</td><td class="num">0.24 / 0.90</td>
+      <td class="num">0.465 / 0.848</td><td class="num">0.497 / 0.872</td></tr>
+</table></div>
+<p>The 32&times;32 leg was cut off by the walltime and is re-run in the capstone job. Two fixes
+landed: a <code>CollapseStop</code> callback (3 consecutive epochs with spread &lt; 0.05 ends the
+run — this run would have stopped at epoch 4, saving ~1.6 nh; verified not to false-fire), and a
+false-positive in the &sect;52 no-validation guard (a resume already at max_epochs runs no epoch and
+logs no metrics — "finished", not "failed"). The doomed resume job 4613403 was cancelled.</p></div>
+<div class="card pending"><span class="tag">in motion — single-GPU chain, reordered by value</span>
+<p>(1) <strong>Ladder prep</strong> (job 4610118): boards for the 14 new rungs g17&ndash;g23,
+g25&ndash;g31 + each rung's Rust-exact test-split reference set. (2) <strong>32&times;32 capstone</strong>
+(job 4616678, <code>capstone_g32.slurm</code>) — promoted ahead of the retrain because it is the
+decisive measurement and needs no new boards: descent generation throughput and yield at 24&times;24
+and 32&times;32, plus the label-by-label gate against the <em>existing</em> exact corpora at both
+sizes. (3) <strong>Production v2</strong> (job 4616677): lr 1e-4 + CollapseStop — the study's own
+documented rescue for unstable training (PRIMER &sect;6) — and it completes v1's 32&times;32 audit.
+The banked v1 net is the labeler of record until v2 beats it. Per-rung ladder jobs
+(<code>ladder_rung.slurm</code>) follow.</p></div>
 
 <h2>9. Cost ledger</h2>
 <div class="twrap"><table>
@@ -377,13 +401,16 @@ comparison) against the rung's exact reference. Fine-tuning only on gate failure
   <tr><td>battery 2 false start (4607697)</td><td class="num">0.08</td><td>killed at 40 min by the health check</td></tr>
   <tr><td>battery 2 rerun (4608951)</td><td class="num">0.69</td><td>5h31m; PE decision, seed robustness, curve</td></tr>
   <tr><td>descent gate (4609679)</td><td class="num">0.12</td><td>58 min; 3 gates passed</td></tr>
-  <tr><td>production net (4609800 + 4613403)</td><td class="num">~1.4&ndash;2.2 projected</td><td>~17&ndash;19 h training + audits, resume-chained</td></tr>
+  <tr><td>production net v1 (4609800)</td><td class="num">2.00</td><td>16 h walltime; collapsed at epoch 2, best epoch banked (&sect;57)</td></tr>
   <tr><td>ladder prep (4610118)</td><td class="num">&le;0.75 projected</td><td>boards + exact reference sets, CPU inside 1-GPU job</td></tr>
-  <tr><td>ladder rungs &times;16</td><td class="num">~5&ndash;10 projected</td><td>~0.5&ndash;2 s/instance measured at gate; sequential chain</td></tr>
+  <tr><td>32&times;32 capstone (4616678)</td><td class="num">~1&ndash;2 projected</td><td>the decisive generation + gate measurement</td></tr>
+  <tr><td>production net v2 (4616677)</td><td class="num">~1&ndash;2 projected</td><td>lr 1e-4 + CollapseStop; completes v1's 32&times;32 audit</td></tr>
+  <tr><td>ladder rungs &times;14</td><td class="num">~5&ndash;10 projected</td><td>~0.5&ndash;2 s/instance measured at gate; sequential chain</td></tr>
 </table></div>
-<p class="src">Total spent so far on this track: <strong>1.66 nh</strong>; projected total
-&asymp; 9&ndash;14 nh — inside the PLANS.md Plan-C envelope (13&ndash;25). Allocation at track
-start: ~816 node-hours remaining of 1000 (it4ifree, 2026-07-31).</p>
+<p class="src">Total spent so far on this track: <strong>3.66 nh</strong>; projected total
+&asymp; 11&ndash;18 nh — inside the PLANS.md Plan-C envelope (13&ndash;25) at its low end even after
+one lost training run. Allocation at track start: ~816 node-hours remaining of 1000 (it4ifree,
+2026-07-31).</p>
 
 <h2>10. Provenance</h2>
 <ul>

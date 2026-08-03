@@ -1052,17 +1052,27 @@ which it produces those labels; the question is not "cheaper?" but "at all?"</p>
 <h2>What is running right now</h2>
 
 <div class="card open">
-<span class="tag">In progress — results will appear here</span>
-<p>The production network is training now: about one million examples drawn from 103,283 decision
-points, covering boards from 8&times;8 to 16&times;16 with four, six and eight robots. It is a
-17&ndash;19 hour run, roughly 1.4&ndash;2.2 node-hours, and it has already been resumed once after
-hitting a walltime limit.</p>
-<p>Boards and small exact-solver reference sets for all fourteen new sizes are generated. When the
-network is done, the sizes get labeled one at a time, 17&times;17 upward. Each size must clear its
-reference check — the same comparison against the exact solver shown above — before its labels are
-allowed into the training data. The whole ladder is projected at 5&ndash;10 node-hours.</p>
-<p>Nothing above 16&times;16 has been labeled yet. This section will be filled in as each rung
-lands.</p>
+<span class="tag">Updated 2026-08-03 — more results will appear here</span>
+<p><strong>The production network is trained, and the story has a twist worth telling.</strong>
+It learned well for its first two full rounds — then, in round three, it fell into the same
+"answer the same number for everything" trap that bit us at the start, and stayed stuck for the
+remaining 24 rounds. This time nothing was lost: the training system always keeps the best
+network it has seen, which was the healthy one, and the automatic detector we added after the
+first incident flagged the collapse in the log without anyone having to go looking.</p>
+<p>That saved network is now <strong>the best labeler we have measured</strong>. Judged against
+the exact solver's answers on boards it has never seen, its average error is 0.18 extra moves at
+8&times;8, 0.25 at 12&times;12, 0.43 at 16&times;16 with six robots, and <strong>0.43 at
+24&times;24 while picking a best next step 88% of the time</strong> — better than the earlier
+network at every size, and its tendency to underestimate long solutions is halved.</p>
+<p>Two fixes went in immediately: training now stops itself after three stuck rounds instead of
+burning hours (this run would have ended at round four, saving about 1.6 node-hours), and a
+false-alarm case in the earlier safety check was corrected.</p>
+<p><strong>Running next, in order:</strong> (1) boards and exact reference sets for the fourteen
+new sizes; (2) <em>the decisive test</em> — labeling 24&times;24 and 32&times;32 boards with this
+network and checking every label against the exact solver, which measures both whether it works
+at 32&times;32 and what it costs; (3) a second training attempt at a gentler learning rate, to
+try to beat the saved network. Sizes 17&times;17 through 31&times;31 follow, one at a time, each
+required to clear its own reference check before its labels count.</p>
 </div>
 
 <h2>The ledger</h2>
@@ -1074,10 +1084,12 @@ lands.</p>
   <tr><td>Second round, false start</td><td class="num">0.08</td><td>killed at 40 minutes; silent-skip bug found</td></tr>
   <tr><td>Second round, rerun</td><td class="num">0.69</td><td>design settled; the no-cliff curve</td></tr>
   <tr><td>Label-quality check</td><td class="num">0.12</td><td>passed at all three sizes</td></tr>
-  <tr><td><strong>Spent so far</strong></td><td class="num"><strong>1.66</strong></td><td></td></tr>
-  <tr><td>Production network (running)</td><td class="num">1.4&ndash;2.2</td><td>in progress</td></tr>
-  <tr><td>Labeling the ladder, 17&times;17 to 32&times;32</td><td class="num">5&ndash;10</td><td>queued behind the network</td></tr>
-  <tr><td><strong>Projected total</strong></td><td class="num"><strong>~9&ndash;14</strong></td><td>against the 441 originally projected for one campaign</td></tr>
+  <tr><td>Production network, attempt 1</td><td class="num">2.0</td><td>collapsed in round 3; best round saved and banked — our best labeler</td></tr>
+  <tr><td><strong>Spent so far</strong></td><td class="num"><strong>3.66</strong></td><td></td></tr>
+  <tr><td>24&times;24 and 32&times;32 test (queued)</td><td class="num">1&ndash;2</td><td>the decisive measurement</td></tr>
+  <tr><td>Production network, attempt 2 (queued)</td><td class="num">1&ndash;2</td><td>gentler learning rate + auto-stop</td></tr>
+  <tr><td>Labeling the ladder, 17&times;17 to 31&times;31</td><td class="num">5&ndash;10</td><td>queued behind those</td></tr>
+  <tr><td><strong>Projected total</strong></td><td class="num"><strong>~11&ndash;18</strong></td><td>against the 441 originally projected for one campaign</td></tr>
 </table>
 </div>
 
@@ -1087,7 +1099,7 @@ part of the plan that worked best.</p>
 
 <p>The technical companion to this document, with file names, job numbers and the full measurement
 tables, is <code>nn_labeler/report/process.html</code>. The running experiment log is
-<code>FINDINGS.md</code>, items 48 through 55.</p>
+<code>FINDINGS.md</code>, items 48 through 57.</p>
 
 <footer>Local document. Numbers trace to FINDINGS.md and nn_labeler/results/. Work in progress.</footer>
 
