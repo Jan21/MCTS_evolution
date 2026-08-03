@@ -1,0 +1,193 @@
+<figure class="fig figc-collapse">
+<style>
+.figc-collapse .ttl{font-size:14px;font-weight:600;color:var(--fg);margin:0 0 3px}
+.figc-collapse .hint{font-size:12.5px;color:var(--muted);margin:0 0 8px;line-height:1.45}
+.figc-collapse .lg{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin:0 0 6px;font-size:12.5px;color:var(--muted)}
+.figc-collapse .lg em{font-style:normal;display:inline-flex;align-items:center;gap:7px}
+.figc-collapse .k{width:14px;height:3px;border-radius:2px;display:inline-block}
+.figc-collapse .cl-wrap{position:relative}
+.figc-collapse text{font-size:12px}
+.figc-collapse g.el text{font-size:13px;font-weight:600}
+.figc-collapse .cl-band{outline:none}
+.figc-collapse .cl-tip{position:absolute;display:none;transform:translate(-50%,-100%);
+  background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 9px;
+  font-size:12px;line-height:1.5;color:var(--muted);pointer-events:none;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.figc-collapse .cl-tip.on{display:block}
+.figc-collapse .cl-tip.below{transform:translate(-50%,0)}
+.figc-collapse .cl-h{color:var(--fg);font-weight:600;margin-bottom:2px}
+.figc-collapse .cl-row{display:flex;align-items:center;gap:6px}
+.figc-collapse .cl-row b{color:var(--fg);font-variant-numeric:tabular-nums}
+.figc-collapse .cl-k1{width:12px;height:3px;border-radius:2px;background:var(--s1);display:inline-block}
+.figc-collapse .cl-k2{width:12px;height:3px;border-radius:2px;background:var(--s2);display:inline-block}
+</style>
+
+<div class="ttl">One run learned, seven flat-lined</div>
+<div class="hint">Eight runs were started the same way. The line that comes down is the one run that learned; the line that stays high is a run that never got off the ground, and it stayed that way for every round. Lower is better.</div>
+
+<div class="lg">
+  <em><span class="k" style="background:var(--s1)"></span>the run that learned</em>
+  <em><span class="k" style="background:var(--s2)"></span>a run that stayed stuck</em>
+</div>
+
+<div class="cl-wrap">
+<svg viewBox="0 0 800 420" role="img" aria-label="Two lines over twenty training rounds. One falls from 0.34 to about 0.21 error and stays there; the other stays between 1.9 and 2.6 for the whole run.">
+  <g stroke="var(--line)" stroke-width="1">
+    <line x1="86" y1="340" x2="690" y2="340" />
+    <line x1="86" y1="286.43" x2="690" y2="286.43" />
+    <line x1="86" y1="232.86" x2="690" y2="232.86" />
+    <line x1="86" y1="179.29" x2="690" y2="179.29" />
+    <line x1="86" y1="125.71" x2="690" y2="125.71" />
+    <line x1="86" y1="72.14" x2="690" y2="72.14" />
+  </g>
+  <g fill="var(--muted)" text-anchor="end">
+    <text x="74" y="344">0</text>
+    <text x="74" y="290.43">0.5</text>
+    <text x="74" y="236.86">1</text>
+    <text x="74" y="183.29">1.5</text>
+    <text x="74" y="129.71">2</text>
+    <text x="74" y="76.14">2.5</text>
+  </g>
+  <g fill="var(--muted)" text-anchor="middle">
+    <text x="86" y="362">1</text>
+    <text x="213.16" y="362">5</text>
+    <text x="372.11" y="362">10</text>
+    <text x="531.05" y="362">15</text>
+    <text x="690" y="362">20</text>
+  </g>
+  <text x="388" y="390" fill="var(--muted)" text-anchor="middle">training round</text>
+  <text x="26" y="190" fill="var(--muted)" text-anchor="middle" transform="rotate(-90 26 190)">error on held-out decisions (extra moves)</text>
+
+  <line id="clCross" x1="86" y1="40" x2="86" y2="340" stroke="var(--muted)" stroke-width="1" opacity="0" />
+
+  <path d="M86,82.64 L117.79,123.57 L149.58,84.68 L181.37,82.64 L213.16,76.86 L244.95,67.75 L276.74,62.39 L308.53,98.07 L340.32,94.86 L372.11,134.71 L403.89,115.96 L435.68,121.75 L467.47,132.36 L499.26,106.21 L531.05,80.71 L562.84,121.54 L594.63,131.71 L626.42,134.71 L658.21,134.82 L690,134.82" fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+  <path d="M86,303.57 L117.79,308.39 L149.58,311.39 L181.37,312.46 L213.16,313.54 L244.95,312.14 L276.74,315.36 L308.53,317.07 L340.32,315.46 L372.11,316 L403.89,316.32 L435.68,317.18 L467.47,316.75 L499.26,317.71 L531.05,317.29 L562.84,316.96 L594.63,316.86 L626.42,318.79 L658.21,318.14 L690,317.07" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+
+  <g fill="var(--s2)" stroke="var(--bg)" stroke-width="2">
+    <circle cx="86" cy="82.64" r="4" />
+    <circle cx="117.79" cy="123.57" r="4" />
+    <circle cx="149.58" cy="84.68" r="4" />
+    <circle cx="181.37" cy="82.64" r="4" />
+    <circle cx="213.16" cy="76.86" r="4" />
+    <circle cx="244.95" cy="67.75" r="4" />
+    <circle cx="276.74" cy="62.39" r="4" />
+    <circle cx="308.53" cy="98.07" r="4" />
+    <circle cx="340.32" cy="94.86" r="4" />
+    <circle cx="372.11" cy="134.71" r="4" />
+    <circle cx="403.89" cy="115.96" r="4" />
+    <circle cx="435.68" cy="121.75" r="4" />
+    <circle cx="467.47" cy="132.36" r="4" />
+    <circle cx="499.26" cy="106.21" r="4" />
+    <circle cx="531.05" cy="80.71" r="4" />
+    <circle cx="562.84" cy="121.54" r="4" />
+    <circle cx="594.63" cy="131.71" r="4" />
+    <circle cx="626.42" cy="134.71" r="4" />
+    <circle cx="658.21" cy="134.82" r="4" />
+    <circle cx="690" cy="134.82" r="4" />
+  </g>
+  <g fill="var(--s1)" stroke="var(--bg)" stroke-width="2">
+    <circle cx="86" cy="303.57" r="4" />
+    <circle cx="117.79" cy="308.39" r="4" />
+    <circle cx="149.58" cy="311.39" r="4" />
+    <circle cx="181.37" cy="312.46" r="4" />
+    <circle cx="213.16" cy="313.54" r="4" />
+    <circle cx="244.95" cy="312.14" r="4" />
+    <circle cx="276.74" cy="315.36" r="4" />
+    <circle cx="308.53" cy="317.07" r="4" />
+    <circle cx="340.32" cy="315.46" r="4" />
+    <circle cx="372.11" cy="316" r="4" />
+    <circle cx="403.89" cy="316.32" r="4" />
+    <circle cx="435.68" cy="317.18" r="4" />
+    <circle cx="467.47" cy="316.75" r="4" />
+    <circle cx="499.26" cy="317.71" r="4" />
+    <circle cx="531.05" cy="317.29" r="4" />
+    <circle cx="562.84" cy="316.96" r="4" />
+    <circle cx="594.63" cy="316.86" r="4" />
+    <circle cx="626.42" cy="318.79" r="4" />
+    <circle cx="658.21" cy="318.14" r="4" />
+    <circle cx="690" cy="317.07" r="4" />
+  </g>
+
+  <g class="el" fill="var(--fg)">
+    <text x="698" y="321.07">learning: 0.21</text>
+    <text x="698" y="138.82">stuck: 1.92</text>
+  </g>
+
+  <circle id="clRingA" r="7" fill="none" stroke="var(--s1)" stroke-width="2" opacity="0" />
+  <circle id="clRingB" r="7" fill="none" stroke="var(--s2)" stroke-width="2" opacity="0" />
+
+  <g>
+    <rect class="cl-band" x="70.11" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="1" data-x="86" data-a="0.340" data-b="2.402" data-ya="303.57" data-yb="82.64" />
+    <rect class="cl-band" x="101.89" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="2" data-x="117.79" data-a="0.295" data-b="2.020" data-ya="308.39" data-yb="123.57" />
+    <rect class="cl-band" x="133.68" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="3" data-x="149.58" data-a="0.267" data-b="2.383" data-ya="311.39" data-yb="84.68" />
+    <rect class="cl-band" x="165.47" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="4" data-x="181.37" data-a="0.257" data-b="2.402" data-ya="312.46" data-yb="82.64" />
+    <rect class="cl-band" x="197.26" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="5" data-x="213.16" data-a="0.247" data-b="2.456" data-ya="313.54" data-yb="76.86" />
+    <rect class="cl-band" x="229.05" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="6" data-x="244.95" data-a="0.260" data-b="2.541" data-ya="312.14" data-yb="67.75" />
+    <rect class="cl-band" x="260.84" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="7" data-x="276.74" data-a="0.230" data-b="2.591" data-ya="315.36" data-yb="62.39" />
+    <rect class="cl-band" x="292.63" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="8" data-x="308.53" data-a="0.214" data-b="2.258" data-ya="317.07" data-yb="98.07" />
+    <rect class="cl-band" x="324.42" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="9" data-x="340.32" data-a="0.229" data-b="2.288" data-ya="315.46" data-yb="94.86" />
+    <rect class="cl-band" x="356.21" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="10" data-x="372.11" data-a="0.224" data-b="1.916" data-ya="316" data-yb="134.71" />
+    <rect class="cl-band" x="388" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="11" data-x="403.89" data-a="0.221" data-b="2.091" data-ya="316.32" data-yb="115.96" />
+    <rect class="cl-band" x="419.79" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="12" data-x="435.68" data-a="0.213" data-b="2.037" data-ya="317.18" data-yb="121.75" />
+    <rect class="cl-band" x="451.58" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="13" data-x="467.47" data-a="0.217" data-b="1.938" data-ya="316.75" data-yb="132.36" />
+    <rect class="cl-band" x="483.37" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="14" data-x="499.26" data-a="0.208" data-b="2.182" data-ya="317.71" data-yb="106.21" />
+    <rect class="cl-band" x="515.16" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="15" data-x="531.05" data-a="0.212" data-b="2.420" data-ya="317.29" data-yb="80.71" />
+    <rect class="cl-band" x="546.95" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="16" data-x="562.84" data-a="0.215" data-b="2.039" data-ya="316.96" data-yb="121.54" />
+    <rect class="cl-band" x="578.74" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="17" data-x="594.63" data-a="0.216" data-b="1.944" data-ya="316.86" data-yb="131.71" />
+    <rect class="cl-band" x="610.53" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="18" data-x="626.42" data-a="0.198" data-b="1.916" data-ya="318.79" data-yb="134.71" />
+    <rect class="cl-band" x="642.32" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="19" data-x="658.21" data-a="0.204" data-b="1.915" data-ya="318.14" data-yb="134.82" />
+    <rect class="cl-band" x="674.11" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="20" data-x="690" data-a="0.214" data-b="1.915" data-ya="317.07" data-yb="134.82" />
+  </g>
+</svg>
+<div class="cl-tip">
+  <div class="cl-h"></div>
+  <div class="cl-row"><span class="cl-k1"></span><b class="cl-v1"></b><span>the run that learned</span></div>
+  <div class="cl-row"><span class="cl-k2"></span><b class="cl-v2"></b><span>the stuck run</span></div>
+</div>
+</div>
+<script>
+(function(){
+  var root=document.querySelector('.figc-collapse');
+  if(!root) return;
+  var svg=root.querySelector('svg'), wrap=root.querySelector('.cl-wrap'),
+      tip=root.querySelector('.cl-tip'), cross=root.querySelector('#clCross'),
+      rA=root.querySelector('#clRingA'), rB=root.querySelector('#clRingB'),
+      h=tip.querySelector('.cl-h'), v1=tip.querySelector('.cl-v1'), v2=tip.querySelector('.cl-v2');
+  function show(el){
+    var vx=parseFloat(el.getAttribute('data-x')),
+        ya=parseFloat(el.getAttribute('data-ya')),
+        yb=parseFloat(el.getAttribute('data-yb')),
+        s=svg.getBoundingClientRect().width/800;
+    cross.setAttribute('x1',vx); cross.setAttribute('x2',vx); cross.setAttribute('opacity','0.5');
+    rA.setAttribute('cx',vx); rA.setAttribute('cy',ya); rA.setAttribute('opacity','1');
+    rB.setAttribute('cx',vx); rB.setAttribute('cy',yb); rB.setAttribute('opacity','1');
+    h.textContent='round '+el.getAttribute('data-r');
+    v1.textContent=el.getAttribute('data-a');
+    v2.textContent=el.getAttribute('data-b');
+    tip.classList.add('on');
+    var w=tip.offsetWidth, ww=wrap.clientWidth,
+        left=Math.min(Math.max(vx*s, w/2+2), ww-w/2-2);
+    tip.style.left=left+'px';
+    var anchor=Math.min(ya,yb)*s, top=anchor-14;
+    if(top-tip.offsetHeight<2){tip.classList.add('below'); top=anchor+14;}
+    else {tip.classList.remove('below');}
+    tip.style.top=top+'px';
+  }
+  function hide(){
+    tip.classList.remove('on');
+    cross.setAttribute('opacity','0');
+    rA.setAttribute('opacity','0'); rB.setAttribute('opacity','0');
+  }
+  var bands=root.querySelectorAll('.cl-band'), i;
+  for(i=0;i<bands.length;i++){
+    (function(el){
+      el.addEventListener('mouseenter',function(){show(el);});
+      el.addEventListener('focus',function(){show(el);});
+      el.addEventListener('mouseleave',hide);
+      el.addEventListener('blur',hide);
+    })(bands[i]);
+  }
+  svg.addEventListener('mouseleave',hide);
+})();
+</script>
+</figure>

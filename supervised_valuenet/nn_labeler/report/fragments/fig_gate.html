@@ -1,0 +1,63 @@
+<figure class="fig figc-gate">
+<style>
+.figc-gate .ttl{font-size:14px;font-weight:600;color:var(--fg);margin:0 0 3px}
+.figc-gate .hint{font-size:12.5px;color:var(--muted);margin:0 0 10px;line-height:1.45}
+.figc-gate text{font-size:12px}
+.figc-gate g.val text{font-size:13px;font-weight:600}
+.figc-gate g.xl text{font-size:13px}
+.figc-gate text.ko{paint-order:stroke;stroke:var(--bg);stroke-width:3.5px;stroke-linejoin:round}
+</style>
+
+<div class="ttl">Checked against the exact answer &mdash; all three pass</div>
+<div class="hint">On the board sizes where the exact solver still works, every label the network produced was compared with the perfect one. Lower is better; the dashed line is the limit agreed before the check was run.</div>
+
+<svg viewBox="0 0 640 370" role="img" aria-label="Three bars showing the average gap to the perfect label: 8 by 8 is 0.347 moves with 85 percent exactly perfect, 10 by 10 is 0.367 with 86 percent, 12 by 12 is 0.453 with 85 percent. All sit below the 0.5 quality bar.">
+  <!-- grid -->
+  <g stroke="var(--line)" stroke-width="1">
+    <line x1="100" y1="300" x2="540" y2="300" />
+    <line x1="100" y1="221.33" x2="540" y2="221.33" />
+    <line x1="100" y1="142.67" x2="540" y2="142.67" />
+    <line x1="100" y1="64" x2="540" y2="64" />
+  </g>
+  <g fill="var(--muted)" text-anchor="end">
+    <text x="88" y="304">0</text>
+    <text x="88" y="225.33">0.2</text>
+    <text x="88" y="146.67">0.4</text>
+    <text x="88" y="68">0.6</text>
+  </g>
+  <text x="30" y="182" fill="var(--muted)" text-anchor="middle" transform="rotate(-90 30 182)">gap to the perfect answer (moves)</text>
+
+  <!-- quality bar -->
+  <line x1="100" y1="103.33" x2="540" y2="103.33" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="6 5" />
+  <text x="112" y="97" fill="var(--muted)">quality bar (must stay below)</text>
+
+  <!-- bars -->
+  <g fill="var(--s1)">
+    <path d="M171,300 V167.53 A4,4 0 0 1 175,163.53 H185 A4,4 0 0 1 189,167.53 V300 Z" />
+    <path d="M311,300 V159.66 A4,4 0 0 1 315,155.66 H325 A4,4 0 0 1 329,159.66 V300 Z" />
+    <path d="M451,300 V125.82 A4,4 0 0 1 455,121.82 H465 A4,4 0 0 1 469,125.82 V300 Z" />
+  </g>
+
+  <!-- how many were exactly right -->
+  <g fill="var(--fg)" text-anchor="middle">
+    <text x="180" y="136.53" class="ko">85% exactly perfect</text>
+    <text x="320" y="128.66" class="ko">86%</text>
+    <text x="460" y="94.82" class="ko">85%</text>
+  </g>
+
+  <!-- values -->
+  <g class="val" fill="var(--fg)" text-anchor="middle">
+    <text x="180" y="153.53" class="ko">0.347</text>
+    <text x="320" y="145.66" class="ko">0.367</text>
+    <text x="460" y="111.82" class="ko">0.453</text>
+  </g>
+
+  <!-- categories -->
+  <g class="xl" fill="var(--fg)" text-anchor="middle">
+    <text x="180" y="324">8 &times; 8</text>
+    <text x="320" y="324">10 &times; 10</text>
+    <text x="460" y="324">12 &times; 12</text>
+  </g>
+  <text x="320" y="352" fill="var(--muted)" text-anchor="middle">board size</text>
+</svg>
+</figure>

@@ -1,0 +1,80 @@
+<figure class="fig figc-puzzle">
+<style>
+.figc-puzzle .ttl{font-size:14px;font-weight:600;color:var(--fg);margin:0 0 3px}
+.figc-puzzle .hint{font-size:12.5px;color:var(--muted);margin:0 0 10px;line-height:1.45}
+.figc-puzzle .lg{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin:10px 0 0;font-size:12.5px;color:var(--muted)}
+.figc-puzzle .lg em{font-style:normal;display:inline-flex;align-items:center;gap:7px}
+.figc-puzzle .kd{width:11px;height:11px;border-radius:50%;display:inline-block}
+.figc-puzzle .kg{width:11px;height:11px;border-radius:3px;display:inline-block;border:2px solid var(--accent)}
+.figc-puzzle text{font-size:12px}
+.figc-puzzle text.ko{paint-order:stroke;stroke:var(--bg);stroke-width:3.5px;stroke-linejoin:round}
+</style>
+
+<div class="ttl">How the puzzle works</div>
+<div class="hint">A robot never stops halfway: it slides in a straight line until a wall or another robot blocks it. So the only way to park a robot on a chosen square is to put something in its way.</div>
+
+<svg viewBox="0 0 720 300" role="img" aria-label="An eight by eight board. A blue robot slides right along the bottom row until a wall stops it, then slides up and is stopped by an orange helper robot, landing on the goal square.">
+  <defs>
+    <marker id="pzArrowBlue" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0.6 L9.4,5 L0,9.4 Z" fill="var(--s1)" />
+    </marker>
+  </defs>
+
+  <!-- board surface -->
+  <rect x="248" y="40" width="224" height="224" fill="var(--card)" />
+
+  <!-- grid -->
+  <g stroke="var(--line)" stroke-width="1">
+    <line x1="276" y1="40" x2="276" y2="264" /><line x1="304" y1="40" x2="304" y2="264" />
+    <line x1="332" y1="40" x2="332" y2="264" /><line x1="360" y1="40" x2="360" y2="264" />
+    <line x1="388" y1="40" x2="388" y2="264" /><line x1="416" y1="40" x2="416" y2="264" />
+    <line x1="444" y1="40" x2="444" y2="264" />
+    <line x1="248" y1="68" x2="472" y2="68" /><line x1="248" y1="96" x2="472" y2="96" />
+    <line x1="248" y1="124" x2="472" y2="124" /><line x1="248" y1="152" x2="472" y2="152" />
+    <line x1="248" y1="180" x2="472" y2="180" /><line x1="248" y1="208" x2="472" y2="208" />
+    <line x1="248" y1="236" x2="472" y2="236" />
+  </g>
+  <rect x="248" y="40" width="224" height="224" fill="none" stroke="var(--fg)" stroke-width="2" />
+
+  <!-- walls -->
+  <g stroke="var(--fg)" stroke-width="4" stroke-linecap="round">
+    <line x1="416" y1="208" x2="416" y2="236" />
+    <line x1="276" y1="124" x2="304" y2="124" />
+    <line x1="332" y1="40" x2="332" y2="68" />
+    <line x1="304" y1="180" x2="332" y2="180" />
+  </g>
+
+  <!-- goal square -->
+  <rect x="391" y="127" width="22" height="22" rx="4" fill="none" stroke="var(--accent)" stroke-width="2" />
+  <path d="M402,131.4 L404.7,136.6 L410.5,137.5 L406.3,141.5 L407.3,147.2 L402,144.5 L396.7,147.2 L397.7,141.5 L393.5,137.5 L399.3,136.6 Z" fill="var(--accent)" />
+
+  <!-- move 1: slide right -->
+  <path d="M306,222 L392,222" fill="none" stroke="var(--s1)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#pzArrowBlue)" />
+  <!-- move 2: slide up, stopped by the helper -->
+  <path d="M402,210 L402,159" fill="none" stroke="var(--s1)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#pzArrowBlue)" />
+
+  <!-- where move 1 ends -->
+  <circle cx="402" cy="222" r="9" fill="var(--bg)" stroke="var(--s1)" stroke-width="2" stroke-dasharray="3 3" />
+
+  <!-- robots -->
+  <circle cx="402" cy="110" r="10" fill="var(--s2)" stroke="var(--bg)" stroke-width="2" />
+  <circle cx="290" cy="222" r="10" fill="var(--s1)" stroke="var(--bg)" stroke-width="2" />
+
+  <!-- leaders -->
+  <g stroke="var(--muted)" stroke-width="1">
+    <line x1="240" y1="222" x2="277" y2="222" />
+    <line x1="484" y1="110" x2="415" y2="110" />
+  </g>
+
+  <!-- labels -->
+  <text x="236" y="226" text-anchor="end" fill="var(--fg)">1 &mdash; slides until it hits something</text>
+  <text x="490" y="114" text-anchor="start" fill="var(--fg)">2 &mdash; helpers act as bumpers</text>
+  <text x="384" y="142" text-anchor="end" fill="var(--fg)" class="ko">goal</text>
+</svg>
+
+<div class="lg">
+  <em><span class="kd" style="background:var(--s1)"></span>the robot you move</em>
+  <em><span class="kd" style="background:var(--s2)"></span>helper robot</em>
+  <em><span class="kg"></span>goal square</em>
+</div>
+</figure>

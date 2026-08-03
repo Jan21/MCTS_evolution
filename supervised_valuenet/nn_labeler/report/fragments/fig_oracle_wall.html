@@ -1,0 +1,60 @@
+<figure class="fig figc-oracle">
+<style>
+.figc-oracle .ttl{font-size:14px;font-weight:600;color:var(--fg);margin:0 0 3px}
+.figc-oracle .hint{font-size:12.5px;color:var(--muted);margin:0 0 10px;line-height:1.45}
+.figc-oracle text{font-size:12px}
+.figc-oracle g.val text{font-size:13px;font-weight:600}
+.figc-oracle g.xl text{font-size:12.5px}
+</style>
+
+<div class="ttl">The exact solver gives up more often on bigger puzzles</div>
+<div class="hint">Each bar is one test set. Taller means the exact solver more often runs out of its effort budget and hands back nothing at all. Same budget everywhere.</div>
+
+<svg viewBox="0 0 800 400" role="img" aria-label="Bar chart of the share of test puzzles the exact solver fails to solve: 16 by 16 with 4 robots 0 percent, 6 robots 29.8, 8 robots 40.9, 24 by 24 with 4 robots 48.4, with 8 robots 64.2, and 32 by 32 with 4 robots 61.1 percent.">
+  <!-- grid -->
+  <g stroke="var(--line)" stroke-width="1">
+    <line x1="86" y1="336" x2="770" y2="336" />
+    <line x1="86" y1="256" x2="770" y2="256" />
+    <line x1="86" y1="176" x2="770" y2="176" />
+    <line x1="86" y1="96"  x2="770" y2="96" />
+  </g>
+  <g fill="var(--muted)" text-anchor="end">
+    <text x="74" y="340">0%</text>
+    <text x="74" y="260">20%</text>
+    <text x="74" y="180">40%</text>
+    <text x="74" y="100">60%</text>
+  </g>
+  <text x="26" y="196" fill="var(--muted)" text-anchor="middle" transform="rotate(-90 26 196)">% of test puzzles it fails to solve</text>
+
+  <!-- bars -->
+  <g fill="var(--s2)">
+    <path d="M246,336 V220.8 A4,4 0 0 1 250,216.8 H264 A4,4 0 0 1 268,220.8 V336 Z" />
+    <path d="M360,336 V176.4 A4,4 0 0 1 364,172.4 H378 A4,4 0 0 1 382,176.4 V336 Z" />
+    <path d="M474,336 V146.4 A4,4 0 0 1 478,142.4 H492 A4,4 0 0 1 496,146.4 V336 Z" />
+    <path d="M588,336 V83.2 A4,4 0 0 1 592,79.2 H606 A4,4 0 0 1 610,83.2 V336 Z" />
+    <path d="M702,336 V95.6 A4,4 0 0 1 706,91.6 H720 A4,4 0 0 1 724,95.6 V336 Z" />
+  </g>
+  <!-- the zero case: drawn as a flat mark on the baseline -->
+  <rect x="132" y="334.5" width="22" height="2.5" fill="var(--s2)" />
+
+  <!-- value labels -->
+  <g class="val" fill="var(--fg)" text-anchor="middle">
+    <text x="143" y="327">0</text>
+    <text x="257" y="207.8">29.8</text>
+    <text x="371" y="163.4">40.9</text>
+    <text x="485" y="133.4">48.4</text>
+    <text x="599" y="70.2">64.2</text>
+    <text x="713" y="82.6">61.1</text>
+  </g>
+
+  <!-- category labels -->
+  <g class="xl" text-anchor="middle">
+    <text x="143" y="360" fill="var(--fg)">16 &times; 16</text><text x="143" y="378" fill="var(--muted)">4 robots</text>
+    <text x="257" y="360" fill="var(--fg)">16 &times; 16</text><text x="257" y="378" fill="var(--muted)">6 robots</text>
+    <text x="371" y="360" fill="var(--fg)">16 &times; 16</text><text x="371" y="378" fill="var(--muted)">8 robots</text>
+    <text x="485" y="360" fill="var(--fg)">24 &times; 24</text><text x="485" y="378" fill="var(--muted)">4 robots</text>
+    <text x="599" y="360" fill="var(--fg)">24 &times; 24</text><text x="599" y="378" fill="var(--muted)">8 robots</text>
+    <text x="713" y="360" fill="var(--fg)">32 &times; 32</text><text x="713" y="378" fill="var(--muted)">4 robots</text>
+  </g>
+</svg>
+</figure>

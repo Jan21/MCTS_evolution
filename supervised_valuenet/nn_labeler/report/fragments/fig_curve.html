@@ -1,0 +1,160 @@
+<figure class="fig figc-curve">
+<style>
+.figc-curve .ttl{font-size:14px;font-weight:600;color:var(--fg);margin:0 0 3px}
+.figc-curve .hint{font-size:12.5px;color:var(--muted);margin:0 0 8px;line-height:1.45}
+.figc-curve .lg{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin:0 0 6px;font-size:12.5px;color:var(--muted)}
+.figc-curve .lg em{font-style:normal;display:inline-flex;align-items:center;gap:7px}
+.figc-curve .k{width:14px;height:3px;border-radius:2px;display:inline-block}
+.figc-curve .cv-wrap{position:relative}
+.figc-curve text{font-size:12px}
+.figc-curve g.el text{font-size:13px;font-weight:600}
+.figc-curve .cv-hit{outline:none;cursor:crosshair}
+.figc-curve .cv-tip{position:absolute;display:none;transform:translate(-50%,-100%);
+  background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 9px;
+  font-size:12px;line-height:1.5;color:var(--muted);pointer-events:none;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.figc-curve .cv-tip.on{display:block}
+.figc-curve .cv-tip.below{transform:translate(-50%,0)}
+.figc-curve .cv-v{color:var(--fg);font-weight:600;font-variant-numeric:tabular-nums}
+.figc-curve .cv-x{display:none}
+.figc-curve .cv-x.on{display:block}
+</style>
+
+<div class="ttl">Trained on tiny boards, judged on huge ones</div>
+<div class="hint">The network only ever saw 8 &times; 8 and 10 &times; 10 boards while learning. Everything to the right of the shaded strip is a size it had never seen. Lower is better; hover a point for the exact figures.</div>
+
+<div class="lg">
+  <em><span class="k" style="background:var(--s1)"></span>the network</em>
+  <em><span class="k" style="background:var(--s2)"></span>the old hand-written scorer</em>
+</div>
+
+<div class="cv-wrap">
+<svg viewBox="0 0 800 440" role="img" aria-label="Average label error against board size. The network rises gently from 0.16 at size 8 to 0.71 at size 32. The hand-written scorer starts at 0.72 at size 8 and reaches 1.18 by size 12.">
+  <rect x="86" y="56" width="50.33" height="316" fill="var(--s1)" opacity="0.08" />
+  <g stroke="var(--muted)" stroke-width="1" fill="none">
+    <path d="M86,46 L86,40 L136.33,40 L136.33,46" />
+  </g>
+  <text x="143.33" y="44" fill="var(--muted)">sizes it trained on</text>
+
+  <g stroke="var(--line)" stroke-width="1">
+    <line x1="86" y1="372" x2="690" y2="372" />
+    <line x1="86" y1="299.08" x2="690" y2="299.08" />
+    <line x1="86" y1="226.15" x2="690" y2="226.15" />
+    <line x1="86" y1="153.23" x2="690" y2="153.23" />
+    <line x1="86" y1="80.31" x2="690" y2="80.31" />
+  </g>
+  <g fill="var(--muted)" text-anchor="end">
+    <text x="74" y="376">0</text>
+    <text x="74" y="303.08">0.3</text>
+    <text x="74" y="230.15">0.6</text>
+    <text x="74" y="157.23">0.9</text>
+    <text x="74" y="84.31">1.2</text>
+  </g>
+  <g fill="var(--muted)" text-anchor="middle">
+    <text x="86" y="394">8</text>
+    <text x="186.67" y="394">12</text>
+    <text x="287.33" y="394">16</text>
+    <text x="388" y="394">20</text>
+    <text x="488.67" y="394">24</text>
+    <text x="589.33" y="394">28</text>
+    <text x="690" y="394">32</text>
+  </g>
+  <text x="388" y="422" fill="var(--muted)" text-anchor="middle">board size (squares across)</text>
+  <text x="26" y="214" fill="var(--muted)" text-anchor="middle" transform="rotate(-90 26 214)">average label error (extra moves)</text>
+
+  <path d="M86,196.98 L111.17,165.38 L136.33,145.94 L186.67,85.17" fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+  <path d="M86,333.11 L111.17,330.68 L136.33,320.95 L161.5,316.09 L186.67,313.66 L211.83,299.08 L237,306.37 L262.17,299.08 L287.33,257.75 L488.67,250.46 L690,199.42" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+
+  <g fill="var(--s2)" stroke="var(--bg)" stroke-width="2">
+    <circle cx="86" cy="196.98" r="4" />
+    <circle cx="111.17" cy="165.38" r="4" />
+    <circle cx="136.33" cy="145.94" r="4" />
+    <circle cx="186.67" cy="85.17" r="4" />
+  </g>
+  <g fill="var(--s1)" stroke="var(--bg)" stroke-width="2">
+    <circle cx="86" cy="333.11" r="4" />
+    <circle cx="111.17" cy="330.68" r="4" />
+    <circle cx="136.33" cy="320.95" r="4" />
+    <circle cx="161.5" cy="316.09" r="4" />
+    <circle cx="186.67" cy="313.66" r="4" />
+    <circle cx="211.83" cy="299.08" r="4" />
+    <circle cx="237" cy="306.37" r="4" />
+    <circle cx="262.17" cy="299.08" r="4" />
+    <circle cx="287.33" cy="257.75" r="4" />
+    <circle cx="488.67" cy="250.46" r="4" />
+    <circle cx="690" cy="199.42" r="4" />
+  </g>
+
+  <g class="el" fill="var(--fg)">
+    <text x="698" y="203.42">network 0.71</text>
+    <text x="194" y="89.17">hand-written 1.18</text>
+  </g>
+
+  <circle id="cvRing" r="7.5" fill="none" stroke="var(--s1)" stroke-width="2" opacity="0" />
+
+  <g>
+    <circle class="cv-hit" cx="86" cy="333.11" r="10" fill="transparent" tabindex="0" data-vx="86" data-vy="333.11" data-c="var(--s1)" data-v="0.16 extra moves" data-s="the network · 8 × 8 board" data-x="picks the best move 92% of the time" />
+    <circle class="cv-hit" cx="111.17" cy="330.68" r="10" fill="transparent" tabindex="0" data-vx="111.17" data-vy="330.68" data-c="var(--s1)" data-v="0.17 extra moves" data-s="the network · 9 × 9 board" data-x="picks the best move 92% of the time" />
+    <circle class="cv-hit" cx="136.33" cy="320.95" r="10" fill="transparent" tabindex="0" data-vx="136.33" data-vy="320.95" data-c="var(--s1)" data-v="0.21 extra moves" data-s="the network · 10 × 10 board" data-x="picks the best move 91% of the time" />
+    <circle class="cv-hit" cx="161.5" cy="316.09" r="10" fill="transparent" tabindex="0" data-vx="161.5" data-vy="316.09" data-c="var(--s1)" data-v="0.23 extra moves" data-s="the network · 11 × 11 board" data-x="picks the best move 90% of the time" />
+    <circle class="cv-hit" cx="186.67" cy="313.66" r="10" fill="transparent" tabindex="0" data-vx="186.67" data-vy="313.66" data-c="var(--s1)" data-v="0.24 extra moves" data-s="the network · 12 × 12 board" data-x="picks the best move 90% of the time" />
+    <circle class="cv-hit" cx="211.83" cy="299.08" r="10" fill="transparent" tabindex="0" data-vx="211.83" data-vy="299.08" data-c="var(--s1)" data-v="0.30 extra moves" data-s="the network · 13 × 13 board" data-x="picks the best move 90% of the time" />
+    <circle class="cv-hit" cx="237" cy="306.37" r="10" fill="transparent" tabindex="0" data-vx="237" data-vy="306.37" data-c="var(--s1)" data-v="0.27 extra moves" data-s="the network · 14 × 14 board" data-x="picks the best move 89% of the time" />
+    <circle class="cv-hit" cx="262.17" cy="299.08" r="10" fill="transparent" tabindex="0" data-vx="262.17" data-vy="299.08" data-c="var(--s1)" data-v="0.30 extra moves" data-s="the network · 15 × 15 board" data-x="picks the best move 89% of the time" />
+    <circle class="cv-hit" cx="287.33" cy="257.75" r="10" fill="transparent" tabindex="0" data-vx="287.33" data-vy="257.75" data-c="var(--s1)" data-v="0.47 extra moves" data-s="the network · 16 × 16 board" data-x="picks the best move 85% of the time · harder set: 6 robots" />
+    <circle class="cv-hit" cx="488.67" cy="250.46" r="10" fill="transparent" tabindex="0" data-vx="488.67" data-vy="250.46" data-c="var(--s1)" data-v="0.50 extra moves" data-s="the network · 24 × 24 board" data-x="picks the best move 87% of the time" />
+    <circle class="cv-hit" cx="690" cy="199.42" r="10" fill="transparent" tabindex="0" data-vx="690" data-vy="199.42" data-c="var(--s1)" data-v="0.71 extra moves" data-s="the network · 32 × 32 board" data-x="picks the best move 81% of the time" />
+    <circle class="cv-hit" cx="86" cy="196.98" r="10" fill="transparent" tabindex="0" data-vx="86" data-vy="196.98" data-c="var(--s2)" data-v="0.72 extra moves" data-s="hand-written scorer · 8 × 8 board" data-x="" />
+    <circle class="cv-hit" cx="111.17" cy="165.38" r="10" fill="transparent" tabindex="0" data-vx="111.17" data-vy="165.38" data-c="var(--s2)" data-v="0.85 extra moves" data-s="hand-written scorer · 9 × 9 board" data-x="" />
+    <circle class="cv-hit" cx="136.33" cy="145.94" r="10" fill="transparent" tabindex="0" data-vx="136.33" data-vy="145.94" data-c="var(--s2)" data-v="0.93 extra moves" data-s="hand-written scorer · 10 × 10 board" data-x="" />
+    <circle class="cv-hit" cx="186.67" cy="85.17" r="10" fill="transparent" tabindex="0" data-vx="186.67" data-vy="85.17" data-c="var(--s2)" data-v="1.18 extra moves" data-s="hand-written scorer · 12 × 12 board" data-x="" />
+  </g>
+</svg>
+<div class="cv-tip">
+  <div class="cv-v"></div>
+  <div class="cv-s"></div>
+  <div class="cv-x"></div>
+</div>
+</div>
+<script>
+(function(){
+  var root=document.querySelector('.figc-curve');
+  if(!root) return;
+  var svg=root.querySelector('svg'), wrap=root.querySelector('.cv-wrap'),
+      tip=root.querySelector('.cv-tip'), ring=root.querySelector('#cvRing'),
+      tv=tip.querySelector('.cv-v'), ts=tip.querySelector('.cv-s'), tx=tip.querySelector('.cv-x');
+  function show(el){
+    var vx=parseFloat(el.getAttribute('data-vx')),
+        vy=parseFloat(el.getAttribute('data-vy')),
+        s=svg.getBoundingClientRect().width/800,
+        extra=el.getAttribute('data-x');
+    ring.setAttribute('cx',vx); ring.setAttribute('cy',vy);
+    ring.setAttribute('stroke',el.getAttribute('data-c'));
+    ring.setAttribute('opacity','1');
+    tv.textContent=el.getAttribute('data-v');
+    ts.textContent=el.getAttribute('data-s');
+    tx.textContent=extra;
+    if(extra){tx.classList.add('on');} else {tx.classList.remove('on');}
+    tip.classList.add('on');
+    var w=tip.offsetWidth, ww=wrap.clientWidth,
+        left=Math.min(Math.max(vx*s, w/2+2), ww-w/2-2);
+    tip.style.left=left+'px';
+    var top=vy*s-14;
+    if(top-tip.offsetHeight<2){tip.classList.add('below'); top=vy*s+14;}
+    else {tip.classList.remove('below');}
+    tip.style.top=top+'px';
+  }
+  function hide(){tip.classList.remove('on'); ring.setAttribute('opacity','0');}
+  var pts=root.querySelectorAll('.cv-hit'), i;
+  for(i=0;i<pts.length;i++){
+    (function(el){
+      el.addEventListener('mouseenter',function(){show(el);});
+      el.addEventListener('focus',function(){show(el);});
+      el.addEventListener('mouseleave',hide);
+      el.addEventListener('blur',hide);
+    })(pts[i]);
+  }
+  svg.addEventListener('mouseleave',hide);
+})();
+</script>
+</figure>

@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teaching a network to be the teacher — the scaling story in plain English</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1a1a1a;
+    --muted: #666666;
+    --line: #d8d8d8;
+    --card: #f6f6f4;
+    --accent: #0b6e4f;
+    --s1: #2a78d6;
+    --s2: #eb6834;
+    --s3: #1baf7a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a;
+      --fg: #e6e6e3;
+      --muted: #9a9a95;
+      --line: #3a3d42;
+      --card: #1d2025;
+      --accent: #5bc899;
+      --s1: #3987e5;
+      --s2: #d95926;
+      --s3: #199e70;
+    }
+  }
+  html { color-scheme: light dark; }
+  body {
+    margin: 0 auto;
+    max-width: 60rem;
+    padding: 2.2rem 1.25rem 5rem;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  h1 { font-size: 1.8rem; line-height: 1.2; margin: 0 0 .6rem; }
+  h2 {
+    font-size: 1.22rem; margin: 2.6rem 0 .7rem;
+    border-bottom: 1px solid var(--line); padding-bottom: .3rem;
+  }
+  p { margin: 0 0 .9rem; }
+  .badge {
+    display: inline-block; font-size: .74rem; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase;
+    color: var(--bg); background: var(--accent);
+    border-radius: 999px; padding: .3rem .8rem; margin: 0 0 .5rem;
+  }
+  .sub { color: var(--muted); margin: 0 0 1.8rem; font-size: .93rem; }
+  .lede { font-size: 1.05rem; }
+  .cap { color: var(--muted); font-size: .9rem; margin: .35rem 0 1.6rem; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 8px; padding: .9rem 1.1rem; margin: 1.2rem 0;
+  }
+  .card p:last-child { margin-bottom: 0; }
+  .card.open { border-left: 4px solid var(--s2); }
+  .tag {
+    display: block; font-size: .74rem; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: .35rem;
+  }
+  .twrap { overflow-x: auto; margin: 1rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { border: 1px solid var(--line); padding: .34rem .6rem; text-align: left; }
+  th { background: var(--card); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  ul { padding-left: 1.25rem; margin: 0 0 .9rem; }
+  li { margin: .3rem 0; }
+  footer {
+    margin-top: 3.5rem; padding-top: .9rem; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: .85rem;
+  }
+  figure.fig { margin: 1.2rem 0; }
+  figure.fig svg { max-width: 100%; height: auto; display: block; }
+</style>
+</head>
+<body>
+
+<h1>Teaching a network to be the teacher</h1>
+<span class="badge">Work in progress — updated as experiments land</span>
+<p class="sub">A plain-English account of the scaling experiments &middot; 2026-08-03 &middot; local working document</p>
+
+<p class="lede">We build programs that solve a sliding-robot puzzle, and they learn from millions of
+worked examples produced by an exact solver — a program that always finds a shortest solution but
+can take a very long time. On big boards that solver runs out of breath, and one planned batch of
+examples would have eaten nearly half the project's entire computer budget. So we trained a network
+to produce the examples instead: it learned on the smallest boards we have, and it still judges
+boards more than three times larger almost as well.</p>
+
+<h2>The puzzle, in one minute</h2>
+
+<p>Picture a square grid with a scattering of walls. On it stand a handful of robots. You pick a
+robot and a direction, and it slides — like a curling stone on ice — until something stops it: a
+wall, the edge of the board, or another robot. It never stops in the middle of open floor. One
+robot has a target square, and your job is to get it there in as few slides as possible.</p>
+
+<p>That one rule is what makes the puzzle hard. You usually cannot send the target robot straight to
+its square, because nothing is there to stop it. You first have to park a different robot on the far
+side of the target as a bumper — and parking <em>that</em> robot may need a bumper of its own. Good
+solutions look like small chains of set-up moves followed by one clean run home.</p>
+
+<p>Our system is a planner: a program that searches through possible move sequences, with two neural
+networks advising the search about which branch looks promising. Everything below is about where
+those networks get their training material.</p>
+
+<figure class="fig figc-puzzle">
+<style>
+.figc-puzzle .ttl{font-size:14px;font-weight:600;color:var(--fg);margin:0 0 3px}
+.figc-puzzle .hint{font-size:12.5px;color:var(--muted);margin:0 0 10px;line-height:1.45}
+.figc-puzzle .lg{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin:10px 0 0;font-size:12.5px;color:var(--muted)}
+.figc-puzzle .lg em{font-style:normal;display:inline-flex;align-items:center;gap:7px}
+.figc-puzzle .kd{width:11px;height:11px;border-radius:50%;display:inline-block}
+.figc-puzzle .kg{width:11px;height:11px;border-radius:3px;display:inline-block;border:2px solid var(--accent)}
+.figc-puzzle text{font-size:12px}
+.figc-puzzle text.ko{paint-order:stroke;stroke:var(--bg);stroke-width:3.5px;stroke-linejoin:round}
+</style>
+
+<div class="ttl">How the puzzle works</div>
+<div class="hint">A robot never stops halfway: it slides in a straight line until a wall or another robot blocks it. So the only way to park a robot on a chosen square is to put something in its way.</div>
+
+<svg viewBox="0 0 720 300" role="img" aria-label="An eight by eight board. A blue robot slides right along the bottom row until a wall stops it, then slides up and is stopped by an orange helper robot, landing on the goal square.">
+  <defs>
+    <marker id="pzArrowBlue" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0.6 L9.4,5 L0,9.4 Z" fill="var(--s1)" />
+    </marker>
+  </defs>
+
+  <!-- board surface -->
+  <rect x="248" y="40" width="224" height="224" fill="var(--card)" />
+
+  <!-- grid -->
+  <g stroke="var(--line)" stroke-width="1">
+    <line x1="276" y1="40" x2="276" y2="264" /><line x1="304" y1="40" x2="304" y2="264" />
+    <line x1="332" y1="40" x2="332" y2="264" /><line x1="360" y1="40" x2="360" y2="264" />
+    <line x1="388" y1="40" x2="388" y2="264" /><line x1="416" y1="40" x2="416" y2="264" />
+    <line x1="444" y1="40" x2="444" y2="264" />
+    <line x1="248" y1="68" x2="472" y2="68" /><line x1="248" y1="96" x2="472" y2="96" />
+    <line x1="248" y1="124" x2="472" y2="124" /><line x1="248" y1="152" x2="472" y2="152" />
+    <line x1="248" y1="180" x2="472" y2="180" /><line x1="248" y1="208" x2="472" y2="208" />
+    <line x1="248" y1="236" x2="472" y2="236" />
+  </g>
+  <rect x="248" y="40" width="224" height="224" fill="none" stroke="var(--fg)" stroke-width="2" />
+
+  <!-- walls -->
+  <g stroke="var(--fg)" stroke-width="4" stroke-linecap="round">
+    <line x1="416" y1="208" x2="416" y2="236" />
+    <line x1="276" y1="124" x2="304" y2="124" />
+    <line x1="332" y1="40" x2="332" y2="68" />
+    <line x1="304" y1="180" x2="332" y2="180" />
+  </g>
+
+  <!-- goal square -->
+  <rect x="391" y="127" width="22" height="22" rx="4" fill="none" stroke="var(--accent)" stroke-width="2" />
+  <path d="M402,131.4 L404.7,136.6 L410.5,137.5 L406.3,141.5 L407.3,147.2 L402,144.5 L396.7,147.2 L397.7,141.5 L393.5,137.5 L399.3,136.6 Z" fill="var(--accent)" />
+
+  <!-- move 1: slide right -->
+  <path d="M306,222 L392,222" fill="none" stroke="var(--s1)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#pzArrowBlue)" />
+  <!-- move 2: slide up, stopped by the helper -->
+  <path d="M402,210 L402,159" fill="none" stroke="var(--s1)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#pzArrowBlue)" />
+
+  <!-- where move 1 ends -->
+  <circle cx="402" cy="222" r="9" fill="var(--bg)" stroke="var(--s1)" stroke-width="2" stroke-dasharray="3 3" />
+
+  <!-- robots -->
+  <circle cx="402" cy="110" r="10" fill="var(--s2)" stroke="var(--bg)" stroke-width="2" />
+  <circle cx="290" cy="222" r="10" fill="var(--s1)" stroke="var(--bg)" stroke-width="2" />
+
+  <!-- leaders -->
+  <g stroke="var(--muted)" stroke-width="1">
+    <line x1="240" y1="222" x2="277" y2="222" />
+    <line x1="484" y1="110" x2="415" y2="110" />
+  </g>
+
+  <!-- labels -->
+  <text x="236" y="226" text-anchor="end" fill="var(--fg)">1 &mdash; slides until it hits something</text>
+  <text x="490" y="114" text-anchor="start" fill="var(--fg)">2 &mdash; helpers act as bumpers</text>
+  <text x="384" y="142" text-anchor="end" fill="var(--fg)" class="ko">goal</text>
+</svg>
+
+<div class="lg">
+  <em><span class="kd" style="background:var(--s1)"></span>the robot you move</em>
+  <em><span class="kd" style="background:var(--s2)"></span>helper robot</em>
+  <em><span class="kg"></span>goal square</em>
+</div>
+</figure>
+<p class="cap"><em>One board and one move: the robot slides in a straight line until a wall or
+another robot stops it, which is why helper robots have to be parked first.</em></p>
+
+<h2>Why we need labeled examples</h2>
+
+<p>The networks learn by example, and each example is narrow and specific. It says: here is a
+half-finished plan, and here is one candidate next step — if you take this step, how many moves are
+still needed to finish? That number is the label. Practitioners call it the cost-to-go; it simply
+means how many moves are left to finish.</p>
+
+<p>Collect millions of those little answers and a network can learn to rank candidate steps without
+searching: shown a position and a list of options, it says which option leaves the least work. That
+ranking is what makes the planner fast, because it lets the search skip the branches that go
+nowhere.</p>
+
+<p>Until now, every single one of those answers came from the exact solver. To label one candidate,
+you hand the solver the half-finished plan with that candidate glued on and ask it for the shortest
+completion. The label is exactly right by construction. It is also, on a big board, extremely
+expensive — and that is the whole problem.</p>
+
+<h2>The teacher is running out of breath</h2>
+
+<p>The exact solver's cost explodes in two directions at once: bigger boards and more robots. With
+four robots on a 16&times;16 board it answers every question we ask, within its effort cap, 100% of
+the time. Add robots and it starts failing: it hits the cap and returns nothing on 29.8% of
+questions at six robots and 40.9% at eight. Grow the board instead and the same thing happens:
+48.4% failures on 24&times;24 with four robots, 64.2% on 24&times;24 with eight, 61.1% on 32&times;32
+with four. On the boards we care most about, the teacher is silent more often than not.</p>
+
+<figure class="fig figc-oracle">
+<style>
+.figc-oracle .ttl{font-size:14px;font-weight:600;color:var(--fg);margin:0 0 3px}
+.figc-oracle .hint{font-size:12.5px;color:var(--muted);margin:0 0 10px;line-height:1.45}
+.figc-oracle text{font-size:12px}
+.figc-oracle g.val text{font-size:13px;font-weight:600}
+.figc-oracle g.xl text{font-size:12.5px}
+</style>
+
+<div class="ttl">The exact solver gives up more often on bigger puzzles</div>
+<div class="hint">Each bar is one test set. Taller means the exact solver more often runs out of its effort budget and hands back nothing at all. Same budget everywhere.</div>
+
+<svg viewBox="0 0 800 400" role="img" aria-label="Bar chart of the share of test puzzles the exact solver fails to solve: 16 by 16 with 4 robots 0 percent, 6 robots 29.8, 8 robots 40.9, 24 by 24 with 4 robots 48.4, with 8 robots 64.2, and 32 by 32 with 4 robots 61.1 percent.">
+  <!-- grid -->
+  <g stroke="var(--line)" stroke-width="1">
+    <line x1="86" y1="336" x2="770" y2="336" />
+    <line x1="86" y1="256" x2="770" y2="256" />
+    <line x1="86" y1="176" x2="770" y2="176" />
+    <line x1="86" y1="96"  x2="770" y2="96" />
+  </g>
+  <g fill="var(--muted)" text-anchor="end">
+    <text x="74" y="340">0%</text>
+    <text x="74" y="260">20%</text>
+    <text x="74" y="180">40%</text>
+    <text x="74" y="100">60%</text>
+  </g>
+  <text x="26" y="196" fill="var(--muted)" text-anchor="middle" transform="rotate(-90 26 196)">% of test puzzles it fails to solve</text>
+
+  <!-- bars -->
+  <g fill="var(--s2)">
+    <path d="M246,336 V220.8 A4,4 0 0 1 250,216.8 H264 A4,4 0 0 1 268,220.8 V336 Z" />
+    <path d="M360,336 V176.4 A4,4 0 0 1 364,172.4 H378 A4,4 0 0 1 382,176.4 V336 Z" />
+    <path d="M474,336 V146.4 A4,4 0 0 1 478,142.4 H492 A4,4 0 0 1 496,146.4 V336 Z" />
+    <path d="M588,336 V83.2 A4,4 0 0 1 592,79.2 H606 A4,4 0 0 1 610,83.2 V336 Z" />
+    <path d="M702,336 V95.6 A4,4 0 0 1 706,91.6 H720 A4,4 0 0 1 724,95.6 V336 Z" />
+  </g>
+  <!-- the zero case: drawn as a flat mark on the baseline -->
+  <rect x="132" y="334.5" width="22" height="2.5" fill="var(--s2)" />
+
+  <!-- value labels -->
+  <g class="val" fill="var(--fg)" text-anchor="middle">
+    <text x="143" y="327">0</text>
+    <text x="257" y="207.8">29.8</text>
+    <text x="371" y="163.4">40.9</text>
+    <text x="485" y="133.4">48.4</text>
+    <text x="599" y="70.2">64.2</text>
+    <text x="713" y="82.6">61.1</text>
+  </g>
+
+  <!-- category labels -->
+  <g class="xl" text-anchor="middle">
+    <text x="143" y="360" fill="var(--fg)">16 &times; 16</text><text x="143" y="378" fill="var(--muted)">4 robots</text>
+    <text x="257" y="360" fill="var(--fg)">16 &times; 16</text><text x="257" y="378" fill="var(--muted)">6 robots</text>
+    <text x="371" y="360" fill="var(--fg)">16 &times; 16</text><text x="371" y="378" fill="var(--muted)">8 robots</text>
+    <text x="485" y="360" fill="var(--fg)">24 &times; 24</text><text x="485" y="378" fill="var(--muted)">4 robots</text>
+    <text x="599" y="360" fill="var(--fg)">24 &times; 24</text><text x="599" y="378" fill="var(--muted)">8 robots</text>
+    <text x="713" y="360" fill="var(--fg)">32 &times; 32</text><text x="713" y="378" fill="var(--muted)">4 robots</text>
+  </g>
+</svg>
+</figure>
+<p class="cap"><em>How often the exact solver simply fails to answer inside its effort cap, as
+boards grow and robots multiply.</em></p>
+
+<p>The price of the answers it <em>does</em> give is the other half of the wall. One planned
+labeling campaign, on an extended set of moves, was projected at about 441 node-hours. A node-hour
+is one hour of one whole eight-GPU machine; the project's entire grant is 1000 of them, and roughly
+879 were left at the time. One batch of training data would have consumed nearly half of what
+remained.</p>
+
+<p>We tried the obvious cheap fix: cap the solver's effort and take whatever it manages. That ran in
+about 5 node-hours — and quietly ruined the data. The examples that take the solver longest are
+precisely the interesting ones, so capping it deleted them: the key example type fell from 13.5% of
+the data to 4.8%. A network retrained on the capped data lost 24.6 percentage points on the hardest
+benchmark. The workaround did not shrink the job; it shrank the lesson.</p>
+
+<h2>The idea: one network that fits every board</h2>
+
+<p>If the exact solver cannot scale, the network has to label its own future training data. For that
+to work, one network has to run on boards of any size — and ours could not. It read the board as a
+collection of squares, each square a separate piece of input, wired to the other squares by where a
+robot could slide from one to another. That wiring already encodes the board's geometry, and it does
+not care how big the board is.</p>
+
+<p>Exactly one piece did care: a learned position table, a lookup with one row per square that told
+the network where each square sat. One row per square means the table only exists for one board
+size, and the whole network was locked to that size by it.</p>
+
+<figure class="fig figc-sizefree">
+<style>
+.figc-sizefree .ttl{font-size:14px;font-weight:600;color:var(--fg);margin:0 0 3px}
+.figc-sizefree .hint{font-size:12.5px;color:var(--muted);margin:0 0 10px;line-height:1.45}
+.figc-sizefree text{font-size:12px}
+.figc-sizefree text.bl{font-size:13px}
+.figc-sizefree text.bx{font-size:14px;font-weight:600}
+.figc-sizefree text.ko{paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round}
+</style>
+
+<div class="ttl">One network reads any board size</div>
+<div class="hint">A board is handed over as a set of squares joined by the slides a robot could make &mdash; not as a picture of a fixed width. Nothing left inside the network is tied to one board size.</div>
+
+<svg viewBox="0 0 760 430" role="img" aria-label="A six by six board and a ten by ten board, each marked with curved links between squares a robot could slide between. Both feed downwards into a single rounded box labelled the same network, no size dial inside. Beside it a crossed-out box marked position table, removed.">
+  <defs>
+    <marker id="sfArrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0.6 L9.4,5 L0,9.4 Z" fill="var(--muted)" />
+    </marker>
+    <marker id="sfLink" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 Z" fill="var(--s1)" />
+    </marker>
+  </defs>
+
+  <text x="110" y="22" fill="var(--muted)">cells connect where a robot could slide</text>
+
+  <!-- small board: 6 x 6 -->
+  <text x="176" y="46" class="bl" fill="var(--fg)" text-anchor="middle">a small board</text>
+  <rect x="110" y="56" width="132" height="132" fill="var(--card)" />
+  <g stroke="var(--line)" stroke-width="1">
+    <line x1="132" y1="56" x2="132" y2="188" /><line x1="154" y1="56" x2="154" y2="188" />
+    <line x1="176" y1="56" x2="176" y2="188" /><line x1="198" y1="56" x2="198" y2="188" />
+    <line x1="220" y1="56" x2="220" y2="188" />
+    <line x1="110" y1="78" x2="242" y2="78" /><line x1="110" y1="100" x2="242" y2="100" />
+    <line x1="110" y1="122" x2="242" y2="122" /><line x1="110" y1="144" x2="242" y2="144" />
+    <line x1="110" y1="166" x2="242" y2="166" />
+  </g>
+  <rect x="110" y="56" width="132" height="132" fill="none" stroke="var(--fg)" stroke-width="1.5" />
+  <g fill="none" stroke="var(--s1)" stroke-width="2">
+    <path d="M121,89 Q154,64 187,89" />
+    <path d="M187,89 Q214,122 187,155" marker-end="url(#sfLink)" />
+  </g>
+  <g fill="var(--s1)" stroke="var(--bg)" stroke-width="1.5">
+    <circle cx="121" cy="89" r="4" /><circle cx="187" cy="89" r="4" />
+  </g>
+
+  <!-- bigger board: 10 x 10 -->
+  <text x="410" y="46" class="bl" fill="var(--fg)" text-anchor="middle">a bigger board</text>
+  <rect x="300" y="56" width="220" height="220" fill="var(--card)" />
+  <g stroke="var(--line)" stroke-width="1">
+    <line x1="322" y1="56" x2="322" y2="276" /><line x1="344" y1="56" x2="344" y2="276" />
+    <line x1="366" y1="56" x2="366" y2="276" /><line x1="388" y1="56" x2="388" y2="276" />
+    <line x1="410" y1="56" x2="410" y2="276" /><line x1="432" y1="56" x2="432" y2="276" />
+    <line x1="454" y1="56" x2="454" y2="276" /><line x1="476" y1="56" x2="476" y2="276" />
+    <line x1="498" y1="56" x2="498" y2="276" />
+    <line x1="300" y1="78" x2="520" y2="78" /><line x1="300" y1="100" x2="520" y2="100" />
+    <line x1="300" y1="122" x2="520" y2="122" /><line x1="300" y1="144" x2="520" y2="144" />
+    <line x1="300" y1="166" x2="520" y2="166" /><line x1="300" y1="188" x2="520" y2="188" />
+    <line x1="300" y1="210" x2="520" y2="210" /><line x1="300" y1="232" x2="520" y2="232" />
+    <line x1="300" y1="254" x2="520" y2="254" />
+  </g>
+  <rect x="300" y="56" width="220" height="220" fill="none" stroke="var(--fg)" stroke-width="1.5" />
+  <g fill="none" stroke="var(--s1)" stroke-width="2">
+    <path d="M333,111 Q388,82 443,111" />
+    <path d="M443,111 Q476,166 443,221" />
+    <path d="M443,221 Q476,250 509,221" marker-end="url(#sfLink)" />
+  </g>
+  <g fill="var(--s1)" stroke="var(--bg)" stroke-width="1.5">
+    <circle cx="333" cy="111" r="4" /><circle cx="443" cy="111" r="4" /><circle cx="443" cy="221" r="4" />
+  </g>
+
+  <!-- both feed the same network -->
+  <g fill="none" stroke="var(--muted)" stroke-width="2.5" marker-end="url(#sfArrow)">
+    <path d="M176,196 C176,244 218,272 264,318" />
+    <path d="M410,284 C410,300 400,306 392,318" />
+  </g>
+
+  <rect x="240" y="326" width="280" height="86" rx="12" fill="var(--card)" stroke="var(--line)" stroke-width="1.5" />
+  <text x="380" y="364" class="bx" fill="var(--fg)" text-anchor="middle">the same network</text>
+  <text x="380" y="388" fill="var(--muted)" text-anchor="middle">no size dial inside</text>
+
+  <!-- the part that had to go -->
+  <line x1="520" y1="369" x2="554" y2="369" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4 4" />
+  <rect x="558" y="339" width="172" height="60" rx="8" fill="var(--bg)" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4" />
+  <g stroke="var(--muted)" stroke-width="2" opacity="0.45">
+    <line x1="560" y1="341" x2="728" y2="397" /><line x1="728" y1="341" x2="560" y2="397" />
+  </g>
+  <text x="644" y="365" class="ko" fill="var(--muted)" text-anchor="middle">position table</text>
+  <text x="644" y="385" class="ko" fill="var(--muted)" text-anchor="middle">(removed)</text>
+</svg>
+</figure>
+<p class="cap"><em>The network sees each square as its own input and connects squares by where a
+robot could slide between them, so no part of it depends on how big the board is.</em></p>
+
+<p>We tried three replacements: a position signal computed from each square's coordinates by
+formula, extra input channels carrying the coordinates directly, and — as the control — nothing at
+all. The surprise was that nothing at all won, and won clearly. The slide connections apparently
+tell the network everything it needs about where things are. Removing the position signal entirely
+is also the most portable choice imaginable: there is now no part of the network that knows, or
+needs to know, the size of the board it is looking at.</p>
+
+<h2>Start tiny, fail cheap</h2>
+
+<p>Before spending real money we built a practice bed out of boards small enough that the exact
+solver is instant: eight sizes from 8&times;8 to 15&times;15, four robots each, 1200 boards apiece.
+Labeling 1050 boards at each size took between 15 and 56 seconds — ordinary CPU work on a login
+machine, no GPU, no queue, no cost worth counting.</p>
+
+<div class="twrap">
+<table>
+  <tr><th>Board size</th><th class="num">Labeling time</th><th class="num">Examples produced</th></tr>
+  <tr><td>8&times;8</td><td class="num">15 s</td><td class="num">105,413</td></tr>
+  <tr><td>9&times;9</td><td class="num">16 s</td><td class="num">102,972</td></tr>
+  <tr><td>10&times;10</td><td class="num">21 s</td><td class="num">101,824</td></tr>
+  <tr><td>11&times;11</td><td class="num">27 s</td><td class="num">99,596</td></tr>
+  <tr><td>12&times;12</td><td class="num">32 s</td><td class="num">98,225</td></tr>
+  <tr><td>13&times;13</td><td class="num">38 s</td><td class="num">97,337</td></tr>
+  <tr><td>14&times;14</td><td class="num">47 s</td><td class="num">97,377</td></tr>
+  <tr><td>15&times;15</td><td class="num">56 s</td><td class="num">96,012</td></tr>
+</table>
+</div>
+
+<p>Roughly 100,000 examples per size, exactly labeled, for a few minutes of a shared machine. That
+is the whole point of debugging small: every mistake we were about to make cost seconds instead of
+node-hours.</p>
+
+<h2>Two things broke, and that was the point</h2>
+
+<p>The first training round put eight variants on one GPU for six hours and eleven minutes — 0.77
+node-hours. Seven of the eight learned nothing at all. They landed in a lazy corner where the
+network predicts the same number for every candidate, which scores about as well as guessing and is
+much easier to reach than actually learning. The giveaway was almost comic: three genuinely
+different network designs reported the same best score, 1.9154, down to the last digit. Different
+networks cannot agree to four decimals. They had all stopped predicting anything, so the score was
+no longer measuring them.</p>
+
+<figure class="fig figc-collapse">
+<style>
+.figc-collapse .ttl{font-size:14px;font-weight:600;color:var(--fg);margin:0 0 3px}
+.figc-collapse .hint{font-size:12.5px;color:var(--muted);margin:0 0 8px;line-height:1.45}
+.figc-collapse .lg{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin:0 0 6px;font-size:12.5px;color:var(--muted)}
+.figc-collapse .lg em{font-style:normal;display:inline-flex;align-items:center;gap:7px}
+.figc-collapse .k{width:14px;height:3px;border-radius:2px;display:inline-block}
+.figc-collapse .cl-wrap{position:relative}
+.figc-collapse text{font-size:12px}
+.figc-collapse g.el text{font-size:13px;font-weight:600}
+.figc-collapse .cl-band{outline:none}
+.figc-collapse .cl-tip{position:absolute;display:none;transform:translate(-50%,-100%);
+  background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 9px;
+  font-size:12px;line-height:1.5;color:var(--muted);pointer-events:none;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.figc-collapse .cl-tip.on{display:block}
+.figc-collapse .cl-tip.below{transform:translate(-50%,0)}
+.figc-collapse .cl-h{color:var(--fg);font-weight:600;margin-bottom:2px}
+.figc-collapse .cl-row{display:flex;align-items:center;gap:6px}
+.figc-collapse .cl-row b{color:var(--fg);font-variant-numeric:tabular-nums}
+.figc-collapse .cl-k1{width:12px;height:3px;border-radius:2px;background:var(--s1);display:inline-block}
+.figc-collapse .cl-k2{width:12px;height:3px;border-radius:2px;background:var(--s2);display:inline-block}
+</style>
+
+<div class="ttl">One run learned, seven flat-lined</div>
+<div class="hint">Eight runs were started the same way. The line that comes down is the one run that learned; the line that stays high is a run that never got off the ground, and it stayed that way for every round. Lower is better.</div>
+
+<div class="lg">
+  <em><span class="k" style="background:var(--s1)"></span>the run that learned</em>
+  <em><span class="k" style="background:var(--s2)"></span>a run that stayed stuck</em>
+</div>
+
+<div class="cl-wrap">
+<svg viewBox="0 0 800 420" role="img" aria-label="Two lines over twenty training rounds. One falls from 0.34 to about 0.21 error and stays there; the other stays between 1.9 and 2.6 for the whole run.">
+  <g stroke="var(--line)" stroke-width="1">
+    <line x1="86" y1="340" x2="690" y2="340" />
+    <line x1="86" y1="286.43" x2="690" y2="286.43" />
+    <line x1="86" y1="232.86" x2="690" y2="232.86" />
+    <line x1="86" y1="179.29" x2="690" y2="179.29" />
+    <line x1="86" y1="125.71" x2="690" y2="125.71" />
+    <line x1="86" y1="72.14" x2="690" y2="72.14" />
+  </g>
+  <g fill="var(--muted)" text-anchor="end">
+    <text x="74" y="344">0</text>
+    <text x="74" y="290.43">0.5</text>
+    <text x="74" y="236.86">1</text>
+    <text x="74" y="183.29">1.5</text>
+    <text x="74" y="129.71">2</text>
+    <text x="74" y="76.14">2.5</text>
+  </g>
+  <g fill="var(--muted)" text-anchor="middle">
+    <text x="86" y="362">1</text>
+    <text x="213.16" y="362">5</text>
+    <text x="372.11" y="362">10</text>
+    <text x="531.05" y="362">15</text>
+    <text x="690" y="362">20</text>
+  </g>
+  <text x="388" y="390" fill="var(--muted)" text-anchor="middle">training round</text>
+  <text x="26" y="190" fill="var(--muted)" text-anchor="middle" transform="rotate(-90 26 190)">error on held-out decisions (extra moves)</text>
+
+  <line id="clCross" x1="86" y1="40" x2="86" y2="340" stroke="var(--muted)" stroke-width="1" opacity="0" />
+
+  <path d="M86,82.64 L117.79,123.57 L149.58,84.68 L181.37,82.64 L213.16,76.86 L244.95,67.75 L276.74,62.39 L308.53,98.07 L340.32,94.86 L372.11,134.71 L403.89,115.96 L435.68,121.75 L467.47,132.36 L499.26,106.21 L531.05,80.71 L562.84,121.54 L594.63,131.71 L626.42,134.71 L658.21,134.82 L690,134.82" fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+  <path d="M86,303.57 L117.79,308.39 L149.58,311.39 L181.37,312.46 L213.16,313.54 L244.95,312.14 L276.74,315.36 L308.53,317.07 L340.32,315.46 L372.11,316 L403.89,316.32 L435.68,317.18 L467.47,316.75 L499.26,317.71 L531.05,317.29 L562.84,316.96 L594.63,316.86 L626.42,318.79 L658.21,318.14 L690,317.07" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+
+  <g fill="var(--s2)" stroke="var(--bg)" stroke-width="2">
+    <circle cx="86" cy="82.64" r="4" />
+    <circle cx="117.79" cy="123.57" r="4" />
+    <circle cx="149.58" cy="84.68" r="4" />
+    <circle cx="181.37" cy="82.64" r="4" />
+    <circle cx="213.16" cy="76.86" r="4" />
+    <circle cx="244.95" cy="67.75" r="4" />
+    <circle cx="276.74" cy="62.39" r="4" />
+    <circle cx="308.53" cy="98.07" r="4" />
+    <circle cx="340.32" cy="94.86" r="4" />
+    <circle cx="372.11" cy="134.71" r="4" />
+    <circle cx="403.89" cy="115.96" r="4" />
+    <circle cx="435.68" cy="121.75" r="4" />
+    <circle cx="467.47" cy="132.36" r="4" />
+    <circle cx="499.26" cy="106.21" r="4" />
+    <circle cx="531.05" cy="80.71" r="4" />
+    <circle cx="562.84" cy="121.54" r="4" />
+    <circle cx="594.63" cy="131.71" r="4" />
+    <circle cx="626.42" cy="134.71" r="4" />
+    <circle cx="658.21" cy="134.82" r="4" />
+    <circle cx="690" cy="134.82" r="4" />
+  </g>
+  <g fill="var(--s1)" stroke="var(--bg)" stroke-width="2">
+    <circle cx="86" cy="303.57" r="4" />
+    <circle cx="117.79" cy="308.39" r="4" />
+    <circle cx="149.58" cy="311.39" r="4" />
+    <circle cx="181.37" cy="312.46" r="4" />
+    <circle cx="213.16" cy="313.54" r="4" />
+    <circle cx="244.95" cy="312.14" r="4" />
+    <circle cx="276.74" cy="315.36" r="4" />
+    <circle cx="308.53" cy="317.07" r="4" />
+    <circle cx="340.32" cy="315.46" r="4" />
+    <circle cx="372.11" cy="316" r="4" />
+    <circle cx="403.89" cy="316.32" r="4" />
+    <circle cx="435.68" cy="317.18" r="4" />
+    <circle cx="467.47" cy="316.75" r="4" />
+    <circle cx="499.26" cy="317.71" r="4" />
+    <circle cx="531.05" cy="317.29" r="4" />
+    <circle cx="562.84" cy="316.96" r="4" />
+    <circle cx="594.63" cy="316.86" r="4" />
+    <circle cx="626.42" cy="318.79" r="4" />
+    <circle cx="658.21" cy="318.14" r="4" />
+    <circle cx="690" cy="317.07" r="4" />
+  </g>
+
+  <g class="el" fill="var(--fg)">
+    <text x="698" y="321.07">learning: 0.21</text>
+    <text x="698" y="138.82">stuck: 1.92</text>
+  </g>
+
+  <circle id="clRingA" r="7" fill="none" stroke="var(--s1)" stroke-width="2" opacity="0" />
+  <circle id="clRingB" r="7" fill="none" stroke="var(--s2)" stroke-width="2" opacity="0" />
+
+  <g>
+    <rect class="cl-band" x="70.11" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="1" data-x="86" data-a="0.340" data-b="2.402" data-ya="303.57" data-yb="82.64" />
+    <rect class="cl-band" x="101.89" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="2" data-x="117.79" data-a="0.295" data-b="2.020" data-ya="308.39" data-yb="123.57" />
+    <rect class="cl-band" x="133.68" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="3" data-x="149.58" data-a="0.267" data-b="2.383" data-ya="311.39" data-yb="84.68" />
+    <rect class="cl-band" x="165.47" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="4" data-x="181.37" data-a="0.257" data-b="2.402" data-ya="312.46" data-yb="82.64" />
+    <rect class="cl-band" x="197.26" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="5" data-x="213.16" data-a="0.247" data-b="2.456" data-ya="313.54" data-yb="76.86" />
+    <rect class="cl-band" x="229.05" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="6" data-x="244.95" data-a="0.260" data-b="2.541" data-ya="312.14" data-yb="67.75" />
+    <rect class="cl-band" x="260.84" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="7" data-x="276.74" data-a="0.230" data-b="2.591" data-ya="315.36" data-yb="62.39" />
+    <rect class="cl-band" x="292.63" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="8" data-x="308.53" data-a="0.214" data-b="2.258" data-ya="317.07" data-yb="98.07" />
+    <rect class="cl-band" x="324.42" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="9" data-x="340.32" data-a="0.229" data-b="2.288" data-ya="315.46" data-yb="94.86" />
+    <rect class="cl-band" x="356.21" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="10" data-x="372.11" data-a="0.224" data-b="1.916" data-ya="316" data-yb="134.71" />
+    <rect class="cl-band" x="388" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="11" data-x="403.89" data-a="0.221" data-b="2.091" data-ya="316.32" data-yb="115.96" />
+    <rect class="cl-band" x="419.79" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="12" data-x="435.68" data-a="0.213" data-b="2.037" data-ya="317.18" data-yb="121.75" />
+    <rect class="cl-band" x="451.58" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="13" data-x="467.47" data-a="0.217" data-b="1.938" data-ya="316.75" data-yb="132.36" />
+    <rect class="cl-band" x="483.37" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="14" data-x="499.26" data-a="0.208" data-b="2.182" data-ya="317.71" data-yb="106.21" />
+    <rect class="cl-band" x="515.16" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="15" data-x="531.05" data-a="0.212" data-b="2.420" data-ya="317.29" data-yb="80.71" />
+    <rect class="cl-band" x="546.95" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="16" data-x="562.84" data-a="0.215" data-b="2.039" data-ya="316.96" data-yb="121.54" />
+    <rect class="cl-band" x="578.74" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="17" data-x="594.63" data-a="0.216" data-b="1.944" data-ya="316.86" data-yb="131.71" />
+    <rect class="cl-band" x="610.53" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="18" data-x="626.42" data-a="0.198" data-b="1.916" data-ya="318.79" data-yb="134.71" />
+    <rect class="cl-band" x="642.32" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="19" data-x="658.21" data-a="0.204" data-b="1.915" data-ya="318.14" data-yb="134.82" />
+    <rect class="cl-band" x="674.11" y="40" width="31.79" height="300" fill="transparent" tabindex="0" data-r="20" data-x="690" data-a="0.214" data-b="1.915" data-ya="317.07" data-yb="134.82" />
+  </g>
+</svg>
+<div class="cl-tip">
+  <div class="cl-h"></div>
+  <div class="cl-row"><span class="cl-k1"></span><b class="cl-v1"></b><span>the run that learned</span></div>
+  <div class="cl-row"><span class="cl-k2"></span><b class="cl-v2"></b><span>the stuck run</span></div>
+</div>
+</div>
+<script>
+(function(){
+  var root=document.querySelector('.figc-collapse');
+  if(!root) return;
+  var svg=root.querySelector('svg'), wrap=root.querySelector('.cl-wrap'),
+      tip=root.querySelector('.cl-tip'), cross=root.querySelector('#clCross'),
+      rA=root.querySelector('#clRingA'), rB=root.querySelector('#clRingB'),
+      h=tip.querySelector('.cl-h'), v1=tip.querySelector('.cl-v1'), v2=tip.querySelector('.cl-v2');
+  function show(el){
+    var vx=parseFloat(el.getAttribute('data-x')),
+        ya=parseFloat(el.getAttribute('data-ya')),
+        yb=parseFloat(el.getAttribute('data-yb')),
+        s=svg.getBoundingClientRect().width/800;
+    cross.setAttribute('x1',vx); cross.setAttribute('x2',vx); cross.setAttribute('opacity','0.5');
+    rA.setAttribute('cx',vx); rA.setAttribute('cy',ya); rA.setAttribute('opacity','1');
+    rB.setAttribute('cx',vx); rB.setAttribute('cy',yb); rB.setAttribute('opacity','1');
+    h.textContent='round '+el.getAttribute('data-r');
+    v1.textContent=el.getAttribute('data-a');
+    v2.textContent=el.getAttribute('data-b');
+    tip.classList.add('on');
+    var w=tip.offsetWidth, ww=wrap.clientWidth,
+        left=Math.min(Math.max(vx*s, w/2+2), ww-w/2-2);
+    tip.style.left=left+'px';
+    var anchor=Math.min(ya,yb)*s, top=anchor-14;
+    if(top-tip.offsetHeight<2){tip.classList.add('below'); top=anchor+14;}
+    else {tip.classList.remove('below');}
+    tip.style.top=top+'px';
+  }
+  function hide(){
+    tip.classList.remove('on');
+    cross.setAttribute('opacity','0');
+    rA.setAttribute('opacity','0'); rB.setAttribute('opacity','0');
+  }
+  var bands=root.querySelectorAll('.cl-band'), i;
+  for(i=0;i<bands.length;i++){
+    (function(el){
+      el.addEventListener('mouseenter',function(){show(el);});
+      el.addEventListener('focus',function(){show(el);});
+      el.addEventListener('mouseleave',hide);
+      el.addEventListener('blur',hide);
+    })(bands[i]);
+  }
+  svg.addEventListener('mouseleave',hide);
+})();
+</script>
+</figure>
+<p class="cap"><em>Twenty rounds of training, healthy run against collapsed run: one steadily
+improves, the other never leaves a flat line near where it started.</em></p>
+
+<p>The cause was a missing warm-up. The original training recipe started each network on the easiest
+decisions and only later mixed in the hard ones — a curriculum, the same trick as teaching addition
+before algebra. Our rewritten version had dropped it. The single healthy run had been handed a
+naturally easy-first dataset by accident, which is why it alone survived. With the curriculum put
+back, everything trained.</p>
+
+<p>The second break was sneakier. Our first attempt at the curriculum quietly disabled the training
+framework's own progress checks: the framework decides when to test the network by counting how many
+batches an epoch should contain, our curriculum handed back fewer than it had promised, and so the
+end-of-epoch test never fired. No error, no warning — just a run producing no measurements and
+saving no networks. A seven-minute health check on the log caught it, and the job was killed after
+40 minutes, costing 0.08 node-hours. The fix was to stop being clever: run the easy phase and the
+full phase as two straightforward training passes, so every count is honest by construction.</p>
+
+<p>Both failures now have automatic detectors. A collapsed network is flagged by a spread measure
+that goes to zero when predictions stop varying, and the training script exits with an error if its
+progress checks are missing. Total cost of both lessons: under one node-hour, all of it on the
+smallest boards we own.</p>
+
+<h2>The headline: no cliff</h2>
+
+<p>The rerun of the second training round, five and a half hours for 0.69 node-hours, settled the
+design questions. Every no-position-signal variant trained healthily, and two runs started from
+different random beginnings agreed to within 0.03 extra moves everywhere — the result is not luck.
+The formula-based position signal stayed untrainable even with the curriculum, confirming that
+leaving it out was not just simpler but better. And training on a <em>mix</em> of sizes (8, 9 and
+10) beat training on any single size at every size we tested.</p>
+
+<p>Then the real question: how far does a network trained only on 8&times;8 through 10&times;10
+boards actually reach? We measured its label error — how many extra moves it is off by, on average
+— on fresh boards at every size up to 32&times;32, and how often its top-ranked candidate really is
+an optimal step.</p>
+
+<figure class="fig figc-curve">
+<style>
+.figc-curve .ttl{font-size:14px;font-weight:600;color:var(--fg);margin:0 0 3px}
+.figc-curve .hint{font-size:12.5px;color:var(--muted);margin:0 0 8px;line-height:1.45}
+.figc-curve .lg{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin:0 0 6px;font-size:12.5px;color:var(--muted)}
+.figc-curve .lg em{font-style:normal;display:inline-flex;align-items:center;gap:7px}
+.figc-curve .k{width:14px;height:3px;border-radius:2px;display:inline-block}
+.figc-curve .cv-wrap{position:relative}
+.figc-curve text{font-size:12px}
+.figc-curve g.el text{font-size:13px;font-weight:600}
+.figc-curve .cv-hit{outline:none;cursor:crosshair}
+.figc-curve .cv-tip{position:absolute;display:none;transform:translate(-50%,-100%);
+  background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 9px;
+  font-size:12px;line-height:1.5;color:var(--muted);pointer-events:none;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.figc-curve .cv-tip.on{display:block}
+.figc-curve .cv-tip.below{transform:translate(-50%,0)}
+.figc-curve .cv-v{color:var(--fg);font-weight:600;font-variant-numeric:tabular-nums}
+.figc-curve .cv-x{display:none}
+.figc-curve .cv-x.on{display:block}
+</style>
+
+<div class="ttl">Trained on tiny boards, judged on huge ones</div>
+<div class="hint">The network only ever saw 8 &times; 8 and 10 &times; 10 boards while learning. Everything to the right of the shaded strip is a size it had never seen. Lower is better; hover a point for the exact figures.</div>
+
+<div class="lg">
+  <em><span class="k" style="background:var(--s1)"></span>the network</em>
+  <em><span class="k" style="background:var(--s2)"></span>the old hand-written scorer</em>
+</div>
+
+<div class="cv-wrap">
+<svg viewBox="0 0 800 440" role="img" aria-label="Average label error against board size. The network rises gently from 0.16 at size 8 to 0.71 at size 32. The hand-written scorer starts at 0.72 at size 8 and reaches 1.18 by size 12.">
+  <rect x="86" y="56" width="50.33" height="316" fill="var(--s1)" opacity="0.08" />
+  <g stroke="var(--muted)" stroke-width="1" fill="none">
+    <path d="M86,46 L86,40 L136.33,40 L136.33,46" />
+  </g>
+  <text x="143.33" y="44" fill="var(--muted)">sizes it trained on</text>
+
+  <g stroke="var(--line)" stroke-width="1">
+    <line x1="86" y1="372" x2="690" y2="372" />
+    <line x1="86" y1="299.08" x2="690" y2="299.08" />
+    <line x1="86" y1="226.15" x2="690" y2="226.15" />
+    <line x1="86" y1="153.23" x2="690" y2="153.23" />
+    <line x1="86" y1="80.31" x2="690" y2="80.31" />
+  </g>
+  <g fill="var(--muted)" text-anchor="end">
+    <text x="74" y="376">0</text>
+    <text x="74" y="303.08">0.3</text>
+    <text x="74" y="230.15">0.6</text>
+    <text x="74" y="157.23">0.9</text>
+    <text x="74" y="84.31">1.2</text>
+  </g>
+  <g fill="var(--muted)" text-anchor="middle">
+    <text x="86" y="394">8</text>
+    <text x="186.67" y="394">12</text>
+    <text x="287.33" y="394">16</text>
+    <text x="388" y="394">20</text>
+    <text x="488.67" y="394">24</text>
+    <text x="589.33" y="394">28</text>
+    <text x="690" y="394">32</text>
+  </g>
+  <text x="388" y="422" fill="var(--muted)" text-anchor="middle">board size (squares across)</text>
+  <text x="26" y="214" fill="var(--muted)" text-anchor="middle" transform="rotate(-90 26 214)">average label error (extra moves)</text>
+
+  <path d="M86,196.98 L111.17,165.38 L136.33,145.94 L186.67,85.17" fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+  <path d="M86,333.11 L111.17,330.68 L136.33,320.95 L161.5,316.09 L186.67,313.66 L211.83,299.08 L237,306.37 L262.17,299.08 L287.33,257.75 L488.67,250.46 L690,199.42" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+
+  <g fill="var(--s2)" stroke="var(--bg)" stroke-width="2">
+    <circle cx="86" cy="196.98" r="4" />
+    <circle cx="111.17" cy="165.38" r="4" />
+    <circle cx="136.33" cy="145.94" r="4" />
+    <circle cx="186.67" cy="85.17" r="4" />
+  </g>
+  <g fill="var(--s1)" stroke="var(--bg)" stroke-width="2">
+    <circle cx="86" cy="333.11" r="4" />
+    <circle cx="111.17" cy="330.68" r="4" />
+    <circle cx="136.33" cy="320.95" r="4" />
+    <circle cx="161.5" cy="316.09" r="4" />
+    <circle cx="186.67" cy="313.66" r="4" />
+    <circle cx="211.83" cy="299.08" r="4" />
+    <circle cx="237" cy="306.37" r="4" />
+    <circle cx="262.17" cy="299.08" r="4" />
+    <circle cx="287.33" cy="257.75" r="4" />
+    <circle cx="488.67" cy="250.46" r="4" />
+    <circle cx="690" cy="199.42" r="4" />
+  </g>
+
+  <g class="el" fill="var(--fg)">
+    <text x="698" y="203.42">network 0.71</text>
+    <text x="194" y="89.17">hand-written 1.18</text>
+  </g>
+
+  <circle id="cvRing" r="7.5" fill="none" stroke="var(--s1)" stroke-width="2" opacity="0" />
+
+  <g>
+    <circle class="cv-hit" cx="86" cy="333.11" r="10" fill="transparent" tabindex="0" data-vx="86" data-vy="333.11" data-c="var(--s1)" data-v="0.16 extra moves" data-s="the network · 8 × 8 board" data-x="picks the best move 92% of the time" />
+    <circle class="cv-hit" cx="111.17" cy="330.68" r="10" fill="transparent" tabindex="0" data-vx="111.17" data-vy="330.68" data-c="var(--s1)" data-v="0.17 extra moves" data-s="the network · 9 × 9 board" data-x="picks the best move 92% of the time" />
+    <circle class="cv-hit" cx="136.33" cy="320.95" r="10" fill="transparent" tabindex="0" data-vx="136.33" data-vy="320.95" data-c="var(--s1)" data-v="0.21 extra moves" data-s="the network · 10 × 10 board" data-x="picks the best move 91% of the time" />
+    <circle class="cv-hit" cx="161.5" cy="316.09" r="10" fill="transparent" tabindex="0" data-vx="161.5" data-vy="316.09" data-c="var(--s1)" data-v="0.23 extra moves" data-s="the network · 11 × 11 board" data-x="picks the best move 90% of the time" />
+    <circle class="cv-hit" cx="186.67" cy="313.66" r="10" fill="transparent" tabindex="0" data-vx="186.67" data-vy="313.66" data-c="var(--s1)" data-v="0.24 extra moves" data-s="the network · 12 × 12 board" data-x="picks the best move 90% of the time" />
+    <circle class="cv-hit" cx="211.83" cy="299.08" r="10" fill="transparent" tabindex="0" data-vx="211.83" data-vy="299.08" data-c="var(--s1)" data-v="0.30 extra moves" data-s="the network · 13 × 13 board" data-x="picks the best move 90% of the time" />
+    <circle class="cv-hit" cx="237" cy="306.37" r="10" fill="transparent" tabindex="0" data-vx="237" data-vy="306.37" data-c="var(--s1)" data-v="0.27 extra moves" data-s="the network · 14 × 14 board" data-x="picks the best move 89% of the time" />
+    <circle class="cv-hit" cx="262.17" cy="299.08" r="10" fill="transparent" tabindex="0" data-vx="262.17" data-vy="299.08" data-c="var(--s1)" data-v="0.30 extra moves" data-s="the network · 15 × 15 board" data-x="picks the best move 89% of the time" />
+    <circle class="cv-hit" cx="287.33" cy="257.75" r="10" fill="transparent" tabindex="0" data-vx="287.33" data-vy="257.75" data-c="var(--s1)" data-v="0.47 extra moves" data-s="the network · 16 × 16 board" data-x="picks the best move 85% of the time · harder set: 6 robots" />
+    <circle class="cv-hit" cx="488.67" cy="250.46" r="10" fill="transparent" tabindex="0" data-vx="488.67" data-vy="250.46" data-c="var(--s1)" data-v="0.50 extra moves" data-s="the network · 24 × 24 board" data-x="picks the best move 87% of the time" />
+    <circle class="cv-hit" cx="690" cy="199.42" r="10" fill="transparent" tabindex="0" data-vx="690" data-vy="199.42" data-c="var(--s1)" data-v="0.71 extra moves" data-s="the network · 32 × 32 board" data-x="picks the best move 81% of the time" />
+    <circle class="cv-hit" cx="86" cy="196.98" r="10" fill="transparent" tabindex="0" data-vx="86" data-vy="196.98" data-c="var(--s2)" data-v="0.72 extra moves" data-s="hand-written scorer · 8 × 8 board" data-x="" />
+    <circle class="cv-hit" cx="111.17" cy="165.38" r="10" fill="transparent" tabindex="0" data-vx="111.17" data-vy="165.38" data-c="var(--s2)" data-v="0.85 extra moves" data-s="hand-written scorer · 9 × 9 board" data-x="" />
+    <circle class="cv-hit" cx="136.33" cy="145.94" r="10" fill="transparent" tabindex="0" data-vx="136.33" data-vy="145.94" data-c="var(--s2)" data-v="0.93 extra moves" data-s="hand-written scorer · 10 × 10 board" data-x="" />
+    <circle class="cv-hit" cx="186.67" cy="85.17" r="10" fill="transparent" tabindex="0" data-vx="186.67" data-vy="85.17" data-c="var(--s2)" data-v="1.18 extra moves" data-s="hand-written scorer · 12 × 12 board" data-x="" />
+  </g>
+</svg>
+<div class="cv-tip">
+  <div class="cv-v"></div>
+  <div class="cv-s"></div>
+  <div class="cv-x"></div>
+</div>
+</div>
+<script>
+(function(){
+  var root=document.querySelector('.figc-curve');
+  if(!root) return;
+  var svg=root.querySelector('svg'), wrap=root.querySelector('.cv-wrap'),
+      tip=root.querySelector('.cv-tip'), ring=root.querySelector('#cvRing'),
+      tv=tip.querySelector('.cv-v'), ts=tip.querySelector('.cv-s'), tx=tip.querySelector('.cv-x');
+  function show(el){
+    var vx=parseFloat(el.getAttribute('data-vx')),
+        vy=parseFloat(el.getAttribute('data-vy')),
+        s=svg.getBoundingClientRect().width/800,
+        extra=el.getAttribute('data-x');
+    ring.setAttribute('cx',vx); ring.setAttribute('cy',vy);
+    ring.setAttribute('stroke',el.getAttribute('data-c'));
+    ring.setAttribute('opacity','1');
+    tv.textContent=el.getAttribute('data-v');
+    ts.textContent=el.getAttribute('data-s');
+    tx.textContent=extra;
+    if(extra){tx.classList.add('on');} else {tx.classList.remove('on');}
+    tip.classList.add('on');
+    var w=tip.offsetWidth, ww=wrap.clientWidth,
+        left=Math.min(Math.max(vx*s, w/2+2), ww-w/2-2);
+    tip.style.left=left+'px';
+    var top=vy*s-14;
+    if(top-tip.offsetHeight<2){tip.classList.add('below'); top=vy*s+14;}
+    else {tip.classList.remove('below');}
+    tip.style.top=top+'px';
+  }
+  function hide(){tip.classList.remove('on'); ring.setAttribute('opacity','0');}
+  var pts=root.querySelectorAll('.cv-hit'), i;
+  for(i=0;i<pts.length;i++){
+    (function(el){
+      el.addEventListener('mouseenter',function(){show(el);});
+      el.addEventListener('focus',function(){show(el);});
+      el.addEventListener('mouseleave',hide);
+      el.addEventListener('blur',hide);
+    })(pts[i]);
+  }
+  svg.addEventListener('mouseleave',hide);
+})();
+</script>
+</figure>
+<p class="cap"><em>Average label error and top-choice accuracy from the three sizes the network
+trained on out to boards more than three times larger, with no cliff anywhere.</em></p>
+
+<p>At its training sizes it is off by 0.16 to 0.21 extra moves and picks an optimal step 91&ndash;92%
+of the time. At sizes it never saw, it degrades gently and steadily: 0.23 at 11&times;11, 0.30 at
+13&times;13, 0.30 at 15&times;15, all around 89&ndash;90% optimal picks. At 16&times;16 with six
+robots — a bigger board <em>and</em> more robots than it ever saw — 0.47 extra moves and 85%. At
+24&times;24, 0.50 and 87%. At 32&times;32, a board 3.2 times wider than anything in its training
+data, it is off by 0.71 extra moves on average and still picks an optimal next step 81% of the time.
+There is no cliff on this curve, only a slope.</p>
+
+<p>One scare along the way deserves telling. An early measurement at 16&times;16 read 3.39 extra
+moves — a catastrophic number that looked exactly like the extrapolation collapse we feared. It was
+not the board size. That particular 16&times;16 dataset was an old one, built by a different and
+now-retired board generator, so the network was being tested on boards unlike anything in its world.
+Re-measured on data from the current generator, the same network scored 0.47. We very nearly drew a
+sweeping conclusion from a mismatched file.</p>
+
+<p>For scale: the hand-written scoring rule the planner used before any networks existed is off by
+0.72, 0.85, 0.93 and 1.18 extra moves at sizes 8, 9, 10 and 12. The trained network is about 3.5
+times more accurate — and its worst measurement anywhere, at 32&times;32, is still better than the
+old rule's <em>best</em>.</p>
+
+<h2>Making labels we can trust</h2>
+
+<p>Judging candidates well is not the same as producing training data. For that the network has to
+put a number on each candidate, and the number has to mean something. Here is how a label is made
+without the exact solver.</p>
+
+<p>Take a decision point with, say, a dozen candidate next steps. Commit to one of them. Then let
+the network finish the plan greedily — at each step it names the option it likes best, and we take
+it, no searching, no backtracking, straight to a finished plan. Now the crucial part: that finished
+plan is translated back into actual robot moves and replayed on the actual board under the actual
+rules of the game. If every slide lands where the plan said it would and the target robot ends on
+its square, the plan is real, and its length becomes the label for that candidate. If the replay
+fails, the candidate gets no label at all.</p>
+
+<figure class="fig figc-descent">
+<style>
+.figc-descent .ttl{font-size:14px;font-weight:600;color:var(--fg);margin:0 0 3px}
+.figc-descent .hint{font-size:12.5px;color:var(--muted);margin:0 0 10px;line-height:1.45}
+.figc-descent text{font-size:13px}
+.figc-descent text.hd{font-weight:600}
+.figc-descent text.sm{font-size:12px}
+</style>
+
+<div class="ttl">How a label is made &mdash; and when it is thrown away</div>
+<div class="hint">Every label is checked by actually playing the moves out. Anything that cannot be played is dropped rather than guessed at, so a wrong answer never reaches the training data.</div>
+
+<svg viewBox="0 0 900 290" role="img" aria-label="A flow: a candidate next step goes to the network, which quickly finishes the plan; every move is then replayed under real game physics. If it plays out it becomes a label with the moves counted; if it fails it is thrown away.">
+  <defs>
+    <marker id="deArrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0.6 L9.4,5 L0,9.4 Z" fill="var(--muted)" />
+    </marker>
+  </defs>
+
+  <!-- boxes -->
+  <g fill="var(--card)" stroke="var(--line)" stroke-width="1.5">
+    <rect x="16" y="110" width="160" height="68" rx="10" />
+    <rect x="202" y="110" width="188" height="68" rx="10" />
+    <rect x="416" y="110" width="204" height="68" rx="10" />
+    <rect x="676" y="40" width="208" height="84" rx="10" />
+    <rect x="676" y="176" width="208" height="84" rx="10" />
+  </g>
+
+  <!-- connectors -->
+  <g fill="none" stroke="var(--muted)" stroke-width="2">
+    <path d="M176,144 L192,144" marker-end="url(#deArrow)" />
+    <path d="M390,144 L406,144" marker-end="url(#deArrow)" />
+    <path d="M620,144 L646,144" />
+    <path d="M646,82 L646,218" />
+    <path d="M646,82 L666,82" marker-end="url(#deArrow)" />
+    <path d="M646,218 L666,218" marker-end="url(#deArrow)" />
+  </g>
+
+  <!-- box text -->
+  <g fill="var(--fg)" text-anchor="middle">
+    <text x="96" y="138" class="hd">candidate</text>
+    <text x="96" y="158">next step</text>
+    <text x="296" y="138" class="hd">network quickly</text>
+    <text x="296" y="158">finishes the plan</text>
+    <text x="518" y="138" class="hd">replay every move</text>
+    <text x="518" y="158">under real game physics</text>
+  </g>
+
+  <!-- outcome: kept -->
+  <circle cx="700" cy="82" r="11" fill="var(--accent)" />
+  <path d="M694.5,82.2 L698.4,86.4 L706,77.6" fill="none" stroke="var(--bg)" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round" />
+  <text x="722" y="66" class="hd" fill="var(--fg)">plays out</text>
+  <text x="722" y="86" fill="var(--fg)">becomes a label</text>
+  <text x="722" y="106" class="sm" fill="var(--muted)">moves counted</text>
+
+  <!-- outcome: dropped -->
+  <circle cx="700" cy="218" r="11" fill="var(--s2)" />
+  <path d="M695.6,213.6 L704.4,222.4 M704.4,213.6 L695.6,222.4" fill="none" stroke="var(--bg)"
+        stroke-width="2.5" stroke-linecap="round" />
+  <text x="722" y="202" class="hd" fill="var(--fg)">fails to play out</text>
+  <text x="722" y="222" fill="var(--fg)">thrown away</text>
+  <text x="722" y="242" class="sm" fill="var(--muted)">never mislabeled</text>
+</svg>
+</figure>
+<p class="cap"><em>How one label is made without the exact solver: commit to a candidate, let the
+network finish the plan greedily, then replay the finished plan under the game's real physics.</em></p>
+
+<p>This gives labels a useful one-sided honesty. A greedy finish may not be the shortest finish, so a
+label can say "nine moves" where seven were possible — it can be pessimistic. But it can never be
+fictional, because a plan that does not play out is thrown away rather than recorded. Wrong-but-real
+is a bias we can measure and correct; invented numbers would poison everything downstream.</p>
+
+<p>So we measured the pessimism. On boards small enough for the exact solver, we generated labels
+both ways and compared them candidate by candidate.</p>
+
+<div class="twrap">
+<table>
+  <tr>
+    <th>Board size</th>
+    <th class="num">Average gap vs optimum</th>
+    <th class="num">Labels exactly optimal</th>
+    <th class="num">Exact on truly optimal candidates</th>
+  </tr>
+  <tr><td>8&times;8 (a training size)</td><td class="num">0.347 moves</td><td class="num">85.2%</td><td class="num">92.3%</td></tr>
+  <tr><td>10&times;10 (a training size)</td><td class="num">0.367 moves</td><td class="num">85.6%</td><td class="num">91.2%</td></tr>
+  <tr><td>12&times;12 (never trained on)</td><td class="num">0.453 moves</td><td class="num">85.3%</td><td class="num">90.3%</td></tr>
+</table>
+</div>
+
+<figure class="fig figc-gate">
+<style>
+.figc-gate .ttl{font-size:14px;font-weight:600;color:var(--fg);margin:0 0 3px}
+.figc-gate .hint{font-size:12.5px;color:var(--muted);margin:0 0 10px;line-height:1.45}
+.figc-gate text{font-size:12px}
+.figc-gate g.val text{font-size:13px;font-weight:600}
+.figc-gate g.xl text{font-size:13px}
+.figc-gate text.ko{paint-order:stroke;stroke:var(--bg);stroke-width:3.5px;stroke-linejoin:round}
+</style>
+
+<div class="ttl">Checked against the exact answer &mdash; all three pass</div>
+<div class="hint">On the board sizes where the exact solver still works, every label the network produced was compared with the perfect one. Lower is better; the dashed line is the limit agreed before the check was run.</div>
+
+<svg viewBox="0 0 640 370" role="img" aria-label="Three bars showing the average gap to the perfect label: 8 by 8 is 0.347 moves with 85 percent exactly perfect, 10 by 10 is 0.367 with 86 percent, 12 by 12 is 0.453 with 85 percent. All sit below the 0.5 quality bar.">
+  <!-- grid -->
+  <g stroke="var(--line)" stroke-width="1">
+    <line x1="100" y1="300" x2="540" y2="300" />
+    <line x1="100" y1="221.33" x2="540" y2="221.33" />
+    <line x1="100" y1="142.67" x2="540" y2="142.67" />
+    <line x1="100" y1="64" x2="540" y2="64" />
+  </g>
+  <g fill="var(--muted)" text-anchor="end">
+    <text x="88" y="304">0</text>
+    <text x="88" y="225.33">0.2</text>
+    <text x="88" y="146.67">0.4</text>
+    <text x="88" y="68">0.6</text>
+  </g>
+  <text x="30" y="182" fill="var(--muted)" text-anchor="middle" transform="rotate(-90 30 182)">gap to the perfect answer (moves)</text>
+
+  <!-- quality bar -->
+  <line x1="100" y1="103.33" x2="540" y2="103.33" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="6 5" />
+  <text x="112" y="97" fill="var(--muted)">quality bar (must stay below)</text>
+
+  <!-- bars -->
+  <g fill="var(--s1)">
+    <path d="M171,300 V167.53 A4,4 0 0 1 175,163.53 H185 A4,4 0 0 1 189,167.53 V300 Z" />
+    <path d="M311,300 V159.66 A4,4 0 0 1 315,155.66 H325 A4,4 0 0 1 329,159.66 V300 Z" />
+    <path d="M451,300 V125.82 A4,4 0 0 1 455,121.82 H465 A4,4 0 0 1 469,125.82 V300 Z" />
+  </g>
+
+  <!-- how many were exactly right -->
+  <g fill="var(--fg)" text-anchor="middle">
+    <text x="180" y="136.53" class="ko">85% exactly perfect</text>
+    <text x="320" y="128.66" class="ko">86%</text>
+    <text x="460" y="94.82" class="ko">85%</text>
+  </g>
+
+  <!-- values -->
+  <g class="val" fill="var(--fg)" text-anchor="middle">
+    <text x="180" y="153.53" class="ko">0.347</text>
+    <text x="320" y="145.66" class="ko">0.367</text>
+    <text x="460" y="111.82" class="ko">0.453</text>
+  </g>
+
+  <!-- categories -->
+  <g class="xl" fill="var(--fg)" text-anchor="middle">
+    <text x="180" y="324">8 &times; 8</text>
+    <text x="320" y="324">10 &times; 10</text>
+    <text x="460" y="324">12 &times; 12</text>
+  </g>
+  <text x="320" y="352" fill="var(--muted)" text-anchor="middle">board size</text>
+</svg>
+</figure>
+<p class="cap"><em>Network labels against the exact solver's answers at three board sizes: most match
+exactly, and the average gap stays under the half-move bar we set before looking.</em></p>
+
+<p>About 85% of labels are exactly the optimal number. The typical label is not off at all — the
+middle of the distribution is a gap of zero, and nine labels in ten are off by at most one move. On
+the candidates that are genuinely the best move available, where being right matters most, accuracy
+is higher still, above 90% at all three sizes. The bar was set in advance at an average gap of half
+a move or less; all three sizes pass. The cost of this check was 58 minutes, 0.12 node-hours.</p>
+
+<p>The honest caveat: the labeler keeps about two thirds of the candidates it is offered. The other
+third produce no finished, replayable plan and are dropped. That is a yield cost — we get fewer
+examples per board — not a correctness cost, and dropping is exactly the behaviour we want when the
+alternative is guessing.</p>
+
+<h2>Does it save computer time?</h2>
+
+<p>The truthful answer has three parts, and only two of them favour the network.</p>
+
+<p><strong>On easy settings the exact solver still wins.</strong> Small boards, few robots, the basic
+move set: a fast rewritten version of the solver labels a thousand boards in under a minute, as the
+practice bed above shows. Nothing about a neural network beats that, and we are not pretending
+otherwise. Those rungs stay exactly labeled.</p>
+
+<p><strong>Where the solver's cost explodes, the network wins.</strong> That is the 441-node-hour
+class of job — the one whose only affordable workaround silently destroyed the data it was meant to
+produce. Network labeling turns that into GPU work whose cost grows with the number of examples
+rather than with the difficulty of each one.</p>
+
+<p><strong>Where the solver fails outright, the network is the only option.</strong> On the hardest
+32&times;32 puzzles the exact solver already returns nothing 61.1% of the time. There is no price at
+which it produces those labels; the question is not "cheaper?" but "at all?"</p>
+
+<h2>What is running right now</h2>
+
+<div class="card open">
+<span class="tag">In progress — results will appear here</span>
+<p>The production network is training now: about one million examples drawn from 103,283 decision
+points, covering boards from 8&times;8 to 16&times;16 with four, six and eight robots. It is a
+17&ndash;19 hour run, roughly 1.4&ndash;2.2 node-hours, and it has already been resumed once after
+hitting a walltime limit.</p>
+<p>Boards and small exact-solver reference sets for all fourteen new sizes are generated. When the
+network is done, the sizes get labeled one at a time, 17&times;17 upward. Each size must clear its
+reference check — the same comparison against the exact solver shown above — before its labels are
+allowed into the training data. The whole ladder is projected at 5&ndash;10 node-hours.</p>
+<p>Nothing above 16&times;16 has been labeled yet. This section will be filled in as each rung
+lands.</p>
+</div>
+
+<h2>The ledger</h2>
+
+<div class="twrap">
+<table>
+  <tr><th>Item</th><th class="num">Node-hours</th><th>Outcome</th></tr>
+  <tr><td>First training round (8 variants)</td><td class="num">0.77</td><td>7 of 8 collapsed; missing warm-up found</td></tr>
+  <tr><td>Second round, false start</td><td class="num">0.08</td><td>killed at 40 minutes; silent-skip bug found</td></tr>
+  <tr><td>Second round, rerun</td><td class="num">0.69</td><td>design settled; the no-cliff curve</td></tr>
+  <tr><td>Label-quality check</td><td class="num">0.12</td><td>passed at all three sizes</td></tr>
+  <tr><td><strong>Spent so far</strong></td><td class="num"><strong>1.66</strong></td><td></td></tr>
+  <tr><td>Production network (running)</td><td class="num">1.4&ndash;2.2</td><td>in progress</td></tr>
+  <tr><td>Labeling the ladder, 17&times;17 to 32&times;32</td><td class="num">5&ndash;10</td><td>queued behind the network</td></tr>
+  <tr><td><strong>Projected total</strong></td><td class="num"><strong>~9&ndash;14</strong></td><td>against the 441 originally projected for one campaign</td></tr>
+</table>
+</div>
+
+<p>Two lessons, two silent bugs and the entire design decision cost under one node-hour between
+them, because all of it happened on boards small enough to be free. That was the plan, and it is the
+part of the plan that worked best.</p>
+
+<p>The technical companion to this document, with file names, job numbers and the full measurement
+tables, is <code>nn_labeler/report/process.html</code>. The running experiment log is
+<code>FINDINGS.md</code>, items 48 through 55.</p>
+
+<footer>Local document. Numbers trace to FINDINGS.md and nn_labeler/results/. Work in progress.</footer>
+
+</body>
+</html>
