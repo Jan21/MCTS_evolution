@@ -141,6 +141,35 @@ def main():
     # (two 16 h walltime kills in FINDINGS 43 each cost a full retrain without it).
     ckpt = pl.callbacks.ModelCheckpoint(monitor="val_regret", mode="min",
                                         save_top_k=1, save_last=True)
+
+    class CollapseStop(pl.Callback):
+        """Stop when the net falls into the constant-value mode and stays there.
+
+        The signature is a near-zero spread of predictions WITHIN a candidate
+        group: the net answers the same number for every candidate, so ranking
+        is decided by candidate order alone. Seen cold in battery 1 (7/8 runs)
+        and MID-TRAINING in the first production run (job 4609800: spread
+        2.12 -> 0.00 at epoch 2, then 24 dead epochs; FINDINGS 56). The best
+        checkpoint is already saved by `ckpt`, so stopping loses nothing and
+        frees the GPU.
+        """
+
+        def __init__(self, floor=0.05, patience=3):
+            self.floor, self.patience, self.hits = floor, patience, 0
+
+        def on_validation_epoch_end(self, trainer, _pl_module):
+            if trainer.sanity_checking:
+                return
+            v = trainer.callback_metrics.get("val_group_spread")
+            if v is None:
+                return
+            self.hits = self.hits + 1 if float(v) < self.floor else 0
+            if self.hits >= self.patience:
+                print(f"[nnlab] COLLAPSE STOP: val_group_spread < {self.floor} "
+                      f"for {self.patience} consecutive epochs at epoch "
+                      f"{trainer.current_epoch}; best checkpoint retained",
+                      flush=True)
+                trainer.should_stop = True
     # Resume is EXPLICIT (RR_RESUME=1), never automatic: silently resuming a stale
     # last.ckpt after a data or recipe change is the silent-success class
     # FINDINGS 38 documents.
@@ -179,14 +208,23 @@ def main():
         if "val_regret" not in warm.callback_metrics:
             raise SystemExit("NNLAB TRAIN FAILED: warmup validation never ran")
 
-    trainer = pl.Trainer(max_epochs=max(a.epochs - warm_epochs, 1),
-                         accelerator=accel, devices=1,
-                         default_root_dir=str(out_dir), callbacks=[ckpt],
+    max_ep = max(a.epochs - warm_epochs, 1)
+    trainer = pl.Trainer(max_epochs=max_ep, accelerator=accel, devices=1,
+                         default_root_dir=str(out_dir),
+                         callbacks=[ckpt, CollapseStop()],
                          log_every_n_steps=50)
     trainer.fit(model, dl_tr, dl_va, ckpt_path=resume)
-    if "val_regret" not in trainer.callback_metrics:
+    # A resume whose checkpoint already sits at max_epochs runs no epoch and so
+    # logs no metrics -- that is "already finished", not a failure. Only a run
+    # that was SUPPOSED to train and produced no validation is broken
+    # (FINDINGS 52's silent-no-validation class).
+    already_done = resume is not None and trainer.current_epoch >= max_ep
+    if "val_regret" not in trainer.callback_metrics and not already_done:
         raise SystemExit("NNLAB TRAIN FAILED: validation never ran "
                          "(no val_regret in callback metrics)")
+    if already_done:
+        print(f"[nnlab] resume: checkpoint already at max_epochs={max_ep}; "
+              f"no training needed", flush=True)
 
     metrics = {k: round(float(v), 4) for k, v in trainer.callback_metrics.items()
                if torch.is_tensor(v) or isinstance(v, (int, float))}

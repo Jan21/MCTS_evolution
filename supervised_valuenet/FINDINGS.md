@@ -1904,9 +1904,11 @@ scoped fix.
      the same day. Before adding an item, take max(existing item number)+1 —
      grep -E '^[0-9]+\. ' FINDINGS.md | tail -1. Next free number: 56. -->
 
-50. **CAMPAIGN COMPLETE (2026-08-02). The last rows land, and they invert
+56. **CAMPAIGN COMPLETE (2026-08-02). The last rows land, and they invert
    the retraining story at the largest scale: at 32×32 the cap-20000
    retrain improves BOTH sets and produces the study's largest margin.**
+   *(Renumbered from a second "50" — Track-1 session; the NN-labeler session
+   holds 48/50/52–55. Take max+1 from the grep in the sentinel below.)*
    g32r4 retrained rows certified (graded 171/171 replays, frontier
    214/214, zero failures; the graded lane needed one resubmit through
    the recurring requeued-held env flake):
@@ -1954,3 +1956,42 @@ scoped fix.
 - Deciding the 2 frontier-bound base probe instances (idx 405, 427) via a
   memory-shaped (depth-bounded) probe; `validate_plan.py` and the `park`
   node type.
+
+57. **The production labeler net collapsed mid-training at epoch 2 — and the
+   collapse detector added after battery 1 caught it automatically; the best
+   checkpoint is healthy, banked, and is the best labeler measured so far
+   (2026-08-03).** Job 4609800 (16 h walltime, ~2.0 nh): warmup fit healthy
+   (val_regret 0.734→0.471 over 4 epochs), full fit epochs 0–1 healthy
+   (**0.267 / 0.276**, `val_group_spread` 2.12, top-1 0.89), then at epoch 2
+   the net fell into the constant-value mode and STAYED there for 24 epochs
+   (spread exactly 0.00 throughout, top-1 0.12–0.24, val_regret 2.1–3.0).
+   This is FINDINGS 44's value-net bistability with a new signature — a
+   MID-training fall rather than a cold-start one — and the
+   `val_group_spread` metric introduced after battery 1 (§50) diagnosed it
+   from the metrics file alone, with no forensics.
+   (a) **Nothing was lost:** `ModelCheckpoint(min val_regret)` had already
+   saved epoch 0. That checkpoint is banked with provenance at
+   `nn_labeler/banked/prod_v1_s11.ckpt` (+ `.json`, sha dd0e7211b1cbd39f)
+   and its audits are the best measured: test-split label regret / top-1 =
+   **0.178 / 0.915** at 8×8, **0.254 / 0.898** at 12×12, **0.432 / 0.852**
+   at 16×16-6-robots, **0.425 / 0.883** at 24×24 — beating the battery net
+   at every size (e.g. 24×24: 0.425 vs 0.497, and the underestimation bias
+   halves, −0.35 vs −0.70). The 32×32 leg was cut off by the walltime and is
+   rerun in the capstone job.
+   (b) **Two fixes landed.** A `CollapseStop` callback ends a run after 3
+   consecutive epochs with spread < 0.05 (this run would have stopped at
+   epoch 4 instead of 25, saving ~1.6 nh), verified not to false-fire on a
+   healthy run. And the §52 no-validation guard had a false-positive case —
+   a resume whose checkpoint already sits at max_epochs runs no epoch and so
+   logs no metrics; that is "already finished", not failure. The doomed
+   resume job (4613403) was cancelled rather than run into it.
+   (c) **Queue reordered by value:** ladder prep (4610118) → **32×32
+   capstone** (4616678: generation throughput + yield at 24×24/32×32, and
+   the label-quality gate against the existing exact corpora — the decisive
+   "does it work at 32×32 and what does it cost" measurement, needing no new
+   boards) → v2 retrain (4616677, lr 1e-4 + CollapseStop, the study's own
+   documented rescue for unstable training). The banked v1 net is the
+   labeler of record until v2 beats it.
+   Sources: `nn_labeler/runs/prod_mix8to16_none_s11/lightning_logs/version_*/
+   metrics.csv`, `runs/nnlab/prod_train_4609800.out`,
+   `nn_labeler/banked/prod_v1_s11.json`.
