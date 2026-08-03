@@ -55,8 +55,11 @@ gate () {  # gate <config> <exact_corpus>
     local dg="nn_labeler/results/capgate_${cfg}.jsonl"
     if [ ! -f "$dg" ]; then
         t0=$SECONDS
+        # --limit-instances bounds the leg: the gate needs a few hundred
+        # decisions for a solid read, and an unbounded 32x32 leg could outrun
+        # the walltime and lose the whole file (descent writes once, at the end).
         python -m nn_labeler.descent --config "$cfg" --ckpt "$CKPT" \
-            --instances-from "$exact" --graphs 900-1049 \
+            --instances-from "$exact" --graphs 900-1049 --limit-instances 600 \
             --device cuda --timeout 180 --out "$dg" \
             || { echo "CAP32 GATE-DESCENT FAILED $cfg"; return 1; }
         echo "CAP32 GATEGEN $cfg $(wc -l < "$dg") records $((SECONDS-t0))s"
