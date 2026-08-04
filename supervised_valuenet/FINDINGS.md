@@ -1995,3 +1995,37 @@ scoped fix.
    Sources: `nn_labeler/runs/prod_mix8to16_none_s11/lightning_logs/version_*/
    metrics.csv`, `runs/nnlab/prod_train_4609800.out`,
    `nn_labeler/banked/prod_v1_s11.json`.
+
+58. **Measured head-to-head at scale: for BASE vocabulary the Rust exact
+   labeler is ~170× cheaper per instance than NN descent — the NN labeler is
+   not a compute saver in the regime where the exact solver is healthy
+   (2026-08-04).** Same 20 boards, same 10 instances per board, at both large
+   rungs (login node, 4 threads, `--engine rust` vs the running capstone's
+   GPU descent):
+   | rung | exact (Rust, 4 threads) | NN descent (1 A100) | ratio |
+   |---|---|---|---|
+   | 24×24 | 6 s / 200 inst = **0.030 s/inst**, 1663 records | ~51 s/board = **5.11 s/inst**, 6.7 rec/inst | **170×** |
+   | 32×32 | 15 s / 200 inst = **0.075 s/inst**, 1602 records | (capstone leg running) | — |
+   Extrapolated, a FULL base-vocab corpus at 32×32 (1050 boards × 10) costs
+   the exact engine ~13 minutes on 4 cores. So the ladder's *product* (labels
+   for rungs 17–31 in base vocabulary) is cheaper to obtain exactly, and the
+   ladder's real value is **method validation**, not data production — which
+   is exactly why it was sited here (§55: "the ladder deliberately sits where
+   ground truth exists").
+   Two honest caveats, both cutting the same way: (i) the descent labeler is
+   Python for plan manipulation, `prefix_playable` and `strict_moves` physics
+   — the network is not the bottleneck, so the 170× is an implementation gap,
+   not a fundamental one (the exact side is Rust, measured 50–180× faster than
+   its own Python reference, FINDINGS §30 lineage); (ii) descent also yields
+   fewer records per instance (6.7 vs 8.3) because uncertifiable candidates
+   are dropped rather than guessed.
+   **Where the method actually pays**, unchanged and unmeasured-by-this-item:
+   the extended (B2) vocabulary, whose exact campaign projected **~441
+   node-hours** and whose cap-based rescue destroyed the labels it existed to
+   make (§30/§32/§34); and the beyond-oracle regimes (8 robots, 61–64% oracle
+   failure at fixed budget) where no exact labels exist at any price. The
+   next strategic step follows from this: train a size-free net on the
+   EXISTING B2 corpora and run descent there, where 441 node-hours is the
+   incumbent.
+   Sources: session scratchpad `exact_g{24,32}r4_b0_19.jsonl` + logs;
+   `runs/nnlab/capstone_g32_4616709.out`.
