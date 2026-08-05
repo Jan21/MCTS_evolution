@@ -2177,3 +2177,25 @@ scoped fix.
    Sources: `nn_labeler/leanboard.py`, `nn_labeler/test_leanboard_parity.py`
    (PASS), scratchpad `ab_{pkl,lean}.jsonl` diff (69/69), agent dossier in
    the session log.
+
+63. **The B2 payoff job OOMed in 91 s — TRAINING on 32×32 boards is the
+   memory wall, not labeling them — and the retry turns that into a cleaner
+   experiment (2026-08-05, job 4618888, FAILED, ~0.003 nh burned).** The
+   original design trained the B2 net on all five B2 corpora including
+   g32r4: at the base recipe's batch shape (8 groups × ≤32 candidates) a
+   1025-token bucket needs ~13 GB of attention scores per step before the
+   recurrence-12 backward graph, and the A100-40GB died at epoch 0 step 3.
+   Every healthy training so far (v1, v2) used ≤257-token boards — INFERENCE
+   at 1025–4097 tokens is fine (§59/§60); backward-pass memory is the
+   constraint that was never before exercised. Retry (jobs 4620064→65,
+   idempotent pair): train on the ≤24 B2 corpora only
+   (g16r4/g16r6/g16r8/g24r8, worst bucket 577 tokens, batch 4 × mpg 16,
+   `expandable_segments`), and label g32r4 **zero-shot** — which is the
+   track's own method (the base net never trained above 16 and hits 87.7%
+   exact at 32, §59), and makes the g32r4 B2 labeling leg leakage-free
+   where the old design trained on the very corpus it gated against. Chain
+   reordered: gtwin → twin retrains → B2 retry ×2 → integer gates → coarse
+   40–64 (headline experiment stays first; `afterany` had already released
+   gtwin when B2 failed, so no GPU time was at risk).
+   Sources: `runs/nnlab/b2_payoff_4618888.out` (the OOM traceback),
+   `nn_labeler/jobs/b2_payoff.slurm` (retry recipe + rationale).

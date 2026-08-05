@@ -23,9 +23,15 @@
 # capped band (~5%), the method delivers labels the exact pipeline could not
 # afford to produce at all.
 #
-# Part 1: train a size-free value net on the five EXISTING B2 corpora
-#         (sizes 16/24/32, robots 4/6/8) -- vocabulary-pure, never mixed with
-#         base labels (house rule).
+# Part 1: train a size-free value net on the EXISTING B2 corpora at sizes
+#         <=24 (g16r4/g16r6/g16r8/g24r8) -- vocabulary-pure, never mixed with
+#         base labels (house rule). g32r4 is EXCLUDED from training after the
+#         2026-08-05 OOM (job 4618888: training on 1025-token boards at the
+#         base recipe's batch shape needs ~13 GB of attention scores per step
+#         and killed the job in 91 s). Extrapolation IS the track's method --
+#         the base net never trained above 16 and labels 32 at 87.7% exact --
+#         so the B2 net extrapolates 24->32 the same way, which also makes
+#         the g32r4 labeling leg leakage-free.
 # Part 2: descent-label B2 at g16r6 and g32r4 with NO cap, and measure the
 #         by-reference share (qc_byref) + throughput.
 # Part 3: gate the labels against the existing exact B2 corpus.
@@ -41,12 +47,14 @@ cd "$REPO/supervised_valuenet"
 export PYTHONPATH=.
 export PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS=16
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 nvidia-smi -L
 
-DIR="nn_labeler/runs/b2_mix_none_s${SEED}"
+DIR="nn_labeler/runs/b2_mix16to24_none_s${SEED}"
 B2=backward_b2.cap20000.rust.jsonl
 
-# ---- 1. train the B2 size-free value net -------------------------------------
+# ---- 1. train the B2 size-free value net (sizes <=24; batch shape sized for
+#         the 577-token worst bucket -- see header) ----------------------------
 if [ ! -f "$DIR/DONE" ]; then
     resume=""
     ls "$DIR"/lightning_logs/version_*/checkpoints/last.ckpt >/dev/null 2>&1 && resume=1
@@ -55,8 +63,7 @@ if [ ! -f "$DIR/DONE" ]; then
         --data g16r6=scaling/data/g16r6/$B2 \
         --data g16r8=scaling/data/g16r8/$B2 \
         --data g24r8=scaling/data/g24r8/$B2 \
-        --data g32r4=scaling/data/g32r4/$B2 \
-        --pe none --num-classes 96 --epochs 30 --batch-size 8 --max-per-group 32 \
+        --pe none --num-classes 96 --epochs 30 --batch-size 4 --max-per-group 16 \
         --warmup 4 --lr 1e-4 --torch-seed "$SEED" --device cuda --out-dir "$DIR" \
         || { echo "B2 TRAIN FAILED"; exit 1; }
     touch "$DIR/DONE"
