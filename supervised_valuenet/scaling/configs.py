@@ -137,6 +137,20 @@ CONFIGS = {c.name: c for c in [
     _std("g29r4", 29, 4, "NN-labeler ladder rung (2026-08-02)."),
     _std("g30r4", 30, 4, "NN-labeler ladder rung (2026-08-02)."),
     _std("g31r4", 31, 4, "NN-labeler ladder rung (2026-08-02)."),
+    # Coarse rungs beyond 32 (2026-08-05): lean boards only (FINDINGS 60/62 --
+    # make_board's all-pairs precompute is infeasible here; use
+    # nn_labeler.leanboard / descent --boards lean). Exact ground truth exists
+    # up to g64r4 (Rust envelope n<=64) and NOWHERE above: g80r4/g96r4 labels
+    # are certified-valid upper bounds, never optimality-checked.
+    _std("g40r4", 40, 4, "Coarse ladder rung, lean boards (2026-08-05)."),
+    _std("g48r4", 48, 4, "Coarse ladder rung, lean boards (2026-08-05)."),
+    _std("g56r4", 56, 4, "Coarse ladder rung, lean boards (2026-08-05)."),
+    _std("g64r4", 64, 4, "Coarse ladder endpoint, lean boards; last size with "
+         "exact ground truth (2026-08-05)."),
+    _std("g80r4", 80, 4, "UNVERIFIABLE rung, lean boards; beyond the Rust "
+         "envelope -- no exact check exists (2026-08-05)."),
+    _std("g96r4", 96, 4, "UNVERIFIABLE rung, lean boards; beyond the Rust "
+         "envelope -- no exact check exists (2026-08-05)."),
 ]}
 
 

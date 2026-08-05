@@ -2138,3 +2138,42 @@ scoped fix.
    Sources: `runs/nnlab/prod_train_v2_4616677.out`,
    `nn_labeler/results/audit_prod2_s11_lr1e-4.json`,
    `nn_labeler/results/audit_prod_v1_s11_full.json`.
+
+62. **The lean-board / lazy-distance path lands and removes the size wall of
+   §60: board construction at 32×32 falls from 222 s to 0.24 s (~930×), and
+   the pipeline is proven RECORD-IDENTICAL with the real net in the loop
+   (2026-08-05, login CPU).** `nn_labeler/leanboard.py` (Opus-built,
+   Fable-verified): the key structural fact is that `make_board`'s two
+   all-pairs Dijkstra tables consume NO RNG — the stream is
+   `gen_walls → build_graph → random_instance` only — so lean boards are
+   layout-identical to standard ones by construction, and a lazy Dial's-
+   algorithm row oracle (per-board LRU, rows never truncated) answers every
+   distance query the descent call graph makes.
+   (a) **Parity, exhaustive:** 1.45 M table entries at 16/24 (incl. the
+   legacy g16r4 stock boards, whose weight-100 `all_paths` convention the
+   test had to learn the hard way), zero mismatches; planner candidate lists
+   identical INCLUDING order; descent-shaped rollouts identical
+   decision-for-decision (`nn_labeler/test_leanboard_parity.py`, PASS 28 s).
+   (b) **A/B with the banked v1 net** (this session): `descent.py --boards
+   pkl` vs `--boards lean`, g16r6 boards 0–1, 3 instances each — **69/69
+   records byte-equal**, identical stats. `descent.py` now takes `--boards
+   {pkl,lean}` (recorded in the manifest) via three call-site swaps.
+   (c) **Measured lean cost** (per board: construction+env): 0.24 s @32,
+   1.5 s @64, 3.8 s @96 vs eager's measured 222 s @32 and projected 1.7 h
+   @64 / 11.9 h @96 (log-log fit t≈1.5e-5·n^4.77 on §60's numbers); lean
+   pkls 1.1 / 4.9 / 11.7 MB vs 28.6 MB / 516 MB / 2.8 GB. Honest overhead:
+   lazy queries cost 1.43× the dict lookup (+1.14 µs/query), bit-identical
+   results.
+   (d) **The Rust exact path needs no port:** `scaling/rust_bridge.py`
+   reads `grid_data`/`instances` straight from the pkl (its own comment:
+   "without triggering from_env's eager table/cache build"), both of which
+   lean pkls carry — so exact gate corpora at 40–64 come free. Configs
+   g40r4–g96r4 added (g80r4/g96r4 marked UNVERIFIABLE — beyond the Rust
+   n≤64 envelope nothing can check them, §60b).
+   (e) Open, honest: a production-length descent board at 64 builds a few
+   thousand lazy rows (sub-linear growth, worst case 44 s @64 / 177 s @96 —
+   still 140–240× under eager); an end-to-end GPU descent at 64 with the
+   real net is the next thing the coarse ladder itself will measure.
+   Sources: `nn_labeler/leanboard.py`, `nn_labeler/test_leanboard_parity.py`
+   (PASS), scratchpad `ab_{pkl,lean}.jsonl` diff (69/69), agent dossier in
+   the session log.

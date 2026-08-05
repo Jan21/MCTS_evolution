@@ -91,6 +91,10 @@ def main():
                         "sampling (for depth-0 label audits)")
     p.add_argument("--limit-instances", type=int, default=None)
     p.add_argument("--out", required=True)
+    p.add_argument("--boards", choices=["pkl", "lean"], default="pkl",
+                   help="pkl: GridEnv.from_env (all-pairs precompute per "
+                        "board); lean: nn_labeler.leanboard, lazy distances "
+                        "-- required above ~32x32 (FINDINGS 60/62)")
     a = p.parse_args()
 
     # One config per process: env vars must precede every repo import.
@@ -110,7 +114,10 @@ def main():
     from nn.generate import (_context, _fixed_g, make_solver, parse_graphs,
                              random_instance)
     from nn_labeler import encode
+    from nn_labeler import leanboard
     from nn_labeler.model import SizeFreeValueNet
+
+    load_env = leanboard.from_env if a.boards == "lean" else GridEnv.from_env
 
     hits = sorted(glob.glob(a.ckpt))
     if len(hits) != 1:
@@ -322,7 +329,7 @@ def main():
             for env_id, st in inst:
                 by_env.setdefault(env_id, []).append(st)
             for env_id in sorted(by_env):
-                env, _ = GridEnv.from_env(env_id)
+                env, _ = load_env(env_id)
                 for st in by_env[env_id]:
                     run_instance(f, env, st, env_id)
                 print(f"graph {env_id}: {stats['kept']}/{stats['attempted']} kept, "
@@ -330,10 +337,10 @@ def main():
                       flush=True)
         else:
             rng = random.Random(a.seed)
-            _env0, s0 = GridEnv.from_env(graphs[0])
+            _env0, s0 = load_env(graphs[0])
             colors = [s0.target_robot.color] + [h.color for h in s0.helpers]
             for gid in graphs:
-                env, _ = GridEnv.from_env(gid)
+                env, _ = load_env(gid)
                 kept = attempts = 0
                 while kept < a.per_graph and attempts < a.per_graph * 4:
                     attempts += 1
@@ -352,6 +359,7 @@ def main():
         "per_graph": a.per_graph, "seed": a.seed,
         "max_candidates": a.max_candidates, "max_depth": a.max_depth,
         "certify": not a.no_certify, "prefix_check": prefix_check,
+        "boards": a.boards,
         "instances_from": a.instances_from, "graphs": a.graphs,
         "seconds": round(time.time() - t0, 1), "stats": stats,
     }
