@@ -2029,3 +2029,47 @@ scoped fix.
    incumbent.
    Sources: session scratchpad `exact_g{24,32}r4_b0_19.jsonl` + logs;
    `runs/nnlab/capstone_g32_4616709.out`.
+
+59. **THE CAPSTONE: the NN labeler works at 32×32 — 87.7% of its labels are
+   exactly the exact solver's optimum, and its RANKING is better at big
+   boards than at small ones — while costing 9–250× more compute than the
+   Rust exact labeler in this vocabulary (2026-08-04, job 4616709, 1h30m,
+   0.19 nh).** Banked v1 net (trained on ≤16×16), replayed over the existing
+   exact corpora's test instances at both large rungs; 100% depth-0 instance
+   coverage on both.
+   | gate | mean gap | median / p90 | share gap=0 | on-optimal gap / =0 | argmin agree | negative gaps |
+   |---|---|---|---|---|---|---|
+   | 24×24 (n=3522 cands) | 0.566 | 0 / 2 | 85.2% | 0.467 / 88.7% | **92.6%** | 3 |
+   | 32×32 (n=3384 cands) | 0.553 | 0 / 1 | **87.7%** | 0.434 / 90.6% | **91.5%** | **0** |
+   (a) **An honest split verdict against the pre-registered bar** (mean ≤0.5
+   AND ≤10% argmin disagreement): the mean-gap bar is MISSED at both rungs
+   (0.55–0.57, dragged by a thin tail — max 22/35 — while the median is 0 and
+   p90 ≤ 2), and the argmin bar is PASSED at both (91.5–92.6%) — the exact
+   inversion of the small rungs, which passed on mean (0.35–0.45) and missed
+   on argmin (~87%). Reading: the value head's ABSOLUTE calibration degrades
+   with board size (matching the growing bias in §54), while its ORDERING —
+   the thing a labeler actually needs — holds up or improves. For label use
+   the ordering metrics are the load-bearing ones, so this is a pass on the
+   criterion that matters and a miss on the one that flatters small boards.
+   (b) **Yield and drops** (fresh generation, 20 boards × 10 instances):
+   59% of attempts kept at 24×24, 52% at 32×32, both hitting the full
+   200-instance target with zero timeouts; ~6.9 records per kept instance;
+   candidates lost to failed completion 958/873 and to failed physics
+   certification 81/56 — dropped, never mislabeled.
+   (c) **Compute, measured both ways** (extends §58): per KEPT instance in
+   fresh generation NN descent costs 5.1 s (24×24) and 18.6 s (32×32) on one
+   A100 vs the Rust exact labeler's 0.030 s / 0.075 s on 4 CPU cores —
+   **170× / 248×**. Even on the friendliest workload (replaying instances
+   already known to be labelable, one attempt each, no retries) descent costs
+   0.36 s / 0.70 s per instance — still **9×** the exact labeler at 32×32.
+   The base-vocabulary verdict of §58 is confirmed at the top of the ladder:
+   the method WORKS at scale but SAVES NOTHING here.
+   (d) **Consequence:** the payoff experiment is queued (job 4618888,
+   `b2_payoff.slurm`): a size-free net on the five existing B2 corpora, then
+   UNCAPPED B2 descent labeling, with the by-reference share as the metric
+   the exact pipeline's iteration cap destroyed (13.5% uncapped → 4.8%
+   capped, §32). Descent has no iteration budget, so the cap/quality
+   trade-off cannot arise — that, not speed, is the method's claim.
+   Sources: `nn_labeler/results/capgate_g{24,32}r4.json`,
+   `capgen_g{24,32}r4.jsonl.manifest.json`,
+   `runs/nnlab/capstone_g32_4616709.out`.
