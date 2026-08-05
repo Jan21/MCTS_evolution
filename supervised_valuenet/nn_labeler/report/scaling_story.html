@@ -1067,12 +1067,36 @@ network at every size, and its tendency to underestimate long solutions is halve
 <p>Two fixes went in immediately: training now stops itself after three stuck rounds instead of
 burning hours (this run would have ended at round four, saving about 1.6 node-hours), and a
 false-alarm case in the earlier safety check was corrected.</p>
-<p><strong>Running next, in order:</strong> (1) boards and exact reference sets for the fourteen
-new sizes; (2) <em>the decisive test</em> — labeling 24&times;24 and 32&times;32 boards with this
-network and checking every label against the exact solver, which measures both whether it works
-at 32&times;32 and what it costs; (3) a second training attempt at a gentler learning rate, to
-try to beat the saved network. Sizes 17&times;17 through 31&times;31 follow, one at a time, each
-required to clear its own reference check before its labels count.</p>
+<p><strong>The decisive test has now run, and it answers both halves of the question.</strong>
+The network labeled 24&times;24 and 32&times;32 boards — up to 3.2 times bigger than anything it
+trained on — and every label was checked against the exact solver's own answer:</p>
+<div class="twrap">
+<table>
+  <tr><th>Board size</th><th class="num">Labels exactly right</th>
+      <th class="num">Picks the same best step</th><th class="num">Average gap</th>
+      <th class="num">Impossible labels</th></tr>
+  <tr><td>24&times;24</td><td class="num">85.2%</td><td class="num">92.6%</td><td class="num">0.57 moves</td><td class="num">3 of 3,522</td></tr>
+  <tr><td>32&times;32</td><td class="num">87.7%</td><td class="num">91.5%</td><td class="num">0.55 moves</td><td class="num">none</td></tr>
+</table>
+</div>
+<p><strong>It works.</strong> Nearly nine labels in ten are exactly the number the exact solver
+would have written, and when the network has to choose the best next step — the thing a labeler is
+really for — it agrees with the exact solver more than nine times in ten. Notably it agrees
+<em>better</em> on these huge boards than on the small ones it was tested on earlier: its sense of
+which step is best travels, even as its sense of the exact number drifts a little.</p>
+<p><strong>But it does not save time here.</strong> We measured both on the same boards. The exact
+solver — the fast rewritten one — labels 200 puzzle situations at 32&times;32 in <strong>15 seconds
+on four ordinary processor cores</strong>. The network needs minutes of graphics-card time for the
+same work: between 9 and 250 times more, depending on how the work is set up. On these puzzles, in
+this simplified move language, the old tool is simply better.</p>
+<p><strong>So where does the network earn its keep?</strong> In the richer move language the project
+actually cares about, where the exact solver's cost exploded to a projected <strong>441 node-hours
+— roughly half the project's entire computing grant</strong> — and where the shortcut that made it
+affordable quietly deleted the very examples it was supposed to produce. The network's approach has
+no such shortcut to take: it walks a fixed number of steps and stops, so it cannot wander, and the
+trade between cost and quality never arises. That experiment is queued now, and the number to watch
+is whether the deleted example type comes back at its natural rate (about 13%) instead of the
+degraded 5% the shortcut left behind.</p>
 </div>
 
 <h2>The ledger</h2>

@@ -352,6 +352,52 @@ tool, not the labels. The 16&times;16-legacy leg was discarded: its corpus preda
 14-candidate cap (groups up to 50) and is generation-incompatible — the same artifact FINDINGS
 &sect;53 unmasked.</p></div>
 
+<h2>7b. The capstone: 32&times;32 measured, both ways</h2>
+<div class="card done"><span class="tag">done — job 4616709, 1h30m (0.19 nh); FINDINGS &sect;59</span>
+<p>The banked v1 net (trained on nothing larger than 16&times;16) labeling at the top of the ladder,
+replayed over the existing exact corpora's test instances. 100% depth-0 instance coverage at both
+rungs.</p>
+<div class="twrap"><table>
+  <tr><th>gate</th><th class="num">mean gap</th><th class="num">median / p90</th>
+      <th class="num">share gap=0</th><th class="num">on-optimal gap / =0</th>
+      <th class="num">argmin agree</th><th class="num">negative gaps</th></tr>
+  <tr><td>24&times;24</td><td class="num">0.566</td><td class="num">0 / 2</td><td class="num">85.2%</td>
+      <td class="num">0.467 / 88.7%</td><td class="num"><strong>92.6%</strong></td><td class="num">3</td></tr>
+  <tr><td>32&times;32</td><td class="num">0.553</td><td class="num">0 / 1</td><td class="num"><strong>87.7%</strong></td>
+      <td class="num">0.434 / 90.6%</td><td class="num"><strong>91.5%</strong></td><td class="num"><strong>0</strong></td></tr>
+</table></div>
+<p><strong>A split verdict against the pre-registered bar</strong> (mean &le; 0.5 <em>and</em>
+&le; 10% argmin disagreement): the mean-gap bar is missed at both rungs (0.55&ndash;0.57, dragged by
+a thin tail &mdash; max 22/35 &mdash; while the median is 0 and p90 &le; 2); the argmin bar is passed
+at both (91.5&ndash;92.6%). That is the exact inversion of the small rungs, which passed on mean and
+missed on argmin. Reading: the value head's <em>absolute calibration</em> degrades with board size
+(matching the growing bias in &sect;6b), while its <em>ordering</em> &mdash; the property a labeler
+actually needs &mdash; holds up or improves. Yield: 59% / 52% of attempts kept, full 200-instance
+target hit at both rungs, zero timeouts; candidates lost to failed completion or failed physics
+certification are dropped, never mislabeled.</p>
+<p><strong>And the compute answer, measured rather than argued</strong> (FINDINGS &sect;58&ndash;59):
+per kept instance in fresh generation, descent costs 5.1 s (24&times;24) and 18.6 s (32&times;32) on
+one A100 against the Rust exact labeler's 0.030 s / 0.075 s on four CPU cores &mdash;
+<strong>170&times; / 248&times;</strong>. Even replaying instances already known to be labelable it is
+still <strong>9&times;</strong> the exact labeler at 32&times;32. <strong>In base vocabulary the
+method works at scale and saves nothing.</strong> Two caveats cutting the same way: the descent
+labeler is Python for plan manipulation and physics (the network is not the bottleneck), and it
+yields ~6.9 records per instance against the exact labeler's 8.3.</p></div>
+
+<h2>7c. Where the method actually pays — the payoff experiment</h2>
+<div class="card pending"><span class="tag">queued — job 4618888</span>
+<p>&sect;58&ndash;59 relocate the claim. The extended (B2) vocabulary is the regime that motivated
+this whole track: its exact campaign projected <strong>~441 node-hours</strong>, and the iteration
+cap that made it affordable <em>destroyed the labels it existed to produce</em> — the by-reference
+candidate share fell 13.5% &rarr; 4.8%, and the retrain on capped data lost 24.6 points on the
+frontier. <strong>Certified descent has no iteration budget at all</strong> — it is a fixed-depth
+greedy completion, so the wandering-rollout pathology that forced the cap cannot occur and the
+cost/quality trade-off does not exist. <code>b2_payoff.slurm</code> trains a size-free net on the
+five existing B2 corpora (1.3M records, sizes 16/24/32, robots 4/6/8), then labels B2 uncapped and
+measures the by-reference share. Landing near the uncapped 13% rather than the capped 5% would mean
+the method delivers labels the exact pipeline could not afford to make at all — which is the
+method's real claim, and not a speed claim.</p></div>
+
 <h2>8. The ladder — 17&times;17 to 32&times;32</h2>
 <div class="card done"><span class="tag">path decided — FINDINGS &sect;55</span>
 <p><strong>Adopted: Plan C's train-once spine with Plan B's per-rung audit gates; Plan A
