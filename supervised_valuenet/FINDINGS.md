@@ -2104,3 +2104,37 @@ scoped fix.
    live design choice is frozen-net (current, chosen per §55) vs bootstrapped
    relabel-and-retrain per rung, which §34/§47 evidence argues against.
    Full plan, assets, pitfalls and open questions: `nn_labeler/HANDOFF.md`.
+
+61. **The v2 production net trains to completion without collapse and beats
+   v1 on top-1 and regret at every audited config (2026-08-05, job 4616677,
+   COMPLETED at 15h47m, ~1.97 nh).** Same recipe and data mix as v1 (g8r4–
+   g15r4 rust + g16r6 + g16r8; pe=none; 30 epochs) at lr 1e-4 — the study's
+   own documented rescue for unstable training (§43) — with `CollapseStop`
+   armed; it never fired (val_group_spread ≥ 2.3 throughout; best epoch 12).
+   The job also completed v1's missing 32×32 audit leg, so both nets are now
+   measured on the identical test-split protocol:
+   | config | v1 top1 / regret | v2 top1 / regret | v2 bias |
+   |---|---|---|---|
+   | g8r4  | 0.915 / 0.178 | **0.939 / 0.122** | +1.85 |
+   | g12r4 | 0.898 / 0.254 | **0.925 / 0.180** | +1.48 |
+   | g16r6 | 0.852 / 0.432 | **0.881 / 0.340** | +1.19 |
+   | g24r4 | 0.883 / 0.425 | **0.899 / 0.351** | +0.67 |
+   | g32r4 | 0.853 / 0.559 | **0.871 / 0.535** | +0.36 |
+   Note v2's bias stays positive at all sizes where v1's turns negative at
+   24/32 — v2 overestimates cost-to-go rather than undershooting, and §54's
+   size-growing bias pattern is reduced, not gone. The formal v1-vs-v2 call
+   uses the descent gate, not this audit: job 4618940 (`gate_v2_and_twins
+   .slurm`) replays the capstone's 600-instance gate at g24r4/g32r4 for v2,
+   picks the winner on argmin agreement at g32r4 (v1's bar: 91.5%), banks it,
+   and then builds the DOWNSTREAM-EQUIVALENCE twin corpora: full replay of
+   the exact corpora at g24r4/g24r8/g32r4 with the winning net — same boards,
+   same instances, only the label source differs. All three cells are
+   leakage-free (neither net ever trained on those configs). Owner decisions
+   recorded 2026-08-05: headline claim = downstream equivalence (planners
+   retrained on NN labels vs exact labels on the pinned benchmarks);
+   controlled suite + one full-deployment run at 32×32; ladder rungs 17–31
+   kept (job 4610118, re-parked after 4618940); push past 64 to 80/96 with
+   certified-but-unverifiable labels validated by downstream solve rate.
+   Sources: `runs/nnlab/prod_train_v2_4616677.out`,
+   `nn_labeler/results/audit_prod2_s11_lr1e-4.json`,
+   `nn_labeler/results/audit_prod_v1_s11_full.json`.
