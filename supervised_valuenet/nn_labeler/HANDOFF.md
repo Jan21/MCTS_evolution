@@ -19,23 +19,30 @@ numbering note in FINDINGS) → `nn_labeler/report/process.html` (technical) and
 
 ## 1. LIVE STATE — what is running and queued
 
-Checked 2026-08-05. Allocation: **191.85 of 1000 node-hours used** project-wide;
-this track has spent **≈4 nh total**.
+**Updated 2026-08-05 (evening): the campaign below was re-planned with the
+owner** — headline = downstream equivalence; see FINDINGS **61 + 62** for the
+day's results (v2 net COMPLETED healthy and beats v1 everywhere; lean-board
+path landed, record-identical, unlocking 40–96). prod2 (4616677) is done;
+4610118 (eager lprep) was CANCELLED and replaced by the lean gates job. The
+single-GPU dependency chain, in order:
 
-| job | name | state | what it does |
-|---|---|---|---|
-| 4616677 | `rr-nnlab-prod2` | **RUNNING** (15h07m of a 16h walltime — will TIMEOUT shortly) | base-vocab production net attempt 2 (lr 1e-4 + CollapseStop); its part 0 also completes v1's 32×32 value audit |
-| 4618888 | `rr-nnlab-b2` | PD, `afterany:4616677` | **THE PAYOFF EXPERIMENT** — size-free net on the five existing B2 corpora, then UNCAPPED B2 descent labeling + by-reference share + gate |
-| 4610118 | `rr-nnlab-lprep` | PD, `afterany:4618888` | boards + Rust-exact test references for the 14 ladder rungs g17–g23, g25–g31 |
+| job | name | what it does |
+|---|---|---|
+| 4618888 | `rr-nnlab-b2` | **THE PAYOFF** — B2 net on the five existing B2 corpora, UNCAPPED descent labeling, by-reference share + gate |
+| 4618940 | `rr-nnlab-gtwin` | gates v2 vs v1 (capstone protocol), banks winner (`jobs/pick_winner.py` re-derives it), builds the THREE TWIN CORPORA (full replay of g24r4/g24r8/g32r4 exact corpora) |
+| 4618960/61 | `rr-nnlab-twinrt` ×2 | **HEADLINE** — retrains backward-policy/value on the twins (original hyperparams verbatim, `TWIN_WIRING.md`), benches with the exact rows' protocol → `comparison_nntwin.json`; ~27 h idempotent work, hence two submissions |
+| 4618986 | `rr-nnlab-intgates` | per-integer rungs 17–31 as GATES ONLY on lean boards (value audit + 600-inst descent gate per rung; corpus mass-production dropped per FINDINGS 58 — 170× cheaper exact, nothing consumes it) |
+| 4618987–90 | `rr-nnlab-coarse-g{40,48,56,64}` | coarse ladder to the verifiable endpoint; g64r4 is the calibration statement (Rust envelope ends at 64) |
+
+After these: seed replicate of the twin arm (`TWIN_TAG=-seed21`), the 32×32
+deployment run (fresh NN-everything corpus → train → bench), 80/96
+unverifiable rungs (configs exist, marked UNVERIFIABLE), optional exact-rebench
+control (`TWIN_WIRING.md` OPEN 8). Results page:
+`nn_labeler/report/suite.html` — regenerate with
+`python nn_labeler/report/gen_suite.py` after any landing; cells auto-fill.
 
 Monitors from the previous session are dead; arm your own
 (`sacct -j <id> --format=State --noheader -X` in a background until-loop).
-prod2 running the full 15h means it did **not** trip CollapseStop — likely a
-healthy run, so expect a usable v2 checkpoint. **When it times out, check
-whether its 30 epochs finished** (`grep "NNLAB TRAIN DONE"` in
-`runs/nnlab/prod_train_v2_4616677.out`); attempt 1 finished training and died
-during the audit, and the same may happen here — a resume is NOT needed if
-training is done, just re-run the audit (see §5 pitfall 3).
 
 ---
 
