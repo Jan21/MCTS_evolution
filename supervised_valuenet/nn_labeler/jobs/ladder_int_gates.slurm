@@ -38,7 +38,11 @@ nvidia-smi -L
 ./rust_datagen/target/release/datagen selftest >/dev/null \
     || { echo "INTGATES RUST BINARY MISSING"; exit 1; }
 
-CKPT=$(python nn_labeler/jobs/pick_winner.py)
+# NNLAB_CKPT pins the net explicitly. The CURVE must be one net end-to-end:
+# its existing 24/32 anchors (capstone, FINDINGS 59) are v1, so the parallel
+# lane runs with NNLAB_CKPT=v1 rather than letting pick_winner switch nets
+# mid-curve if the v2 gate lands while this job is running.
+CKPT=${NNLAB_CKPT:-$(python nn_labeler/jobs/pick_winner.py)}
 echo "INTGATES LABELER OF RECORD $CKPT"
 [ -f "$CKPT" ] || { echo "INTGATES MISSING CKPT"; exit 1; }
 

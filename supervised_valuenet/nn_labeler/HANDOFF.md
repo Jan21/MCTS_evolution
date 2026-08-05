@@ -26,13 +26,15 @@ path landed, record-identical, unlocking 40–96). prod2 (4616677) is done;
 4610118 (eager lprep) was CANCELLED and replaced by the lean gates job. The
 single-GPU dependency chain, in order:
 
-| job | name | what it does |
+**THREE PARALLEL LANES (owner asked for short jobs in parallel, results
+first, 2026-08-05 late evening).** The first B2 attempt (4618888) OOMed —
+FINDINGS 63 — and its retry now trains ≤24 only and labels 32 zero-shot.
+
+| lane | jobs | what it does |
 |---|---|---|
-| 4618888 | `rr-nnlab-b2` | **THE PAYOFF** — B2 net on the five existing B2 corpora, UNCAPPED descent labeling, by-reference share + gate |
-| 4618940 | `rr-nnlab-gtwin` | gates v2 vs v1 (capstone protocol), banks winner (`jobs/pick_winner.py` re-derives it), builds the THREE TWIN CORPORA (full replay of g24r4/g24r8/g32r4 exact corpora) |
-| 4618960/61 | `rr-nnlab-twinrt` ×2 | **HEADLINE** — retrains backward-policy/value on the twins (original hyperparams verbatim, `TWIN_WIRING.md`), benches with the exact rows' protocol → `comparison_nntwin.json`; ~27 h idempotent work, hence two submissions |
-| 4618986 | `rr-nnlab-intgates` | per-integer rungs 17–31 as GATES ONLY on lean boards (value audit + 600-inst descent gate per rung; corpus mass-production dropped per FINDINGS 58 — 170× cheaper exact, nothing consumes it) |
-| 4618987–90 | `rr-nnlab-coarse-g{40,48,56,64}` | coarse ladder to the verifiable endpoint; g64r4 is the calibration statement (Rust envelope ends at 64) |
+| A (headline) | 4618940 `gtwin` → 4618960/61 `twinrt` ×2 | gates v2 vs v1 (capstone protocol), banks winner (`jobs/pick_winner.py`), builds the THREE TWIN CORPORA; then retrains backward-policy/value on them (hyperparams verbatim, `TWIN_WIRING.md`) and benches with the exact rows' protocol → `comparison_nntwin.json` (~27 h idempotent, two submissions) |
+| B (payoff) | 4620064 → 4620065 `b2` ×2 | B2 net on the ≤24 B2 corpora, UNCAPPED descent labeling at g16r6 + g32r4 (zero-shot), by-reference share + gate |
+| C (curve) | 4620484 `intgates` → 4620485–88 `coarse-g{40,48,56,64}` | per-integer rungs 17–31 as GATES ONLY on lean boards, then the coarse ladder to the verifiable endpoint; **pinned to v1 via `NNLAB_CKPT`** so the curve is one net end-to-end (its 24/32 anchors are v1) |
 
 After these: seed replicate of the twin arm (`TWIN_TAG=-seed21`), the 32×32
 deployment run (fresh NN-everything corpus → train → bench), 80/96

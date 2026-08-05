@@ -32,7 +32,9 @@ nvidia-smi -L
 ./rust_datagen/target/release/datagen selftest >/dev/null \
     || { echo "COARSE RUST BINARY MISSING"; exit 1; }
 
-CKPT=$(python nn_labeler/jobs/pick_winner.py)
+# NNLAB_CKPT pins the net explicitly (curve consistency -- see
+# ladder_int_gates.slurm; the 24/32 anchors are v1).
+CKPT=${NNLAB_CKPT:-$(python nn_labeler/jobs/pick_winner.py)}
 echo "COARSE $CFG LABELER OF RECORD $CKPT"
 [ -f "$CKPT" ] || { echo "COARSE MISSING CKPT"; exit 1; }
 
