@@ -2073,3 +2073,34 @@ scoped fix.
    Sources: `nn_labeler/results/capgate_g{24,32}r4.json`,
    `capgen_g{24,32}r4.jsonl.manifest.json`,
    `runs/nnlab/capstone_g32_4616709.out`.
+
+60. **64×64 feasibility, measured: the network runs there; the board
+   infrastructure is the blocker; and 64 is the last size where ground truth
+   exists at all (2026-08-05).** Probe on login CPU: `SizeFreeValueNet`
+   forwards at n=48 (2,305 tokens, 7.8 s, batch 2) and **n=64 (4,097 tokens,
+   11.9 s, batch 1, peak RSS 1.3 GB, one attention mask 67.1 MB)** — the
+   architecture envelope is clear to 64, and on an A100 batch ≤4–8 fits
+   (attention scores are [B, heads, 4097, 4097]).
+   (a) **The blocker is `nn/gen_grids.make_board`**, which computes all-pairs
+   Dijkstra O(G⁴ log G) and stores two (G²)² tables per board: measured cold
+   `GridEnv.from_env` 8.2 s (16) → 60 s (24) → 222 s (32), pickles 1.6 → 8.8
+   → 28.6 MB, extrapolating to tens of minutes and hundreds of MB per board at
+   64 (BENCH.md's own 64×64 sidecar estimate for 1200 boards is ~230 GB).
+   `descent.py` inherits this via `GridEnv.from_env` /
+   `compute_exact_shortest_path_length`. The fix is a lean-board + lazy
+   memoized-distance path (the pattern exists:
+   `rust_datagen/pyref/dump_decisions.py::_resolve_boards`, which is how the
+   repo's own 64×64 smoke cell already works) — engineering, not compute.
+   (b) **64 is the calibration endpoint.** The Rust engine hard-asserts
+   n ≤ 64, R ≤ 10 (`move_oracle.rs::assert_envelope`, release too), so exact
+   ground truth is obtainable at 64 and nowhere above it. Proving NN labels
+   match exact labels AT 64 is what would license trusting them beyond 64 —
+   that, rather than compute saving, is the scientific case for the goal
+   (§58/§59 having shown base-vocabulary labeling is cheaper exact at every
+   size measured).
+   (c) Terminology recorded for the handoff: this method is zero-shot
+   amortized labeling with physics certification, NOT self-play (no opponent,
+   no game outcome; the repo's actual self-play is `subgoal_selfplay/`). The
+   live design choice is frozen-net (current, chosen per §55) vs bootstrapped
+   relabel-and-retrain per rung, which §34/§47 evidence argues against.
+   Full plan, assets, pitfalls and open questions: `nn_labeler/HANDOFF.md`.
