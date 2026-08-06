@@ -2222,3 +2222,32 @@ scoped fix.
    winner verdict makes that pin the formal choice too. v2 is not banked.
    Sources: `nn_labeler/results/v2gate_g{24,32}r4.json` vs
    `capgate_g{24,32}r4.json`, `runs/nnlab/gate_v2_twins_4618940.out`.
+
+65. **The per-integer ladder 17–31 is COMPLETE in one job of 1h17m
+   (~0.16 nh) and the curve is FLAT — no extrapolation cliff exists
+   anywhere between the trained sizes and 32×32 (2026-08-06, job 4620484).**
+   The originally-planned eager pipeline for the same rungs projected 10+
+   walltime-killed resubmissions for board prep alone; on lean boards
+   (§62) each rung took ~3 s of boards + ~4 s of Rust exact reference
+   (13,100–13,300 records) + ~2.5 min of GPU gate. Banked v1 net, capstone
+   protocol (600 replayed test instances/rung), every rung:
+   | rung | argmin | gap mean | | rung | argmin | gap mean |
+   |---|---|---|---|---|---|---|
+   | 17 | 88.0% | 0.495 | | 25 | 92.2% | 0.532 |
+   | 18 | 89.2% | 0.508 | | 26 | 89.8% | 0.588 |
+   | 19 | 88.7% | 0.532 | | 27 | 88.6% | 0.619 |
+   | 20 | 86.4% | 0.648 | | 28 | 87.4% | 0.716 |
+   | 21 | 89.6% | 0.564 | | 29 | 89.9% | 0.599 |
+   | 22 | 88.2% | 0.560 | | 30 | 91.4% | 0.605 |
+   | 23 | 88.8% | 0.604 | | 31 | 92.1% | 0.548 |
+   Capstone anchors (§59) bracket it: 24×24 = 92.6%/0.566, 32×32 =
+   91.5%/0.553. Range across all 16 v1 points: argmin 86.4–92.6%, labels-
+   exactly-optimal 83.6–87.7%, gap p90 ≤ 2 everywhere, negative gaps ≤ 4
+   per rung, all with wobble but NO size trend — if anything the top of the
+   range (30–32) is as good as the bottom. The original goal's "17×17,
+   18×18, … 32×32, generating labeled data" question is answered
+   affirmatively at every step, with the §58 economics caveat standing
+   (base-vocab labels remain cheaper exact; this is method validation).
+   Coarse rung g40r4 started automatically (lane C).
+   Sources: `nn_labeler/results/dgate_ladder_g{17..31}r4.json`,
+   `audit_ladder_g*.json`, `runs/nnlab/ladder_int_gates_4620484.out`.
