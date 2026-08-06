@@ -49,7 +49,8 @@
 
 <h1>NN Labeler: replacing the exact solver for data labeling across grid sizes</h1>
 <p class="sub">Ricochet Robots planner study &middot; process report &middot; started 2026-07-31 &middot;
-local document, updated as milestones land. Every number traces to a named file in the repo.</p>
+current through FINDINGS &sect;65 (2026-08-06) &middot; local document, updated as milestones land.
+Every number traces to a named file in the repo.</p>
 
 <h2>1. The problem</h2>
 <p>All training data in this study is labeled by exact solvers, and the exact solvers do not
@@ -385,18 +386,71 @@ labeler is Python for plan manipulation and physics (the network is not the bott
 yields ~6.9 records per instance against the exact labeler's 8.3.</p></div>
 
 <h2>7c. Where the method actually pays — the payoff experiment</h2>
-<div class="card pending"><span class="tag">queued — job 4618888</span>
+<div class="card done"><span class="tag">design fixed after an OOM — false start 4618888, retry running 4620064&rarr;65; FINDINGS &sect;63</span>
 <p>&sect;58&ndash;59 relocate the claim. The extended (B2) vocabulary is the regime that motivated
 this whole track: its exact campaign projected <strong>~441 node-hours</strong>, and the iteration
 cap that made it affordable <em>destroyed the labels it existed to produce</em> — the by-reference
 candidate share fell 13.5% &rarr; 4.8%, and the retrain on capped data lost 24.6 points on the
 frontier. <strong>Certified descent has no iteration budget at all</strong> — it is a fixed-depth
 greedy completion, so the wandering-rollout pathology that forced the cap cannot occur and the
-cost/quality trade-off does not exist. <code>b2_payoff.slurm</code> trains a size-free net on the
-five existing B2 corpora (1.3M records, sizes 16/24/32, robots 4/6/8), then labels B2 uncapped and
-measures the by-reference share. Landing near the uncapped 13% rather than the capped 5% would mean
-the method delivers labels the exact pipeline could not afford to make at all — which is the
-method's real claim, and not a speed claim.</p></div>
+cost/quality trade-off does not exist. Landing the uncapped by-reference share near 13% rather than
+the capped 5% would mean the method delivers labels the exact pipeline could not afford to make at
+all — which is the method's real claim, and not a speed claim.</p>
+<p><strong>The first submission died in 91 seconds, and the failure is itself a finding:</strong>
+<em>training</em> on 32&times;32 boards is the memory wall, not labeling them. The original design
+trained the B2 net on all five B2 corpora including g32r4; at the base recipe's batch shape
+(8 groups &times; &le;32 candidates) a 1,025-token bucket needs <strong>~13 GB of attention scores
+per step</strong> before the recurrence-12 backward graph is even built, and the A100-40GB died at
+epoch 0, step 3. Every healthy training so far (v1, v2) used &le;257-token boards; <em>inference</em>
+at 1,025&ndash;4,097 tokens has been fine throughout (&sect;7b, &sect;7d) — the backward pass had
+simply never been exercised above 257 tokens.</p>
+<p><strong>The retry is a cleaner experiment than the original.</strong> Jobs 4620064&rarr;65
+(idempotent pair) train on the &le;24 B2 corpora only — g16r4 / g16r6 / g16r8 / g24r8, worst bucket
+577 tokens, batch 4 &times; mpg 16, <code>expandable_segments</code> — and label g32r4
+<strong>zero-shot</strong>. That is the track's own method rather than a workaround, and it makes
+the g32r4 leg <em>leakage-free</em> where the old design trained on the very corpus it gated
+against. Training is healthy at ~55 min/epoch with the two-phase curriculum running.
+<span class="src">runs/nnlab/b2_payoff_4618888.out (the OOM traceback);
+nn_labeler/jobs/b2_payoff.slurm (retry recipe + rationale).</span></p></div>
+
+<h2>7d. The lean-board path — the size wall removed</h2>
+<div class="card done"><span class="tag">done — login CPU, no GPU time; FINDINGS &sect;62</span>
+<p>&sect;60 measured the real blocker to going past 32&times;32: it was never the network but
+<code>nn/gen_grids.make_board</code>, which runs all-pairs Dijkstra and stores two (G&sup2;)&sup2;
+tables per board — 222 s and 28.6 MB at 32&times;32, extrapolating to hours and hundreds of MB at 64.
+<code>nn_labeler/leanboard.py</code> removes it. The structural fact that makes this safe: those two
+tables <strong>consume no RNG</strong> — the random stream is
+<code>gen_walls &rarr; build_graph &rarr; random_instance</code> only — so a lean board
+(walls + graph + instance, no tables) is <em>layout-identical to a standard board by
+construction</em>, not by approximation. A lazy Dial's-algorithm row oracle with a per-board LRU
+then answers every distance query the descent call graph makes.</p>
+<p>Three levels of evidence, in increasing strength: <strong>1.45 M table entries</strong> compared
+at 16/24 with zero mismatches (including the legacy g16r4 stock boards and their weight-100
+<code>all_paths</code> convention); planner candidate lists <strong>identical including order</strong>
+and descent-shaped rollouts identical decision-for-decision; and finally an A/B with the real banked
+net — <code>descent.py --boards pkl</code> vs <code>--boards lean</code> on g16r6 —
+<strong>69/69 records byte-equal</strong>, identical stats. <code>descent.py</code> now takes
+<code>--boards {pkl,lean}</code> and records the choice in the manifest.</p>
+<div class="twrap"><table>
+  <tr><th>board size</th><th class="num">eager build</th><th class="num">lean build</th>
+      <th class="num">speedup</th><th class="num">eager pkl</th><th class="num">lean pkl</th></tr>
+  <tr><td>32&times;32</td><td class="num">222 s (measured)</td><td class="num"><strong>0.24 s</strong></td>
+      <td class="num">~930&times;</td><td class="num">28.6 MB</td><td class="num">1.1 MB</td></tr>
+  <tr><td>64&times;64</td><td class="num">1.7 h (projected)</td><td class="num"><strong>1.5 s</strong></td>
+      <td class="num">~4,100&times;</td><td class="num">516 MB</td><td class="num">4.9 MB</td></tr>
+  <tr><td>96&times;96</td><td class="num">11.9 h (projected)</td><td class="num"><strong>3.8 s</strong></td>
+      <td class="num">~11,000&times;</td><td class="num">2.8 GB</td><td class="num">11.7 MB</td></tr>
+</table></div>
+<p>Honest overhead and honest worst case: a lazy distance query costs <strong>1.43&times;</strong> a
+dict lookup (+1.14 &micro;s), bit-identical results; and a production-length descent board builds a
+few thousand lazy rows, worst case 44 s at 64 / 177 s at 96 — still 140&ndash;240&times; under eager.
+One consequence matters for the science: <code>scaling/rust_bridge.py</code> reads
+<code>grid_data</code> / <code>instances</code> straight out of the pickle, and lean pickles carry
+both, so <strong>exact ground truth at 40&ndash;64 comes free — no Rust port needed</strong>.
+Configs g40r4&ndash;g96r4 are added, with g80r4 / g96r4 flagged <strong>UNVERIFIABLE</strong>: the
+Rust engine hard-asserts n &le; 64, so beyond 64 nothing can check a label except downstream use.
+<span class="src">nn_labeler/leanboard.py; nn_labeler/test_leanboard_parity.py (PASS, 28 s);
+A/B diff 69/69.</span></p></div>
 
 <h2>8. The ladder — 17&times;17 to 32&times;32</h2>
 <div class="card done"><span class="tag">path decided — FINDINGS &sect;55</span>
@@ -423,23 +477,230 @@ checkpoint is banked with provenance at <code>nn_labeler/banked/prod_v1_s11.ckpt
   <tr><td>battery net (previous best)</td><td class="num">0.16 / 0.92</td><td class="num">0.24 / 0.90</td>
       <td class="num">0.465 / 0.848</td><td class="num">0.497 / 0.872</td></tr>
 </table></div>
-<p>The 32&times;32 leg was cut off by the walltime and is re-run in the capstone job. Two fixes
+<p>The 32&times;32 audit leg was cut off by the walltime; the v2 job below later filled it in
+(0.853 / 0.559). Two fixes
 landed: a <code>CollapseStop</code> callback (3 consecutive epochs with spread &lt; 0.05 ends the
 run — this run would have stopped at epoch 4, saving ~1.6 nh; verified not to false-fire), and a
 false-positive in the &sect;52 no-validation guard (a resume already at max_epochs runs no epoch and
 logs no metrics — "finished", not "failed"). The doomed resume job 4613403 was cancelled.</p></div>
-<div class="card pending"><span class="tag">in motion — single-GPU chain, reordered by value</span>
-<p>(1) <strong>Ladder prep</strong> (job 4610118): boards for the 14 new rungs g17&ndash;g23,
-g25&ndash;g31 + each rung's Rust-exact test-split reference set. (2) <strong>32&times;32 capstone</strong>
-(job 4616678, <code>capstone_g32.slurm</code>) — promoted ahead of the retrain because it is the
-decisive measurement and needs no new boards: descent generation throughput and yield at 24&times;24
-and 32&times;32, plus the label-by-label gate against the <em>existing</em> exact corpora at both
-sizes. (3) <strong>Production v2</strong> (job 4616677): lr 1e-4 + CollapseStop — the study's own
-documented rescue for unstable training (PRIMER &sect;6) — and it completes v1's 32&times;32 audit.
-The banked v1 net is the labeler of record until v2 beats it. Per-rung ladder jobs
-(<code>ladder_rung.slurm</code>) follow.</p></div>
+<div class="card done"><span class="tag">production net v2 — trained clean, won the audit, lost the gate (FINDINGS &sect;61, &sect;64)</span>
+<p>Job 4616677 (15h47m, COMPLETED, ~1.97 nh) reran v1's recipe and data mix at lr 1e-4 — the study's
+own documented rescue for unstable training — with <code>CollapseStop</code> armed. It never fired
+(<code>val_group_spread</code> &ge; 2.3 throughout; best epoch 12): <strong>the collapse that cost v1
+24 epochs is fixed.</strong> The same job also filled in v1's missing 32&times;32 audit leg, so both
+nets are now measured on the identical test-split protocol — and <strong>v2 beats v1 at every
+config</strong>:</p>
+<div class="twrap"><table>
+  <tr><th>audit (test split)</th><th class="num">g8r4</th><th class="num">g12r4</th>
+      <th class="num">g16r6</th><th class="num">g24r4</th><th class="num">g32r4</th></tr>
+  <tr><td>v1 — top-1 / regret</td><td class="num">0.915 / 0.178</td><td class="num">0.898 / 0.254</td>
+      <td class="num">0.852 / 0.432</td><td class="num">0.883 / 0.425</td><td class="num">0.853 / 0.559</td></tr>
+  <tr><td>v2 — top-1 / regret</td><td class="num"><strong>0.939 / 0.122</strong></td>
+      <td class="num"><strong>0.925 / 0.180</strong></td><td class="num"><strong>0.881 / 0.340</strong></td>
+      <td class="num"><strong>0.899 / 0.351</strong></td><td class="num"><strong>0.871 / 0.535</strong></td></tr>
+</table></div>
+<p>The formal call was pre-registered to the <em>descent gate</em>, not the value audit — and the
+gate went the other way. Job 4618940 replayed the capstone's 600-instance protocol at both rungs
+with each net:</p>
+<div class="twrap"><table>
+  <tr><th>rung</th><th>net</th><th class="num">argmin agree</th><th class="num">gap mean</th>
+      <th class="num">labels exactly optimal</th><th class="num">negative gaps</th></tr>
+  <tr><td>24&times;24</td><td>v1</td><td class="num"><strong>92.6%</strong></td><td class="num">0.566</td>
+      <td class="num">85.2%</td><td class="num">3</td></tr>
+  <tr><td>24&times;24</td><td>v2</td><td class="num">91.4%</td><td class="num"><strong>0.536</strong></td>
+      <td class="num">85.3%</td><td class="num">6</td></tr>
+  <tr><td>32&times;32</td><td>v1</td><td class="num"><strong>91.5%</strong></td><td class="num"><strong>0.553</strong></td>
+      <td class="num"><strong>87.7%</strong></td><td class="num">0</td></tr>
+  <tr><td>32&times;32</td><td>v2</td><td class="num">91.3%</td><td class="num">0.625</td>
+      <td class="num">86.5%</td><td class="num">0</td></tr>
+</table></div>
+<p><strong>An instructive inversion: a clear win on how well the value head scores candidates did not
+transfer to end-to-end label production.</strong> v2 loses the load-bearing ordering metric at both
+rungs and loses on everything at 32&times;32. The margins are small (0.2&ndash;1.2 points, single
+seed), so the honest reading is "no better, slightly worse where it counts", not "v2 is bad". Two
+consequences: the pre-registered arbiter earned its keep — promoting on the audit would have handed
+the twin corpora to the weaker labeler — and <strong>the entire campaign now runs on one net,
+v1</strong>, which the curve lane was already pinned to for anchor consistency. v2 is not banked.
+<span class="src">nn_labeler/results/audit_prod2_s11_lr1e-4.json,
+v2gate_g{24,32}r4.json vs capgate_g{24,32}r4.json; runs/nnlab/gate_v2_twins_4618940.out.</span></p></div>
 
-<h2>9. Cost ledger</h2>
+<h2>8b. The complete per-integer curve — 16 rungs, one job, no cliff</h2>
+<div class="card done"><span class="tag">done — job 4620484, 1h17m (0.16 nh); FINDINGS &sect;65</span>
+<p>The original goal named a specific staircase: 17&times;17, 18&times;18, &hellip;, 32&times;32,
+generating labeled data with the net. <strong>Every rung is now measured, and the answer is
+affirmative at every step.</strong> The eager pipeline planned for these rungs projected ten-plus
+walltime-killed resubmissions for board preparation alone; on lean boards (&sect;7d) each rung costs
+~3 s of boards + ~4 s of Rust exact reference (13,100&ndash;13,300 records) + ~2.5 min of GPU gate,
+so all fourteen new rungs fit in <strong>one 77-minute job</strong>. Banked v1 net, capstone
+protocol (600 replayed test instances per rung), &sect;7b's two measurements as anchors:</p>
+<div class="twrap"><table>
+  <tr><th>rung</th><th class="num">argmin agree</th><th class="num">gap mean</th>
+      <th>rung</th><th class="num">argmin agree</th><th class="num">gap mean</th></tr>
+  <tr><td>17&times;17</td><td class="num">88.0%</td><td class="num">0.495</td>
+      <td>25&times;25</td><td class="num">92.2%</td><td class="num">0.532</td></tr>
+  <tr><td>18&times;18</td><td class="num">89.2%</td><td class="num">0.508</td>
+      <td>26&times;26</td><td class="num">89.8%</td><td class="num">0.588</td></tr>
+  <tr><td>19&times;19</td><td class="num">88.7%</td><td class="num">0.532</td>
+      <td>27&times;27</td><td class="num">88.6%</td><td class="num">0.619</td></tr>
+  <tr><td>20&times;20</td><td class="num">86.4%</td><td class="num">0.648</td>
+      <td>28&times;28</td><td class="num">87.4%</td><td class="num">0.716</td></tr>
+  <tr><td>21&times;21</td><td class="num">89.6%</td><td class="num">0.564</td>
+      <td>29&times;29</td><td class="num">89.9%</td><td class="num">0.599</td></tr>
+  <tr><td>22&times;22</td><td class="num">88.2%</td><td class="num">0.560</td>
+      <td>30&times;30</td><td class="num">91.4%</td><td class="num">0.605</td></tr>
+  <tr><td>23&times;23</td><td class="num">88.8%</td><td class="num">0.604</td>
+      <td>31&times;31</td><td class="num">92.1%</td><td class="num">0.548</td></tr>
+  <tr><td>24&times;24 <span class="src">(anchor)</span></td><td class="num">92.6%</td><td class="num">0.566</td>
+      <td>32&times;32 <span class="src">(anchor)</span></td><td class="num">91.5%</td><td class="num">0.553</td></tr>
+</table></div>
+
+<figure class="viz-root" style="margin:1.2rem 0">
+<div style="position:relative">
+<svg viewBox="0 0 640 300" role="img"
+     aria-label="Argmin agreement between the banked v1 net's certified-descent labels and the exact solver, for every board size from 17 to 32: the curve wobbles between 86.4 and 92.6 percent with no trend against board size; the two capstone anchors at 24 and 32 are among the highest points">
+  <!-- plot area x:60-620 y:20-260; x linear 17..32; y 80..100% -->
+  <rect class="band" x="60" y="20" width="560" height="120"/>
+  <g class="grid">
+    <line x1="60" y1="260" x2="620" y2="260"/>
+    <line x1="60" y1="200" x2="620" y2="200"/>
+    <line x1="60" y1="80" x2="620" y2="80"/>
+  </g>
+  <line x1="60" y1="140" x2="620" y2="140" stroke="var(--muted)" stroke-dasharray="5 4" opacity=".55"/>
+  <text class="lbl" x="64" y="135">pre-registered argmin bar (90%)</text>
+  <g class="axis">
+    <text x="52" y="264" text-anchor="end">80</text>
+    <text x="52" y="204" text-anchor="end">85</text>
+    <text x="52" y="144" text-anchor="end">90</text>
+    <text x="52" y="84" text-anchor="end">95</text>
+    <text x="52" y="24" text-anchor="end">100</text>
+    <text x="22" y="140" text-anchor="middle" transform="rotate(-90 22 140)">argmin agreement (%)</text>
+    <text x="60" y="280">17</text>
+    <text x="172" y="280" text-anchor="middle">20</text>
+    <text x="321.3" y="280" text-anchor="middle">24</text>
+    <text x="470.7" y="280" text-anchor="middle">28</text>
+    <text x="620" y="280" text-anchor="end">32</text>
+    <text x="340" y="297" text-anchor="middle">board size (n &times; n)</text>
+  </g>
+  <!-- v1 per-rung gate, 17..32 -->
+  <polyline class="s1" fill="none" stroke-width="2"
+    points="60,164 97.3,149.6 134.7,155.6 172,183.2 209.3,144.8 246.7,161.6 284,154.4 321.3,108.8
+            358.7,113.6 396,142.4 433.3,156.8 470.7,171.2 508,141.2 545.3,123.2 582.7,114.8 620,122"/>
+  <g class="s1f">
+    <circle cx="60" cy="164" r="4"/><circle cx="97.3" cy="149.6" r="4"/>
+    <circle cx="134.7" cy="155.6" r="4"/><circle cx="172" cy="183.2" r="4"/>
+    <circle cx="209.3" cy="144.8" r="4"/><circle cx="246.7" cy="161.6" r="4"/>
+    <circle cx="284" cy="154.4" r="4"/><circle cx="358.7" cy="113.6" r="4"/>
+    <circle cx="396" cy="142.4" r="4"/><circle cx="433.3" cy="156.8" r="4"/>
+    <circle cx="470.7" cy="171.2" r="4"/><circle cx="508" cy="141.2" r="4"/>
+    <circle cx="545.3" cy="123.2" r="4"/><circle cx="582.7" cy="114.8" r="4"/>
+  </g>
+  <!-- capstone anchors -->
+  <g class="s2f">
+    <circle cx="321.3" cy="108.8" r="5"/><circle cx="620" cy="122" r="5"/>
+  </g>
+  <text class="dlab" x="60" y="186">17&times;17 &middot; 88.0%</text>
+  <text class="dlab" x="616" y="99" text-anchor="end">32&times;32 &middot; 91.5%</text>
+  <!-- hover hit targets -->
+  <g class="hit" id="vizhits2">
+    <circle cx="60" cy="164" r="11" data-t="17&times;17 &middot; argmin 88.0% &middot; gap mean 0.495"/>
+    <circle cx="97.3" cy="149.6" r="11" data-t="18&times;18 &middot; argmin 89.2% &middot; gap mean 0.508"/>
+    <circle cx="134.7" cy="155.6" r="11" data-t="19&times;19 &middot; argmin 88.7% &middot; gap mean 0.532"/>
+    <circle cx="172" cy="183.2" r="11" data-t="20&times;20 &middot; argmin 86.4% &middot; gap mean 0.648"/>
+    <circle cx="209.3" cy="144.8" r="11" data-t="21&times;21 &middot; argmin 89.6% &middot; gap mean 0.564"/>
+    <circle cx="246.7" cy="161.6" r="11" data-t="22&times;22 &middot; argmin 88.2% &middot; gap mean 0.560"/>
+    <circle cx="284" cy="154.4" r="11" data-t="23&times;23 &middot; argmin 88.8% &middot; gap mean 0.604"/>
+    <circle cx="321.3" cy="108.8" r="11" data-t="24&times;24 (capstone anchor) &middot; argmin 92.6% &middot; gap mean 0.566"/>
+    <circle cx="358.7" cy="113.6" r="11" data-t="25&times;25 &middot; argmin 92.2% &middot; gap mean 0.532"/>
+    <circle cx="396" cy="142.4" r="11" data-t="26&times;26 &middot; argmin 89.8% &middot; gap mean 0.588"/>
+    <circle cx="433.3" cy="156.8" r="11" data-t="27&times;27 &middot; argmin 88.6% &middot; gap mean 0.619"/>
+    <circle cx="470.7" cy="171.2" r="11" data-t="28&times;28 &middot; argmin 87.4% &middot; gap mean 0.716"/>
+    <circle cx="508" cy="141.2" r="11" data-t="29&times;29 &middot; argmin 89.9% &middot; gap mean 0.599"/>
+    <circle cx="545.3" cy="123.2" r="11" data-t="30&times;30 &middot; argmin 91.4% &middot; gap mean 0.605"/>
+    <circle cx="582.7" cy="114.8" r="11" data-t="31&times;31 &middot; argmin 92.1% &middot; gap mean 0.548"/>
+    <circle cx="620" cy="122" r="11" data-t="32&times;32 (capstone anchor) &middot; argmin 91.5% &middot; gap mean 0.553"/>
+  </g>
+</svg>
+<div class="tip" id="viztip2"></div>
+</div>
+<div class="viz-legend">
+  <span><i style="background:var(--s1)"></i>per-rung descent gate, banked v1 net</span>
+  <span><i style="background:var(--s2)"></i>capstone anchors (&sect;7b)</span>
+</div>
+<figcaption class="src" style="margin-top:.4rem">Share of decision groups where the certified-descent
+label picks the same argmin candidate as the exact solver (higher is better; y-axis truncated to
+80&ndash;100%). The shaded region above the dashed line is the pre-registered pass zone
+(&ge; 90%, i.e. &le; 10% argmin disagreement). Every point is 600 replayed test instances against a
+Rust-exact reference set for that rung. Hover any point for its gap mean. Sources:
+nn_labeler/results/dgate_ladder_g{17..31}r4.json, capgate_g{24,32}r4.json.</figcaption>
+<script>
+(function () {
+  var hits = document.getElementById("vizhits2"), tip = document.getElementById("viztip2");
+  if (!hits || !tip) return;
+  hits.addEventListener("mouseover", function (e) {
+    var t = e.target.getAttribute && e.target.getAttribute("data-t");
+    if (!t) return;
+    tip.innerHTML = t; tip.style.display = "block";
+  });
+  hits.addEventListener("mousemove", function (e) {
+    var r = tip.parentNode.getBoundingClientRect();
+    tip.style.left = (e.clientX - r.left + 14) + "px";
+    tip.style.top = (e.clientY - r.top - 10) + "px";
+  });
+  hits.addEventListener("mouseout", function () { tip.style.display = "none"; });
+})();
+</script>
+</figure>
+
+<p><strong>The curve is flat.</strong> Across all sixteen v1 points argmin agreement spans
+86.4&ndash;92.6%, labels-exactly-optimal 83.6&ndash;87.7%, gap p90 &le; 2 everywhere and negative
+gaps &le; 4 per rung — wobble of a few points with <em>no trend against board size</em>. If anything
+the top of the range (30&ndash;32) reads as well as the bottom (17&ndash;19), and the two independent
+capstone anchors land inside the same band. <strong>There is no extrapolation cliff anywhere between
+the training sizes and 32&times;32</strong> — the single risk that PLANS.md named as Plan C's
+biggest, closed by measurement rather than argument. Five of the sixteen rungs clear the
+pre-registered 90% argmin bar outright and the rest sit 0.1&ndash;3.6 points under it, distributed
+without regard to size; the &sect;7b split verdict (ordering holds, absolute calibration drifts) is
+what the whole ladder shows. The &sect;58 economics caveat stands unchanged: in base vocabulary
+these labels remain cheaper to produce exactly — this rung-by-rung agreement is method validation,
+not a compute saving.</p></div>
+
+<h2>9. The campaign now — downstream equivalence</h2>
+<p>With the ladder answered and the labeler settled, the owner reframed the headline claim
+(decisions recorded 2026-08-05). The question is no longer "do NN labels agree with exact labels"
+— &sect;8b answers that at every size — but <strong>do planners trained on NN labels perform like
+planners trained on exact labels</strong>.</p>
+<ul>
+  <li><strong>Twin corpora, one variable.</strong> The exact corpora at g24r4 / g24r8 / g32r4 are
+  replayed with the banked v1 net: same boards, same instances, same schema — <em>only the label
+  source differs</em>. The study's backward planners are retrained on the twins and benched against
+  the exact-trained originals on the sha-pinned benchmarks (playable-moves scoring). All three cells
+  are <strong>leakage-free</strong>: the labeler never trained on any of those configs.</li>
+  <li><strong>The forward planner stays an untouched control</strong> — certified descent keeps no
+  primitive-move sequences, so a forward twin would change the training signal rather than just the
+  label source, and would not answer the question asked.</li>
+  <li><strong>Then the coarse ladder</strong> 40 / 48 / 56 / 64, v1-pinned, on lean boards with Rust
+  exact references (free to 64, &sect;7d) — and after that the unverifiable rungs 80 / 96, where no
+  ground truth can exist and the only available validation is downstream solve rate.</li>
+</ul>
+<p><strong>An honest economics correction:</strong> a full-descent twin replay measures
+<strong>4.3 s/instance</strong> — about 12&times; the depth-0 gate rate the earlier estimates were
+built on — so the three twin corpora are a <strong>~45&ndash;50 GPU-hour</strong> item, not a
+few-hour one. They are parallelized per config across lanes rather than run as one chain.</p>
+<div class="card pending"><span class="tag">live — three parallel lanes, 2026-08-06</span>
+<ul>
+  <li><strong>Lane A — twins</strong> (job 4618940 running, per-config replays 4621815&ndash;18,
+  retrains 4618960/61 + 4621819 queued behind them): the headline experiment.</li>
+  <li><strong>Lane B — B2 payoff</strong> (job 4620064 running, 4620065 queued): the redesigned
+  &le;24-train / zero-shot-32 recipe of &sect;7c, ~55 min/epoch and healthy.</li>
+  <li><strong>Lane C — coarse ladder</strong> (jobs 4620485&ndash;88, g40 &rarr; g48 &rarr; g56
+  &rarr; g64, chained): the first end-to-end GPU descent above 32&times;32, and the last sizes where
+  exact ground truth exists at all.</li>
+</ul>
+<p class="src">Results land in <code>nn_labeler/report/suite.html</code>, auto-generated by
+<code>gen_suite.py</code> from the result JSONs — the single source of truth for numbers; this page
+remains the narrative of how they were obtained.</p></div>
+
+<h2>10. Cost ledger</h2>
 <div class="twrap"><table>
   <tr><th>item</th><th class="num">node-hours</th><th>notes</th></tr>
   <tr><td>research + Phase 0 + debug bed + all audits &le;16</td><td class="num">~0 (login CPU)</td><td>boards + exact labels for 13 sizes, parity tests, curve audits</td></tr>
@@ -448,27 +709,43 @@ The banked v1 net is the labeler of record until v2 beats it. Per-rung ladder jo
   <tr><td>battery 2 rerun (4608951)</td><td class="num">0.69</td><td>5h31m; PE decision, seed robustness, curve</td></tr>
   <tr><td>descent gate (4609679)</td><td class="num">0.12</td><td>58 min; 3 gates passed</td></tr>
   <tr><td>production net v1 (4609800)</td><td class="num">2.00</td><td>16 h walltime; collapsed at epoch 2, best epoch banked (&sect;57)</td></tr>
-  <tr><td>ladder prep (4610118)</td><td class="num">&le;0.75 projected</td><td>boards + exact reference sets, CPU inside 1-GPU job</td></tr>
-  <tr><td>32&times;32 capstone (4616678)</td><td class="num">~1&ndash;2 projected</td><td>the decisive generation + gate measurement</td></tr>
-  <tr><td>production net v2 (4616677)</td><td class="num">~1&ndash;2 projected</td><td>lr 1e-4 + CollapseStop; completes v1's 32&times;32 audit</td></tr>
-  <tr><td>ladder rungs &times;14</td><td class="num">~5&ndash;10 projected</td><td>~0.5&ndash;2 s/instance measured at gate; sequential chain</td></tr>
+  <tr><td>ladder prep (4610118)</td><td class="num">0</td><td>cancelled unrun — the lean-board path (&sect;7d) made eager board prep unnecessary</td></tr>
+  <tr><td>32&times;32 capstone (4616709)</td><td class="num">0.19</td><td>1h30m; the decisive generation + gate measurement (4616678 cancelled, resubmitted)</td></tr>
+  <tr><td>production net v2 (4616677)</td><td class="num">1.97</td><td>15h47m, COMPLETED, no collapse — and then lost the gate to v1 (&sect;64)</td></tr>
+  <tr><td>per-integer gates &times;14, rungs 17&ndash;31 (4620484)</td><td class="num">0.16</td><td>1h17m for the whole staircase, on lean boards</td></tr>
+  <tr><td>B2 payoff false start (4618888)</td><td class="num">0.003</td><td>OOM at 91 s; bought the &sect;63 training-memory finding</td></tr>
+  <tr><td>lean-board path (&sect;7d)</td><td class="num">0 (login CPU)</td><td>parity suite + A/B; replaced a projected multi-job board-prep campaign</td></tr>
+  <tr><td>lane A — v2 gate + twin corpora (4618940, 4621815&ndash;19, 4618960/61)</td><td class="num">~45&ndash;50 projected</td><td>full-descent replay measures 4.3 s/instance; parallelized per config</td></tr>
+  <tr><td>lane B — B2 payoff retry (4620064&rarr;65)</td><td class="num">~2&ndash;4 projected</td><td>in flight; ~55 min/epoch</td></tr>
+  <tr><td>lane C — coarse ladder 40/48/56/64 (4620485&ndash;88)</td><td class="num">~4&ndash;8 projected</td><td>in flight; first GPU descent above 32&times;32</td></tr>
 </table></div>
-<p class="src">Total spent so far on this track: <strong>3.66 nh</strong>; projected total
-&asymp; 11&ndash;18 nh — inside the PLANS.md Plan-C envelope (13&ndash;25) at its low end even after
-one lost training run. Allocation at track start: ~816 node-hours remaining of 1000 (it4ifree,
-2026-07-31).</p>
+<p class="src">Roughly <strong>6 node-hours are booked to this campaign day</strong> — v2 1.97, the
+integer gates 0.16, the B2 false start 0.003, and the balance still burning in the three live lanes.
+Completed GPU jobs across the whole track total <strong>6.0 nh</strong>, still inside the PLANS.md
+Plan-C envelope (13&ndash;25). <strong>~808 node-hours remain</strong> of the 1000-hour allocation
+(it4ifree, 2026-08-06; ~816 at track start). The headline experiment is now the expensive item: the
+twin replays alone are ~45&ndash;50 GPU-hours, which is what moved them onto parallel lanes.</p>
 
-<h2>10. Provenance</h2>
+<h2>11. Provenance</h2>
 <ul>
-  <li>Plans: <code>nn_labeler/PLANS.md</code> (commit <code>bb85450</code>)</li>
+  <li>Plans: <code>nn_labeler/PLANS.md</code> (commit <code>bb85450</code>); handoff and open
+      questions: <code>nn_labeler/HANDOFF.md</code></li>
   <li>Phase 0 code + debug bed: commits <code>ea3aaff</code>, <code>a0b0993</code>, <code>93b628f</code></li>
   <li>Batteries, curriculum fix, curve, gate, decision: commits <code>27c4273</code>,
       <code>20c8e32</code>, <code>3022caf</code>, <code>ac665e2</code>, <code>2ecf0e0</code>;
       ladder machinery <code>42605ed</code>, <code>ba822b7</code></li>
-  <li>Running log: <code>FINDINGS.md</code> &sect;48, 50, 52&ndash;55 (49 and 51 belong to the
-      concurrent Track-1 session)</li>
-  <li>Jobs: batteries 4606952 / 4607697 / 4608951, gate 4609679, production 4609800 + 4613403,
-      ladder prep 4610118; scripts under <code>nn_labeler/jobs/</code></li>
+  <li>Lean boards: <code>nn_labeler/leanboard.py</code>,
+      <code>nn_labeler/test_leanboard_parity.py</code> (PASS);
+      <code>descent.py --boards {pkl,lean}</code></li>
+  <li>Running log: <code>FINDINGS.md</code> &sect;48, 50, 52&ndash;55, 57&ndash;65 (49 and 51 belong
+      to the concurrent Track-1 session)</li>
+  <li>Jobs: batteries 4606952 / 4607697 / 4608951, gate 4609679, production v1 4609800 + 4613403,
+      capstone 4616709, production v2 4616677, v2 gate + twins 4618940 (&rarr; 4621815&ndash;19,
+      4618960/61), B2 payoff 4618888 (OOM) &rarr; 4620064&rarr;65, per-integer gates 4620484,
+      coarse ladder 4620485&ndash;88; cancelled unrun: ladder prep 4610118, capstone 4616678.
+      Scripts under <code>nn_labeler/jobs/</code></li>
+  <li>Numbers of record: <code>nn_labeler/report/suite.html</code>, regenerated from the result
+      JSONs by <code>nn_labeler/report/gen_suite.py</code></li>
 </ul>
 
 </body>

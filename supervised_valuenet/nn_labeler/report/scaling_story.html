@@ -82,7 +82,7 @@
 
 <h1>Teaching a network to be the teacher</h1>
 <span class="badge">Work in progress — updated as experiments land</span>
-<p class="sub">A plain-English account of the scaling experiments &middot; 2026-08-03 &middot; local working document</p>
+<p class="sub">A plain-English account of the scaling experiments &middot; 2026-08-06 &middot; local working document</p>
 
 <p class="lede">We build programs that solve a sliding-robot puzzle, and they learn from millions of
 worked examples produced by an exact solver — a program that always finds a shortest solution but
@@ -653,7 +653,7 @@ that goes to zero when predictions stop varying, and the training script exits w
 progress checks are missing. Total cost of both lessons: under one node-hour, all of it on the
 smallest boards we own.</p>
 
-<h2>The headline: no cliff</h2>
+<h2>How far does it reach?</h2>
 
 <p>The rerun of the second training round, five and a half hours for 0.69 node-hours, settled the
 design questions. Every no-position-signal variant trained healthily, and two runs started from
@@ -1049,27 +1049,19 @@ rather than with the difficulty of each one.</p>
 32&times;32 puzzles the exact solver already returns nothing 61.1% of the time. There is no price at
 which it produces those labels; the question is not "cheaper?" but "at all?"</p>
 
-<h2>What is running right now</h2>
+<h2>The capstone: labeling boards three times too big</h2>
 
-<div class="card open">
-<span class="tag">Updated 2026-08-03 — more results will appear here</span>
-<p><strong>The production network is trained, and the story has a twist worth telling.</strong>
-It learned well for its first two full rounds — then, in round three, it fell into the same
-"answer the same number for everything" trap that bit us at the start, and stayed stuck for the
-remaining 24 rounds. This time nothing was lost: the training system always keeps the best
-network it has seen, which was the healthy one, and the automatic detector we added after the
-first incident flagged the collapse in the log without anyone having to go looking.</p>
-<p>That saved network is now <strong>the best labeler we have measured</strong>. Judged against
-the exact solver's answers on boards it has never seen, its average error is 0.18 extra moves at
-8&times;8, 0.25 at 12&times;12, 0.43 at 16&times;16 with six robots, and <strong>0.43 at
-24&times;24 while picking a best next step 88% of the time</strong> — better than the earlier
-network at every size, and its tendency to underestimate long solutions is halved.</p>
-<p>Two fixes went in immediately: training now stops itself after three stuck rounds instead of
-burning hours (this run would have ended at round four, saving about 1.6 node-hours), and a
-false-alarm case in the earlier safety check was corrected.</p>
-<p><strong>The decisive test has now run, and it answers both halves of the question.</strong>
-The network labeled 24&times;24 and 32&times;32 boards — up to 3.2 times bigger than anything it
-trained on — and every label was checked against the exact solver's own answer:</p>
+<p>The production network — call it <strong>v1</strong> — trained with a twist worth telling. It
+learned well for two full rounds, then in round three fell into the same "answer the same number for
+everything" trap that bit us at the start, and stayed stuck for the remaining 24 rounds. Nothing was
+lost: the training system always keeps the best network it has seen, which was a healthy one, and
+the detector we added after the first incident flagged the collapse in the log without anyone having
+to go looking. Two fixes went in the same day — training now gives up after three stuck rounds
+instead of burning hours, and a false alarm in the older check was corrected.</p>
+
+<p>Then the decisive test. The saved network labeled 24&times;24 and 32&times;32 boards — up to 3.2
+times bigger than anything it trained on — and every label was checked against the exact solver's
+own answer:</p>
 <div class="twrap">
 <table>
   <tr><th>Board size</th><th class="num">Labels exactly right</th>
@@ -1084,19 +1076,237 @@ would have written, and when the network has to choose the best next step — th
 really for — it agrees with the exact solver more than nine times in ten. Notably it agrees
 <em>better</em> on these huge boards than on the small ones it was tested on earlier: its sense of
 which step is best travels, even as its sense of the exact number drifts a little.</p>
+
 <p><strong>But it does not save time here.</strong> We measured both on the same boards. The exact
 solver — the fast rewritten one — labels 200 puzzle situations at 32&times;32 in <strong>15 seconds
 on four ordinary processor cores</strong>. The network needs minutes of graphics-card time for the
 same work: between 9 and 250 times more, depending on how the work is set up. On these puzzles, in
 this simplified move language, the old tool is simply better.</p>
+
 <p><strong>So where does the network earn its keep?</strong> In the richer move language the project
 actually cares about, where the exact solver's cost exploded to a projected <strong>441 node-hours
 — roughly half the project's entire computing grant</strong> — and where the shortcut that made it
-affordable quietly deleted the very examples it was supposed to produce. The network's approach has
-no such shortcut to take: it walks a fixed number of steps and stops, so it cannot wander, and the
-trade between cost and quality never arises. That experiment is queued now, and the number to watch
-is whether the deleted example type comes back at its natural rate (about 13%) instead of the
-degraded 5% the shortcut left behind.</p>
+affordable quietly deleted the very examples it was supposed to produce. The network has no such
+shortcut available to it: it walks a fixed number of steps and stops, so the trade between cost and
+quality never arises.</p>
+
+<h2>The student that aced the test but flubbed the job</h2>
+
+<p>We then trained a second production network, <strong>v2</strong> — same recipe, same data, but
+smaller steps while learning, which is the standard remedy for the instability that hurt v1. It
+worked: v2 trained all the way through without ever collapsing.</p>
+
+<p>It also beat v1 on every practice exam we gave it. The practice exam is simple: show the network
+a decision point where we already know the right answer, and count how often its top-ranked
+candidate really is the best one. v2 won at every board size, by one to three points, with smaller
+numerical errors too.</p>
+
+<p>Then we made both networks actually <em>do the job</em> — run the whole labeling pipeline end to
+end and compare the finished labels with the exact solver's answers. v1 won.</p>
+
+<div class="twrap">
+<table>
+  <tr><th>Measurement</th><th class="num">v1</th><th class="num">v2</th></tr>
+  <tr><td>Practice exam: top-ranked candidate is best, 8&times;8</td><td class="num">91.5%</td><td class="num">93.9%</td></tr>
+  <tr><td>Practice exam: top-ranked candidate is best, 32&times;32</td><td class="num">85.3%</td><td class="num">87.1%</td></tr>
+  <tr><td>Real job: labels agree with the exact solver's best, 24&times;24</td><td class="num">92.6%</td><td class="num">91.4%</td></tr>
+  <tr><td>Real job: labels agree with the exact solver's best, 32&times;32</td><td class="num">91.5%</td><td class="num">91.3%</td></tr>
+</table>
+</div>
+
+<p>The margins in the bottom half are small — 0.2 to 1.2 points, one run each — so the honest
+sentence is "v2 is no better where it counts", not "v2 is bad". But the lesson is worth stating
+plainly: <strong>a better score on the measuring stick does not guarantee better real output.</strong>
+Which is exactly why we decided in advance that the real-output comparison, not the practice exam,
+would pick the winner. Had we promoted on the exam score, everything downstream would now be built
+from the labels of the weaker network. v1 keeps the job, and the whole campaign now runs on one
+network.</p>
+
+<h2>Tearing down the wall</h2>
+
+<p>Every board used to arrive with a huge pre-computed table attached: for every square, how far it
+is from every other square. It is like printing a phone book of every possible route through a town
+before you move in. Useful — but you pay for the whole book up front, and the book grows brutally
+with the town. At 32&times;32 the printing took 222 seconds per board. At 96&times;96 it would have
+taken about twelve hours per board. That, not the network, was what stopped us going bigger.</p>
+
+<p>So we stopped printing the book. Boards now answer distance questions when something asks, and
+remember the answers — a map app instead of a phone book. Nothing is computed until it is needed,
+and nothing is computed twice.</p>
+
+<p>The obvious worry is whether the answers changed. They cannot, for structural reasons we could
+argue on paper — but "cannot" is cheap, so we checked it instead: we ran the entire labeling
+pipeline both ways on the same boards with the real network in the loop and compared the output.
+<strong>All 69 output records came out byte-for-byte identical</strong>, and so did every
+intermediate list of candidates, in the same order.</p>
+
+<div class="twrap">
+<table>
+  <tr><th>Board size</th><th class="num">Old way: print the phone book</th><th class="num">New way: ask as needed</th></tr>
+  <tr><td>32&times;32</td><td class="num">222 s</td><td class="num">0.24 s</td></tr>
+  <tr><td>64&times;64</td><td class="num">~1.7 h (projected)</td><td class="num">1.5 s</td></tr>
+  <tr><td>96&times;96</td><td class="num">~12 h (projected)</td><td class="num">3.8 s</td></tr>
+</table>
+</div>
+
+<p>The honest overhead: one individual distance question now takes about 1.4 times longer to answer
+than a table lookup did — irrelevant next to not building the table at all. Board sizes 40 through
+96 went from "a research problem" to "ordinary work" in an afternoon.</p>
+
+<h2>Every single step of the ladder</h2>
+
+<p>The project's original question was a ladder: can the network label 17&times;17? Then 18&times;18?
+And every whole size in between, all the way to 32&times;32? We had answered the two ends and skipped the
+middle, because preparing those boards the old way meant days of queueing and more than ten
+resubmissions. With the wall down, every missing rung fit in a single job of <strong>1 hour 17
+minutes</strong>.</p>
+
+<p>The result is that nothing happens. Quality is <strong>flat</strong>. Across all sixteen sizes
+the network's labels pick the same best next step as the exact solver between 86.4% and 92.6% of the
+time, with no downward slide as boards grow — if anything the top of the range sits at the big end.
+There is no cliff anywhere between the sizes it learned on and the biggest board we can still
+check.</p>
+
+<figure class="fig figc-ladder">
+<style>
+.figc-ladder .ttl{font-size:14px;font-weight:600;color:var(--fg);margin:0 0 3px}
+.figc-ladder .hint{font-size:12.5px;color:var(--muted);margin:0 0 8px;line-height:1.45}
+.figc-ladder .lg{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin:0 0 6px;font-size:12.5px;color:var(--muted)}
+.figc-ladder .lg em{font-style:normal;display:inline-flex;align-items:center;gap:7px}
+.figc-ladder .kd{width:11px;height:11px;border-radius:50%;display:inline-block}
+.figc-ladder text{font-size:12px}
+.figc-ladder text.ko{paint-order:stroke;stroke:var(--bg);stroke-width:3.5px;stroke-linejoin:round}
+.figc-ladder g.el text{font-size:13px;font-weight:600}
+</style>
+
+<div class="ttl">Sixteen board sizes, one flat line</div>
+<div class="hint">The network learned on boards no bigger than 16 &times; 16, so every size here is one it never saw. Higher is better: it counts how often the label it produced picks the same best next step as the exact solver, on 600 fresh puzzles per size.</div>
+
+<div class="lg">
+  <em><span class="kd" style="background:var(--s1)"></span>the in-between sizes, measured this week</em>
+  <em><span class="kd" style="background:var(--accent)"></span>the two sizes measured earlier</em>
+</div>
+
+<svg viewBox="0 0 800 420" role="img" aria-label="Agreement with the exact solver against board size, for every whole size from 17 to 32. All sixteen points sit in a narrow band between 86.4 percent at size 20 and 92.6 percent at size 24, with no downward trend as boards grow.">
+  <!-- the flat band -->
+  <rect x="86" y="111.8" width="604" height="43.4" fill="var(--s1)" opacity="0.10" />
+
+  <g stroke="var(--line)" stroke-width="1">
+    <line x1="86" y1="340" x2="690" y2="340" />
+    <line x1="86" y1="270" x2="690" y2="270" />
+    <line x1="86" y1="200" x2="690" y2="200" />
+    <line x1="86" y1="130" x2="690" y2="130" />
+    <line x1="86" y1="60"  x2="690" y2="60" />
+  </g>
+  <g fill="var(--muted)" text-anchor="end">
+    <text x="74" y="344">60%</text>
+    <text x="74" y="274">70%</text>
+    <text x="74" y="204">80%</text>
+    <text x="74" y="134">90%</text>
+    <text x="74" y="64">100%</text>
+  </g>
+  <text x="26" y="200" fill="var(--muted)" text-anchor="middle" transform="rotate(-90 26 200)">picks the same best step as the exact solver</text>
+
+  <g fill="var(--muted)" text-anchor="middle">
+    <text x="86" y="362">17</text><text x="126.3" y="362">18</text><text x="166.5" y="362">19</text>
+    <text x="206.8" y="362">20</text><text x="247.1" y="362">21</text><text x="287.3" y="362">22</text>
+    <text x="327.6" y="362">23</text><text x="367.9" y="362">24</text><text x="408.1" y="362">25</text>
+    <text x="448.4" y="362">26</text><text x="488.7" y="362">27</text><text x="528.9" y="362">28</text>
+    <text x="569.2" y="362">29</text><text x="609.5" y="362">30</text><text x="649.7" y="362">31</text>
+    <text x="690" y="362">32</text>
+  </g>
+  <text x="388" y="390" fill="var(--muted)" text-anchor="middle">board size (squares across)</text>
+
+  <path d="M86,144 L126.3,135.6 L166.5,139.1 L206.8,155.2 L247.1,132.8 L287.3,142.6 L327.6,138.4 L367.9,111.8 L408.1,114.6 L448.4,131.4 L488.7,139.8 L528.9,148.2 L569.2,130.7 L609.5,120.2 L649.7,115.3 L690,119.5" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+
+  <g fill="var(--s1)" stroke="var(--bg)" stroke-width="2">
+    <circle cx="86" cy="144" r="4.5" /><circle cx="126.3" cy="135.6" r="4.5" />
+    <circle cx="166.5" cy="139.1" r="4.5" /><circle cx="206.8" cy="155.2" r="4.5" />
+    <circle cx="247.1" cy="132.8" r="4.5" /><circle cx="287.3" cy="142.6" r="4.5" />
+    <circle cx="327.6" cy="138.4" r="4.5" /><circle cx="408.1" cy="114.6" r="4.5" />
+    <circle cx="448.4" cy="131.4" r="4.5" /><circle cx="488.7" cy="139.8" r="4.5" />
+    <circle cx="528.9" cy="148.2" r="4.5" /><circle cx="569.2" cy="130.7" r="4.5" />
+    <circle cx="609.5" cy="120.2" r="4.5" /><circle cx="649.7" cy="115.3" r="4.5" />
+  </g>
+  <g fill="var(--accent)" stroke="var(--bg)" stroke-width="2">
+    <circle cx="367.9" cy="111.8" r="5.5" /><circle cx="690" cy="119.5" r="5.5" />
+  </g>
+
+  <!-- band annotation -->
+  <line x1="86" y1="155.2" x2="690" y2="155.2" stroke="var(--s1)" stroke-width="1" stroke-dasharray="5 4" opacity="0.6" />
+  <line x1="86" y1="111.8" x2="690" y2="111.8" stroke="var(--s1)" stroke-width="1" stroke-dasharray="5 4" opacity="0.6" />
+  <text x="686" y="178" class="ko" fill="var(--muted)" text-anchor="end">every size lands in this band: 86% to 93%</text>
+
+  <text x="206.8" y="174" class="ko" fill="var(--fg)" text-anchor="middle">86.4</text>
+  <text x="367.9" y="100" class="ko" fill="var(--fg)" text-anchor="middle">92.6</text>
+  <g class="el" fill="var(--fg)">
+    <text x="698" y="123.5">91.5</text>
+  </g>
+</svg>
+</figure>
+<p class="cap"><em>Every whole board size from 17 to 32, graded against the exact solver. The two
+green points are the earlier capstone measurements, on the identical protocol.
+<strong>This is not the same chart as the curve further up:</strong> that one shows an earlier,
+smaller network's average error in moves, while this one shows the production network doing the
+actual job — how often its finished labels agree about the best next step. Both say the same thing
+in different currencies: no cliff.</em></p>
+
+<h2>One crash, one better experiment</h2>
+
+<p>The experiment meant to prove the network saves real money — the richer move language, the
+441-node-hour bill — crashed after 91 seconds. Out of memory.</p>
+
+<p>The reason is worth stating because it caught us out. <strong>Teaching a network on the biggest
+boards costs far more memory than using it on them.</strong> To learn, a network must keep
+everything it computed so it can work backwards and adjust itself; to merely answer, it can forget
+each step as it goes. We had been running 32&times;32 boards through networks for weeks. We had
+never tried to teach on one.</p>
+
+<p>The fix made the experiment better rather than worse. The network now trains only on boards up to
+24&times;24 and labels the 32&times;32 boards <em>having never seen one</em> — which is the
+project's whole trick anyway, and it removes a quiet unfairness in the old design, where the network
+would have studied the very boards it was about to be graded on. Cost of the crash: 91 seconds,
+about a thousandth of a node-hour. It is now training healthily, and the number to watch is whether
+the example type the old shortcut deleted comes back at its natural rate of about 13% instead of the
+degraded 5%.</p>
+
+<h2>The experiment that decides the headline</h2>
+
+<p>Everything so far says the network's labels <em>look like</em> the exact solver's. The experiment
+running now asks the question that actually settles it: <strong>do planners taught from them come
+out as good?</strong></p>
+
+<p>It is a twin study. Take exactly the same boards and exactly the same puzzles the original
+planners learned from. Change one thing only: who wrote the answer key — the exact solver, or our
+network. Train identical planners on each pile. Test both on the identical held-out benchmark,
+which neither has ever seen. If the network-taught planners solve just as many puzzles, then
+network-made training data really can replace exact-solver data. That is the claim this whole
+project is built toward.</p>
+
+<p>Three settings: 24&times;24 with four robots, 24&times;24 with eight robots, and 32&times;32. The
+labeling network never trained on any of them.</p>
+
+<p>One honest cost note. Writing the network's answer keys turned out about <strong>twelve times
+slower than our first estimate</strong>. The earlier checks only had to grade the first move of each
+puzzle; a real answer key means walking each solution the whole way to the end. So the three piles
+take roughly two days, running on three graphics cards at once.</p>
+
+<h2>Where we are</h2>
+
+<div class="card open">
+<span class="tag">Updated 2026-08-06 — three job lanes in flight</span>
+<p><strong>Settled.</strong> The ladder is complete and flat, every whole size from 17 to 32. v1 is
+the network that does the labeling, picked by the rule we wrote down before looking. The size wall
+is gone, so boards from 40 up to 96 are now routine rather than a research problem.</p>
+<p><strong>Running.</strong> Three lanes, one graphics card each. The first is writing the network's
+answer keys for the twin study — the headline. The second is training the network for the richer
+move language, the test of whether the method saves real money. The third takes the ladder past 32
+toward 64, and is waiting its turn in the queue.</p>
+<p><strong>Next.</strong> Once the twin answer keys are finished, identical planners are trained on
+each pile and run against the same benchmark. That comparison is the headline number of the whole
+track, and it is about two days out.</p>
+<p>Every number quoted here, and many that are not, live in a companion results page that rebuilds
+itself whenever a job finishes: <code>nn_labeler/report/suite.html</code>.</p>
 </div>
 
 <h2>The ledger</h2>
@@ -1108,12 +1318,16 @@ degraded 5% the shortcut left behind.</p>
   <tr><td>Second round, false start</td><td class="num">0.08</td><td>killed at 40 minutes; silent-skip bug found</td></tr>
   <tr><td>Second round, rerun</td><td class="num">0.69</td><td>design settled; the no-cliff curve</td></tr>
   <tr><td>Label-quality check</td><td class="num">0.12</td><td>passed at all three sizes</td></tr>
-  <tr><td>Production network, attempt 1</td><td class="num">2.0</td><td>collapsed in round 3; best round saved and banked — our best labeler</td></tr>
-  <tr><td><strong>Spent so far</strong></td><td class="num"><strong>3.66</strong></td><td></td></tr>
-  <tr><td>24&times;24 and 32&times;32 test (queued)</td><td class="num">1&ndash;2</td><td>the decisive measurement</td></tr>
-  <tr><td>Production network, attempt 2 (queued)</td><td class="num">1&ndash;2</td><td>gentler learning rate + auto-stop</td></tr>
-  <tr><td>Labeling the ladder, 17&times;17 to 31&times;31</td><td class="num">5&ndash;10</td><td>queued behind those</td></tr>
-  <tr><td><strong>Projected total</strong></td><td class="num"><strong>~11&ndash;18</strong></td><td>against the 441 originally projected for one campaign</td></tr>
+  <tr><td>Production network v1</td><td class="num">2.0</td><td>collapsed in round 3; best round saved — still the labeler we use</td></tr>
+  <tr><td>Capstone test at 24&times;24 and 32&times;32</td><td class="num">0.19</td><td>passed on the measurement that matters</td></tr>
+  <tr><td>Production network v2</td><td class="num">1.97</td><td>trained cleanly, lost the run-off, not adopted</td></tr>
+  <tr><td>Richer move language, first attempt</td><td class="num">0.003</td><td>out of memory in 91 seconds; redesigned</td></tr>
+  <tr><td>The whole ladder, 17&times;17 to 31&times;31</td><td class="num">0.16</td><td>one job, 1 h 17 m; the flat curve</td></tr>
+  <tr><td><strong>Spent so far</strong></td><td class="num"><strong>~6.0</strong></td><td></td></tr>
+  <tr><td>Twin answer keys (running)</td><td class="num">~6</td><td>the headline experiment; three cards, about two days</td></tr>
+  <tr><td>Richer move language, training and labeling (running)</td><td class="num">2&ndash;4</td><td>estimate; does the network save real money?</td></tr>
+  <tr><td>Bigger boards, 40 to 64 (queued)</td><td class="num">2&ndash;4</td><td>estimate; only affordable now the wall is gone</td></tr>
+  <tr><td><strong>Projected total</strong></td><td class="num"><strong>~15&ndash;20</strong></td><td>against the 441 originally projected for one campaign</td></tr>
 </table>
 </div>
 
@@ -1123,7 +1337,7 @@ part of the plan that worked best.</p>
 
 <p>The technical companion to this document, with file names, job numbers and the full measurement
 tables, is <code>nn_labeler/report/process.html</code>. The running experiment log is
-<code>FINDINGS.md</code>, items 48 through 57.</p>
+<code>FINDINGS.md</code>, items 48 through 65.</p>
 
 <footer>Local document. Numbers trace to FINDINGS.md and nn_labeler/results/. Work in progress.</footer>
 
