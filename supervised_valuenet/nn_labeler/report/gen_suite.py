@@ -233,14 +233,24 @@ def sec_b2():
 
 def sec_ladder():
     out = ["<h2>5 &middot; Quality vs board size (the ladder)</h2>"]
+    specs = [("8&times;8 (mixed net)", "nn_labeler/results/dgate_mix_none_s11_g8r4.json"),
+             ("10&times;10 (mixed net)", "nn_labeler/results/dgate_mix_none_s11_g10r4.json"),
+             ("12&times;12 (mixed net)", "nn_labeler/results/dgate_mix_none_s11_g12r4.json"),
+             ("16&times;16 (mixed net)", "nn_labeler/results/dgate_mix_none_s11_g16r4.json")]
+    for g in range(17, 32):
+        if g == 24:
+            specs.append(("24&times;24 (v1, capstone)",
+                          "nn_labeler/results/capgate_g24r4.json"))
+            continue
+        specs.append((f"{g}&times;{g} (v1)",
+                      f"nn_labeler/results/dgate_ladder_g{g}r4.json"))
+    specs.append(("32&times;32 (v1, capstone)",
+                  "nn_labeler/results/capgate_g32r4.json"))
+    for g in (40, 48, 56, 64):
+        specs.append((f"{g}&times;{g} (v1, coarse)",
+                      f"nn_labeler/results/coarsegate_g{g}r4.json"))
     rows_ = []
-    for label, rel in [
-            ("8&times;8", "nn_labeler/results/dgate_mix_none_s11_g8r4.json"),
-            ("10&times;10", "nn_labeler/results/dgate_mix_none_s11_g10r4.json"),
-            ("12&times;12", "nn_labeler/results/dgate_mix_none_s11_g12r4.json"),
-            ("16&times;16", "nn_labeler/results/dgate_mix_none_s11_g16r4.json"),
-            ("24&times;24 (v1)", "nn_labeler/results/capgate_g24r4.json"),
-            ("32&times;32 (v1)", "nn_labeler/results/capgate_g32r4.json")]:
+    for label, rel in specs:
         s = gate_summary(rel)
         if s is None:
             rows_.append(row([f"<td>{label}</td>",
@@ -252,10 +262,12 @@ def sec_ladder():
     out.append(table(["board", "argmin agree", "labels exactly optimal",
                       "mean gap", "negative gaps"], rows_,
                      note="8–16 from the debug-battery gates (mixed net); "
-                          "24/32 from the capstone (banked v1). Coarse rungs "
-                          "40/48/56/64 and unverifiable 80/96 will append "
-                          "here as they land. 64 is the last size with exact "
-                          "ground truth (Rust engine hard limit)."))
+                          "everything from 17 up is the banked v1 net, 600 "
+                          "replayed test instances per rung. 64 is the last "
+                          "size with exact ground truth (Rust engine hard "
+                          "limit); 80/96 have no gate by definition and "
+                          "report certification stats + downstream solve "
+                          "rate instead."))
     return "\n".join(out)
 
 

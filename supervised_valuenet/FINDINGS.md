@@ -2199,3 +2199,26 @@ scoped fix.
    gtwin when B2 failed, so no GPU time was at risk).
    Sources: `runs/nnlab/b2_payoff_4618888.out` (the OOM traceback),
    `nn_labeler/jobs/b2_payoff.slurm` (retry recipe + rationale).
+
+64. **The formal gate says v1 stays the labeler of record — v2's clear
+   value-audit win did NOT transfer to end-to-end label production
+   (2026-08-06, job 4618940 part 1).** Same 600-instance capstone protocol,
+   both rungs:
+   | rung | net | argmin agree | gap mean | labels exactly optimal | neg gaps |
+   |---|---|---|---|---|---|
+   | 24×24 | v1 | **92.6%** | 0.566 | 85.2% | 3 |
+   | 24×24 | v2 | 91.4% | **0.536** | 85.3% | 6 |
+   | 32×32 | v1 | **91.5%** | **0.553** | **87.7%** | 0 |
+   | 32×32 | v2 | 91.3% | 0.625 | 86.5% | 0 |
+   v2 beat v1 on top-1 and regret at every config in the value audit (§61)
+   yet loses the gate on the load-bearing ordering metric at both rungs and
+   on everything at 32×32. Margins are small (0.2–1.2 pt, single seed) — the
+   honest reading is "no better, slightly worse where it counts", not "v2 is
+   bad". Two consequences: (i) the pre-registered arbiter (the gate, §59a's
+   lesson that ordering-in-production is what a labeler is for) did its job —
+   had we promoted on the audit, the twins would be labeled by a weaker
+   net; (ii) the ENTIRE campaign now runs on one net, v1, everywhere — the
+   curve lane was already pinned to v1 for anchor consistency, and the
+   winner verdict makes that pin the formal choice too. v2 is not banked.
+   Sources: `nn_labeler/results/v2gate_g{24,32}r4.json` vs
+   `capgate_g{24,32}r4.json`, `runs/nnlab/gate_v2_twins_4618940.out`.
