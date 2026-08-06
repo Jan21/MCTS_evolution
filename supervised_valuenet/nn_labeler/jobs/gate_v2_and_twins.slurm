@@ -105,7 +105,12 @@ fi
 echo "GTWIN LABELER OF RECORD $WINNER"
 
 # ---- 2. twin corpora: full replay, chunked by graph range -------------------
-for cfg in g24r4 g24r8 g32r4; do
+# TWIN_CONFIGS narrows this job to a subset so several jobs can build twins in
+# parallel, one config each (measured 2026-08-06: full-descent replay is
+# ~4.3 s/inst at g24r4 -- 12x the depth-0 gate replay -- so all three twins
+# are ~45-50 GPU-hours). Chunk files are atomic (tmp+rename), so an overlap
+# between jobs wastes at most one chunk of duplicate work, never corrupts.
+for cfg in ${TWIN_CONFIGS:-g24r4 g24r8 g32r4}; do
     exact=$(eval echo "\$TWIN_CORPUS_${cfg}")
     [ -f "$exact" ] || { echo "GTWIN MISSING EXACT $cfg $exact"; continue; }
     final="nn_labeler/results/twin_${cfg}.jsonl"
