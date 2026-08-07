@@ -2274,3 +2274,31 @@ scoped fix.
    Sources: `nn_labeler/results/twin_g24r4.jsonl(.manifest)`,
    `twin_gate_g24r4.json`, `runs/nnlab/gate_v2_twins_4618940.out`,
    `sacct -j 4618960,4620065`.
+
+67. **THE FIRST DOWNSTREAM-EQUIVALENCE ROW: at g24r4 the planner trained on
+   NN-twin labels BEATS the exact-trained original on every benchmark
+   metric (2026-08-07, job 4618961, 4h17m — all four g24r4 steps complete,
+   replay-certified).** Identical sha-pinned instances (n=232, playable-
+   moves scoring, 1200 expansions, k=5), identical hyperparameters,
+   backward subgoal planner (prefix-check):
+   | trained on | solve | % optimal | mean regret | mean moves |
+   |---|---|---|---|---|
+   | exact labels (53,789 rec) | 88.4% | 38.5% | 4.22 | 11.81 |
+   | **NN twin labels (39,452 rec)** | **91.4%** | **45.8%** | **3.05** | **10.58** |
+   The twin corpus is 27% SMALLER (certified-only filtering, §66) and 91.0%
+   argmin-faithful — and still trains the better planner. Both confounds
+   run AGAINST the twin (less data, imperfect labels), which makes the
+   direction of the result stronger, but the honest claim stays "at least
+   equivalent" until the seed replicate lands: both arms are single-seed
+   and cold value retrains are documented seed-unstable (TWIN_WIRING
+   OPEN 2). Seed-21 replicate submitted (job 4625100). A plausible
+   mechanism for "better", to test rather than assert: certified-descent
+   labeling acts as data cleaning — candidates whose completions cannot be
+   physics-certified are dropped rather than labeled, and §34 showed label
+   noise (capped B2) actively hurts downstream training. Twin frontier row
+   for the record: 41.3% solve on the 218 previously-unsolved instances
+   (no exact frontier counterpart exists at g24r4, TWIN_WIRING OPEN 1).
+   Sources: `scaling/results/g24r4/comparison_nntwin.json`,
+   `comparison_ungraded_nntwin.json`, `runs/nnlab/twin_retrain_4618961.out`
+   (TWINRT SUMMARY ok=4 failed=0), `scaling/runs/g24r4/backward-{policy,
+   value}-nntwin/`.
