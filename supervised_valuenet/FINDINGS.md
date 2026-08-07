@@ -2251,3 +2251,26 @@ scoped fix.
    Coarse rung g40r4 started automatically (lane C).
    Sources: `nn_labeler/results/dgate_ladder_g{17..31}r4.json`,
    `audit_ladder_g*.json`, `runs/nnlab/ladder_int_gates_4620484.out`.
+
+66. **The first twin corpus is complete and gated: the g24r4 NN-labeled
+   training corpus agrees with the exact solver's argmin on 91.0% of all
+   37,309 matched candidates, with 0.075% negative gaps (2026-08-06/07,
+   job 4618940 + audit).** Full replay of the exact g24r4 corpus's own
+   boards and instances with banked v1: 39,452 records vs the exact
+   corpus's 53,789 (73.3% — descent drops what it cannot certify; this
+   size difference is the known second confound, FINDINGS 61's design
+   note). Corpus-level gate over ALL splits: argmin 91.0%, exactly-optimal
+   85.4%, gap mean 0.582, depth-0 coverage 100%, negative gaps 28. This is
+   the corpus the twin planners are training on (job 4618961, running,
+   policy net ~2 min/epoch, then the value fit). Twin cost measured:
+   ~12 h GPU for the corpus (4.3 s/inst full-descent replay, §63-adjacent
+   correction) vs ~13 min on 4 CPU cores exact — the §58 economics hold;
+   this corpus exists to answer the DOWNSTREAM question, not to save
+   compute. Also 2026-08-07: node acn18 killed two jobs in their first
+   10 s (twinrt#1 4618960, B2#2 4620065, both signal-15 with empty logs);
+   both lanes self-healed via their idempotent continuations, acn18 is
+   excluded from every pending job, and a replacement B2 pass (4624356)
+   is queued. B2 training resumed at epoch 14/30 on acn27.
+   Sources: `nn_labeler/results/twin_g24r4.jsonl(.manifest)`,
+   `twin_gate_g24r4.json`, `runs/nnlab/gate_v2_twins_4618940.out`,
+   `sacct -j 4618960,4620065`.
