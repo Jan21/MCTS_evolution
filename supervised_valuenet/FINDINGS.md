@@ -2302,3 +2302,32 @@ scoped fix.
    `comparison_ungraded_nntwin.json`, `runs/nnlab/twin_retrain_4618961.out`
    (TWINRT SUMMARY ok=4 failed=0), `scaling/runs/g24r4/backward-{policy,
    value}-nntwin/`.
+
+68. **THE B2 PAYOFF VERDICT IS NEGATIVE: uncapped NN descent does NOT
+   restore the by-reference share — it produces almost none (1.3% at
+   g16r6, 0.3% at g32r4, vs the 13.5% uncapped-exact target and even
+   below the 4.8–12.7% capped band), and B2 label quality is poor
+   (argmin agreement 53.6%/50.0%) (2026-08-08, jobs 4620064→4623993,
+   ~32 h GPU total).** The B2 net (mix ≤24, zero-shot 32, trained clean —
+   epoch 25 best of 30, no collapse) could only learn from the capped B2
+   corpora, whose by-reference candidates the iteration cap had already
+   destroyed (§32: 13.5% → 4.8%). It distilled that pathology: a net that
+   rarely ranks by-reference candidates first will rarely select them for
+   completion, cap or no cap. §63's structural argument ("descent has no
+   iteration budget, so the cap/quality trade-off cannot arise") was
+   correct about the MECHANISM and wrong about the BOTTLENECK — the
+   bottleneck is the training signal, not the search budget. Consequences:
+   (a) the compute-saving claim for B2-as-configured is dead; distillation
+   of capped data cannot rescue what the cap destroyed; (b) the campaign
+   headline (downstream equivalence in base vocabulary, owner's 2026-08-05
+   choice) is unaffected and now clearly the right bet; (c) the only
+   visible rescue path is a SMALL uncapped exact B2 seed corpus to train
+   from (the 13.5% number of §32 proves uncapped exact labeling runs at
+   some scale) — recorded as an open question for the owner, not launched.
+   Also 2026-08-08: five jobs (both big twin builders, the g24r4 mop-up,
+   coarse-g40, the seed replicate) sat ~20 h in "user env retrieval
+   failed requeued held" — a Slurm-side env-storage failure on
+   `--export=ALL` submissions; all five released and pending normally.
+   Sources: `runs/nnlab/b2_payoff_4623993.out` (BYREF + audit lines),
+   `nn_labeler/results/b2lab_{g16r6,g32r4}.jsonl`,
+   `b2gate_{g16r6,g32r4}.json`, `nn_labeler/runs/b2_mix16to24_none_s11/`.
