@@ -2346,3 +2346,30 @@ scoped fix.
    in 772 s. g48r4 chains next; 64 remains the calibration endpoint.
    Sources: `nn_labeler/results/coarsegate_g40r4.json`, `coarsegen_g40r4
    .jsonl.manifest.json`, `runs/nnlab/ladder_coarse_4620485.out`.
+
+70. **THE CALIBRATION ENDPOINT: 64×64 gates at 90.1% argmin agreement —
+   the flat band holds to the last size where exact ground truth exists,
+   and the license to label beyond 64 is granted (2026-08-08, jobs
+   4620486/87/88, 44m/56m/1h31m, ~0.4 nh for all three).** Banked v1
+   (trained ≤16), capstone protocol, the coarse ladder complete:
+   | rung | argmin | exactly-opt | gap mean | neg gaps | extrapolation |
+   |---|---|---|---|---|---|
+   | 48×48 | 90.6% | 87.1% | 0.618 | 0 | 3.0× linear |
+   | 56×56 | 89.6% | 86.6% | 0.655 | 0 | 3.5× |
+   | **64×64** | **90.1%** | **86.6%** | **0.721** | 3/3353 | **4.0×** |
+   With §65/§69 the full verifiable curve 17→64 (20 gated rungs, one net,
+   one protocol) never leaves 86.4–92.6% argmin; gap p90 = 2 at every
+   single rung; depth-0 coverage 100% everywhere. §60b's criterion —
+   "proving NN labels match exact labels AT 64 is what licenses trusting
+   them beyond 64" — is met at the same fidelity as everywhere else on
+   the curve; what §4b called "plausible, unverified" 4× extrapolation is
+   now measured. Fresh generation at 64: 200/384 instances kept (52%,
+   same yield as the 32×32 capstone), 1,377 certified records, zero
+   timeouts, 7.7 s/kept-instance on one A100. The gap_mean does creep
+   (0.55 at 32 → 0.72 at 64) while ordering holds — §59a's calibration-
+   vs-ordering split, unchanged. Next: the UNVERIFIABLE rungs 80/96
+   (owner-approved 2026-08-05), where these numbers are the only
+   warranty the labels will ever have.
+   Sources: `nn_labeler/results/coarsegate_g{48,56,64}r4.json`,
+   `coarsegen_g{48,56,64}r4.jsonl.manifest.json`,
+   `runs/nnlab/ladder_coarse_46204{86,87,88}.out`.
