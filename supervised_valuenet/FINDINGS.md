@@ -2331,3 +2331,18 @@ scoped fix.
    Sources: `runs/nnlab/b2_payoff_4623993.out` (BYREF + audit lines),
    `nn_labeler/results/b2lab_{g16r6,g32r4}.jsonl`,
    `b2gate_{g16r6,g32r4}.json`, `nn_labeler/runs/b2_mix16to24_none_s11/`.
+
+69. **First rung beyond the old size wall: 40×40 gates at 90.7% argmin
+   agreement — the flat band continues above 32 (2026-08-08, job 4620485,
+   lean boards end-to-end).** Banked v1 (trained ≤16; 2.5× linear / 6.25×
+   area extrapolation), capstone protocol: argmin 90.7%, exactly-optimal
+   86.5%, gap mean 0.616, p90 2, negative gaps 2/3376, depth-0 coverage
+   100% — inside the 86.4–92.6% band of §65. Production speed of the lean
+   path at this size, all measured in-job: 170 boards in 20 s (eager
+   projection: ~31 h); Rust exact reference 11,821 records in 31 s — the
+   first exact corpus above 32 in the study; fresh generation 1,383
+   certified records in 329 s (~10× faster per instance than the 32×32
+   capstone, whose eager board setup dominated); 600-instance gate replay
+   in 772 s. g48r4 chains next; 64 remains the calibration endpoint.
+   Sources: `nn_labeler/results/coarsegate_g40r4.json`, `coarsegen_g40r4
+   .jsonl.manifest.json`, `runs/nnlab/ladder_coarse_4620485.out`.
