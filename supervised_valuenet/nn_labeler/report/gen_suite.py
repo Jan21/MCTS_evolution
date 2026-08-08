@@ -99,6 +99,7 @@ def sec_downstream():
         specs = [
             ("backward — exact labels", f"scaling/results/{cfg}/comparison.json", BWD, False, ""),
             ("backward — NN twin labels", f"scaling/results/{cfg}/comparison_nntwin.json", BWD, False, "hl"),
+            ("backward — NN twin, seed 21", f"scaling/results/{cfg}/comparison_nntwin-seed21.json", BWD, False, "hl"),
             ("forward — exact (untouched control)", f"scaling/results/{cfg}/comparison.json", "forward", True, "ctl"),
         ]
         for label, rel, system, pfx, cls in specs:

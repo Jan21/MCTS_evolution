@@ -2373,3 +2373,28 @@ scoped fix.
    Sources: `nn_labeler/results/coarsegate_g{48,56,64}r4.json`,
    `coarsegen_g{48,56,64}r4.jsonl.manifest.json`,
    `runs/nnlab/ladder_coarse_46204{86,87,88}.out`.
+
+71. **THE REPLICATE VERDICT: §67's "twin beats exact" was seed noise; what
+   survives replication is DOWNSTREAM EQUIVALENCE — the claim the campaign
+   headline actually needs (2026-08-08, job 4625100, ok=4 failed=0).**
+   Same twin corpus, same recipe, torch seed 21:
+   | arm | solve | % optimal | regret |
+   |---|---|---|---|
+   | exact labels (single seed) | 88.4% | 38.5% | 4.22 |
+   | twin, first seed (§67) | 91.4% | 45.8% | 3.05 |
+   | twin, seed 21 | 87.9% | 39.2% | 4.23 |
+   The between-twin-seed spread (3.5 pts solve) exceeds every twin-vs-
+   exact gap, confirming TWIN_WIRING OPEN 2 (cold value retrains are
+   seed-unstable) as the mechanism behind §67's apparent win. Honest
+   final reading for g24r4: two twin seeds STRADDLE the exact arm —
+   planners trained on NN labels (91% argmin-faithful, 27% smaller
+   corpus) are INDISTINGUISHABLE from planners trained on exact labels
+   on the pinned benchmark. The pre-registered caveat did its job twice
+   in one campaign (§64 audit-vs-gate, §67→§71 better-vs-equivalent):
+   claims promoted only after the check that could kill them. Caveat
+   that remains: the exact arm is itself single-seed; its own spread is
+   unmeasured (a symmetric exact-arm replicate would complete the
+   picture — ~1.1 h, noted, not launched).
+   Sources: `scaling/results/g24r4/comparison_nntwin-seed21.json`,
+   `runs/nnlab/twin_retrain_4625100.out`,
+   `scaling/runs/g24r4/backward-{policy,value}-nntwin-seed21/`.
