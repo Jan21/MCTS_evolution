@@ -2398,3 +2398,34 @@ scoped fix.
    Sources: `scaling/results/g24r4/comparison_nntwin-seed21.json`,
    `runs/nnlab/twin_retrain_4625100.out`,
    `scaling/runs/g24r4/backward-{policy,value}-nntwin-seed21/`.
+
+72. **Three arrivals close out a 2×2 equivalence square, gate the hard
+   cell, and label the first boards nothing can ever check (2026-08-09).**
+   (a) **The exact-arm seed-21 replicate lands (job 4629540, 5h0m):
+   solve 88.4%, optimal 40.0%, regret 4.52. The g24r4 square is complete:**
+   | | seed-default | seed-21 |
+   |---|---|---|
+   | exact labels | 88.4 / 38.5 / 4.22 | 88.4 / 40.0 / 4.52 |
+   | twin labels | 91.4 / 45.8 / 3.05 | 87.9 / 39.2 / 4.23 |
+   (solve% / optimal% / regret). Exact arm solve is seed-stable at 88.4;
+   twin arm spans 87.9–91.4 around it. Arm means: twin 89.7/42.5 vs exact
+   88.4/39.3 — a slight twin lean, not separable at n=2 seeds. VERDICT
+   UNCHANGED from §71: downstream equivalence, now on a full 2×2.
+   (b) **g24r8 twin corpus complete and gated (jobs 4621816+18):** 68,549
+   records (62.8% of exact — heavier certify-or-drop shrinkage at 8
+   robots), argmin 82.2%, exactly-optimal 77.0%, gap mean 1.20, negative
+   gaps 0.29%, coverage 100%. Clearly weaker labels than g24r4's 91.0% —
+   the beyond-oracle regime bites — which makes its downstream test the
+   most informative cell: retrain submitted (job 4629917).
+   (c) **The unverifiable rungs exist (jobs 4629480/82, 55m + 1h35m):**
+   80×80 — 1,350 records, 200/417 instances (48% yield), 0 timeouts,
+   16.5 s/inst; 96×96 — 1,031 records, 188/678 (28% yield — the frontier
+   thins), 0 timeouts, 30 s/inst. All records carry certified-valid plans
+   (uncertifiable completions dropped: 25/20); gap to optimal is
+   UNMEASURABLE at n>64 by construction — these labels' only warranty is
+   the flat 17–64 curve (§70), and they are named UNVERIFIABLE. 96×96 is
+   9,217 tokens — 6× the net's training size; boards took 21 s to make.
+   Sources: `scaling/results/g24r4/comparison_exactseed21.json`,
+   `nn_labeler/results/twin_gate_g24r8.json`,
+   `beyond_UNVERIFIABLE_g{80,96}r4.jsonl(.manifest)`,
+   `runs/nnlab/{exact_replicate_4629540,ladder_beyond_46294{80,82}}.out`.

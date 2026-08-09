@@ -98,6 +98,7 @@ def sec_downstream():
         rows_ = []
         specs = [
             ("backward — exact labels", f"scaling/results/{cfg}/comparison.json", BWD, False, ""),
+            ("backward — exact, seed 21", f"scaling/results/{cfg}/comparison_exactseed21.json", BWD, False, ""),
             ("backward — NN twin labels", f"scaling/results/{cfg}/comparison_nntwin.json", BWD, False, "hl"),
             ("backward — NN twin, seed 21", f"scaling/results/{cfg}/comparison_nntwin-seed21.json", BWD, False, "hl"),
             ("forward — exact (untouched control)", f"scaling/results/{cfg}/comparison.json", "forward", True, "ctl"),
@@ -251,6 +252,18 @@ def sec_ladder():
         specs.append((f"{g}&times;{g} (v1, coarse)",
                       f"nn_labeler/results/coarsegate_g{g}r4.json"))
     rows_ = []
+    beyond = []
+    for g in (80, 96):
+        p = SV / f"nn_labeler/results/beyond_UNVERIFIABLE_g{g}r4.jsonl.manifest.json"
+        if p.exists():
+            m = json.load(open(p))["stats"]
+            beyond.append(
+                row([f"<td>{g}&times;{g} (v1, UNVERIFIABLE)</td>",
+                     '<td colspan="3">no gate can exist above 64 — '
+                     f'{m["records"]} certified records, '
+                     f'{m["kept"]}/{m["attempted"]} instances, '
+                     f'{m["timeouts"]} timeouts</td>',
+                     fmt(m["cand_uncertified"], "d")]))
     for label, rel in specs:
         s = gate_summary(rel)
         if s is None:
@@ -260,6 +273,7 @@ def sec_ladder():
             rows_.append(row([f"<td>{label}</td>", pct(s.get("argmin_agreement")),
                               pct(s.get("share_gap_zero")), fmt(s.get("gap_mean")),
                               fmt(s.get("negative_gaps"), "d")]))
+    rows_.extend(beyond)
     out.append(table(["board", "argmin agree", "labels exactly optimal",
                       "mean gap", "negative gaps"], rows_,
                      note="8–16 from the debug-battery gates (mixed net); "
