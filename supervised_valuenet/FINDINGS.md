@@ -2429,3 +2429,33 @@ scoped fix.
    `nn_labeler/results/twin_gate_g24r8.json`,
    `beyond_UNVERIFIABLE_g{80,96}r4.jsonl(.manifest)`,
    `runs/nnlab/{exact_replicate_4629540,ladder_beyond_46294{80,82}}.out`.
+
+73. **THE HARD CELL BREAKS EQUIVALENCE: at g24r8 the twin-trained planner
+   solves 68.3% vs the exact-trained 89.4% — a 21-point downstream gap
+   (2026-08-10, job 4629917, replay-certified 110/110).** Same pinned
+   161 instances, same recipe, single twin seed:
+   | g24r8 arm | solve | % optimal | regret |
+   |---|---|---|---|
+   | exact labels (109,180 rec) | 89.4% | 50.7% | 2.49 |
+   | NN twin labels (68,549 rec, §72b) | 68.3% | 40.9% | 3.39 |
+   With §71/§72a the campaign now has BOTH poles, which is more
+   publishable than uniform success: 91.0%-argmin-faithful labels at 73%
+   corpus size → full downstream equivalence (g24r4); 82.2%-faithful at
+   63% size → equivalence broken (g24r8). Label fidelity gates downstream
+   utility, with the threshold somewhere in the 82–91% argmin band — and
+   the g32r4 cell (twin corpus in progress) will land inside the story
+   as a third point. Diagnostic: the twin policy net's best checkpoint
+   was EPOCH 0 of 30 (exact arm's: epoch 29) — the degraded corpus
+   barely supports policy learning; the failure is in training signal,
+   not the bench. Caveats: single twin seed at g24r8 (g24r4's twin-seed
+   spread was 3.5 pts — nowhere near 21); fidelity, corpus size, and
+   8-robot hardness move together here, so which ingredient dominates is
+   not separable from this cell alone. Frontier bench was walltime-cut
+   mid-run; the pending final pass (4621819) resumes its chunks.
+   Operations: g32r4 builder pair exhausted at 1/3 chunks (full-descent
+   replay at 32×32 is slower than the 24s; the killed chunk's .tmp is
+   discarded by design); builders #3/#4 + gate + retrain re-chained
+   (jobs 4632983–86).
+   Sources: `scaling/results/g24r8/comparison_nntwin.json` vs
+   `comparison.json`, `runs/nnlab/twin_retrain_4629917.out`,
+   `scaling/runs/g24r8/backward-{policy,value}-nntwin/`.
