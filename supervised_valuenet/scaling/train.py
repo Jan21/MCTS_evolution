@@ -64,6 +64,13 @@ def main():
     p.add_argument("--torch-seed", type=int, default=None,
                    help="torch.manual_seed before the trainer starts "
                         "(the b1 retrain chain used 11)")
+    p.add_argument("--splits", default=None,
+                   help="override the config's train/val/test board ranges, "
+                        "e.g. train=2000-2699,val=2700-2899,test=2900-3049 "
+                        "— required when the corpus lives on board ids "
+                        "outside the config's standard pool (the nndeploy "
+                        "corpus), where the default rebinding matches zero "
+                        "records and the DataLoader dies on num_samples=0")
     p.add_argument("rest", nargs=argparse.REMAINDER,
                    help="args after `--` go to the underlying trainer")
     a = p.parse_args()
@@ -82,7 +89,24 @@ def main():
     os.chdir(run_dir)                    # lightning_logs/ lands here
 
     import nn.benchmark as benchmark
-    if not cfg.legacy:
+    if a.splits:
+        from scaling.configs import parse_ids
+        spec, key = {}, None
+        for tok in a.splits.split(","):
+            if "=" in tok:
+                key, val = tok.split("=", 1)
+                spec[key] = val
+            elif key is None:
+                raise SystemExit(f"--splits: bad spec near {tok!r}")
+            else:                       # id specs may themselves contain commas
+                spec[key] += "," + tok
+        missing = {"train", "val", "test"} - spec.keys()
+        if missing:
+            raise SystemExit(f"--splits missing {sorted(missing)}")
+        benchmark.SPLITS = {s: parse_ids(spec[s]) for s in ("train", "val", "test")}
+        print(f"[scaling.train] SPLITS overridden by --splits "
+              f"{ {s: spec[s] for s in ('train', 'val', 'test')} }")
+    elif not cfg.legacy:
         benchmark.SPLITS = {s: cfg.ids(s) for s in ("train", "val", "test")}
         print(f"[scaling.train] SPLITS rebound to {cfg.name} board ranges "
               f"{ {s: cfg.board_ranges[s] for s in ('train', 'val', 'test')} }")

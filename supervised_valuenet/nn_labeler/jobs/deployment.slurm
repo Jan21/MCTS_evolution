@@ -74,7 +74,9 @@ train_one() {
     local resume=""
     ls "$dir"/lightning_logs/version_*/checkpoints/last.ckpt >/dev/null 2>&1 && resume=1
     RR_RESUME=${resume:-0} python -m scaling.train --config "$CFG" \
-        --system "$system" --run-dir "$dir" -- --data "$CORPUS" "$@" \
+        --system "$system" --run-dir "$dir" \
+        --splits train=2000-2699,val=2700-2899,test=2900-3049 \
+        -- --data "$CORPUS" "$@" \
         || { echo "DEPLOY FAILED train $system"; return 1; }
     ls "$dir"/lightning_logs/version_*/checkpoints/epoch=*.ckpt >/dev/null 2>&1 \
         || { echo "DEPLOY FAILED train $system: no ckpt"; return 1; }
