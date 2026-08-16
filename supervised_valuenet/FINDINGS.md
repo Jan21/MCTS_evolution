@@ -2535,9 +2535,9 @@ scoped fix.
    181.8 h total) — but at BASE (16×16·4r) wall-clock favours forward
    (medians tie at 0.38 s, p90 3.19 vs 1.97 s, total 9 vs 7 min),
    confirming §27. Backward's tail is heavy (16×16·8r frontier p90 is 205×
-   its own median; tightest same-set p90 margin 1.0× at 24×24·8r
-   frontier's 945 vs 1766 s is 1.9×, at 16×16·8r frontier 384 vs 393 s
-   ≈1.0×), so median and total are always printed together. Also fixed:
+   its own median; at the p90 the margin all but vanishes on two frontier
+   sets — 384 vs 393 s at 16×16·8r, 945 vs 1766 s at 24×24·8r), so median
+   and total are always printed together. Also fixed:
    the hygiene ledger's "between 17.0× and 17.0×" (it required exactly one
    backward corpus per config, dropping the four two-vocabulary configs) —
    now "between 4.9× and 17.0×". Report: 1444 checks + 51 assertions.
