@@ -526,6 +526,115 @@ def worked_example(probe_rows, want_idx=333):
 
 
 # ---------------------------------------------------------------------------
+# By-reference zero-shot A/B (FINDINGS 78)
+#
+# The re-use ("by-reference") step type the plan-language ceiling depends on
+# was never wired into the learned planner (FINDINGS 40); it is now wired
+# behind a flag that defaults off.  Each entry below is one benchmark set:
+# the SAME banked cap-20,000 B2 network pair run over the identical pinned
+# 16x16 6-robot instances with the flag on and off, plus the production file
+# whose rows the flag-off arm must reproduce exactly (the regression check).
+#
+# Rows pair by POSITION, not by env_id: these files are merged from 40 shard
+# runs and env_ids repeat across shards (146 distinct ids over 316 graded
+# rows).  Both arms were sharded identically, which is asserted below along
+# with the instance-file sha256 before any pairing is done.
+# ---------------------------------------------------------------------------
+
+BYREF_AB_SETS = [
+    ("graded", "gradable 316",
+     "scaling/results/g16r6/comparison_b2retrained_cap20000_byref_on.json",
+     "scaling/results/g16r6/comparison_b2retrained_cap20000_byref_off.json",
+     "scaling/results/g16r6/comparison_b2retrained_cap20000.json"),
+    ("frontier", "beyond-oracle 134",
+     "scaling/results/g16r6/comparison_ungraded_b2retrained_cap20000_byref_on.json",
+     "scaling/results/g16r6/comparison_ungraded_b2retrained_cap20000_byref_off.json",
+     "scaling/results/g16r6/comparison_ungraded_b2retrained_cap20000.json"),
+]
+
+
+def _byref_arm(comp):
+    """The measured planner inside a by-reference A/B file (not a control)."""
+    for name, s in systems_of_kind(comp, "backward"):
+        if "production control" in name.lower():
+            continue
+        if s.get("rows"):
+            return s
+    return None
+
+
+def _mean(xs):
+    return sum(xs) / len(xs) if xs else None
+
+
+def build_byref_ab():
+    """Paired on/off summary of the by-reference supply A/B, or None.
+
+    Returns {"sets": [...], "pooled": {...}} with every number recomputed
+    from the per-instance rows; the caller registers them through ck().
+    """
+    sets, pins_ok, regression_ok = [], True, True
+    tot = {"n": 0, "on": 0, "off": 0, "b": 0, "c": 0}
+    for key, label, rel_on, rel_off, rel_prod in BYREF_AB_SETS:
+        c_on, c_off = load_json(rel_on), load_json(rel_off)
+        a_on, a_off = _byref_arm(c_on), _byref_arm(c_off)
+        if not a_on or not a_off or len(a_on["rows"]) != len(a_off["rows"]):
+            return None
+        r_on, r_off = a_on["rows"], a_off["rows"]
+        ids_on = [r.get("env_id") for r in r_on]
+        pins_ok = pins_ok and ids_on == [r.get("env_id") for r in r_off] and (
+            c_on["protocol"].get("instances_sha256")
+            == c_off["protocol"].get("instances_sha256")
+            and bool(c_on["protocol"].get("instances_sha256")))
+        # the flag-off arm must reproduce the production rows exactly
+        a_prod = _byref_arm(load_json(rel_prod))
+        if a_prod and len(a_prod["rows"]) == len(r_off):
+            regression_ok = regression_ok and all(
+                bool(p["solved"]) == bool(o["solved"])
+                and p["realized_strict"] == o["realized_strict"]
+                and p["expansions"] == o["expansions"]
+                for p, o in zip(a_prod["rows"], r_off))
+        else:
+            regression_ok = False
+        b = sum(1 for x, y in zip(r_on, r_off) if x["solved"] and not y["solved"])
+        c = sum(1 for x, y in zip(r_on, r_off) if y["solved"] and not x["solved"])
+        both = [(x, y) for x, y in zip(r_on, r_off) if x["solved"] and y["solved"]]
+        acc = (a_on["aggregate"].get("accounting") or {})
+        ent = {
+            "key": key, "label": label, "n": len(r_on),
+            "src_on": rel_on, "src_off": rel_off, "src_prod": rel_prod,
+            "b": b, "c": c,
+            "ranked": acc.get("byref_cands_ranked"),
+            "topk": acc.get("byref_cands_topk"),
+        }
+        for arm, rows, both_i in (("on", r_on, 0), ("off", r_off, 1)):
+            ent[arm] = {
+                "solved": sum(1 for r in rows if r["solved"]),
+                "mean_expansions": _mean([r["expansions"] for r in rows]),
+                "median_seconds": pctile([r["seconds"] for r in rows], 0.5),
+                "mean_len_both": _mean([p[both_i]["realized_strict"]
+                                        for p in both]),
+            }
+        tot["n"] += ent["n"]
+        tot["on"] += ent["on"]["solved"]
+        tot["off"] += ent["off"]["solved"]
+        tot["b"] += b
+        tot["c"] += c
+        sets.append(ent)
+    if not sets:
+        return None
+    from eval.stats_tests import mcnemar_exact   # local: stats_tests imports us
+    tot["p"] = mcnemar_exact(tot["b"], tot["c"])
+    fact("by-reference A/B: both arms pin the identical instance file "
+         "(sha256) and the identical row order, so rows pair one-to-one",
+         pins_ok)
+    fact("by-reference A/B: the flag-off arm reproduces the production rows "
+         "exactly (solved, plan length and expansions, both sets)",
+         regression_ok)
+    return {"sets": sets, "pooled": tot}
+
+
+# ---------------------------------------------------------------------------
 # collect() — the one entry point
 # ---------------------------------------------------------------------------
 
@@ -669,6 +778,9 @@ def collect():
            if p.get("expansions") != 1200 or p.get("k") != 5]
     fact("every comparison file uses the shared budget "
          "(1200 search steps, top-5 proposals)", not bad)
+
+    # by-reference zero-shot supply A/B at 16x16 6r (FINDINGS 78)
+    D["byref_ab"] = build_byref_ab()
 
     D["ladder"] = build_ladder(D)
 

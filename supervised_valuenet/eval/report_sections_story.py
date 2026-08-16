@@ -1263,9 +1263,9 @@ def sec_lang_b2(D):
   The only piece of this extension the learned rows exercise is the
   generalized repair pass. Stated plainly: the language now permits
   ~{ceil_pct:.1f}%; the shortfall from the ceiling is an integration gap
-  (proposal path, featurization, policy training), not a ranking failure —
-  no ranking of the new step type has ever been measured, because none was
-  possible.</p>"""
+  (proposal path, featurization, policy training), not a ranking failure.
+  That gap has since been closed behind a flag, and the step's zero-shot
+  value measured — see “the re-use step, wired at last” below.</p>"""
     html += ("<p class='small'>Retraining on the full-vocabulary corpus has "
              "since landed at four of six configurations. The outcome is "
              "mixed and is reported in full in the fairness tab: the "
@@ -1401,9 +1401,155 @@ def sec_lang_attribution(D):
         "ceiling — and its measured shortfall is an integration gap: the "
         "re-use step type was never wired into the learned planner's "
         "proposal path, featurization, or policy training, so no ranking "
-        "of it has ever been measured.")
+        "of it could be measured until the wiring landed (next section).")
         + table + abl_html + "</section>")
 
+
+def sec_lang_byref(D):
+    """The re-use step, wired at last -- the zero-shot on/off A/B (FINDINGS 78).
+
+    Every number is recomputed from the per-instance rows of the four A/B
+    files by report_data.build_byref_ab(); the flag-off arm doubles as a
+    regression check against the production rows (asserted there).
+    """
+    ab = D.get("byref_ab")
+    head = kicker_h2(
+        "the re-use step, wired at last",
+        "Switching the missing step type on changes almost nothing — and "
+        "that is informative",
+        "The step the ceiling depends on is now offered to the learned "
+        "planner. Turning it on, with networks that were never trained on "
+        "it, moves the solve count by 3 puzzles in 450.")
+    if not ab:
+        return head + pending(
+            "the on/off A/B files (scaling/results/g16r6/comparison"
+            "{,_ungraded}_b2retrained_cap20000_byref_{on,off}.json) are not "
+            "in place") + "</section>"
+    sets = {s["key"]: s for s in ab["sets"]}
+    pooled = ab["pooled"]
+    g, f_ = sets.get("graded"), sets.get("frontier")
+    if not g or not f_:
+        return head + pending("one arm of the by-reference A/B is missing"
+                              ) + "</section>"
+
+    def num(x, dec, src, desc):
+        return ck(fnum(x, dec), src, desc, raw=x)
+
+    rows_html = []
+    for key in ("graded", "frontier"):
+        s = sets[key]
+        rows_html.append(
+            f'<tr><td><b>{esc(s["label"])}</b></td>'
+            f'<td class="num">{s["n"]}</td>'
+            f'<td class="num">'
+            + ck(str(s["on"]["solved"]), s["src_on"],
+                 f"byref A/B {key}: solved, re-use on", raw=s["on"]["solved"])
+            + '</td><td class="num">'
+            + ck(str(s["off"]["solved"]), s["src_off"],
+                 f"byref A/B {key}: solved, re-use off", raw=s["off"]["solved"])
+            + '</td><td class="num">'
+            + ck(str(s["b"]), s["src_on"], f"byref A/B {key}: puzzles gained",
+                 raw=s["b"])
+            + " / "
+            + ck(str(s["c"]), s["src_off"], f"byref A/B {key}: puzzles lost",
+                 raw=s["c"])
+            + '</td><td class="num">'
+            + num(s["on"]["mean_expansions"], 0, s["src_on"],
+                  f"byref A/B {key}: mean search steps on")
+            + " / "
+            + num(s["off"]["mean_expansions"], 0, s["src_off"],
+                  f"byref A/B {key}: mean search steps off")
+            + '</td><td class="num">'
+            + num(s["on"]["median_seconds"], 1, s["src_on"],
+                  f"byref A/B {key}: median seconds on")
+            + " / "
+            + num(s["off"]["median_seconds"], 1, s["src_off"],
+                  f"byref A/B {key}: median seconds off")
+            + "</td></tr>")
+    rows_html.append(
+        '<tr><td><b>both sets pooled</b></td>'
+        f'<td class="num">{pooled["n"]}</td>'
+        '<td class="num">'
+        + ck(str(pooled["on"]), f_["src_on"],
+             "byref A/B pooled: solved, re-use on", raw=pooled["on"])
+        + '</td><td class="num">'
+        + ck(str(pooled["off"]), f_["src_off"],
+             "byref A/B pooled: solved, re-use off", raw=pooled["off"])
+        + '</td><td class="num">'
+        + ck(str(pooled["b"]), f_["src_on"], "byref A/B pooled: puzzles gained",
+             raw=pooled["b"])
+        + " / "
+        + ck(str(pooled["c"]), f_["src_off"], "byref A/B pooled: puzzles lost",
+             raw=pooled["c"])
+        + '</td><td class="small muted" colspan="2">exact paired test '
+        f'(McNemar) on the {pooled["b"] + pooled["c"]} puzzles the two arms '
+        "disagree about: <b>p = "
+        + ck(fnum(pooled["p"], 2), f_["src_on"], "byref A/B pooled: McNemar p",
+             raw=pooled["p"])
+        + "</b></td></tr>")
+    table = scroll(
+        "<table><thead><tr><th>set</th><th class='num'>puzzles</th>"
+        "<th class='num'>solved, re-use on</th>"
+        "<th class='num'>solved, re-use off</th>"
+        "<th class='num'>changed (gained / lost)</th>"
+        "<th class='num'>mean search steps (on / off)</th>"
+        "<th class='num'>median seconds (on / off)</th></tr></thead><tbody>"
+        + "".join(rows_html) + "</tbody></table>")
+
+    supply = ""
+    if g["ranked"] is not None and f_["ranked"] is not None:
+        supply = (
+            "<p><b>Supply is not the problem.</b> With the flag on, the "
+            "policy net scored, on average, "
+            + ck(fnum(g["ranked"], 0), g["src_on"],
+                 "byref A/B: re-use candidates ranked per gradable puzzle",
+                 raw=g["ranked"])
+            + " re-use candidates per gradable puzzle and "
+            + ck(f'{f_["ranked"]:,.0f}', f_["src_on"],
+                 "byref A/B: re-use candidates ranked per frontier puzzle",
+                 raw=f_["ranked"])
+            + " per beyond-oracle puzzle; "
+            + ck(fnum(g["topk"], 0), g["src_on"],
+                 "byref A/B: re-use candidates shortlisted per gradable puzzle",
+                 raw=g["topk"])
+            + " and "
+            + ck(fnum(f_["topk"], 0), f_["src_on"],
+                 "byref A/B: re-use candidates shortlisted per frontier puzzle",
+                 raw=f_["topk"])
+            + " of them respectively made a shortlist and were expanded. "
+            "The as-shipped count, in the census just above, is zero.</p>")
+
+    body = f"""
+  <p><b>What the step is.</b> A plan may point at a robot it has already
+  positioned instead of recruiting a fresh helper. That permission is what
+  lifts the language ceiling — and, as the census above shows, the learned
+  planner could never propose it: the proposal path, the helper
+  featurization and a silent training filter all skipped it. That step is
+  now wired, behind a flag that defaults off. With the flag off the planner
+  reproduces every production row on this page exactly, which is what makes
+  the pair below a clean A/B — same banked networks, same pinned puzzles
+  (sha256-checked), same budget of 1,200 search steps and 5 proposals,
+  every solve replayed on the real board.</p>
+  {table}
+  {supply}
+  <p><b>The honest reading.</b> The direction is right and the size is
+  noise — 3 puzzles in 450, comfortably inside what the paired test calls
+  chance — with the beyond-oracle search slightly cheaper and its plans
+  slightly longer ({num(f_["on"]["mean_len_both"], 1, f_["src_on"],
+  "byref A/B frontier: mean plan length on")} vs
+  {num(f_["off"]["mean_len_both"], 1, f_["src_off"],
+  "byref A/B frontier: mean plan length off")} moves on the puzzles both
+  arms solve). But these networks have never seen a single training example
+  of the step — the filter dropped them all — and they still cannot
+  <i>name</i> the robot being referenced. What this measures is therefore
+  the step's value to a planner that cannot really use it yet: a lower
+  bound. The bottleneck is the training signal, not the supply of
+  candidates. Two consequences for the rest of this page: the zero-shot
+  rows stand exactly as reported, and the ceiling remains what it has
+  always been here — a property of what the plan language can express, not
+  a delivered solve rate.</p>
+</section>"""
+    return head + body
 
 def sec_worked(D):
     w = D.get("worked")
@@ -1567,5 +1713,5 @@ def sec_lang_scale(D):
 
 def tab_language(D):
     return (sec_lang_what(D) + sec_lang_ceiling(D) + sec_lang_b1(D)
-            + sec_lang_b2(D) + sec_lang_attribution(D) + sec_worked(D)
-            + sec_lang_scale(D))
+            + sec_lang_b2(D) + sec_lang_attribution(D) + sec_lang_byref(D)
+            + sec_worked(D) + sec_lang_scale(D))

@@ -581,15 +581,16 @@ def sec_open(D):
     (3 seeds × 3 learning rates, winner chosen by its own validation score,
     never by test; ~8 node-hours). Objection answered: “you beat a weak
     opponent — forward got one run and one learning-rate fix.”</li>
-    <li><b>Running — the re-use (by-reference) step, wired at last.</b>
+    <li><b>Done — the re-use (by-reference) step, wired at last.</b>
     The step type the plan-language ceiling relies on was never connected
     to the learned planner (proposal path, helper featurization, and a
     silent training filter). It is now wired behind a flag that defaults
-    off (flag-off is byte-identical to every row on this page); an on/off
-    A/B at 16×16·6r (~1–2 node-hours) measures its zero-shot value.
-    Still to do after that: a feature that lets the policy net <i>name</i>
-    the referenced cell (a checkpoint migration) and a policy retrain on a
-    corpus not depleted of these labels.</li>
+    off (flag-off is byte-identical to every row on this page), and the
+    zero-shot on/off A/B at 16×16·6r has landed — the effect is +3 puzzles
+    in 450 and not significant; see the plan-language chapter for the
+    table and the reading. Still to do: a feature that lets the policy net
+    <i>name</i> the referenced cell (a checkpoint migration) and a policy
+    retrain on a corpus not depleted of these labels.</li>
     <li><b>Future work, ranked:</b> a learned-subgoal (kSubS-style)
     baseline — the one comparison every reviewer asked for, large; the
     8-robot cell, where retraining never finds its good basin and where
