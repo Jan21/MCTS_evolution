@@ -2630,3 +2630,35 @@ record what was done about the first three items.)_
    Sources: `scaling/results/g16r6/comparison{,_ungraded}_b2retrained_
    cap20000_byref_{on,off}.json`, `runs/byref/rr-byref-*-467{0615,0616,
    0617,0668}.out`.
+
+79. **Deployment run complete: the NN-everything pipeline on fresh boards
+   is downstream-equivalent to the exact-solver pipeline (2026-08-17, job
+   4670119 COMPLETED in 14:17 h; whole run ≈ 2.2 nh incl. the failed first
+   pair).** The second half of the owner's "controlled + 1 deployment"
+   decision (2026-08-05): fresh lean boards ids 2000–3049 (disjoint from
+   the exact pool 0–1199), fresh instances, prod_v1_s11 labels — no exact
+   solver anywhere in data production; planners trained from scratch and
+   benched on the SAME sha-pinned g32r4 instances as every other arm.
+   (a) **Corpus:** 73,202 records from 1,050 boards, zero timeouts —
+   substantially larger than the exact corpus (51,353) and the twin
+   (39,053): fresh generation keeps the instances the net can certify
+   instead of paying the twin's certification drop against a fixed
+   instance set.
+   (b) **Result (backward planner, prefix-check):** graded 83.4 solve /
+   47.9 optimal / 3.10 regret vs exact 84.0 / 51.7 / 2.37 and twin 84.6 /
+   45.9 / 3.56; frontier 45.8 vs exact 46.2 and twin 48.0. The deployment
+   arm sits BETWEEN the exact and twin arms on optimality and regret and
+   within 0.6 pts of exact on solve — §74's g32r4 verdict (solve-rate
+   equivalence, modest optimality cost at 89% label fidelity) survives
+   with the exact solver removed from board, instance, and label
+   production alike. Both sets replay-certified (0 fails).
+   (c) **One bug en route:** the first pair (4669684/85) finished the
+   corpus, then died at `num_samples=0` — `scaling.train` rebinds splits
+   to the config's standard board ranges (0–1049), which the deploy
+   boards (2000–3049) never match. `scaling.train` gained a `--splits`
+   override (train=2000-2699,val=2700-2899,test=2900-3049 — proportioned
+   700/200/150 like the standard pool); flag-off behaviour unchanged.
+   Corpus was preserved; only training+bench re-ran.
+   Sources: `scaling/results/g32r4/comparison{,_ungraded}_nndeploy.json`,
+   `nn_labeler/results/deploy_g32r4.jsonl` (+manifests),
+   `runs/nnlab/deployment_{4669684,4670119}.out`.

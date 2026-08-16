@@ -103,6 +103,9 @@ def sec_downstream():
             ("backward — NN twin, seed 21", f"scaling/results/{cfg}/comparison_nntwin-seed21.json", BWD, False, "hl"),
             ("forward — exact (untouched control)", f"scaling/results/{cfg}/comparison.json", "forward", True, "ctl"),
         ]
+        if cfg == "g32r4":  # deployment ran at this config only (FINDINGS 79)
+            specs.insert(4, ("backward — NN deployment (fresh boards, instances, labels)",
+                             f"scaling/results/{cfg}/comparison_nndeploy.json", BWD, False, "hl"))
         for label, rel, system, pfx, cls in specs:
             a = agg(rel, system, prefix=pfx)
             if a is None:
@@ -118,9 +121,13 @@ def sec_downstream():
                                   fmt(a.get("mean_seconds"), ".1f"),
                                   fmt(a.get("n"), "d")], cls))
         # frontier (previously-unsolved instances)
-        for label, rel, cls in [
-                ("backward — exact, frontier", f"scaling/results/{cfg}/comparison_ungraded.json", "sub"),
-                ("backward — NN twin, frontier", f"scaling/results/{cfg}/comparison_ungraded_nntwin.json", "sub hl")]:
+        frontier_specs = [
+            ("backward — exact, frontier", f"scaling/results/{cfg}/comparison_ungraded.json", "sub"),
+            ("backward — NN twin, frontier", f"scaling/results/{cfg}/comparison_ungraded_nntwin.json", "sub hl")]
+        if cfg == "g32r4":
+            frontier_specs.append(("backward — NN deployment, frontier",
+                                   f"scaling/results/{cfg}/comparison_ungraded_nndeploy.json", "sub hl"))
+        for label, rel, cls in frontier_specs:
             a = agg(rel)
             if a is None:
                 note = "no exact frontier row exists" if cfg == "g24r4" and "ungraded.json" in rel \

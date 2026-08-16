@@ -81,7 +81,7 @@
 <body>
 
 <h1>Teaching a network to be the teacher</h1>
-<span class="badge">Campaign complete — one last run still out</span>
+<span class="badge">Campaign complete — every run in</span>
 <p class="sub">A plain-English account of the scaling experiments &middot; 2026-08-16 &middot; local working document</p>
 
 <p class="lede">We build programs that solve a sliding-robot puzzle, and they learn from millions of
@@ -1459,18 +1459,22 @@ about four seconds.</p>
 <h2>Where we are</h2>
 
 <div class="card open">
-<span class="tag">Updated 2026-08-16 — campaign complete, one run still out</span>
-<p><strong>Done.</strong> Every job of the controlled campaign has run and the queue is empty. The
-headline holds: planners taught from network-written answer keys are as good as planners taught from
-the exact solver's, provided the keys agree with it about nine times in ten — and below that, they
-are not. The ladder is flat from 17 to 64, the last size anything can be checked at, and labeled
-boards now exist at 80 and 96. The whole thing came to roughly <strong>25 node-hours</strong> — about
-2.5% of the project's grant — against the 441 the old exact-solver plan projected for one batch of
-training data.</p>
-<p><strong>Still out.</strong> One experiment: the deployment run. Everything above replaced the
-answer key alone, on boards and puzzles the exact solver's world had made. In this one the network
-makes the boards, makes the puzzles <em>and</em> writes the answers, with no exact solver anywhere in
-the pipeline. It lands in about two days.</p>
+<span class="tag">Updated 2026-08-17 — campaign complete, every run in</span>
+<p><strong>Done.</strong> Every job has run and the queue is empty. The headline holds: planners
+taught from network-written answer keys are as good as planners taught from the exact solver's,
+provided the keys agree with it about nine times in ten — and below that, they are not. The ladder
+is flat from 17 to 64, the last size anything can be checked at, and labeled boards now exist at 80
+and 96. The whole thing came to roughly <strong>27 node-hours</strong> — under 3% of the project's
+grant — against the 441 the old exact-solver plan projected for one batch of training data.</p>
+<p><strong>The last run came home.</strong> Everything above replaced the answer key alone, on
+boards and puzzles the exact solver's world had made. In the final experiment the network made the
+boards, made the puzzles <em>and</em> wrote the answers — no exact solver anywhere — and the planner
+trained on that world scored <strong>83.4% against the exact-taught planner's 84.0%</strong> on the
+same fixed exam, landing between the exact and label-swap arms on answer quality (47.9% perfectly
+optimal vs 51.7% and 45.9%). The pipeline also turned out more generous than the label-swap
+experiments suggested: writing its own puzzles instead of replaying the solver's, it kept 73,202
+training examples where the swap had kept 39,053. The story closes where it aimed: a solver-free
+pipeline, end to end, indistinguishable in the way that matters.</p>
 <p>Every number quoted here, and many that are not, live in a companion results page that rebuilds
 itself whenever a job finishes: <code>nn_labeler/report/suite.html</code>.</p>
 </div>
@@ -1495,8 +1499,9 @@ itself whenever a job finishes: <code>nn_labeler/report/suite.html</code>.</p>
   <tr><td>Repeat runs with different starting numbers</td><td class="num">~0.9</td><td>demoted our own best-looking result</td></tr>
   <tr><td>Richer move language, training and labeling</td><td class="num">~4</td><td>negative: the special moves did not come back</td></tr>
   <tr><td>Ladder 40 to 64, and the boards past it</td><td class="num">~0.7</td><td>flat to the last checkable size, then 80 and 96</td></tr>
-  <tr><td><strong>The controlled campaign</strong></td><td class="num"><strong>~25</strong></td><td>about 2.5% of the project's grant</td></tr>
-  <tr><td><strong>Everything on this page</strong></td><td class="num"><strong>~31</strong></td><td>against the 441 originally projected for one batch</td></tr>
+  <tr><td>The deployment run — network makes everything</td><td class="num">~2.2</td><td>83.4% vs 84.0%; the solver-free pipeline holds</td></tr>
+  <tr><td><strong>The whole campaign</strong></td><td class="num"><strong>~27</strong></td><td>under 3% of the project's grant</td></tr>
+  <tr><td><strong>Everything on this page</strong></td><td class="num"><strong>~33</strong></td><td>against the 441 originally projected for one batch</td></tr>
 </table>
 </div>
 
@@ -1506,7 +1511,7 @@ part of the plan that worked best.</p>
 
 <p>The technical companion to this document, with file names, job numbers and the full measurement
 tables, is <code>nn_labeler/report/process.html</code>. The running experiment log is
-<code>FINDINGS.md</code>, items 48 through 74.</p>
+<code>FINDINGS.md</code>, items 48 through 74 and 79.</p>
 
 <footer>Local document. Numbers trace to FINDINGS.md and nn_labeler/results/. Work in progress.</footer>
 

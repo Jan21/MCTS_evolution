@@ -26,18 +26,22 @@ path landed, record-identical, unlocking 40–96). prod2 (4616677) is done;
 4610118 (eager lprep) was CANCELLED and replaced by the lean gates job. The
 single-GPU dependency chain, in order:
 
-**CAMPAIGN ESSENTIALLY COMPLETE (2026-08-11).** Read FINDINGS **61–74** for
-the full arc. The controlled suite closed as a three-cell dose-response
-(§74: fidelity gates downstream utility — 91% argmin → full equivalence on
-a 2×2, 89% → solve-rate equivalence, 82% → collapse); B2 payoff was
-NEGATIVE (§68, distillation of capped data); the verifiable ladder runs
-17–64 flat with the calibration endpoint at 90.1% (§70); UNVERIFIABLE
-labels exist at 80/96 (§72c). The ONLY jobs still queued are the
-deployment pair (4669684→85, fresh NN-everything corpus at g32r4 →
-`comparison_nndeploy.json`, ~2 days). Open next steps: 80/96 downstream
-validation (planner-side architecture above 32 UNPROBED — feasibility
-first), B2 rescue via a small uncapped exact seed corpus (owner
-decision), more seeds for g32r4/g24r8 twin cells. Total campaign ≈25 nh.
+**CAMPAIGN COMPLETE (2026-08-17).** Read FINDINGS **61–74 and 79** for the
+full arc (75–78 are the concurrent Track-1 session's). The controlled
+suite closed as a three-cell dose-response (§74: fidelity gates downstream
+utility — 91% argmin → full equivalence on a 2×2, 89% → solve-rate
+equivalence, 82% → collapse); B2 payoff was NEGATIVE (§68, distillation of
+capped data); the verifiable ladder runs 17–64 flat with the calibration
+endpoint at 90.1% (§70); UNVERIFIABLE labels exist at 80/96 (§72c). The
+deployment run LANDED (§79, job 4670119): fresh NN-everything pipeline at
+g32r4 → 83.4 solve / 47.9 opt / 3.10 regret, between the exact and twin
+arms — equivalence holds with no exact solver anywhere in data
+production. (`scaling.train` gained `--splits` for corpora on
+non-standard board ids en route.) NO jobs queued. Open next steps: 80/96
+downstream validation (planner-side architecture above 32 UNPROBED —
+feasibility first), B2 rescue via a small uncapped exact seed corpus
+(owner decision), more seeds for g32r4/g24r8 twin cells. Total campaign
+≈27 nh.
 The table below is the historical lane plan it ran under:
 
 | lane | jobs | what it does |
