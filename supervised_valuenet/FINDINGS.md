@@ -1940,22 +1940,31 @@ scoped fix.
 
 ## Still open
 
-- **Integrating the by-reference step type into the learned planner**
-  (FINDINGS 40) — the gap between the 99.6% ceiling and the learned rows is
-  an integration gap, not a ranking one: it needs (a) a helper-identity
-  featurization that can name non-start cells (`eval/end2end.py::_hidx`),
-  (b) a policy retrain without `train/policy_common.py`'s silent
-  by-reference record filter, and (c) the ~5-line proposal-path wiring in
-  `eval/compare.py::_nn_astar_backward` that `nn/generate.py` already has.
-  The corpora already carry the labels (10.4–11.0% by-reference); the
-  candidate supply at eval is measured (job 4599947).
-- Corpus-correct (cap-20000) retrains + Track 1 rows: g16r6 and g16r8 done;
-  base, g24r8, g32r4 in flight 2026-07-28 night (pipeline_driver_v2).
+_(Rewritten 2026-08-16 after the fourteen-lens review, §75. Entries 76–77
+record what was done about the first three items.)_
+
+- **In flight (§77):** seed replicates of the backward headline pair at
+  g16r8/g32r4 (jobs 4670563–84); forward fair rescue at g16r8 (4670585–88);
+  by-reference zero-shot A/B at g16r6 (4670615/16/17/4670668). Also the
+  previous session's g32r4 NN-everything deployment retry (4670119→20).
+- **By-reference, next steps** — the proposal/featurization/filter are wired
+  (§77c) but the policy net still cannot *name* the referenced cell (needs an
+  8th feature channel → checkpoint migration), and a policy retrain with the
+  filter off needs a corpus not depleted of by-reference labels (§32/§68: a
+  small uncapped exact B2 seed corpus is the only visible source).
+- **Learned-subgoal (kSubS-style) baseline** — the one comparison every
+  reviewer asked for; large (~10–20 nh + engineering); declared future work
+  unless a venue demands it.
+- **The 8-robot cell** — where both tracks break (§45/§47/§73): retraining
+  never finds the good basin, NN labels fall to 82% argmin and the twin
+  planner collapses. Candidates: cold/alternative warm-start recipe, beam
+  instead of greedy descent for the labeler, a 32×32×8 corner rung.
+- **Second domain** — a Rush Hour port would reuse the plan DAG, realizer and
+  self-play loop nearly verbatim (~1 nh); turns a Ricochet result into a
+  method result.
 - Quality-focused self-play on the extended stack (frontier solution
-  length).
-- Deciding the 2 frontier-bound base probe instances (idx 405, 427) via a
-  memory-shaped (depth-bounded) probe; `validate_plan.py` and the `park`
-  node type.
+  length); the 2 frontier-bound base probe instances (idx 405, 427);
+  `validate_plan.py` and the `park` node type.
 
 57. **The production labeler net collapsed mid-training at epoch 2 — and the
    collapse detector added after battery 1 caught it automatically; the best
