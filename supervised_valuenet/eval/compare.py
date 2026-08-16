@@ -155,7 +155,8 @@ def run_forward(ckpt, instances, k, budget, device, log=print,
 
 def _nn_astar_backward(env, state, solver, policy, value, env_id, dev,
                        k, max_expansions, realize_check=None,
-                       prefix_filter=None, park_hook=None, acct=None):
+                       prefix_filter=None, park_hook=None, acct=None,
+                       byref=False, byref_pool=None):
     """Local copy of eval.end2end.nn_astar with two changes: expansions are
     counted as pops that reach the propose step (capped at `max_expansions`;
     free exact-fix loops and the final complete-plan pop are free), and the
@@ -172,12 +173,42 @@ def _nn_astar_backward(env, state, solver, policy, value, env_id, dev,
     still governs what happens when a complete plan POPS).
     `acct` (optional dict): compute-accounting counters incremented in place
     (nn_policy_calls, nn_value_calls, free_exact_fix_expands); observational.
+    With `byref` (Lever B2 by-reference proposals, FINDINGS 40; default OFF so
+    every measured row stays reproducible) the expansion mirrors
+    `skeleton/astar.py::AStar._expand` and `nn/generate.py::rollout`: reference
+    helpers are injected into the segment, `_apply` runs with
+    `by_reference=True`, and helper featurization is resolved by robot identity
+    (`_hidx(..., helper_color)` / `_policy_logp(..., byref=True)`) so the
+    candidates survive to the nets. `byref_pool` (m) bounds the candidate pool
+    to the top-m by heuristic score (`solver.score`, the same ordering
+    `_expand` and the labeler use), which caps the ~1.5x candidate inflation
+    by-reference brings; it is applied ONLY when `byref` is on, and it does not
+    touch the matched-budget protocol -- an expansion is still one policy pass
+    plus one batched value pass over <= k children.
     Returns (plan | None, expansions_used, n_rejected, n_pruned)."""
-    from skeleton.astar import _initial_plan, _segment, _apply
+    from skeleton.astar import _initial_plan, _segment, _apply, _reference_helpers
     from nn.generate import _context, _fixed_g
     from nn.collect_search import _record
     from train.policy_common import _ix
     from eval.end2end import _policy_logp, _value_cost, _hidx
+
+    def _hi(state, r, byref):
+        """Helper slot for a candidate record: by robot identity under `byref`
+        (so a helper at a PLANNED cell resolves), by start position otherwise
+        -- the historical behaviour, bit-for-bit."""
+        return _hidx(state, r["cand_helper"][0],
+                     r["cand_helper"][1] if byref else None)
+
+    _starts = {h.color: (int(h.position[0]), int(h.position[1]))
+               for h in state.helpers}
+    _starts[state.target_robot.color] = (int(state.target_robot.position[0]),
+                                         int(state.target_robot.position[1]))
+
+    def _is_ref(state, r):
+        """True when this candidate's helper stands somewhere other than its
+        own robot's start cell -- the `scaling/qc_byref.py` definition of a
+        by-reference candidate. Observational counters only."""
+        return tuple(r["cand_helper"][0]) != _starts.get(r["cand_helper"][1])
 
     cnt = itertools.count()
     frontier = [(0.0, next(cnt), _initial_plan(env, state))]
@@ -212,26 +243,38 @@ def _nn_astar_backward(env, state, solver, policy, value, env_id, dev,
         expansions += 1                                   # this pop generates children
         parent, child = plan.open_edges()[0]
         seg = _segment(plan, state, parent, child)
+        if byref:                                         # mirrors AStar._expand
+            seg.helpers = seg.helpers + _reference_helpers(plan, seg.mover.color)
         cands = solver.propose(env, seg.end, seg.mover, seg.helpers, seg.support)
+        if byref and byref_pool is not None and len(cands) > byref_pool:
+            # bounded pool: top-m by the heuristic score, the ordering
+            # AStar._expand sorts by and nn/generate.py caps on
+            cands = sorted(cands, key=lambda c: solver.score(env, c))[:byref_pool]
         ctx = _context(plan)
         recs, cps = [], []
         for cand in cands:
-            cp = _apply(env, plan, parent, child, seg, cand)
-            if cp is None or _hidx(state, _record(env_id, state, seg, ctx, cand,
-                                                  0, 0, 0)["cand_helper"][0]) is None:
+            cp = _apply(env, plan, parent, child, seg, cand, by_reference=byref)
+            if cp is None:
                 continue
-            recs.append(_record(env_id, state, seg, ctx, cand, 0, 0, 0))
+            r = _record(env_id, state, seg, ctx, cand, 0, 0, 0)
+            if _hi(state, r, byref) is None:
+                continue
+            recs.append(r)
             cps.append(cp)
         if not recs:
             continue
         if acct is not None:
             acct["nn_policy_calls"] += 1
-        logp, _ = _policy_logp(policy, recs, dev)
+            if byref:
+                acct["byref_cands_ranked"] += sum(_is_ref(state, r) for r in recs)
+        logp, _ = _policy_logp(policy, recs, dev, byref=byref)
         if logp is None:
             continue
         keys = [(_ix(r["cand_bottleneck"]), _ix(r["cand_support"]),
-                 _hidx(state, r["cand_helper"][0])) for r in recs]
+                 _hi(state, r, byref)) for r in recs]
         order = sorted(range(len(recs)), key=lambda i: -logp.get(keys[i], -1e9))[:k]
+        if acct is not None and byref:
+            acct["byref_cands_topk"] += sum(_is_ref(state, recs[i]) for i in order)
         if acct is not None:
             acct["nn_value_calls"] += 1
         costs = _value_cost(value, [recs[i] for i in order], dev)
@@ -246,7 +289,7 @@ def _nn_astar_backward(env, state, solver, policy, value, env_id, dev,
 def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
                  log=print, anytime=False, prefix_check=False, b1=False,
                  b2=False, dump_moves=False, count_slides=False,
-                 placeholder_d_star=False):
+                 placeholder_d_star=False, byref=False, byref_pool=None):
     from GridEnv import GridEnv, State, Robot_at
     from skeleton.astar import AStar, park_repairs
     from skeleton import heuristics
@@ -270,13 +313,19 @@ def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
     # B2 mode (implies the B1 vocabulary): generalized park repairs (pairwise
     # clearing, multi-slide destinations, park cap 2). NOTE (FINDINGS 40): the
     # AStar by_reference flag set below affects only solver._expand, which the
-    # NN loop reaches solely on the free-exact-fix branch -- _nn_astar_backward
-    # itself never injects _reference_helpers and never passes
-    # by_reference=True to _apply, and _hidx drops any candidate whose helper
-    # is not at a robot start. So by-reference candidates are structurally
-    # absent from every learned row this driver produces; the earlier claim
-    # here that "the nets rank them zero-shot" was false. The correctly wired
-    # by-reference path lives in nn/generate.py and the ceiling probe.
+    # NN loop reaches solely on the free-exact-fix branch. WITHOUT `byref`
+    # (the default, and the setting under which every row in the study was
+    # measured) _nn_astar_backward itself neither injects _reference_helpers
+    # nor passes by_reference=True to _apply, and _hidx drops any candidate
+    # whose helper is not at a robot start -- so by-reference candidates are
+    # structurally absent from those rows, and the historical claim here that
+    # "the nets rank them zero-shot" was false.
+    # `byref` (--backward-byref / RR_BYREF=1) closes exactly that gap: the
+    # proposal path becomes the one nn/generate.py and the ceiling probe
+    # already use, and helper featurization keys on robot identity. It is
+    # OPT-IN; with the flag off this driver is byte-for-byte the pre-flag
+    # driver. `byref_pool` (--backward-byref-pool / RR_BYREF_POOL) bounds the
+    # inflated candidate pool to the top-m by heuristic score.
     if b2:
         b1 = True
     solver = AStar(propose=heuristics.propose_b1 if b1 else heuristics.propose,
@@ -311,6 +360,9 @@ def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
                 "physics_calls_strict_realize": 0,
                 "physics_calls_park_repair": 0,
                 "park_plans_pushed": 0}
+        if byref:                                     # Lever B2 supply counters
+            acct["byref_cands_ranked"] = 0            # reached the policy net
+            acct["byref_cands_topk"] = 0              # survived into the top-k
         moves_cache = {}                              # id(plan) -> [color, dir] list
         check_cache = {}
         fail_cache = {}
@@ -367,7 +419,8 @@ def run_backward(policy_ckpt, value_ckpt, instances, k, budget, device,
             plan, expansions, rejected, pruned = _nn_astar_backward(
                 env, st, solver, policy, value, env_id, device, k, budget,
                 realize_check=realize_check, prefix_filter=prefix_filter,
-                park_hook=park_hook, acct=acct)
+                park_hook=park_hook, acct=acct, byref=byref,
+                byref_pool=byref_pool)
         acct["rejected_plan_pops"] = rejected
         dt = time.perf_counter() - t0
         row = {
@@ -635,6 +688,26 @@ def main():
                         "repairs (pairwise clearing, multi-slide destinations, "
                         "park cap 2); by-reference candidates are ranked "
                         "zero-shot by the B1 nets")
+    p.add_argument("--backward-byref", action="store_true",
+                   help="Lever B2 BY-REFERENCE proposals in the learned "
+                        "driver (FINDINGS 40): inject "
+                        "skeleton.astar._reference_helpers into each "
+                        "expansion, apply candidates with by_reference=True, "
+                        "and resolve helper featurization by robot identity "
+                        "so helpers at PLANNED cells survive to the nets. "
+                        "Intended with --backward-b2. Default OFF: every "
+                        "measured row in the study was produced without it "
+                        "and stays reproducible. Also settable as RR_BYREF=1")
+    p.add_argument("--backward-byref-pool", type=int, default=None,
+                   metavar="M",
+                   help="with --backward-byref, keep only the top-M "
+                        "candidates by heuristic score per expansion "
+                        "(default: unbounded). By-reference inflates the "
+                        "candidate pool ~1.5x; the cap bounds the physics "
+                        "work per expansion. The matched-budget protocol is "
+                        "untouched either way (1 policy pass + 1 batched "
+                        "value pass over <= k children per expansion). "
+                        "Also settable as RR_BYREF_POOL=<M>")
     p.add_argument("--dump-moves", action="store_true",
                    help="record each solved row's realized primitive-move "
                         "sequence ([color, direction] per slide; backward key "
@@ -657,6 +730,17 @@ def main():
     p.add_argument("--out", default="eval/results/comparison.json")
     p.add_argument("--md", default="COMPARISON.md")
     a = p.parse_args()
+
+    # Env fallbacks so a job script can flip the lever without editing the
+    # command line; the CLI flag wins when given.
+    byref = a.backward_byref or os.environ.get("RR_BYREF", "") == "1"
+    byref_pool = a.backward_byref_pool
+    if byref_pool is None and os.environ.get("RR_BYREF_POOL", "").strip():
+        byref_pool = int(os.environ["RR_BYREF_POOL"])
+    if byref and not a.backward_b2:
+        print("[compare] NOTE: --backward-byref without --backward-b2; the "
+              "by-reference apply shapes are B2 semantics, and park repairs "
+              "stay at the B1 setting")
 
     import torch
     torch.manual_seed(0)
@@ -695,6 +779,8 @@ def main():
         "d_star_placeholder": placeholder_d_star,
         "count_slides": a.count_slides,
         "dump_moves": a.dump_moves,
+        "byref": byref,
+        "byref_pool": byref_pool,
         "date": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "results_file": a.out,
         "command": " ".join(["PYTHONPATH=. python -m eval.compare"]
@@ -714,11 +800,13 @@ def main():
         back_name += " [extended language B2]"
     elif a.backward_b1:
         back_name += " [extended language B1]"
+    if byref:
+        back_name += " [by-reference]"
     if run_back:
         print(f"[compare] backward: policy={a.backward_policy} "
               f"value={a.backward_value} anytime={a.backward_anytime} "
               f"prefix_check={a.backward_prefix_check} b1={a.backward_b1} "
-              f"b2={a.backward_b2}")
+              f"b2={a.backward_b2} byref={byref} byref_pool={byref_pool}")
         rows = run_backward(a.backward_policy, a.backward_value, instances,
                             a.k, a.expansions, a.device,
                             anytime=a.backward_anytime,
@@ -726,7 +814,8 @@ def main():
                             b1=a.backward_b1, b2=a.backward_b2,
                             dump_moves=a.dump_moves,
                             count_slides=a.count_slides,
-                            placeholder_d_star=placeholder_d_star)
+                            placeholder_d_star=placeholder_d_star,
+                            byref=byref, byref_pool=byref_pool)
         systems[back_name] = {"kind": "backward",
                               "aggregate": aggregate(rows, "realized_strict"),
                               "rows": rows}

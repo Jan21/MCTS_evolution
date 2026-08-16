@@ -29,16 +29,50 @@ from train.looped_pc import _x257 as _val_x, LoopedValueNet
 torch.set_grad_enabled(False)
 
 
-def _hidx(state, helper_pos):
+def _hidx(state, helper_pos, helper_color=None):
+    """Index of the candidate's helper in `state.helpers` (the slot the policy
+    net's helper head is defined over).
+
+    Default (helper_color=None) is the historical POSITION match: a helper is
+    recognized only where its robot STARTS. A by-reference helper (Lever B2)
+    stands at a cell the plan itself will put its robot on, so it never matches
+    a start and the caller drops the candidate (FINDINGS 40).
+
+    Pass `helper_color` (from `cand_helper[1]`) to resolve by ROBOT IDENTITY
+    instead: the colour names the robot, wherever the plan has placed it, so a
+    by-reference candidate becomes featurizable. Colour lookup is tried first
+    and falls back to the position match, which keeps the resolved set a strict
+    SUPERSET of the position-only one: a robot at its own start resolves to the
+    same slot either way (two robots never share a cell), and a helper that is
+    the TARGET robot (absent from `state.helpers`) keeps its historical
+    position-match behaviour.
+
+    NOTE (featurization, not a bug): the slot is an identity, so the policy net
+    scores a by-reference candidate at its robot's START-cell embedding; the
+    referenced cell reaches only the value net (raw cell index). Naming the
+    referenced cell to the policy needs a new input channel and therefore new
+    checkpoint shapes -- see the design note in this docstring's companion,
+    `train/policy_common.py::_features`.
+    """
+    if helper_color is not None:
+        for i, h in enumerate(state.helpers):
+            if h.color == helper_color:
+                return i
     for i, h in enumerate(state.helpers):
         if (int(h.position[0]), int(h.position[1])) == tuple(helper_pos):
             return i
     return None
 
 
-def _policy_logp(policy, group, dev):
-    """{(bn,sp,helper_idx): AR logprob} for the decision's candidates."""
-    m = _meta(group)
+def _policy_logp(policy, group, dev, byref=False):
+    """{(bn,sp,helper_idx): AR logprob} for the decision's candidates.
+
+    `byref=True` propagates to `_meta`, which then keys helpers by robot
+    identity so by-reference candidates keep an entry in the returned map
+    instead of being silently dropped (they would otherwise fall to the
+    caller's -1e9 default and always rank last).
+    """
+    m = _meta(group, byref=byref)
     if m is None:
         return None, None
     x = _pol_x(group[0]).unsqueeze(0).to(dev)
