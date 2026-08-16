@@ -2598,3 +2598,35 @@ record what was done about the first three items.)_
    Sources: `jobs/patterns/{seed_headline_pair,fwd_rescue_grid,
    fwd_rescue_select_bench,byref_ab}.slurm`, `analysis/review_2026-08-16/
    impl_{seeds_forward_plan,byref}.md`.
+
+78. **By-reference zero-shot A/B at g16r6: candidate supply is enormous, the
+   effect is small and not significant — +3 frontier solves (108 vs 105
+   of 134), 0 on the graded set (310 vs 310 of 316), pooled 418 vs 415 of
+   450, McNemar p=0.61 (2026-08-17, jobs 4670615/16/17/4670668, 1.5 h GPU
+   total ≈ 0.4 nh).** Same banked cap-20000 B2 nets, identical pinned
+   instances (sha-checked), 1200/k5, every solve replay-certified (0 fails).
+   (a) **The off arm is a clean regression check:** it reproduces the
+   production rows exactly (310/316, 105/134) at the post-wiring revision.
+   (b) **Supply confirmed at scale:** with the flag on, 599 by-reference
+   candidates per graded instance and 5,363 per frontier instance were
+   scored by the policy net, and 95 / 717 per instance entered a top-k —
+   the vocabulary is offered everywhere (§40's job 4599947 said 97% of
+   expansions).
+   (c) **Effect:** frontier +3 (6 gained, 3 lost), graded ±0 (3/3), pooled
+   discordant 9 vs 6, p=0.61; frontier mean expansions 320 vs 346, median
+   seconds 24.6 vs 26.8 (slightly cheaper); both-solved mean length 15.9 vs
+   15.3 (slightly longer). Direction is right, size is noise-level.
+   (d) **Reading:** the nets never saw a by-reference record (the training
+   filter, §40/§77c) and cannot name the referenced cell (design gap,
+   §77c), so this is a lower bound on the step's value — the supply is not
+   the bottleneck, the training signal is, exactly as §68 concluded for
+   the labeler. The zero-shot rows on this page therefore stand as they
+   are; the ceiling (99.6%) remains a language property, not a delivered
+   result. Next lever, if pursued: a policy retrain with
+   `RR_BYREF_RECORDS=1` on a corpus not depleted of by-reference labels
+   (small uncapped exact seed corpus, §32/§68) plus the referenced-cell
+   feature — medium cost, uncertain payoff (B1→B2 at fixed nets was +2/0,
+   §39).
+   Sources: `scaling/results/g16r6/comparison{,_ungraded}_b2retrained_
+   cap20000_byref_{on,off}.json`, `runs/byref/rr-byref-*-467{0615,0616,
+   0617,0668}.out`.
