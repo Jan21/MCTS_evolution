@@ -2459,3 +2459,35 @@ scoped fix.
    Sources: `scaling/results/g24r8/comparison_nntwin.json` vs
    `comparison.json`, `runs/nnlab/twin_retrain_4629917.out`,
    `scaling/runs/g24r8/backward-{policy,value}-nntwin/`.
+
+74. **THE CONTROLLED SUITE IS COMPLETE — three cells, one dose-response:
+   label fidelity gates downstream utility monotonically (2026-08-11,
+   jobs 4632983/86 close it out; all benches replay-certified).** The
+   g32r4 twin corpus (39,053 rec, 76.0% of exact) gates at 89.4% argmin
+   — between the other cells — and its planner lands between their
+   outcomes. The full picture, twin vs exact per cell:
+   | cell | label argmin | solve (graded) | % optimal | frontier solve |
+   |---|---|---|---|---|
+   | g24r4 | 91.0% | 87.9–91.4 vs 88.4 (2×2, equiv) | 39.2–45.8 vs 38.5–40.0 | (no exact ref) |
+   | g32r4 | 89.4% | **84.6 vs 84.0** | 45.9 vs 51.7 | **48.0 vs 46.2** |
+   | g24r8 | 82.2% | 68.3 vs 89.4 | 40.9 vs 50.7 | 28.4 vs 53.3 |
+   Reading: at ≥89% argmin fidelity the twin planner MATCHES the exact
+   planner's solve rate on both the graded and frontier sets (g32r4's
+   twin is nominally ahead on both), with a modest optimality/regret cost
+   at 89% that vanishes by 91%; at 82% everything collapses. The
+   threshold for solve-rate equivalence sits below 89%; for full
+   equivalence, near 91%. Caveats as before: g32r4/g24r8 twins are
+   single-seed (g24r4's twin seed spread, 3.5 pts, cannot explain the
+   21-pt g24r8 gap but could flavor g32r4's optimality deficit);
+   fidelity co-varies with corpus shrinkage and robot count.
+   OPERATIONAL CLOSE: every job of the controlled campaign has now run;
+   the queue is empty. Total campaign cost ≈ 25 nh (§68's ~4 nh B2 +
+   twins ~13 nh + retrains ~6 nh + ladder ~0.7 nh + replicates ~0.9 nh).
+   Remaining owner-approved work: the 32×32 DEPLOYMENT run (fresh
+   NN-everything corpus — now ~5 h with lean boards, not the 54 h §61
+   projected) and the 80/96 downstream-validation phase (planner-side
+   architecture above 32 unprobed — feasibility check first).
+   Sources: `nn_labeler/results/twin_gate_g32r4.json`,
+   `scaling/results/g32r4/comparison{,_ungraded}_nntwin.json`,
+   `scaling/results/g24r8/comparison_ungraded_nntwin.json`,
+   `runs/nnlab/twin_retrain_4632986.out` (NNLAB TWINRT DONE).
