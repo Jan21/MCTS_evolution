@@ -1012,23 +1012,40 @@ move-by-move	1199"/><text x="110" y="262.0" text-anchor="end" font-size="11.5" f
 <div class="sechead"><div class="kicker">still open</div>
 <h2>What is running and what is next</h2>
 </div>
+  <p>On 2026-08-16 fourteen independent reviewers (each reading the study
+  through one lens: thesis, statistics, efficiency, plan language, failures,
+  data, scaling, reproducibility, related work, a devil's advocate, and so
+  on) judged the work honest and essentially complete, and ranked the gaps
+  a hostile referee would attack. The three that can be closed cheaply are
+  <b>running now</b>; the rest are listed as future work. Memos:
+  <code>analysis/review_2026-08-16/</code>; log: FINDINGS 75–77;
+  paper plan: <code>PAPER_PLAN.md</code>.</p>
   <ul>
-    <li><b>Corpus-correct retrains</b> landed at five of six
-    configurations (the 32×32 pair is finishing); the outcome was mixed —
-    matched zero-shot at 6 robots, regressed at the 8-robot rungs — see
-    the fairness tab's seed-robustness section. Next,
-    <b>integrating the re-use step type into the learned planner</b>
-    (helper featurization that can name non-start cells, a policy retrain
-    without the silent record filter, and the proposal-path wiring); the
-    measured candidate supply and the ceiling headroom are in the
-    plan-language tab.</li>
-    <li><b>Quality-focused self-play on the extended stack</b> — frontier
-    solutions run long (no optima exist there); self-play with a quality
-    pressure is the scoped follow-up.</li>
-    <li><b>The two base probe instances</b> whose ceiling status is
-    unresolved at current probe memory (a depth-bounded probe redesign is
-    scoped). The 24×24 · 4-robot full-language rows, previously listed
-    here, landed 2026-07-29/30 and appear in every table above.</li>
+    <li><b>Running — seed replicates of the backward headline pair</b>
+    (16×16·8r and 32×32·4r, seeds 21/37/53, ~20 node-hours). Objection
+    answered: “the headline is a single training run; measured seed swing
+    reaches 28 points.” Rule fixed in advance: if seeds scatter, the
+    headline becomes a median with a range.</li>
+    <li><b>Running — a fair rescue for the forward planner</b> at 16×16·8r
+    (3 seeds × 3 learning rates, winner chosen by its own validation score,
+    never by test; ~8 node-hours). Objection answered: “you beat a weak
+    opponent — forward got one run and one learning-rate fix.”</li>
+    <li><b>Running — the re-use (by-reference) step, wired at last.</b>
+    The step type the plan-language ceiling relies on was never connected
+    to the learned planner (proposal path, helper featurization, and a
+    silent training filter). It is now wired behind a flag that defaults
+    off (flag-off is byte-identical to every row on this page); an on/off
+    A/B at 16×16·6r (~1–2 node-hours) measures its zero-shot value.
+    Still to do after that: a feature that lets the policy net <i>name</i>
+    the referenced cell (a checkpoint migration) and a policy retrain on a
+    corpus not depleted of these labels.</li>
+    <li><b>Future work, ranked:</b> a learned-subgoal (kSubS-style)
+    baseline — the one comparison every reviewer asked for, large; the
+    8-robot cell, where retraining never finds its good basin and where
+    the labeler track also breaks; a second domain (Rush Hour reuses the
+    plan structure, realizer and self-play loop nearly verbatim);
+    quality-focused self-play at the frontier; the two unresolved base
+    probe instances.</li>
   </ul>
 </section></div><div class="tabpanel" id="panel-fairness" role="tabpanel" aria-labelledby="tab-fairness" tabindex="0" hidden><section id="what-is-matched-today">
 <div class="sechead"><div class="kicker">what is matched today</div>
