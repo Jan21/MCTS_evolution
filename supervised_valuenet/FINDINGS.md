@@ -2543,3 +2543,49 @@ scoped fix.
    now "between 4.9× and 17.0×". Report: 1444 checks + 51 assertions.
    Sources: `eval/report_data.py::build_wallclock`,
    `analysis/review_2026-08-16/impl_efficiency.md`.
+
+77. **Three review-driven experiments launched (2026-08-16, ~30 nh projected
+   of 787 remaining), plus the by-reference step finally wired into the
+   learned planner.**
+   (a) **Seed replicates of the backward headline pair** — the g16r8
+   headline is the base-trained B1 pair (`checkpoints_backward/{policy,
+   value}_b1.ckpt`; policy 25 ep cold, value 20 ep warm from value_v2),
+   the g32r4 headline the per-config base-vocab pair (policy 30 ep, value
+   25 ep, both cold). Seeds 21/37/53 retrain both nets with `--torch-seed`
+   and bench graded+frontier (+base450 at g16r8) at 1200/k5, replay-
+   certified → `comparison{,_ungraded}_b2_seed<S>.json`. Jobs 4670563–
+   4670584 (each with an afterany resume link). ~6 nh (g16r8) + ~14 nh
+   (g32r4). Reading rule fixed in advance: any seed below the forward
+   control on a frontier kills that rung's claim; a §44-style bimodal draw
+   forces median-of-3 headlines.
+   (b) **Forward fair rescue at g16r8** — 3 seeds × lr {5e-5, 1e-4, 2e-4}
+   with the control's recipe (8 ep, bs 128), selection by the pipeline's
+   own `val_policy_top1` (val boards 700–899, disjoint from bench 900–1049;
+   control of record 0.8628), winner benched with the control protocol →
+   `comparison{,_ungraded}_forward_rescue.json`. Jobs 4670585–4670588
+   (array 0–8 + resume + select/bench + resume), ~8 nh. g24r4 (~23 nh) and
+   g32r4 (250 lane-hours per bench) excluded. Reading rule: rescued
+   frontier ≥ ~150/184 removes the +15.8 pooled margin; ~120 keeps it with
+   a best-of-9-by-val caveat.
+   (c) **By-reference wired** (closing §40's integration gap) behind flags
+   defaulting OFF: `eval/compare.py::_nn_astar_backward` injects
+   `_reference_helpers` and applies `by_reference=True` with a top-m pool
+   cap (`--backward-byref[-pool]`, `RR_BYREF[_POOL]`); `end2end.py::_hidx`
+   resolves helpers by robot identity (strict superset of the position
+   match); `policy_common.py::_meta` filter is flag-controlled
+   (`RR_BYREF_RECORDS=1`). `eval/test_byref_wiring.py`: flag-off rows
+   byte-identical to the pre-flag driver; flag-on: 127 by-reference
+   candidates reached the policy net, 7 entered a top-k, 4/4 solved and
+   replay-certified. Census on the g16r6 cap-20000 B2 corpus: the filter
+   drops 20,093 records (8.5%) and 1,867 whole groups (7.8%); on a 20k
+   slice the labelled optimum changes in 12.6% of groups, so a retrain is
+   not purely additive. Left as design: the policy net cannot yet *name*
+   the referenced cell (an 8th feature channel would break every banked
+   checkpoint's loadability — migration sketch in `_features`). Zero-shot
+   supply A/B at g16r6 (same cap-20000 nets, on vs off × graded/frontier,
+   outputs `*_byref_{on,off}.json`, never a report filename): jobs
+   4670615/16/17/4670668, ~1–2 nh; the off arm doubles as a regression
+   check against the production rows.
+   Sources: `jobs/patterns/{seed_headline_pair,fwd_rescue_grid,
+   fwd_rescue_select_bench,byref_ab}.slurm`, `analysis/review_2026-08-16/
+   impl_{seeds_forward_plan,byref}.md`.
