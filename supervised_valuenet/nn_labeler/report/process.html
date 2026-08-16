@@ -49,8 +49,8 @@
 
 <h1>NN Labeler: replacing the exact solver for data labeling across grid sizes</h1>
 <p class="sub">Ricochet Robots planner study &middot; process report &middot; started 2026-07-31 &middot;
-current through FINDINGS &sect;65 (2026-08-06) &middot; local document, updated as milestones land.
-Every number traces to a named file in the repo.</p>
+current through FINDINGS &sect;74 (2026-08-11; live state 2026-08-16) &middot; local document,
+updated as milestones land. Every number traces to a named file in the repo.</p>
 
 <h2>1. The problem</h2>
 <p>All training data in this study is labeled by exact solvers, and the exact solvers do not
@@ -386,7 +386,7 @@ labeler is Python for plan manipulation and physics (the network is not the bott
 yields ~6.9 records per instance against the exact labeler's 8.3.</p></div>
 
 <h2>7c. Where the method actually pays — the payoff experiment</h2>
-<div class="card done"><span class="tag">design fixed after an OOM — false start 4618888, retry running 4620064&rarr;65; FINDINGS &sect;63</span>
+<div class="card done"><span class="tag">design fixed after an OOM; ran to completion; verdict NEGATIVE (&sect;9b) — FINDINGS &sect;63, &sect;68</span>
 <p>&sect;58&ndash;59 relocate the claim. The extended (B2) vocabulary is the regime that motivated
 this whole track: its exact campaign projected <strong>~441 node-hours</strong>, and the iteration
 cap that made it affordable <em>destroyed the labels it existed to produce</em> — the by-reference
@@ -409,9 +409,13 @@ simply never been exercised above 257 tokens.</p>
 577 tokens, batch 4 &times; mpg 16, <code>expandable_segments</code> — and label g32r4
 <strong>zero-shot</strong>. That is the track's own method rather than a workaround, and it makes
 the g32r4 leg <em>leakage-free</em> where the old design trained on the very corpus it gated
-against. Training is healthy at ~55 min/epoch with the two-phase curriculum running.
+against. Training was healthy at ~55 min/epoch with the two-phase curriculum running, and it finished
+clean (best epoch 25 of 30, no collapse).
 <span class="src">runs/nnlab/b2_payoff_4618888.out (the OOM traceback);
-nn_labeler/jobs/b2_payoff.slurm (retry recipe + rationale).</span></p></div>
+nn_labeler/jobs/b2_payoff.slurm (retry recipe + rationale).</span></p>
+<p><strong>The experiment then returned a negative answer, and the mechanism is worth the
+paragraph:</strong> uncapped NN descent did not restore the by-reference share — it produced
+almost none. Full accounting in <strong>&sect;9b</strong>.</p></div>
 
 <h2>7d. The lean-board path — the size wall removed</h2>
 <div class="card done"><span class="tag">done — login CPU, no GPU time; FINDINGS &sect;62</span>
@@ -524,8 +528,8 @@ v1</strong>, which the curve lane was already pinned to for anchor consistency. 
 <span class="src">nn_labeler/results/audit_prod2_s11_lr1e-4.json,
 v2gate_g{24,32}r4.json vs capgate_g{24,32}r4.json; runs/nnlab/gate_v2_twins_4618940.out.</span></p></div>
 
-<h2>8b. The complete per-integer curve — 16 rungs, one job, no cliff</h2>
-<div class="card done"><span class="tag">done — job 4620484, 1h17m (0.16 nh); FINDINGS &sect;65</span>
+<h2>8b. The complete verifiable curve — 17&times;17 to 64&times;64, 20 rungs, one net</h2>
+<div class="card done"><span class="tag">done — jobs 4620484&ndash;88 (0.6 nh total); FINDINGS &sect;65, &sect;69, &sect;70</span>
 <p>The original goal named a specific staircase: 17&times;17, 18&times;18, &hellip;, 32&times;32,
 generating labeled data with the net. <strong>Every rung is now measured, and the answer is
 affirmative at every step.</strong> The eager pipeline planned for these rungs projected ten-plus
@@ -553,12 +557,30 @@ protocol (600 replayed test instances per rung), &sect;7b's two measurements as 
   <tr><td>24&times;24 <span class="src">(anchor)</span></td><td class="num">92.6%</td><td class="num">0.566</td>
       <td>32&times;32 <span class="src">(anchor)</span></td><td class="num">91.5%</td><td class="num">0.553</td></tr>
 </table></div>
+<p><strong>Then the curve was pushed to the end of the verifiable world.</strong> The lean-board
+path (&sect;7d) makes exact Rust references free up to n=64 — the size where the Rust engine
+hard-asserts and stops — so four coarse rungs above the old wall could be gated on exactly the same
+protocol with exactly the same banked v1 net (trained on boards &le;16, i.e. up to a
+<strong>4&times; linear / 16&times; area</strong> extrapolation at the last rung):</p>
+<div class="twrap"><table>
+  <tr><th>rung</th><th class="num">argmin agree</th><th class="num">exactly optimal</th>
+      <th class="num">gap mean</th><th class="num">negative gaps</th><th class="num">extrapolation</th></tr>
+  <tr><td>40&times;40</td><td class="num">90.7%</td><td class="num">86.5%</td><td class="num">0.616</td>
+      <td class="num">2/3376</td><td class="num">2.5&times; linear</td></tr>
+  <tr><td>48&times;48</td><td class="num">90.6%</td><td class="num">87.1%</td><td class="num">0.618</td>
+      <td class="num">0</td><td class="num">3.0&times;</td></tr>
+  <tr><td>56&times;56</td><td class="num">89.6%</td><td class="num">86.6%</td><td class="num">0.655</td>
+      <td class="num">0</td><td class="num">3.5&times;</td></tr>
+  <tr><td>64&times;64 <span class="src">(calibration endpoint)</span></td><td class="num"><strong>90.1%</strong></td>
+      <td class="num">86.6%</td><td class="num">0.721</td><td class="num">3/3353</td>
+      <td class="num"><strong>4.0&times;</strong></td></tr>
+</table></div>
 
 <figure class="viz-root" style="margin:1.2rem 0">
 <div style="position:relative">
 <svg viewBox="0 0 640 300" role="img"
-     aria-label="Argmin agreement between the banked v1 net's certified-descent labels and the exact solver, for every board size from 17 to 32: the curve wobbles between 86.4 and 92.6 percent with no trend against board size; the two capstone anchors at 24 and 32 are among the highest points">
-  <!-- plot area x:60-620 y:20-260; x linear 17..32; y 80..100% -->
+     aria-label="Argmin agreement between the banked v1 net's certified-descent labels and the exact solver, for all twenty gated rungs: every integer size from 17 to 32, then the coarse rungs 40, 48, 56 and 64. The curve wobbles between 86.4 and 92.6 percent with no trend against board size, and the four coarse rungs above the old size wall sit at 90.7, 90.6, 89.6 and 90.1 percent — inside the same band. The two capstone anchors at 24 and 32 are among the highest points.">
+  <!-- plot area x:60-620 y:20-260; x = one slot per gated rung (20 slots, step 29.47); y 80..100% -->
   <rect class="band" x="60" y="20" width="560" height="120"/>
   <g class="grid">
     <line x1="60" y1="260" x2="620" y2="260"/>
@@ -567,6 +589,9 @@ protocol (600 replayed test instances per rung), &sect;7b's two measurements as 
   </g>
   <line x1="60" y1="140" x2="620" y2="140" stroke="var(--muted)" stroke-dasharray="5 4" opacity=".55"/>
   <text class="lbl" x="64" y="135">pre-registered argmin bar (90%)</text>
+  <!-- divider: per-integer rungs (left) vs coarse rungs above the old size wall (right) -->
+  <line x1="516.8" y1="20" x2="516.8" y2="260" stroke="var(--muted)" stroke-dasharray="3 4" opacity=".45"/>
+  <text class="lbl" x="616" y="36" text-anchor="end">coarse rungs 40&ndash;64</text>
   <g class="axis">
     <text x="52" y="264" text-anchor="end">80</text>
     <text x="52" y="204" text-anchor="end">85</text>
@@ -575,63 +600,77 @@ protocol (600 replayed test instances per rung), &sect;7b's two measurements as 
     <text x="52" y="24" text-anchor="end">100</text>
     <text x="22" y="140" text-anchor="middle" transform="rotate(-90 22 140)">argmin agreement (%)</text>
     <text x="60" y="280">17</text>
-    <text x="172" y="280" text-anchor="middle">20</text>
-    <text x="321.3" y="280" text-anchor="middle">24</text>
-    <text x="470.7" y="280" text-anchor="middle">28</text>
-    <text x="620" y="280" text-anchor="end">32</text>
-    <text x="340" y="297" text-anchor="middle">board size (n &times; n)</text>
+    <text x="148.4" y="280" text-anchor="middle">20</text>
+    <text x="266.3" y="280" text-anchor="middle">24</text>
+    <text x="384.2" y="280" text-anchor="middle">28</text>
+    <text x="502.1" y="280" text-anchor="middle">32</text>
+    <text x="531.6" y="280" text-anchor="middle">40</text>
+    <text x="561.1" y="280" text-anchor="middle">48</text>
+    <text x="590.5" y="280" text-anchor="middle">56</text>
+    <text x="620" y="280" text-anchor="end">64</text>
+    <text x="340" y="297" text-anchor="middle">board size (n &times; n) &mdash; one slot per gated rung</text>
   </g>
-  <!-- v1 per-rung gate, 17..32 -->
+  <!-- v1 per-rung gate, 17..32 then the coarse rungs 40/48/56/64 -->
   <polyline class="s1" fill="none" stroke-width="2"
-    points="60,164 97.3,149.6 134.7,155.6 172,183.2 209.3,144.8 246.7,161.6 284,154.4 321.3,108.8
-            358.7,113.6 396,142.4 433.3,156.8 470.7,171.2 508,141.2 545.3,123.2 582.7,114.8 620,122"/>
+    points="60,164 89.5,149.6 118.9,155.6 148.4,183.2 177.9,144.8 207.4,161.6 236.8,154.4 266.3,108.8
+            295.8,113.6 325.3,142.4 354.7,156.8 384.2,171.2 413.7,141.2 443.2,123.2 472.6,114.8 502.1,122
+            531.6,131.6 561.1,132.8 590.5,144.8 620,138.8"/>
   <g class="s1f">
-    <circle cx="60" cy="164" r="4"/><circle cx="97.3" cy="149.6" r="4"/>
-    <circle cx="134.7" cy="155.6" r="4"/><circle cx="172" cy="183.2" r="4"/>
-    <circle cx="209.3" cy="144.8" r="4"/><circle cx="246.7" cy="161.6" r="4"/>
-    <circle cx="284" cy="154.4" r="4"/><circle cx="358.7" cy="113.6" r="4"/>
-    <circle cx="396" cy="142.4" r="4"/><circle cx="433.3" cy="156.8" r="4"/>
-    <circle cx="470.7" cy="171.2" r="4"/><circle cx="508" cy="141.2" r="4"/>
-    <circle cx="545.3" cy="123.2" r="4"/><circle cx="582.7" cy="114.8" r="4"/>
+    <circle cx="60" cy="164" r="4"/><circle cx="89.5" cy="149.6" r="4"/>
+    <circle cx="118.9" cy="155.6" r="4"/><circle cx="148.4" cy="183.2" r="4"/>
+    <circle cx="177.9" cy="144.8" r="4"/><circle cx="207.4" cy="161.6" r="4"/>
+    <circle cx="236.8" cy="154.4" r="4"/><circle cx="295.8" cy="113.6" r="4"/>
+    <circle cx="325.3" cy="142.4" r="4"/><circle cx="354.7" cy="156.8" r="4"/>
+    <circle cx="384.2" cy="171.2" r="4"/><circle cx="413.7" cy="141.2" r="4"/>
+    <circle cx="443.2" cy="123.2" r="4"/><circle cx="472.6" cy="114.8" r="4"/>
+    <circle cx="531.6" cy="131.6" r="4"/><circle cx="561.1" cy="132.8" r="4"/>
+    <circle cx="590.5" cy="144.8" r="4"/><circle cx="620" cy="138.8" r="4"/>
   </g>
   <!-- capstone anchors -->
   <g class="s2f">
-    <circle cx="321.3" cy="108.8" r="5"/><circle cx="620" cy="122" r="5"/>
+    <circle cx="266.3" cy="108.8" r="5"/><circle cx="502.1" cy="122" r="5"/>
   </g>
   <text class="dlab" x="60" y="186">17&times;17 &middot; 88.0%</text>
-  <text class="dlab" x="616" y="99" text-anchor="end">32&times;32 &middot; 91.5%</text>
+  <text class="dlab" x="616" y="99" text-anchor="end">64&times;64 &middot; 90.1% &middot; calibration endpoint</text>
   <!-- hover hit targets -->
   <g class="hit" id="vizhits2">
     <circle cx="60" cy="164" r="11" data-t="17&times;17 &middot; argmin 88.0% &middot; gap mean 0.495"/>
-    <circle cx="97.3" cy="149.6" r="11" data-t="18&times;18 &middot; argmin 89.2% &middot; gap mean 0.508"/>
-    <circle cx="134.7" cy="155.6" r="11" data-t="19&times;19 &middot; argmin 88.7% &middot; gap mean 0.532"/>
-    <circle cx="172" cy="183.2" r="11" data-t="20&times;20 &middot; argmin 86.4% &middot; gap mean 0.648"/>
-    <circle cx="209.3" cy="144.8" r="11" data-t="21&times;21 &middot; argmin 89.6% &middot; gap mean 0.564"/>
-    <circle cx="246.7" cy="161.6" r="11" data-t="22&times;22 &middot; argmin 88.2% &middot; gap mean 0.560"/>
-    <circle cx="284" cy="154.4" r="11" data-t="23&times;23 &middot; argmin 88.8% &middot; gap mean 0.604"/>
-    <circle cx="321.3" cy="108.8" r="11" data-t="24&times;24 (capstone anchor) &middot; argmin 92.6% &middot; gap mean 0.566"/>
-    <circle cx="358.7" cy="113.6" r="11" data-t="25&times;25 &middot; argmin 92.2% &middot; gap mean 0.532"/>
-    <circle cx="396" cy="142.4" r="11" data-t="26&times;26 &middot; argmin 89.8% &middot; gap mean 0.588"/>
-    <circle cx="433.3" cy="156.8" r="11" data-t="27&times;27 &middot; argmin 88.6% &middot; gap mean 0.619"/>
-    <circle cx="470.7" cy="171.2" r="11" data-t="28&times;28 &middot; argmin 87.4% &middot; gap mean 0.716"/>
-    <circle cx="508" cy="141.2" r="11" data-t="29&times;29 &middot; argmin 89.9% &middot; gap mean 0.599"/>
-    <circle cx="545.3" cy="123.2" r="11" data-t="30&times;30 &middot; argmin 91.4% &middot; gap mean 0.605"/>
-    <circle cx="582.7" cy="114.8" r="11" data-t="31&times;31 &middot; argmin 92.1% &middot; gap mean 0.548"/>
-    <circle cx="620" cy="122" r="11" data-t="32&times;32 (capstone anchor) &middot; argmin 91.5% &middot; gap mean 0.553"/>
+    <circle cx="89.5" cy="149.6" r="11" data-t="18&times;18 &middot; argmin 89.2% &middot; gap mean 0.508"/>
+    <circle cx="118.9" cy="155.6" r="11" data-t="19&times;19 &middot; argmin 88.7% &middot; gap mean 0.532"/>
+    <circle cx="148.4" cy="183.2" r="11" data-t="20&times;20 &middot; argmin 86.4% &middot; gap mean 0.648"/>
+    <circle cx="177.9" cy="144.8" r="11" data-t="21&times;21 &middot; argmin 89.6% &middot; gap mean 0.564"/>
+    <circle cx="207.4" cy="161.6" r="11" data-t="22&times;22 &middot; argmin 88.2% &middot; gap mean 0.560"/>
+    <circle cx="236.8" cy="154.4" r="11" data-t="23&times;23 &middot; argmin 88.8% &middot; gap mean 0.604"/>
+    <circle cx="266.3" cy="108.8" r="11" data-t="24&times;24 (capstone anchor) &middot; argmin 92.6% &middot; gap mean 0.566"/>
+    <circle cx="295.8" cy="113.6" r="11" data-t="25&times;25 &middot; argmin 92.2% &middot; gap mean 0.532"/>
+    <circle cx="325.3" cy="142.4" r="11" data-t="26&times;26 &middot; argmin 89.8% &middot; gap mean 0.588"/>
+    <circle cx="354.7" cy="156.8" r="11" data-t="27&times;27 &middot; argmin 88.6% &middot; gap mean 0.619"/>
+    <circle cx="384.2" cy="171.2" r="11" data-t="28&times;28 &middot; argmin 87.4% &middot; gap mean 0.716"/>
+    <circle cx="413.7" cy="141.2" r="11" data-t="29&times;29 &middot; argmin 89.9% &middot; gap mean 0.599"/>
+    <circle cx="443.2" cy="123.2" r="11" data-t="30&times;30 &middot; argmin 91.4% &middot; gap mean 0.605"/>
+    <circle cx="472.6" cy="114.8" r="11" data-t="31&times;31 &middot; argmin 92.1% &middot; gap mean 0.548"/>
+    <circle cx="502.1" cy="122" r="11" data-t="32&times;32 (capstone anchor) &middot; argmin 91.5% &middot; gap mean 0.553"/>
+    <circle cx="531.6" cy="131.6" r="11" data-t="40&times;40 &middot; argmin 90.7% &middot; gap mean 0.616 &middot; 2.5&times; extrapolation"/>
+    <circle cx="561.1" cy="132.8" r="11" data-t="48&times;48 &middot; argmin 90.6% &middot; gap mean 0.618 &middot; 3.0&times;"/>
+    <circle cx="590.5" cy="144.8" r="11" data-t="56&times;56 &middot; argmin 89.6% &middot; gap mean 0.655 &middot; 3.5&times;"/>
+    <circle cx="620" cy="138.8" r="11" data-t="64&times;64 (calibration endpoint) &middot; argmin 90.1% &middot; gap mean 0.721 &middot; 4.0&times;"/>
   </g>
 </svg>
 <div class="tip" id="viztip2"></div>
 </div>
 <div class="viz-legend">
-  <span><i style="background:var(--s1)"></i>per-rung descent gate, banked v1 net</span>
+  <span><i style="background:var(--s1)"></i>per-rung descent gate, banked v1 net (17&ndash;64)</span>
   <span><i style="background:var(--s2)"></i>capstone anchors (&sect;7b)</span>
 </div>
 <figcaption class="src" style="margin-top:.4rem">Share of decision groups where the certified-descent
 label picks the same argmin candidate as the exact solver (higher is better; y-axis truncated to
 80&ndash;100%). The shaded region above the dashed line is the pre-registered pass zone
-(&ge; 90%, i.e. &le; 10% argmin disagreement). Every point is 600 replayed test instances against a
-Rust-exact reference set for that rung. Hover any point for its gap mean. Sources:
-nn_labeler/results/dgate_ladder_g{17..31}r4.json, capgate_g{24,32}r4.json.</figcaption>
+(&ge; 90%, i.e. &le; 10% argmin disagreement). The x-axis gives <em>one slot per gated rung</em> in
+size order, so spacing is not linear in n past the vertical divider (17&hellip;32, then 40/48/56/64).
+Every point is 600 replayed test instances against a Rust-exact reference set for that rung; 64 is
+the last size where such a reference can exist at all. Hover any point for its gap mean. Sources:
+nn_labeler/results/dgate_ladder_g{17..31}r4.json, capgate_g{24,32}r4.json,
+coarsegate_g{40,48,56,64}r4.json.</figcaption>
 <script>
 (function () {
   var hits = document.getElementById("vizhits2"), tip = document.getElementById("viztip2");
@@ -651,54 +690,198 @@ nn_labeler/results/dgate_ladder_g{17..31}r4.json, capgate_g{24,32}r4.json.</figc
 </script>
 </figure>
 
-<p><strong>The curve is flat.</strong> Across all sixteen v1 points argmin agreement spans
-86.4&ndash;92.6%, labels-exactly-optimal 83.6&ndash;87.7%, gap p90 &le; 2 everywhere and negative
-gaps &le; 4 per rung — wobble of a few points with <em>no trend against board size</em>. If anything
-the top of the range (30&ndash;32) reads as well as the bottom (17&ndash;19), and the two independent
-capstone anchors land inside the same band. <strong>There is no extrapolation cliff anywhere between
-the training sizes and 32&times;32</strong> — the single risk that PLANS.md named as Plan C's
-biggest, closed by measurement rather than argument. Five of the sixteen rungs clear the
-pre-registered 90% argmin bar outright and the rest sit 0.1&ndash;3.6 points under it, distributed
-without regard to size; the &sect;7b split verdict (ordering holds, absolute calibration drifts) is
-what the whole ladder shows. The &sect;58 economics caveat stands unchanged: in base vocabulary
-these labels remain cheaper to produce exactly — this rung-by-rung agreement is method validation,
-not a compute saving.</p></div>
+<p><strong>The curve is flat, and it stays flat to the end of the verifiable world.</strong> Across
+all twenty gated rungs — 17&hellip;32 plus 40/48/56/64, one net, one protocol — argmin agreement
+never leaves <strong>86.4&ndash;92.6%</strong>, labels-exactly-optimal stays 83.6&ndash;87.7%, gap
+p90 &le; 2 at <em>every single rung</em>, depth-0 coverage is 100% everywhere, and negative gaps
+stay &le; 4 per rung. There is no trend against board size: the four coarse rungs above the old
+wall (90.7 / 90.6 / 89.6 / 90.1%) read as well as the per-integer middle of the ladder, and the two
+independent capstone anchors land inside the same band. <strong>There is no extrapolation cliff
+anywhere between the training sizes and 64&times;64</strong> — the single risk PLANS.md named as
+Plan C's biggest, closed by measurement rather than argument, at a 4&times; linear / 16&times; area
+extrapolation from the largest board the net ever trained on.</p>
+<p><strong>Why 64 is the load-bearing rung.</strong> &sect;60b pre-registered the criterion in
+advance: proving NN labels match exact labels <em>at 64</em> is what licenses trusting them
+<em>beyond</em> 64, where nothing can check them. That criterion is now met at the same fidelity as
+everywhere else on the curve, so what &sect;4b called a "plausible, unverified" extrapolation is
+measured rather than assumed — and the licence to label 80/96 was granted on it (&sect;9c). Fresh
+generation at 64 kept 200 of 384 instances (52%, the same yield as the 32&times;32 capstone), 1,377
+certified records, <strong>zero timeouts</strong>, 7.7 s per kept instance on one A100. The one
+honest drift: gap mean creeps 0.55 at 32 &rarr; 0.72 at 64 while ordering holds — exactly &sect;7b's
+split verdict (ordering holds, absolute calibration drifts), unchanged by another doubling. The
+&sect;58 economics caveat also stands unchanged: in base vocabulary these labels remain cheaper to
+produce exactly — this rung-by-rung agreement is method validation, not a compute saving.</p></div>
 
-<h2>9. The campaign now — downstream equivalence</h2>
+<h2>9. The headline result — label fidelity gates downstream utility</h2>
 <p>With the ladder answered and the labeler settled, the owner reframed the headline claim
-(decisions recorded 2026-08-05). The question is no longer "do NN labels agree with exact labels"
+(decisions recorded 2026-08-05). The question was no longer "do NN labels agree with exact labels"
 — &sect;8b answers that at every size — but <strong>do planners trained on NN labels perform like
-planners trained on exact labels</strong>.</p>
+planners trained on exact labels</strong>. The design:</p>
 <ul>
-  <li><strong>Twin corpora, one variable.</strong> The exact corpora at g24r4 / g24r8 / g32r4 are
+  <li><strong>Twin corpora, one variable.</strong> The exact corpora at g24r4 / g24r8 / g32r4 were
   replayed with the banked v1 net: same boards, same instances, same schema — <em>only the label
-  source differs</em>. The study's backward planners are retrained on the twins and benched against
-  the exact-trained originals on the sha-pinned benchmarks (playable-moves scoring). All three cells
-  are <strong>leakage-free</strong>: the labeler never trained on any of those configs.</li>
+  source differs</em>. The study's backward planners were retrained on the twins and benched against
+  the exact-trained originals on the sha-pinned benchmarks (playable-moves scoring, 1200 expansions,
+  k=5, identical hyperparameters). All three cells are <strong>leakage-free</strong>: the labeler
+  never trained on any of those configs, and every bench reported below is replay-certified.</li>
   <li><strong>The forward planner stays an untouched control</strong> — certified descent keeps no
   primitive-move sequences, so a forward twin would change the training signal rather than just the
   label source, and would not answer the question asked.</li>
-  <li><strong>Then the coarse ladder</strong> 40 / 48 / 56 / 64, v1-pinned, on lean boards with Rust
-  exact references (free to 64, &sect;7d) — and after that the unverifiable rungs 80 / 96, where no
-  ground truth can exist and the only available validation is downstream solve rate.</li>
+  <li><strong>An honest economics correction, made mid-flight:</strong> a full-descent twin replay
+  measures <strong>4.3 s/instance</strong> — about 12&times; the depth-0 gate rate the earlier
+  estimates were built on — so the twin corpora became a tens-of-GPU-hours item rather than a
+  few-hour one, and were parallelized per config across lanes instead of chained.</li>
 </ul>
-<p><strong>An honest economics correction:</strong> a full-descent twin replay measures
-<strong>4.3 s/instance</strong> — about 12&times; the depth-0 gate rate the earlier estimates were
-built on — so the three twin corpora are a <strong>~45&ndash;50 GPU-hour</strong> item, not a
-few-hour one. They are parallelized per config across lanes rather than run as one chain.</p>
-<div class="card pending"><span class="tag">live — three parallel lanes, 2026-08-06</span>
-<ul>
-  <li><strong>Lane A — twins</strong> (job 4618940 running, per-config replays 4621815&ndash;18,
-  retrains 4618960/61 + 4621819 queued behind them): the headline experiment.</li>
-  <li><strong>Lane B — B2 payoff</strong> (job 4620064 running, 4620065 queued): the redesigned
-  &le;24-train / zero-shot-32 recipe of &sect;7c, ~55 min/epoch and healthy.</li>
-  <li><strong>Lane C — coarse ladder</strong> (jobs 4620485&ndash;88, g40 &rarr; g48 &rarr; g56
-  &rarr; g64, chained): the first end-to-end GPU descent above 32&times;32, and the last sizes where
-  exact ground truth exists at all.</li>
-</ul>
+
+<h3>9a. Three cells, one dose-response</h3>
+<div class="card done"><span class="tag">done — suite complete 2026-08-11; FINDINGS &sect;66, 67, 71, 72, 73, 74</span>
+<p>All three twin corpora were built and gated, all planners retrained, all benches replay-certified.
+The twin corpora, against the exact corpora they mirror:</p>
+<div class="twrap"><table>
+  <tr><th>cell</th><th class="num">twin records</th><th class="num">share of exact corpus</th>
+      <th class="num">argmin agree</th><th class="num">exactly optimal</th><th class="num">gap mean</th></tr>
+  <tr><td>g24r4</td><td class="num">39,452</td><td class="num">73.3%</td>
+      <td class="num"><strong>91.0%</strong></td><td class="num">85.4%</td><td class="num">0.582</td></tr>
+  <tr><td>g32r4</td><td class="num">39,053</td><td class="num">76.0%</td>
+      <td class="num"><strong>89.4%</strong></td><td class="num">86.5%</td><td class="num">0.628</td></tr>
+  <tr><td>g24r8</td><td class="num">68,549</td><td class="num">62.8%</td>
+      <td class="num"><strong>82.2%</strong></td><td class="num">77.0%</td><td class="num">1.20</td></tr>
+</table></div>
+<p>The corpora are smaller than the exact originals by construction: certified descent
+<em>drops what it cannot certify</em> rather than mislabeling it, and the shrinkage is heaviest at
+8 robots. Depth-0 coverage is 100% in all three; negative gaps run 0.02% (g32r4) to 0.29% (g24r8);
+gap p90 stays at 2 in the two 4-robot cells — and doubles to 4 at g24r8, the one cell where the
+labels break, which is the first place on the whole study's curve that p90 leaves 2.
+Downstream, on the identical sha-pinned benchmarks:</p>
+<div class="twrap"><table>
+  <tr><th>cell</th><th class="num">label argmin</th><th>solve, twin vs exact (graded)</th>
+      <th>% optimal, twin vs exact</th><th>frontier solve, twin vs exact</th><th>verdict</th></tr>
+  <tr><td>g24r4</td><td class="num">91.0%</td><td class="num">87.9&ndash;91.4 vs 88.4 <span class="src">(2&times;2)</span></td>
+      <td class="num">39.2&ndash;45.8 vs 38.5&ndash;40.0</td><td class="num">&mdash; <span class="src">(no exact ref)</span></td>
+      <td><strong>full equivalence</strong></td></tr>
+  <tr><td>g32r4</td><td class="num">89.4%</td><td class="num"><strong>84.6 vs 84.0</strong></td>
+      <td class="num">45.9 vs 51.7</td><td class="num"><strong>48.0 vs 46.2</strong></td>
+      <td>solve-rate equivalence, optimality cost</td></tr>
+  <tr><td>g24r8</td><td class="num">82.2%</td><td class="num">68.3 vs 89.4</td>
+      <td class="num">40.9 vs 50.7</td><td class="num">28.4 vs 53.3</td>
+      <td><strong>equivalence broken</strong></td></tr>
+</table></div>
+<p><strong>The reading is monotone: label fidelity gates downstream utility.</strong> At 91% argmin
+fidelity the twin planner is indistinguishable from the exact-trained one on everything measured; at
+89% it matches solve rate on both the graded and the frontier set (nominally ahead on both) while
+paying a modest optimality/regret cost; at 82% everything collapses. <strong>The threshold for
+solve-rate equivalence sits below 89% argmin; for full equivalence, near 91%; by 82% the method is
+broken.</strong> Having both poles is more publishable than uniform success would have been — the
+claim now comes with the conditions under which it fails.</p>
+<p><strong>The g24r4 cell was replicated into a full 2&times;2</strong> (both label sources
+&times; two torch seeds), because the campaign's own documented instability (cold value retrains are
+seed-unstable) made a single-seed win unsafe to keep:</p>
+<div class="twrap"><table>
+  <tr><th>g24r4 &mdash; solve% / optimal% / regret</th><th>seed default</th><th>seed 21</th><th class="num">arm mean (solve / optimal)</th></tr>
+  <tr><td>exact labels (53,789 rec)</td><td>88.4 / 38.5 / 4.22</td><td>88.4 / 40.0 / 4.52</td>
+      <td class="num">88.4 / 39.3</td></tr>
+  <tr><td>NN twin labels (39,452 rec)</td><td>91.4 / 45.8 / 3.05</td><td>87.9 / 39.2 / 4.23</td>
+      <td class="num">89.7 / 42.5</td></tr>
+</table></div>
+<p>The exact arm's solve rate is seed-stable at 88.4; the twin arm <em>straddles</em> it
+(87.9&ndash;91.4). The between-twin-seed spread, 3.5 points, exceeds every twin-vs-exact gap in the
+cell, so the slight twin lean in the means is not separable at n=2 seeds. Planners trained on
+91%-faithful NN labels, from a 27% smaller corpus, are <strong>indistinguishable</strong> from
+planners trained on exact labels.</p>
+<p><strong>The diagnostic from the broken cell</strong> is that the failure is in the training signal,
+not the bench: at g24r8 the twin policy net's best checkpoint was <strong>epoch 0 of 30</strong>
+(the exact arm's was epoch 29) — the degraded corpus barely supports policy learning at all.</p>
+<p><strong>Caveats, unhidden.</strong> The g32r4 and g24r8 twins are single-seed (g24r4's 3.5-point
+twin spread cannot explain a 21-point gap, but it could flavor g32r4's optimality deficit).
+Fidelity does not move alone: it co-varies with corpus shrinkage (73% / 76% / 63% of the exact
+record count) and, in the broken cell, with robot count — so which ingredient dominates is not
+separable from three cells. And a g24r4 frontier comparison has no exact counterpart to be measured
+against.
+<span class="src">nn_labeler/results/twin_gate_g{24r4,24r8,32r4}.json;
+scaling/results/g24r4/comparison_{nntwin,nntwin-seed21,exactseed21}.json;
+scaling/results/g32r4/comparison{,_ungraded}_nntwin.json;
+scaling/results/g24r8/comparison{,_ungraded}_nntwin.json vs comparison.json;
+runs/nnlab/twin_retrain_46{18961,25100,29917,32986}.out.</span></p></div>
+<p><strong>The campaign self-corrected twice, and both corrections are the point.</strong> Its
+claims were pre-registered to arbiters chosen before the numbers existed, and those arbiters killed
+two results the narrative would otherwise have kept: v2's clear win on the value audit was
+<em>rejected by the descent gate</em> (&sect;8, FINDINGS &sect;64), which kept the twin corpora with
+the stronger labeler; and the first twin row's "beats the exact arm" was <em>demoted to
+"equivalent"</em> by its seed replicate (FINDINGS &sect;71). Equivalence is the claim the headline
+actually needs, and it is the one that survived.</p>
+
+<h3>9b. The B2 payoff — a negative result, recorded as one</h3>
+<div class="card done"><span class="tag">verdict NEGATIVE — jobs 4620064&rarr;4623993, ~32 h GPU (~4 nh); FINDINGS &sect;68</span>
+<p>&sect;7c's experiment asked whether uncapped certified descent could restore the by-reference
+candidate share that the exact pipeline's iteration cap destroyed (13.5% &rarr; 4.8%). It could not.
+The B2 net trained clean (best epoch 25 of 30, no collapse) and then produced by-reference shares of
+<strong>1.3% at g16r6 and 0.3% at g32r4</strong> — against the 13.5% uncapped-exact target, and
+<em>below</em> even the 4.8&ndash;12.7% capped band. Label quality was correspondingly poor: argmin
+agreement 53.6% / 50.0%, nowhere near the base-vocabulary curve of &sect;8b.</p>
+<p><strong>The mechanism, stated precisely:</strong> &sect;7c's structural argument — descent has no
+iteration budget, so the cap's cost/quality trade-off cannot arise — was <em>correct about the
+mechanism and wrong about the bottleneck</em>. The bottleneck is the training signal, not the search
+budget. The only B2 corpora available to train the labeler on were the capped ones, whose
+by-reference candidates the cap had already destroyed; a net that rarely ranks by-reference
+candidates first will rarely select them for completion, cap or no cap. Distillation faithfully
+reproduced the pathology it was meant to cure.</p>
+<p>Consequences, taken straight: <strong>the compute-saving claim for B2-as-configured is dead</strong>
+— no rescue by distilling capped data is possible. The campaign headline (downstream equivalence in
+base vocabulary, &sect;9a) is untouched by this, and in hindsight was clearly the right bet. One
+rescue path stays open and is recorded rather than launched: train the labeler on a <em>small
+uncapped exact B2 seed corpus</em> — the 13.5% figure proves uncapped exact labeling is affordable
+at some scale — and see whether the by-reference share survives distillation from clean data.
+<span class="src">runs/nnlab/b2_payoff_4623993.out (BYREF + audit lines);
+nn_labeler/results/b2lab_g{16r6,32r4}.jsonl, b2gate_g{16r6,32r4}.json.</span></p></div>
+
+<h3>9c. The ladder's end — the rungs nothing can check</h3>
+<div class="card done"><span class="tag">done — jobs 4629480/82, 55m + 1h35m; FINDINGS &sect;70, &sect;72c</span>
+<p>&sect;8b took the verifiable curve to 64&times;64, the last size at which a Rust exact reference
+can exist. Past it the study labels boards <em>no oracle will ever check</em> — owner-approved
+2026-08-05 on the explicit condition that the 17&ndash;64 curve be flat first, which it is:</p>
+<div class="twrap"><table>
+  <tr><th>rung</th><th class="num">records</th><th class="num">instances kept</th>
+      <th class="num">timeouts</th><th class="num">s/instance</th><th class="num">tokens/board</th></tr>
+  <tr><td>80&times;80 <span class="src">(UNVERIFIABLE)</span></td><td class="num">1,350</td>
+      <td class="num">200/417 (48%)</td><td class="num">0</td><td class="num">16.5</td><td class="num">6,401</td></tr>
+  <tr><td>96&times;96 <span class="src">(UNVERIFIABLE)</span></td><td class="num">1,031</td>
+      <td class="num">188/678 (28%)</td><td class="num">0</td><td class="num">30</td>
+      <td class="num"><strong>9,217 &mdash; 6&times; training size</strong></td></tr>
+</table></div>
+<p>What these labels are and are not: every record carries a <strong>certified-valid plan</strong>
+— realized to real moves and replayed through pure physics, with uncertifiable completions dropped
+(25 and 20 respectively) — so they are honest <em>upper bounds</em>. What is unmeasurable, by
+construction rather than by omission, is the <em>gap to optimal</em>: no solver exists at these
+sizes to define it. Their only warranty is the flat 17&rarr;64 curve, and the files say so in their
+names: <code>beyond_UNVERIFIABLE_g{80,96}r4.jsonl</code>. Two operational notes worth keeping: the
+yield thins with size (48% &rarr; 28% of sampled instances survive certification, against 52% at 64),
+and there were <strong>zero timeouts</strong> at either rung — the network's inference cost is not
+what limits this direction. Boards at 96&times;96 took 21 s to make, against the 11.9 h the eager
+path would have needed (&sect;7d).</p></div>
+
+<h3>9d. Live state — one cell still open</h3>
+<div class="card pending"><span class="tag">live — deployment pair 4669684/85, submitted 2026-08-16</span>
+<p>Every job of the <em>controlled</em> campaign has run; the queue holds nothing else. The one
+pending cell is the <strong>deployment run</strong>, the other half of the owner's
+"controlled + 1 deployment" scope: where &sect;9a held boards and instances fixed and swapped only
+labels, this run has the NN pipeline generate <em>everything</em> — fresh lean boards
+(ids 2000&ndash;3049, disjoint from the exact pool 0&ndash;1199), fresh instances, NN labels, no
+exact solver anywhere in data production — and then faces the same sha-pinned g32r4 benchmark as
+every other arm. Label fidelity at that config is already characterized (89.4% argmin, &sect;9a), so
+this measures the pipeline, not the labels again. Expect ~2 days to land across the idempotent pair;
+its row appears as <code>comparison_nndeploy.json</code>.</p>
 <p class="src">Results land in <code>nn_labeler/report/suite.html</code>, auto-generated by
 <code>gen_suite.py</code> from the result JSONs — the single source of truth for numbers; this page
 remains the narrative of how they were obtained.</p></div>
+<p><strong>Operational episodes, for the record</strong> (none changed a result, all cost time):
+a bad node, <code>acn18</code>, killed two jobs within 10 s of start with empty logs and was fenced
+out of every subsequent submission; five jobs sat ~20 h in Slurm's
+<code>user env retrieval failed requeued held</code> state — a scheduler-side env-storage failure on
+<code>--export=ALL</code> submissions — and were released manually; and the g32r4 twin builder needed
+<strong>four passes</strong> to finish its three chunks, because full-descent replay at 32&times;32 is
+slower than at 24&times;24 and each walltime kill discards the in-flight chunk's <code>.tmp</code> by
+design. Every lane in this campaign was written skip-if-exists and resumable, which is why none of
+these episodes cost more than wall-clock.</p>
 
 <h2>10. Cost ledger</h2>
 <div class="twrap"><table>
@@ -715,16 +898,21 @@ remains the narrative of how they were obtained.</p></div>
   <tr><td>per-integer gates &times;14, rungs 17&ndash;31 (4620484)</td><td class="num">0.16</td><td>1h17m for the whole staircase, on lean boards</td></tr>
   <tr><td>B2 payoff false start (4618888)</td><td class="num">0.003</td><td>OOM at 91 s; bought the &sect;63 training-memory finding</td></tr>
   <tr><td>lean-board path (&sect;7d)</td><td class="num">0 (login CPU)</td><td>parity suite + A/B; replaced a projected multi-job board-prep campaign</td></tr>
-  <tr><td>lane A — v2 gate + twin corpora (4618940, 4621815&ndash;19, 4618960/61)</td><td class="num">~45&ndash;50 projected</td><td>full-descent replay measures 4.3 s/instance; parallelized per config</td></tr>
-  <tr><td>lane B — B2 payoff retry (4620064&rarr;65)</td><td class="num">~2&ndash;4 projected</td><td>in flight; ~55 min/epoch</td></tr>
-  <tr><td>lane C — coarse ladder 40/48/56/64 (4620485&ndash;88)</td><td class="num">~4&ndash;8 projected</td><td>in flight; first GPU descent above 32&times;32</td></tr>
+  <tr><td>lane A — twin corpora &times;3 + v2 gate (4618940, 4621815&ndash;18, 4632983&ndash;85)</td><td class="num">~13</td><td>full-descent replay at 4.3 s/instance; g32r4 needed four passes</td></tr>
+  <tr><td>lane A — planner retrains &times;3 (4618961, 4629917 + 4621819, 4632986)</td><td class="num">~6</td><td>the downstream half of &sect;9a; each = 2 nets + 2 benches, replay-certified</td></tr>
+  <tr><td>lane A — seed replicates (4625100 twin, 4629540 exact)</td><td class="num">~0.9</td><td>completed the g24r4 2&times;2; demoted "beats" to "equivalent" (&sect;9a)</td></tr>
+  <tr><td>lane B — B2 payoff retry (4620064&rarr;4623993)</td><td class="num">~4</td><td>~32 h GPU; verdict NEGATIVE (&sect;9b) — the campaign's one dead branch</td></tr>
+  <tr><td>lane C — coarse ladder 40/48/56/64 (4620485&ndash;88)</td><td class="num">0.45</td><td>23m + 44m + 56m + 1h31m; first GPU descent above 32&times;32</td></tr>
+  <tr><td>lane C — unverifiable rungs 80/96 (4629480/82)</td><td class="num">0.31</td><td>55m + 1h35m; certified-upper-bound labels only (&sect;9c)</td></tr>
+  <tr><td>deployment run (4669684/85)</td><td class="num">~2&ndash;4 projected</td><td>in flight 2026-08-16; fresh NN-everything corpus at g32r4 (&sect;9d)</td></tr>
 </table></div>
-<p class="src">Roughly <strong>6 node-hours are booked to this campaign day</strong> — v2 1.97, the
-integer gates 0.16, the B2 false start 0.003, and the balance still burning in the three live lanes.
-Completed GPU jobs across the whole track total <strong>6.0 nh</strong>, still inside the PLANS.md
-Plan-C envelope (13&ndash;25). <strong>~808 node-hours remain</strong> of the 1000-hour allocation
-(it4ifree, 2026-08-06; ~816 at track start). The headline experiment is now the expensive item: the
-twin replays alone are ~45&ndash;50 GPU-hours, which is what moved them onto parallel lanes.</p>
+<p class="src">The controlled campaign — twins, retrains, replicates, B2, both ladders — cost
+<strong>&asymp;25 node-hours</strong>, i.e. <strong>~2.5% of the 1000-hour allocation</strong>, and
+the single most expensive line is the twin corpora that answer the headline question. Completed GPU
+jobs across the whole track now total <strong>&asymp;31 nh</strong>, past the PLANS.md Plan-C
+envelope (13&ndash;25) — the overrun is entirely the downstream retrain suite, which Plan C
+estimated labeling for and did not price. <strong>~787 node-hours remain</strong> of the allocation
+(it4ifree, 2026-08-16; ~816 at track start, ~808 at the &sect;9 kickoff).</p>
 
 <h2>11. Provenance</h2>
 <ul>
@@ -737,13 +925,23 @@ twin replays alone are ~45&ndash;50 GPU-hours, which is what moved them onto par
   <li>Lean boards: <code>nn_labeler/leanboard.py</code>,
       <code>nn_labeler/test_leanboard_parity.py</code> (PASS);
       <code>descent.py --boards {pkl,lean}</code></li>
-  <li>Running log: <code>FINDINGS.md</code> &sect;48, 50, 52&ndash;55, 57&ndash;65 (49 and 51 belong
-      to the concurrent Track-1 session)</li>
+  <li>Running log: <code>FINDINGS.md</code> &sect;48, 50, 52&ndash;55, 57&ndash;74 (49 and 51 belong
+      to the concurrent Track-1 session); the closing suite is &sect;66, 67, 71, 72, 73, 74, the B2
+      verdict &sect;68, the coarse ladder &sect;69&ndash;70</li>
   <li>Jobs: batteries 4606952 / 4607697 / 4608951, gate 4609679, production v1 4609800 + 4613403,
-      capstone 4616709, production v2 4616677, v2 gate + twins 4618940 (&rarr; 4621815&ndash;19,
-      4618960/61), B2 payoff 4618888 (OOM) &rarr; 4620064&rarr;65, per-integer gates 4620484,
-      coarse ladder 4620485&ndash;88; cancelled unrun: ladder prep 4610118, capstone 4616678.
-      Scripts under <code>nn_labeler/jobs/</code></li>
+      capstone 4616709, production v2 4616677, v2 gate + twin builders 4618940 &rarr;
+      4621815&ndash;18 &rarr; 4632983&ndash;85, planner retrains 4618960/61, 4621819, 4629917,
+      4632986, seed replicates 4625100 (twin) / 4629540 (exact), B2 payoff 4618888 (OOM) &rarr;
+      4620064&rarr;65 &rarr; 4623993, per-integer gates 4620484, coarse ladder 4620485&ndash;88,
+      unverifiable rungs 4629480/82, deployment pair 4669684/85 (in flight); cancelled unrun:
+      ladder prep 4610118, capstone 4616678. Scripts under <code>nn_labeler/jobs/</code></li>
+  <li>Closing-suite results: <code>nn_labeler/results/twin_gate_g{24r4,24r8,32r4}.json</code>,
+      <code>twin_g24r4.jsonl(.manifest)</code>,
+      <code>b2gate_g{16r6,32r4}.json</code>,
+      <code>coarsegate_g{40,48,56,64}r4.json</code>,
+      <code>beyond_UNVERIFIABLE_g{80,96}r4.jsonl(.manifest)</code>;
+      <code>scaling/results/g24r4/comparison_{nntwin,nntwin-seed21,exactseed21}.json</code>,
+      <code>scaling/results/g{32r4,24r8}/comparison{,_ungraded}_nntwin.json</code></li>
   <li>Numbers of record: <code>nn_labeler/report/suite.html</code>, regenerated from the result
       JSONs by <code>nn_labeler/report/gen_suite.py</code></li>
 </ul>
