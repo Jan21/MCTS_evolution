@@ -2491,3 +2491,33 @@ scoped fix.
    `scaling/results/g32r4/comparison{,_ungraded}_nntwin.json`,
    `scaling/results/g24r8/comparison_ungraded_nntwin.json`,
    `runs/nnlab/twin_retrain_4632986.out` (NNLAB TWINRT DONE).
+
+75. **Fourteen-lens external review of the whole study (2026-08-16) — the
+   work is judged honest and essentially complete; the remaining gaps are
+   few and well-defined, and three of them are now in flight.** Fourteen
+   independent read-only reviewers (7 Opus, 7 Sonnet), each with a distinct
+   lens (thesis, paper, NN-labeler, plan language, devil's advocate, paper
+   outline, generality, failures, data, efficiency, reproducibility,
+   self-play, scaling, related work), wrote memos now archived under
+   `analysis/review_2026-08-16/`. Consensus, ranked by how many flagged it:
+   (1) the forward planner never got a fair second chance at scale (one
+   seed, one lr rescue, no self-play) — the first hostile attack; (2) the
+   step-count budget unit is contestable: backward wins at every budget
+   only at 32×32 and on frontier sets, wall-clock is shown at one rung and
+   favours forward at base (§27); (3) headline rows are single-seed while
+   measured seed swing reaches 28 pts (§44); (4) by-reference is still dead
+   code in the planner (§40); (5) no learned-subgoal (kSubS-style) baseline;
+   (6) the 8-robot cell is where both tracks break (§45/§47/§73) — robots,
+   not grid, is the live frontier; (7) reproducibility housekeeping (137
+   untracked result files, private-host board fetch, unarchived
+   checkpoints); (8) single domain (Rush Hour port would reuse the code
+   nearly verbatim). Two-paper split recommended (A: planner thesis; B:
+   labeler fidelity threshold — undersold as infrastructure). Actions taken
+   today: 121 result summaries (<3 MB) committed (4036a0a), the 288 MB of
+   corpora + run dirs + banked checkpoints archived to
+   `/mnt/proj1/open-37-42/petrhyner_archive/2026-08-16/`; efficiency chapter
+   rewrite, seed-replicate + forward-rescue job design, by-reference wiring
+   (flag-gated), and `PAPER_PLAN.md` delegated to parallel agents — outcomes
+   logged in the following entries. Live state note: the deployment pair
+   4669684/85 exited nonzero; a retry chain (4670119→4670120) submitted by
+   the previous session is running and was left alone.
