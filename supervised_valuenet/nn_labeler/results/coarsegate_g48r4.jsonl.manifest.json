@@ -1,0 +1,31 @@
+{
+ "config": "g48r4",
+ "grid": 48,
+ "robots": 4,
+ "vocab": "base",
+ "label_source": "nnlab_descent",
+ "ckpt": "nn_labeler/banked/prod_v1_s11.ckpt",
+ "ckpt_sha": "dd0e7211b1cbd39f",
+ "device": "cuda",
+ "per_graph": 10,
+ "seed": 0,
+ "max_candidates": 14,
+ "max_depth": 64,
+ "certify": true,
+ "prefix_check": true,
+ "boards": "lean",
+ "instances_from": "scaling/data/g48r4/backward_audit.rust.jsonl",
+ "graphs": "900-1049",
+ "seconds": 1344.5,
+ "stats": {
+  "attempted": 600,
+  "kept": 549,
+  "records": 3654,
+  "timeouts": 0,
+  "decisions": 821,
+  "cand_labeled": 3654,
+  "cand_no_complete": 1669,
+  "cand_uncertified": 107,
+  "empty": 51
+ }
+}

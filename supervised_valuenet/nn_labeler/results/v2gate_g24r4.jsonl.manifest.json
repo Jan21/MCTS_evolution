@@ -1,0 +1,31 @@
+{
+ "config": "g24r4",
+ "grid": 24,
+ "robots": 4,
+ "vocab": "base",
+ "label_source": "nnlab_descent",
+ "ckpt": "nn_labeler/runs/prod2_mix8to16_none_s11_lr1e-4/lightning_logs/version_1/checkpoints/epoch=12-step=167869.ckpt",
+ "ckpt_sha": "df7804cf0c9a57f6",
+ "device": "cuda",
+ "per_graph": 10,
+ "seed": 0,
+ "max_candidates": 14,
+ "max_depth": 64,
+ "certify": true,
+ "prefix_check": true,
+ "boards": "pkl",
+ "instances_from": "scaling/data/g24r4/backward.jsonl",
+ "graphs": "900-1049",
+ "seconds": 211.1,
+ "stats": {
+  "attempted": 600,
+  "kept": 531,
+  "records": 3728,
+  "timeouts": 0,
+  "decisions": 879,
+  "cand_labeled": 3728,
+  "cand_no_complete": 2442,
+  "cand_uncertified": 299,
+  "empty": 69
+ }
+}
