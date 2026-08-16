@@ -238,6 +238,111 @@ FAIRNESS_FILES = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Per-puzzle wall-clock (median / 90th percentile / total)
+#
+# Every comparison file carries a per-instance `rows` array with a `seconds`
+# field for BOTH planners, at every rung and on both the gradable and the
+# beyond-oracle sets.  The aggregates elsewhere on the page quote
+# `mean_seconds`; a mean is the wrong summary here because the subgoal
+# planner's cost distribution is heavy-tailed (FINDINGS 25), so this module
+# recomputes median, 90th percentile and total straight from the rows.
+#
+# Wall-clock is only comparable WITHIN one machine (see machine_of), so each
+# row pairs the forward system with the fullest backward language measured on
+# the SAME machine, and records which fuller language had to be skipped.
+# ---------------------------------------------------------------------------
+
+WALL_PREF = ["bwd_b2", "bwd_b1", "bwd_old"]
+WALL_LABEL = {"bwd_b2": "subgoals, full language",
+              "bwd_b1": "subgoals, extended language (B1)",
+              "bwd_old": "subgoals, original language"}
+
+
+def pctile(xs, q):
+    """Linear-interpolated percentile; q in [0, 1]. None for an empty list."""
+    ys = sorted(xs)
+    if not ys:
+        return None
+    if len(ys) == 1:
+        return float(ys[0])
+    pos = q * (len(ys) - 1)
+    lo, hi = int(math.floor(pos)), int(math.ceil(pos))
+    if lo == hi:
+        return float(ys[lo])
+    return float(ys[lo]) + (float(ys[hi]) - float(ys[lo])) * (pos - lo)
+
+
+def _wall_pairs(comp, name):
+    """[(seconds, solved)] for one named system inside a comparison file."""
+    sysd = ((comp or {}).get("systems") or {}).get(name) or {}
+    return [(float(r["seconds"]), bool(r.get("solved")))
+            for r in (sysd.get("rows") or [])
+            if isinstance(r.get("seconds"), (int, float))]
+
+
+def wall_stats(pairs):
+    """median / p90 / total / max plus a solved-within-t-seconds curve."""
+    if not pairs:
+        return None
+    xs = [t for t, _ in pairs]
+    n = len(xs)
+    curve, solved = [], 0
+    for t, ok in sorted(pairs):
+        if ok:
+            solved += 1
+            curve.append((t, solved / n * 100))
+    if not curve or curve[-1][0] < max(xs):
+        curve.append((max(xs), solved / n * 100))
+    return {"n": n, "median": pctile(xs, 0.5), "p90": pctile(xs, 0.9),
+            "total": sum(xs), "mean": sum(xs) / n, "max": max(xs),
+            "min": min(xs), "solved": solved, "solve_rate": solved / n * 100,
+            "curve": curve}
+
+
+def build_wallclock(ladder, comps):
+    """One row per rung x set: same-machine backward/forward wall-clock."""
+    out = []
+    for e in ladder:
+        for group, gname in (("graded", "gradable set"),
+                             ("frontier", "beyond the oracle")):
+            cells = e.get(group) or {}
+            f = cells.get("fwd")
+            if not f:
+                continue
+            avail = [k for k in WALL_PREF if cells.get(k)]
+            same = [k for k in avail if cells[k]["machine"] == f["machine"]]
+            row = {"key": e["key"], "label": e["label"], "short": e["short"],
+                   "set": gname, "base": bool(e.get("base"))}
+            if not same:
+                row.update({"bwd": None, "fwd": None, "same_machine": False,
+                            "skipped": WALL_LABEL.get(avail[0]) if avail
+                            else None})
+                out.append(row)
+                continue
+            b = cells[same[0]]
+            bs = wall_stats(_wall_pairs(comps.get(b["src"]), b["name"]))
+            fs = wall_stats(_wall_pairs(comps.get(f["src"]), f["name"]))
+            if not bs or not fs:
+                continue
+            skipped = None
+            if avail and avail[0] != same[0]:
+                skipped = WALL_LABEL.get(avail[0])
+            row.update({
+                "bwd": bs, "fwd": fs, "same_machine": True,
+                "machine": b["machine"], "bwd_slot": same[0],
+                "bwd_label": WALL_LABEL.get(same[0], same[0]),
+                "bwd_src": b["src"], "fwd_src": f["src"],
+                "skipped": skipped,
+                "r_median": (fs["median"] / bs["median"]
+                             if bs["median"] else None),
+                "r_p90": fs["p90"] / bs["p90"] if bs["p90"] else None,
+                "r_total": fs["total"] / bs["total"] if bs["total"] else None,
+            })
+            out.append(row)
+    return out or None
+
+
 def load_rung_files(rung):
     """Load every distinct file a rung references; returns relpath->data."""
     files = {}
@@ -566,6 +671,21 @@ def collect():
          "(1200 search steps, top-5 proposals)", not bad)
 
     D["ladder"] = build_ladder(D)
+
+    # per-puzzle wall-clock, recomputed from the row arrays (median + tail)
+    comps = {}
+    for _key, slots in D["rungs"].items():
+        for _sl, (rel, comp, _kind) in slots.items():
+            if comp:
+                comps[rel] = comp
+    for rel, key in (("eval/results/comparison_forward.json", "fwd450"),
+                     ("eval/results/final450_backward_prefix.json",
+                      "bwd_prefix"),
+                     ("eval/results/final450_backward_b1.json", "bwd_b1"),
+                     ("eval/results/final450_backward_b2.json", "bwd_b2")):
+        if D.get(key):
+            comps[rel] = D[key]
+    D["wallclock"] = build_wallclock(D["ladder"], comps)
     return D
 
 

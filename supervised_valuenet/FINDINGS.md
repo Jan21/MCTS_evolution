@@ -2521,3 +2521,25 @@ scoped fix.
    logged in the following entries. Live state note: the deployment pair
    4669684/85 exited nonzero; a retry chain (4670119→4670120) submitted by
    the previous session is running and was left alone.
+
+76. **Wall-clock at every rung, median + tail — the efficiency claim no
+   longer rests on the step-count unit (2026-08-16).** Every comparison
+   JSON already carried per-puzzle `seconds` for both planners at all six
+   rungs and both sets (100% row coverage; no slide-call counts exist
+   outside the 5-puzzle pilot of §25). New `report_data.build_wallclock`
+   + `sec_fair_wallclock` (report_sections_scale.py) render one same-
+   machine table (median / p90 / total per planner, ratios) and 11
+   solve-rate-vs-wall-clock panels. Verdict: forward is slower at median,
+   p90 AND total at every scaling rung — median ratios 2.9×–179×, totals
+   1.4×–49.6× (e.g. 32×32 frontier: 59 s vs 2377 s median, 4.4 h vs
+   181.8 h total) — but at BASE (16×16·4r) wall-clock favours forward
+   (medians tie at 0.38 s, p90 3.19 vs 1.97 s, total 9 vs 7 min),
+   confirming §27. Backward's tail is heavy (16×16·8r frontier p90 is 205×
+   its own median; tightest same-set p90 margin 1.0× at 24×24·8r
+   frontier's 945 vs 1766 s is 1.9×, at 16×16·8r frontier 384 vs 393 s
+   ≈1.0×), so median and total are always printed together. Also fixed:
+   the hygiene ledger's "between 17.0× and 17.0×" (it required exactly one
+   backward corpus per config, dropping the four two-vocabulary configs) —
+   now "between 4.9× and 17.0×". Report: 1444 checks + 51 assertions.
+   Sources: `eval/report_data.py::build_wallclock`,
+   `analysis/review_2026-08-16/impl_efficiency.md`.

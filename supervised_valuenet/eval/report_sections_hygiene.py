@@ -309,8 +309,15 @@ def sec_databudget(D):
                and r.get("records")]
         bwd = [r for r in grp if r.get("unit") == "decisions"
                and r.get("records")]
-        if len(fwd) == 1 and len(bwd) == 1:
-            ratios.append((cfg, fwd[0]["records"] / bwd[0]["records"]))
+        # Several configurations generated more than one backward corpus (one
+        # per plan-language vocabulary).  Comparing against the LARGEST of
+        # them is the accounting most generous to the backward side, and it
+        # keeps every configuration in the range instead of silently dropping
+        # the ones with two vocabularies -- which used to collapse the range
+        # to the single surviving configuration and print "between X and X".
+        if len(fwd) == 1 and bwd:
+            biggest = max(bwd, key=lambda r: r["records"])
+            ratios.append((cfg, fwd[0]["records"] / biggest["records"]))
     ratio_html = ""
     if ratios:
         lo_cfg, lo = min(ratios, key=lambda t: t[1])
@@ -324,21 +331,40 @@ def sec_databudget(D):
                            + " boards")
         else:
             same_boards = "the same boards"
+        if len(ratios) == 1 or f"{lo:.1f}" == f"{hi:.1f}":
+            # one configuration, or a range too tight to print as a range:
+            # never render "between X and X"
+            span = (
+                "about "
+                + ck(f"{hi:.1f}×", BUDGET_SRC,
+                     "budget records ratio, largest "
+                     "(forward moves per backward decision)", raw=hi)
+                + " the backward planner's count"
+                + (f" (measured at {esc(_label(hi_cfg))}"
+                   + ("" if len(ratios) == 1
+                      else f", and within rounding at all "
+                           f"{len(ratios)} scaling configurations")
+                   + "). "))
+        else:
+            span = (
+                "between "
+                + ck(f"{lo:.1f}×", BUDGET_SRC,
+                     "budget records ratio, smallest "
+                     "(forward moves per backward decision)", raw=lo)
+                + " and "
+                + ck(f"{hi:.1f}×", BUDGET_SRC,
+                     "budget records ratio, largest "
+                     "(forward moves per backward decision)", raw=hi)
+                + " the backward planner's largest corpus at the same "
+                "configuration (smallest at "
+                f"{esc(_label(lo_cfg))}, largest at {esc(_label(hi_cfg))}). ")
         ratio_html = (
             "<p>One asymmetry <i>is</i> meaningful, because it holds the "
             f"boards fixed: at every scaling configuration both systems "
             f"train on {same_boards}, and the forward planner receives "
-            "many times more supervision records from them — between "
-            + ck(f"{lo:.1f}×", BUDGET_SRC,
-                 "budget records ratio, smallest "
-                 "(forward moves per backward decision)", raw=lo)
-            + " and "
-            + ck(f"{hi:.1f}×", BUDGET_SRC,
-                 "budget records ratio, largest "
-                 "(forward moves per backward decision)", raw=hi)
-            + " the backward planner's count (smallest at "
-            f"{esc(_label(lo_cfg))}, largest at {esc(_label(hi_cfg))}). "
-            "That is inherent to the formulations: every optimal "
+            "many times more supervision records from them — "
+            + span
+            + "That is inherent to the formulations: every optimal "
             "trajectory contributes all of its states, while the backward "
             "corpus grows only with search decisions taken. It is not a "
             "tuning choice, but it means the forward networks see far "

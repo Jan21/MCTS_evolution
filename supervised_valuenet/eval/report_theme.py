@@ -155,6 +155,7 @@ th{font-size:11px; letter-spacing:.09em; text-transform:uppercase;
 th.num{text-align:right}
 td{padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top}
 td.num{text-align:right; white-space:nowrap}
+td.sep, th.sep{border-left:1px solid var(--grid)}
 tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:var(--c-bwd-wash)}
 .rowgroup td{padding-top:16px; border-bottom:1px solid var(--baseline);

@@ -347,6 +347,26 @@ def sec_cost(D):
             c["machine"] == "karolina" for c in (fg, bg, ff, bf)):
         fmin = fg["agg"]["mean_seconds"] / 60
         ffmin = ff["agg"]["mean_seconds"] / 60
+        # a mean is never quoted alone on this page: pull the medians for the
+        # same two cells out of the per-puzzle wall-clock model
+        wc = {(r["key"], r["set"]): r for r in (D.get("wallclock") or [])
+              if r.get("same_machine")}
+
+        def _medpair(setname, desc):
+            r = wc.get(("g32r4", setname))
+            if not r:
+                return ""
+            return (" Medians, which the tail inflates away from: "
+                    + ck(_fsec(r["bwd"]["median"]), r["bwd_src"],
+                         desc + " bwd median", raw=r["bwd"]["median"])
+                    + " for subgoals against "
+                    + ck(_fsec(r["fwd"]["median"]), r["fwd_src"],
+                         desc + " fwd median", raw=r["fwd"]["median"])
+                    + " move-by-move — the full median/tail/total table is "
+                    "in the “Is it fair?” section.")
+
+        med_g = _medpair("gradable set", "tile 32x32 graded")
+        med_f = _medpair("beyond the oracle", "tile 32x32 frontier")
         tiles = f"""
   <div class="kpirow">
     <div class="tile"><div class="tlabel">32×32, gradable set — minutes per
@@ -356,7 +376,7 @@ def sec_cost(D):
     <div class="tsub">vs the subgoal planner's
     {ck(f"{bg['agg']['mean_seconds']:.0f} s", bg["src"],
     "cost: 32x32 backward seconds", raw=bg["agg"]["mean_seconds"])} —
-    measured on the same machine.</div></div>
+    measured on the same machine. These two are means.{med_g}</div></div>
     <div class="tile"><div class="tlabel">32×32, beyond the oracle —
     minutes per puzzle, move-by-move</div>
     <div class="tvalue">{ck(f"{ffmin:.0f} min", ff["src"],
@@ -364,7 +384,8 @@ def sec_cost(D):
     <div class="tsub">to solve {pct(ff):.1f}% — forty minutes per puzzle to
     solve almost nothing, vs {ck(f"{bf['agg']['mean_seconds']:.0f} s",
     bf["src"], "cost: 32x32 frontier backward seconds",
-    raw=bf["agg"]["mean_seconds"])} at {pct(bf):.1f}% for subgoals.</div>
+    raw=bf["agg"]["mean_seconds"])} at {pct(bf):.1f}% for subgoals. These
+    two are means.{med_f}</div>
     </div>
   </div>"""
     return kicker_h2(
@@ -878,95 +899,262 @@ def sec_fair_budget(D):
             f"{twin}</figure>" + reading + "</section>")
 
 
+def _fsec(x):
+    """Seconds, rendered at a readable precision for its magnitude."""
+    if x is None:
+        return "—"
+    if x < 10:
+        return f"{x:.2f} s"
+    if x < 100:
+        return f"{x:.1f} s"
+    return f"{x:,.0f} s"
+
+
+def _fdur(x):
+    """A total duration, in the largest unit that keeps it readable."""
+    if x is None:
+        return "—"
+    if x < 120:
+        return f"{x:.0f} s"
+    if x < 7200:
+        return f"{x / 60:.0f} min"
+    return f"{x / 3600:.1f} h"
+
+
+def _fratio(x):
+    if x is None:
+        return "—"
+    return f"{x:.1f}×" if x < 100 else f"{x:.0f}×"
+
+
 def sec_fair_wallclock(D):
-    rows = []
-    pref = ["bwd_b2", "bwd_b1", "bwd_old"]
-    label_of = {"bwd_b2": "subgoals, full language",
-                "bwd_b1": "subgoals, extended language (B1)",
-                "bwd_old": "subgoals, original language"}
-    for e in D["ladder"]:
-        for group, gname in (("graded", "gradable set"),
-                             ("frontier", "beyond the oracle")):
-            cells = e.get(group) or {}
-            f = cells.get("fwd")
-            if not f:
-                continue
-            cand = [k for k in pref if cells.get(k)
-                    and cells[k]["machine"] == f["machine"]]
-            if not cand:
-                rows.append((e["label"], gname, None, None, None, None,
-                             "no same-machine pair yet"))
-                continue
-            b = cells[cand[0]]
-            bs, fs = b["agg"]["mean_seconds"], f["agg"]["mean_seconds"]
-            desc = f'wall-clock {e["key"]} {group}'
-            rows.append((
-                e["label"], gname, label_of[cand[0]],
-                ck(fnum(bs, 2), b["src"], desc + " backward s", raw=bs),
-                ck(fnum(fs, 2), f["src"], desc + " forward s", raw=fs),
-                f"{fs / bs:.1f}×" if bs else "—",
-                "Karolina" if b["machine"] == "karolina"
-                else "origin machine"))
-    body = []
-    for label, gname, bsys, bs, fs, ratio, mach in rows:
-        if bsys is None:
-            body.append(f"<tr><td><b>{esc(label)}</b>"
-                        f'<div class="cellnote">{esc(gname)}</div></td>'
-                        f'<td colspan="3" class="small muted">{esc(mach)}'
-                        "</td></tr>")
-            continue
-        body.append(
-            f"<tr><td><b>{esc(label)}</b>"
-            f'<div class="cellnote">{esc(gname)} · measured on {esc(mach)}'
-            f"</div></td>"
-            f'<td class="num">{bs}<div class="cellnote">{esc(bsys)}</div>'
-            "</td>"
-            f'<td class="num">{fs}</td>'
-            f'<td class="num"><b>{esc(ratio)}</b></td></tr>')
-    table = scroll(
-        "<table><thead><tr><th>configuration · set</th>"
-        "<th class='num'>" + dot("bwd") + "subgoals<br>seconds / puzzle</th>"
-        "<th class='num'>" + dot("fwd") + "move-by-move<br>seconds / puzzle"
-        "</th><th class='num'>time ratio<br>(move-by-move ÷ subgoals)</th></tr></thead><tbody>"
-        + "".join(body) + "</tbody></table>")
-    # data-driven closing paragraph (never assert what the table refutes)
-    numeric = [(label, gname, float(r[:-1]))
-               for (label, gname, bsys, bs, fs, r, m) in rows
-               if bsys is not None and r and r.endswith("×")]
-    scaling_ratios = [(la, g, v) for la, g, v in numeric
-                      if "16×16 board, 4 robots" not in la]
-    base_ratios = [(la, g, v) for la, g, v in numeric
-                   if "16×16 board, 4 robots" in la]
-    fact("wall-clock: subgoals faster on every same-machine pair beyond "
-         "the base scale", all(v > 1 for _, _, v in scaling_ratios))
-    closing = ""
-    if scaling_ratios:
-        lo = min(v for _, _, v in scaling_ratios)
-        hi = max(v for _, _, v in scaling_ratios)
-        base_note = ""
-        if base_ratios and base_ratios[0][2] < 1:
-            base_note = (
-                f" The one exception is the base scale "
-                f"({base_ratios[0][2]:.1f}×): on a 16×16 board a single "
-                "move-level step is cheap enough that the move-by-move "
-                "planner's many steps out-run the subgoal planner's few — "
-                "an exception that disappears as boards grow, which is the "
-                "thesis in miniature.")
-        closing = f"""
-  <p class="small">Wall-clock charges the subgoal planner for all of its
-  unmetered bookkeeping — and it still runs {lo:.1f}×–{hi:.0f}× faster
-  per puzzle on every same-machine pair at every scaling
-  rung.{base_note} The instrumented counters put exact numbers on
-  the exclusions themselves.</p>"""
-    return kicker_h2(
+    """The wall-clock table: median + 90th percentile + total, per rung.
+
+    Answers the reviewer objection that “search steps is not a fair unit”:
+    wall-clock is the one unit both planners spend in the same currency, it
+    charges every scrap of unmetered bookkeeping, and it is read here from
+    the per-puzzle `seconds` field that every comparison file carries for
+    both systems.  Median and 90th percentile are reported side by side
+    because the subgoal planner's cost is heavy-tailed — a mean alone would
+    hide exactly the puzzles the objection is about."""
+    head = kicker_h2(
         "the complementary check: wall-clock",
-        "Time counts everything — and points the same way at scale",
-        "Wall-clock time meters every kind of work, including all the "
-        "bookkeeping the expansion counter excludes. It is only "
-        "comparable between runs on the same machine, so this table is "
-        "restricted to same-machine pairs (the fullest backward language "
-        "measured on the forward row's machine).") + table + closing \
-        + "</section>"
+        "Time counts everything — and it does not flatter the subgoal side "
+        "at the base scale",
+        "A search step is a contested unit: a move-level step and a subgoal "
+        "decision are not the same amount of work. Seconds are not "
+        "contested. This table drops the step counter entirely and reports "
+        "the per-puzzle wall-clock every comparison file already records "
+        "for both planners — median, 90th percentile (the tail), and the "
+        "total for the whole set. Seconds are only comparable between runs "
+        "on the same machine, so every row pairs the move-by-move planner "
+        "with the fullest subgoal language measured on the SAME machine, "
+        "and names that machine.")
+    rows = D.get("wallclock")
+    src = "eval/results + scaling/results/*/comparison*.json (per-puzzle rows)"
+    if not rows:
+        return head + pending(
+            "per-puzzle wall-clock could not be read from the comparison "
+            "files (the `rows` arrays carry a `seconds` field per puzzle); "
+            "the table renders here automatically once they are readable") \
+            + "</section>"
+
+    body = []
+    for r in rows:
+        title = (f"<td><b>{esc(r['label'])}</b>"
+                 f'<div class="cellnote">{esc(r["set"])}')
+        if not r.get("same_machine"):
+            body.append(
+                title + "</div></td>"
+                '<td colspan="8" class="small muted">no same-machine '
+                "backward/forward pair exists at this rung — seconds from "
+                "different machines are never compared on this page</td></tr>")
+            continue
+        mach = ("Karolina" if r["machine"] == "karolina"
+                else "the origin machine")
+        note = (f" · {esc(r['bwd_label'])} · both runs on {esc(mach)}")
+        skip = ""
+        if r.get("skipped"):
+            skip = ('<div class="cellnote muted">machines differ: '
+                    f"{esc(r['skipped'])} was measured at this rung too, but "
+                    "on the other machine — unusable here</div>")
+        d = f"wall-clock {r['key']} {r['set']}"
+        b, f = r["bwd"], r["fwd"]
+        cells = [
+            ck(_fsec(b["median"]), r["bwd_src"], d + " bwd median",
+               raw=b["median"]),
+            ck(_fsec(b["p90"]), r["bwd_src"], d + " bwd p90", raw=b["p90"]),
+            ck(_fdur(b["total"]), r["bwd_src"], d + " bwd total",
+               raw=b["total"]),
+            ck(_fsec(f["median"]), r["fwd_src"], d + " fwd median",
+               raw=f["median"]),
+            ck(_fsec(f["p90"]), r["fwd_src"], d + " fwd p90", raw=f["p90"]),
+            ck(_fdur(f["total"]), r["fwd_src"], d + " fwd total",
+               raw=f["total"]),
+        ]
+        body.append(
+            title + note + "</div>" + skip
+            + f'<div class="cellnote">{b["n"]} puzzles</div></td>'
+            + "".join(f'<td class="num">{c}</td>' for c in cells[:3])
+            + "".join(f'<td class="num sep">{c}</td>' for c in cells[3:])
+            + f'<td class="num"><b>{esc(_fratio(r["r_median"]))}</b></td>'
+            + f'<td class="num"><b>{esc(_fratio(r["r_total"]))}</b></td></tr>')
+    body = ["<tr>" + x for x in body]
+
+    table = scroll(
+        "<table><thead>"
+        "<tr><th rowspan='2'>configuration · set<br>"
+        "<span class='small muted'>machine, and which subgoal language</span>"
+        "</th>"
+        "<th colspan='3' class='num'>" + dot("bwd")
+        + "subgoals — seconds per puzzle</th>"
+        "<th colspan='3' class='num'>" + dot("fwd")
+        + "move-by-move — seconds per puzzle</th>"
+        "<th colspan='2' class='num'>move-by-move ÷ subgoals</th></tr>"
+        "<tr><th class='num'>median</th><th class='num'>90th pct</th>"
+        "<th class='num'>total</th>"
+        "<th class='num sep'>median</th><th class='num sep'>90th pct</th>"
+        "<th class='num sep'>total</th>"
+        "<th class='num'>at the median</th><th class='num'>on total</th>"
+        "</tr></thead><tbody>" + "".join(body) + "</tbody></table>")
+
+    warn = ('<p class="small muted"><b>How to read it.</b> Compare only '
+            "left-to-right within one row: both numbers in a row come from "
+            "the same machine, which the row names. Never compare seconds "
+            "down a column — the rungs measured before 2026-07-20 ran on a "
+            "different machine from those measured after, and the study "
+            "does not calibrate between them. The ratio columns are "
+            "therefore the only quantities that travel between rows. "
+            "“Total” is the summed wall-clock of the whole set, so it is "
+            "the mean in disguise and is dominated by the tail; it is "
+            "printed next to the median deliberately, so the two can "
+            "disagree in public.</p>")
+
+    # ---- honest reading, computed from the table itself ------------------
+    ok = [r for r in rows if r.get("same_machine")]
+    scaling = [r for r in ok if not r.get("base")]
+    base = [r for r in ok if r.get("base")]
+    fact("wall-clock: at every scaling rung the move-by-move planner is "
+         "slower at the median, at the 90th percentile and on total",
+         bool(scaling) and all(r["r_median"] > 1 and r["r_p90"] > 1
+                               and r["r_total"] > 1 for r in scaling))
+    fact("wall-clock table covers every rung on both sets that has a "
+         "same-machine pair (11 rows)", len(ok) == 11)
+    reading = ""
+    if scaling:
+        lo_m = min(r["r_median"] for r in scaling)
+        hi_m = max(r["r_median"] for r in scaling)
+        lo_t = min(r["r_total"] for r in scaling)
+        hi_t = max(r["r_total"] for r in scaling)
+        lo_p = min(r["r_p90"] for r in scaling)
+        tight = min(scaling, key=lambda r: r["r_p90"])
+        base_txt = ""
+        if base:
+            b0 = base[0]
+            base_txt = (
+                " <b>At the base scale it does not.</b> On 16×16 with 4 "
+                "robots the two planners have an all-but-identical median "
+                "puzzle — "
+                f"{ck(_fsec(b0['bwd']['median']), b0['bwd_src'], 'wall-clock base bwd median (reading)', raw=b0['bwd']['median'])}"
+                " against "
+                f"{ck(_fsec(b0['fwd']['median']), b0['fwd_src'], 'wall-clock base fwd median (reading)', raw=b0['fwd']['median'])}"
+                " — and the subgoal planner is the <i>slower</i> of the two "
+                "in the tail and on total ("
+                f"{ck(_fsec(b0['bwd']['p90']), b0['bwd_src'], 'wall-clock base bwd p90 (reading)', raw=b0['bwd']['p90'])}"
+                " vs "
+                f"{ck(_fsec(b0['fwd']['p90']), b0['fwd_src'], 'wall-clock base fwd p90 (reading)', raw=b0['fwd']['p90'])}"
+                " at the 90th percentile; "
+                f"{ck(_fdur(b0['bwd']['total']), b0['bwd_src'], 'wall-clock base bwd total (reading)', raw=b0['bwd']['total'])}"
+                " vs "
+                f"{ck(_fdur(b0['fwd']['total']), b0['fwd_src'], 'wall-clock base fwd total (reading)', raw=b0['fwd']['total'])}"
+                " for the whole 450-puzzle set). That inversion is a real "
+                "result, not a rounding artifact: on a small board a "
+                "move-level step is cheap enough that the move-by-move "
+                "planner's many steps cost less than the subgoal planner's "
+                "few expensive ones plus its unmetered realization, "
+                "prefix-check and park-repair work. The time advantage is "
+                "earned at scale; it is not a property of the formulation "
+                "at every size.")
+        reading = f"""
+  <p><b>The honest reading.</b> Wall-clock is the unit that cannot be
+  accused of favouring either side — it charges the subgoal planner for
+  every unmetered thing the step counter misses — and at every rung above
+  the base scale it points the same way as the step counts, though not by
+  the same multiplier: the move-by-move planner needs
+  {esc(_fratio(lo_m))}–{esc(_fratio(hi_m))} the subgoal planner's time on
+  the median puzzle, and {esc(_fratio(lo_t))}–{esc(_fratio(hi_t))} in
+  total.{base_txt}</p>
+  <p class="small"><b>Where the tail bites.</b> The median and the total
+  disagree by a lot, and the disagreement is informative in both
+  directions. The subgoal planner's own tail is heavy — its 90th
+  percentile can be two orders of magnitude above its median, which is the
+  park-repair cost FINDINGS 25 isolates — so its advantage shrinks at the
+  tail: the tightest 90th-percentile margin in the table is
+  {esc(_fratio(lo_p))} ({esc(tight["label"])}, {esc(tight["set"])}), where
+  the two planners' worst puzzles cost nearly the same. Where the total
+  ratio exceeds the median ratio instead (the large-board rungs), it is
+  the move-by-move planner whose tail explodes. No single number
+  summarizes this table, which is why all three are printed.</p>"""
+
+    return (head + table
+            + f'<p class="small muted">source: {esc(src)} — per-puzzle '
+            "<code>seconds</code> fields, not the files' "
+            "<code>mean_seconds</code> aggregates.</p>"
+            + warn + reading + _wallclock_curves(D) + "</section>")
+
+
+def _wallclock_curves(D):
+    """Solve rate vs a per-puzzle wall-clock budget — the step-free curve.
+
+    Sidesteps the unit argument completely: for a time budget t, a planner's
+    solve rate is the share of puzzles it solves in t seconds or less.  Both
+    searches are deterministic and were run to completion, so these curves
+    are exact reconstructions from the recorded per-puzzle seconds — no new
+    compute, and no step counter anywhere in the picture."""
+    rows = [r for r in (D.get("wallclock") or []) if r.get("same_machine")]
+    if not rows:
+        return ""
+    panels = []
+    for r in rows:
+        b, f = r["bwd"], r["fwd"]
+        lo = max(1e-3, min(b["min"], f["min"]))
+        hi = max(b["max"], f["max"])
+        import math as _m
+        lo = 10 ** _m.floor(_m.log10(lo))
+        hi = 10 ** _m.ceil(_m.log10(hi))
+        ticks, t = [], lo
+        while t <= hi * 1.0001:
+            ticks.append(t)
+            t *= 10
+        series = [{"fam": "bwd", "label": r["bwd_label"], "points": b["curve"]},
+                  {"fam": "fwd", "label": "move-by-move",
+                   "points": f["curve"]}]
+        svg = C.budget_curve_panel(
+            series, xmin=lo, xmax=hi, xticks=ticks,
+            hover_budgets=[x for x in ticks if x > lo],
+            xlabel="seconds per puzzle (log scale)",
+            hover_fmt=lambda v: f"within {v:g} s per puzzle",
+            aria=f"Solve rate versus per-puzzle wall-clock budget, "
+                 f"{r['label']}, {r['set']}")
+        panels.append(
+            f'<div class="panel"><h3 class="ph">{esc(r["label"])}</h3>'
+            f'<p class="cellnote">{esc(r["set"])} — {b["n"]} puzzles · '
+            f'{esc("Karolina" if r["machine"] == "karolina" else "origin machine")}'
+            f"</p>{svg}</div>")
+    fams = [("bwd", "subgoal planner (language named in the table above)"),
+            ("fwd", "move-by-move planner")]
+    return ("""
+  <h3 class="ph">The same claim without a step counter</h3>
+  <p class="small">Each curve reads: give a planner <i>t</i> seconds per
+  puzzle and it solves this share of the set. Nothing here is measured in
+  search steps, so the fairness of a step is not in question. Both axes are
+  the planner's own: the curve that reaches a given height further left is
+  the cheaper planner at that solve rate. Within a panel both curves are
+  same-machine; between panels they are not, so read heights and crossings,
+  not absolute seconds, across panels.</p>"""
+            + C.line_legend(fams)
+            + f'<div class="cols2">{"".join(panels)}</div>')
+
 
 
 def sec_fair_probes(D):

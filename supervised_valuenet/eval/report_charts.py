@@ -384,19 +384,34 @@ def line_chart(xlabels, series, unit="%", aria="", height=240,
 # Dense budget curve (solve rate vs budget, log-x) — one small-multiple panel
 # ---------------------------------------------------------------------------
 
+def _xtick(v):
+    """Compact tick label for a (possibly fractional) axis value."""
+    return f"{v:g}"
+
+
 def budget_curve_panel(series, aria="", width=430, height=170,
-                       xmax=1200, hover_budgets=(10, 30, 100, 300, 1200)):
+                       xmax=1200, hover_budgets=(10, 30, 100, 300, 1200),
+                       xmin=1.0, xticks=(1, 10, 100, 1200),
+                       xlabel="search-step budget (log scale)",
+                       hover_fmt=None):
     """series: list of {fam, label, points: [(budget, rate_pct), ...]}.
-    Log-x from 1 to xmax; dense step curves are downsampled for the path;
-    hover columns at the canonical budgets list every series."""
+    Log-x from xmin to xmax; dense step curves are downsampled for the path;
+    hover columns at the canonical budgets list every series.
+
+    The x axis is generic: the defaults draw a search-step budget, but the
+    same primitive draws a per-puzzle wall-clock budget by passing xmin/xmax,
+    xticks, xlabel and a hover_fmt(value) -> str."""
     import math
     pad_l, pad_r, pad_t, pad_b = 40, 12, 8, 30
     W, H = width, height + pad_t + pad_b
     plot_w, plot_h = W - pad_l - pad_r, height
 
+    lo_x = float(xmin) if xmin and xmin > 0 else 1.0
+    span = math.log(float(xmax) / lo_x) or 1.0
+
     def X(b):
-        b = max(1.0, float(b))
-        return pad_l + plot_w * math.log(b) / math.log(xmax)
+        b = min(float(xmax), max(lo_x, float(b)))
+        return pad_l + plot_w * math.log(b / lo_x) / span
 
     def Y(r):
         return pad_t + plot_h * (1 - r / 100.0)
@@ -411,20 +426,20 @@ def budget_curve_panel(series, aria="", width=430, height=170,
         parts.append(f'<text x="{pad_l - 6}" y="{y + 3.5:.1f}" '
                      f'text-anchor="end" font-size="9.5" '
                      f'fill="var(--faint)">{tv}%</text>')
-    for tb in (1, 10, 100, 1200):
+    for tb in xticks:
         x = X(tb)
         parts.append(f'<line x1="{x:.1f}" y1="{pad_t}" x2="{x:.1f}" '
                      f'y2="{pad_t + plot_h}" stroke="var(--grid)" '
                      f'stroke-width="1"/>')
         parts.append(f'<text x="{x:.1f}" y="{pad_t + plot_h + 14}" '
                      f'text-anchor="middle" font-size="9.5" '
-                     f'fill="var(--faint)">{tb}</text>')
+                     f'fill="var(--faint)">{_xtick(tb)}</text>')
     parts.append(f'<line x1="{pad_l}" y1="{pad_t + plot_h}" '
                  f'x2="{W - pad_r}" y2="{pad_t + plot_h}" '
                  f'stroke="var(--baseline)" stroke-width="1"/>')
     parts.append(f'<text x="{pad_l + plot_w / 2:.1f}" y="{H - 4}" '
                  f'text-anchor="middle" font-size="9.5" '
-                 f'fill="var(--faint)">search-step budget (log scale)</text>')
+                 f'fill="var(--faint)">{esc(xlabel)}</text>')
     for s in series:
         pts = sorted((b, r) for b, r in s["points"] if b and b <= xmax)
         if not pts:
@@ -453,7 +468,7 @@ def budget_curve_panel(series, aria="", width=430, height=170,
     # hover columns at canonical budgets
     hb = [b for b in hover_budgets if b <= xmax]
     for i, b in enumerate(hb):
-        lines = [f"budget {b} steps"]
+        lines = [hover_fmt(b) if hover_fmt else f"budget {b} steps"]
         for s in series:
             r = _rate_at(s["points"], b)
             lines.append(f'{s["label"]}\t'
