@@ -12,7 +12,9 @@
 #   sbatch -J spr-m1-mixed self_play_robots/jobs/m1_train.slurm mixed 21 "policy value_warm value_cold"
 #   sbatch -J spr-m1-g16   self_play_robots/jobs/m1_train.slurm g16   21
 #   sbatch -J spr-m1-g24   self_play_robots/jobs/m1_train.slurm g24   21
-# Recipes: policy cold 25 ep bs 8 (policy_tf.py's); value_warm = init from the
+# Recipes: policy 25 ep bs 8, lr 1e-4, grad-clip 1.0, LoopedLayer encoder initialized
+# from the labeler (probe job 4680628: lr 3e-4/no clip peaks at epoch 0 then
+# degrades; lr 1e-4+clip stable; +encoder-init best); value_warm = init from the
 # labeler of record prod_v1_s11 (FINDINGS 61), lr 1e-4, 12 ep, bs 4 x mpg 8
 # (24x24 memory envelope, FINDINGS 63); value_cold = 20 ep, 4 warmup epochs,
 # lr 3e-4. CollapseStop + ModelCheckpoint(min val_regret) + save_last are wired
@@ -47,7 +49,7 @@ for ARM in $ARMS; do
   mkdir -p "$DIR"
   if [ -f "$DIR/DONE" ]; then echo "SPR M1 TRAIN SKIP $DS $ARM (DONE)"; continue; fi
   case "$ARM" in
-    policy)     ARGS="--system policy --epochs 25 --batch-size 8" ;;
+    policy)     ARGS="--system policy --epochs 25 --batch-size 8 --lr 1e-4 --grad-clip 1.0 --init-encoder $REPO/self_play_robots/assets/labeler_prod_v1_s11.ckpt" ;;   # recipe C of the probe (FINDINGS §4): lr 3e-4 without clipping diverges for pe=none
     value_warm) ARGS="--system value --init $REPO/self_play_robots/assets/labeler_prod_v1_s11.ckpt --epochs 12 --batch-size 4 --max-per-group 8 --lr 1e-4" ;;
     value_cold) ARGS="--system value --epochs 20 --warmup 4 --batch-size 4 --max-per-group 8 --lr 3e-4" ;;
     *) echo "FATAL: arm $ARM"; rc_all=1; continue ;;
