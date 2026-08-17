@@ -1410,6 +1410,7 @@ small margins carry the same wobble that fooled us once already — though no wo
 measured is anywhere near twenty-one points. And the three settings differ in more than fidelity:
 the harder ones also yield smaller answer keys, because anything the network cannot certify is
 thrown away. Which ingredient does the damage is not separable from three points alone.</p>
+<p><strong>So we built the missing points.</strong> A day after the campaign closed, we took the 24&times;24 exact answer key, shrank it to the same size the network's twin had been, and then deliberately spoiled it — flipping the best-move choice to the runner-up in a measured fraction of near-tie decisions, imitating exactly how the network itself errs — to three doses: untouched (the pure size test), 86%, and 82.2%, the eight-robot collapse's dose but now on a four-robot board with everything else held fixed. If the 82% key breaks its planner the way the eight-robot one did, fidelity is proven to be the cause and the threshold is real. If it does not, the collapse was about eight robots, not about the key. We wrote both readings down before the jobs ran; either is worth having. Those results, and a second run of the 32&times;32 twin to test its small margin, appear in the results page's causality tab when they land.</p>
 
 <h2>The experiment that failed, and why that's fine</h2>
 
@@ -1459,8 +1460,8 @@ about four seconds.</p>
 <h2>Where we are</h2>
 
 <div class="card open">
-<span class="tag">Updated 2026-08-17 — campaign complete, every run in</span>
-<p><strong>Done.</strong> Every job has run and the queue is empty. The headline holds: planners
+<span class="tag">Updated 2026-08-17 — campaign complete; the causality check is in flight</span>
+<p><strong>Done.</strong> Every job of the campaign has run; four short follow-up jobs (the spoiled-key doses and one repeat run) are queued. The headline holds: planners
 taught from network-written answer keys are as good as planners taught from the exact solver's,
 provided the keys agree with it about nine times in ten — and below that, they are not. The ladder
 is flat from 17 to 64, the last size anything can be checked at, and labeled boards now exist at 80
@@ -1511,7 +1512,7 @@ part of the plan that worked best.</p>
 
 <p>The technical companion to this document, with file names, job numbers and the full measurement
 tables, is <code>nn_labeler/report/process.html</code>. The running experiment log is
-<code>FINDINGS.md</code>, items 48 through 74 and 79.</p>
+<code>FINDINGS.md</code>, items 48 through 74 and 79 through 81.</p>
 
 <footer>Local document. Numbers trace to FINDINGS.md and nn_labeler/results/. Work in progress.</footer>
 
