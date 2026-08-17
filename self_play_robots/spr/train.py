@@ -72,6 +72,41 @@ class CollapseStop(pl.Callback):
             trainer.should_stop = True
 
 
+def _combined_env_dir(a, cfg):
+    """Symlink dir holding every env_<id>.pkl the corpora reference (config
+    pool + self-play board dirs) so the per-size stack's single RR_ENV_DIR
+    resolves all of them. None when no record leaves the config's pool."""
+    dirs = {}
+    for item in a.data:
+        _, path = item.split("=", 1)
+        with open(_abs(path)) as fh:
+            for i, line in enumerate(fh):
+                if a.limit_records is not None and i >= a.limit_records:
+                    break
+                r = json.loads(line)
+                if r.get("boards_dir"):
+                    dirs[int(r["env_id"])] = os.path.abspath(r["boards_dir"])
+    if not dirs:
+        return None
+    out_dir = Path(a.out_dir)
+    if not out_dir.is_absolute():
+        out_dir = REPO / out_dir
+    comb = out_dir / "envs"
+    comb.mkdir(parents=True, exist_ok=True)
+    src_pool = Path(cfg.env_dir_abs)
+    for f in src_pool.glob("env_*.pkl"):
+        dst = comb / f.name
+        if not dst.exists():
+            dst.symlink_to(f)
+    for eid, d in dirs.items():
+        dst = comb / f"env_{eid}.pkl"
+        if not dst.exists():
+            dst.symlink_to(Path(d) / f"env_{eid}.pkl")
+    print(f"[spr.train] persize: combined env dir {comb} ({len(dirs)} self-play boards)",
+          flush=True)
+    return comb
+
+
 def parse_splits(specs):
     """--splits CFG:train=a-b,val=c-d[,test=e-f]  ->  {cfg: {split: [ids]}}"""
     import re
@@ -119,10 +154,26 @@ def main(argv=None):
     p.add_argument("--num-workers", type=int, default=0)
     p.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
     p.add_argument("--byref", action="store_true", help="policy: keep by-reference records")
+    p.add_argument("--arch", choices=["sizefree", "persize"], default="sizefree",
+                   help="persize: train/policy_tf.py PolicyTF or train/looped_pc.py "
+                        "LoopedValueNet (learned n^2 positional table; ONE config per "
+                        "process; --init warm-starts them too)")
     a = p.parse_args(argv)
 
-    from scaling.configs import get
+    from scaling.configs import get, apply_env
     from nn_labeler import dataset, encode
+    if a.arch == "persize":
+        # one config per process: pin RR_* BEFORE any train.* import; if the
+        # corpora reference self-play board dirs, serve every board through
+        # ONE symlink dir (train.encode reads env_<id>.pkl from RR_ENV_DIR only)
+        cfgs = {item.split("=", 1)[0] for item in a.data}
+        if len(cfgs) != 1:
+            raise SystemExit("--arch persize needs exactly one config in --data")
+        cfg0 = get(cfgs.pop())
+        apply_env(cfg0)
+        _persize_env_dir = _combined_env_dir(a, cfg0)
+        if _persize_env_dir is not None:
+            os.environ["RR_ENV_DIR"] = str(_persize_env_dir)
     from nn_labeler.model import SizeFreeValueNet, collate_groups
     from spr.nets import SizeFreePolicyNet, PolicyGroupDataset, collate_policy
 
@@ -173,13 +224,52 @@ def main(argv=None):
         out_dir = REPO / out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "DATA.json").write_text(json.dumps(dict(
-        system=a.system, corpora=corpus_info, init=a.init, lr=lr, epochs=a.epochs,
+        system=a.system, arch=a.arch, corpora=corpus_info, init=a.init, lr=lr, epochs=a.epochs,
         batch_size=a.batch_size, max_per_group=a.max_per_group, pe=a.pe,
         num_classes=a.num_classes, torch_seed=a.torch_seed, splits=a.splits,
         started=time.strftime("%Y-%m-%dT%H:%M:%S"),
         slurm_job_id=os.environ.get("SLURM_JOB_ID")), indent=1))
 
-    if a.system == "value":
+    if a.arch == "persize":
+        # the supervised per-size trainers' datasets/collates, unchanged; a
+        # single board size per process, so no size bucketing is needed
+        import torch.utils.data as tud
+        if a.system == "value":
+            from train.looped_pc import LoopedValueNet, DenseDataset, collate as v_collate
+            tr_ds = DenseDataset(train_groups, a.max_per_group, True)
+            va_ds = DenseDataset(val_groups, a.max_per_group, False)
+            coll = v_collate
+            if a.init:
+                model = LoopedValueNet.load_from_checkpoint(a.init, map_location="cpu")
+                model.hparams.lr = lr
+                model.hparams.weight_decay = a.weight_decay
+                print(f"[spr.train] warm start from {a.init} (lr={lr})", flush=True)
+            else:
+                model = LoopedValueNet(d_model=a.d_model, recurrence=a.recurrence, heads=a.heads,
+                                       num_classes=a.num_classes if a.num_classes != 96 else 50,
+                                       lr=lr, weight_decay=a.weight_decay)
+            callbacks_extra = [CollapseStop()]   # inert: LoopedValueNet logs no spread
+        else:
+            from train.policy_tf import PolicyTF, PolicyTFDataset, collate as p_collate
+            tr_ds = PolicyTFDataset(train_groups)
+            va_ds = PolicyTFDataset(val_groups)
+            coll = p_collate
+            if a.init:
+                model = PolicyTF.load_from_checkpoint(a.init, map_location="cpu")
+                model.hparams.lr = lr
+                model.hparams.weight_decay = a.weight_decay
+                print(f"[spr.train] warm start from {a.init} (lr={lr})", flush=True)
+            else:
+                model = PolicyTF(d_model=a.d_model, recurrence=a.recurrence, heads=a.heads,
+                                 temp=a.temp, lr=lr, weight_decay=a.weight_decay)
+            callbacks_extra = []
+        monitor = "val_regret"
+        print(f"[spr.train] persize {a.system}: train {len(tr_ds)} val {len(va_ds)}", flush=True)
+        dl_tr = DataLoader(tr_ds, batch_size=a.batch_size, shuffle=True, collate_fn=coll,
+                           num_workers=a.num_workers)
+        dl_va = DataLoader(va_ds, batch_size=a.batch_size, shuffle=False, collate_fn=coll,
+                           num_workers=a.num_workers)
+    elif a.system == "value":
         tr_ds = dataset.GroupDataset(train_groups, a.max_per_group, True)
         va_ds = dataset.GroupDataset(val_groups, a.max_per_group, False)
         coll = functools.partial(collate_groups, featurize_fn=encode.node_features,
@@ -214,13 +304,13 @@ def main(argv=None):
                                       weight_decay=a.weight_decay, pe=a.pe)
         monitor = "val_regret"
         callbacks_extra = []
-    print(f"[spr.train] {a.system}: train {len(tr_ds)} val {len(va_ds)} "
-          f"(groups/decisions)", flush=True)
-
-    dl_tr = DataLoader(tr_ds, collate_fn=coll, num_workers=a.num_workers,
-                       batch_sampler=dataset.SizeBucketBatchSampler(tr_ds, a.batch_size, True, seed))
-    dl_va = DataLoader(va_ds, collate_fn=coll, num_workers=a.num_workers,
-                       batch_sampler=dataset.SizeBucketBatchSampler(va_ds, a.batch_size, False, seed))
+    if a.arch != "persize":
+        print(f"[spr.train] {a.system}: train {len(tr_ds)} val {len(va_ds)} "
+              f"(groups/decisions)", flush=True)
+        dl_tr = DataLoader(tr_ds, collate_fn=coll, num_workers=a.num_workers,
+                           batch_sampler=dataset.SizeBucketBatchSampler(tr_ds, a.batch_size, True, seed))
+        dl_va = DataLoader(va_ds, collate_fn=coll, num_workers=a.num_workers,
+                           batch_sampler=dataset.SizeBucketBatchSampler(va_ds, a.batch_size, False, seed))
 
     ckpt = pl.callbacks.ModelCheckpoint(monitor=monitor, mode="min", save_top_k=1,
                                         save_last=True)
@@ -233,7 +323,7 @@ def main(argv=None):
     accel = {"auto": "auto", "cpu": "cpu", "cuda": "gpu"}[a.device]
 
     warm_epochs = 0
-    if a.system == "value" and not a.init and resume is None:
+    if a.system == "value" and not a.init and resume is None and a.arch != "persize":
         warm_epochs = min(a.warmup, max(a.epochs - 1, 0))
     if warm_epochs > 0:
         cut = max(1, int(len(tr_ds.groups) * 0.3))
