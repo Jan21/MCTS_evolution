@@ -61,7 +61,7 @@ fi
 # ---- B gauge ------------------------------------------------------------------
 if ! phase gauge; then
   python -m spr.gauge --config "$CFG" --records "$IT/records.jsonl" --sample 200 --threads 16 \
-      --out "$RES/gauge.json" || echo "SPR ITER WARN gauge failed (non-fatal)"
+      --vocab "$VOCAB" --out "$RES/gauge.json" || echo "SPR ITER WARN gauge failed (non-fatal)"
   mark gauge
 fi
 # ---- C buffer -----------------------------------------------------------------

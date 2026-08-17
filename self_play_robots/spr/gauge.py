@@ -48,6 +48,8 @@ def main(argv=None):
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--threads", type=int, default=8)
     p.add_argument("--max-iters", type=int, default=4000)
+    p.add_argument("--vocab", choices=["base", "b1", "b2"], default="base",
+                   help="label the exact side in the same vocabulary as the records")
     p.add_argument("--out", required=True)
     a = p.parse_args(argv)
 
@@ -108,6 +110,7 @@ def main(argv=None):
             "helpers": [[list(h), c] for h, c in k[4]],
             "max_candidates": 64, "max_iters": a.max_iters, "max_frontier": 40000,
             "dependent_edge_weight": 2,
+            **({"vocab": a.vocab} if a.vocab != "base" else {}),
         })
     t0 = time.time()
     ep = EngineProc(DEFAULT_ENGINE, a.threads, work / "engine.work.jsonl",
@@ -138,7 +141,7 @@ def main(argv=None):
         raise SystemExit("[gauge] audit_descent failed")
     audit = json.loads(audit_out.read_text())
     summ = audit.get("summary", audit)
-    payload = {"config": cfg.name, "records": str(rec_path), "boards_dir": str(boards_dir),
+    payload = {"config": cfg.name, "vocab": a.vocab, "records": str(rec_path), "boards_dir": str(boards_dir),
                "sample": len(keys), "exact_labeled": n_ok, "seed": a.seed,
                "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
                "date": time.strftime("%Y-%m-%dT%H:%M:%S"),
