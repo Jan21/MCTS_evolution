@@ -182,3 +182,29 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
    408 / 216. (d) min vs mean backup are indistinguishable on these shallow
    trees. Sources: `results/m2/persize_{v2_g16r4,exact_g24r4}_*.json`
    (+ `.vs_greedy.json` paired tables), `runs/spr/spr-m2-ps{16,24}-*.out`.
+
+6. **Forward (primitive-move) F-M2: MCTS beats greedy but not A\* — at g16r4
+   the forward A\* is already near-optimal and ~17× cheaper than an MCTS that
+   matches it (2026-08-17, job 4680466 ≈ 0.4 nh; `spr/fwd`, candidate_scored
+   MoveNet, bench450, 1200 expansions, k=5, GPU, replay-certified).**
+   | search | solved | mean moves | regret | % opt | mean exp | s/inst |
+   |---|---|---|---|---|---|---|
+   | A\* (`move_planner.evaluate.nn_astar`, = recorded row) | 450/450 | 6.436 | 0.067 | 94.2 | 36.0 | 3.5 |
+   | greedy policy | 371/450 | 6.69 | 0.66 | 73.6 | 12.5 | 0.3 |
+   | greedy value | 353/450 | 8.40 | 2.47 | 73.9 | 15.2 | 1.3 |
+   | MCTS min backup, first solution | 450/450 | 6.77 | 0.40 | 79.8 | 30.6 | 3.1 |
+   | MCTS mean backup, first solution | 450/450 | 6.70 | 0.33 | 79.8 | 46.9 | 4.9 |
+   | MCTS min, best-at-budget | 450/450 | 6.429 | 0.060 | 96.2 | 600.3 | 69.4 |
+   Paired MCTS-best vs A\* (450 both solved): 12 wins / 5 losses, sign p=0.14
+   — not significant, at 17× the expansions (the move tree never closes, so
+   best-at-budget runs to the cap or `stop_after`). Reading: in the
+   primitive-move space at 16×16 the learned cost-to-go makes A\* the
+   efficient expert (as `move_planner_v2/DESIGN.md` argued); MCTS's only
+   advantage is exploration, worth ~0.007 moves here. F-M2 gate vs greedy:
+   met (450 vs 371 solved, better moves); vs A\*: not met. Consequence for the
+   forward loop: use A\* (or MCTS with a stop-after budget) as the data
+   expert; the forward arm's headroom lies at 24×24+ (forward A\* 220/232,
+   0.068 regret but 191 expansions / 275 s per puzzle) where search cost,
+   not quality, is the target.
+   Sources: `results/fwd_m2/cand_*.json` (+ `.vs_*.json` paired tables),
+   `runs/spr/spr-fwd-m2-4680466.out`.

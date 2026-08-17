@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-17T20:37:31",
+ "updated": "2026-08-17T21:54:03",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -95,9 +95,10 @@
   },
   "forward_mcts": {
    "title": "primitive-move MCTS arm at g16r4 (owner: both action spaces)",
-   "status": "F-M0 pass; F-M2 queued",
+   "status": "F-M0 pass; F-M2 done (MCTS \u2248 A* only at 17x expansions)",
    "sources": [
-    "runs/spr/fwd/"
+    "results/fwd_m0/",
+    "results/fwd_m2/"
    ],
    "jobs": [
     4680465,
@@ -118,7 +119,7 @@
   "findings_log": "self_play_robots/FINDINGS.md (owner choice)"
  },
  "node_hours": {
-  "spent": 1.2,
+  "spent": 1.7,
   "projected_next": 2.5,
   "note": "spent: smoke 0.02 + M0 0.09 + fwd-M0 0.02 (+ ceiling pending); next: M1 ~1.5-2, M2 ~1"
  }
