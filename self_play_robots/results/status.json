@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-17T19:48:46",
+ "updated": "2026-08-17T20:37:31",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -37,17 +37,19 @@
   },
   "M2": {
    "title": "search beats greed at inference",
-   "status": "queued",
+   "status": "pass (per-size); size-free pending M1",
    "sources": [
     "results/m2/"
    ],
    "jobs": [
     4680480,
     4680481,
-    4680225,
-    4680466
+    4681012,
+    4681029,
+    4680466,
+    4680957
    ],
-   "note": "same nets, same exam/budget, searches: greedy (the M2 opponent) / A* child-f (arena) / A* parent-f / A* parent anytime / A* best-at-budget / MCTS min / MCTS mean. Per-size family (supervised pairs) submitted gated on M0 (jobs 4680221 g16r4 v2 pair, 4680222 g24r4 exact pair); size-free family follows M1. (per-size jobs resubmitted as 4680480/4680481 after the M0 job's rc=1 voided the afterok dependency; forward F-M2 4680466)."
+   "note": "Per-size family at both sizes: MCTS (PUCT, best-at-budget) beats greedy and the arena A* on moves at the same solve set (g16r4 7.92 vs 8.38 vs greedy 8.03 [366 solved]; g24r4 11.48 vs 11.84 vs 10.95 [135 solved]); FINDINGS \u00a75. Size-free arms 4680957 wait for M1 (bench 4680956); forward F-M2 4680466 running."
   },
   "M3": {
    "title": "one self-play iteration helps",
@@ -116,7 +118,7 @@
   "findings_log": "self_play_robots/FINDINGS.md (owner choice)"
  },
  "node_hours": {
-  "spent": 0.75,
+  "spent": 1.2,
   "projected_next": 2.5,
   "note": "spent: smoke 0.02 + M0 0.09 + fwd-M0 0.02 (+ ceiling pending); next: M1 ~1.5-2, M2 ~1"
  }

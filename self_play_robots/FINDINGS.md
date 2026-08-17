@@ -140,3 +140,45 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
    4680913/4680914/4680915, bench 4680916, size-free M2 4680917).
    Sources: `runs/spr/m1/recipe_g16_*/lightning_logs/version_0/metrics.csv`,
    `runs/spr/spr-m1-recipe-4680628.out`, `runs/spr/spr-m1-g16-4680211.out`.
+
+5. **M2 PASSES for the per-size family at both sizes: MCTS beats greedy AND
+   the arena A\* on realized moves at the same solve set and budget; the
+   arena's "double-counting" f is not a bug to fix but a depth penalty
+   that helps at 24×24 (2026-08-17, jobs 4680480/4680481/4681012/4681029
+   ≈ 0.35 nh; per-size supervised pairs, GPU, 1200 expansions, k=5,
+   prefix-check, replay-certified; all searches share `spr.search.expand`).**
+   | g16r4 bench450, v2 pair | solved | mean moves | regret | % opt | mean exp |
+   |---|---|---|---|---|---|
+   | greedy (labeler's rule) | 366/450 | 8.03 | 1.94 | 53.3 | 1.3 |
+   | A\* f=child, first plan (= arena; matches the CPU record 401/8.38/2.14/7.1 exactly) | 401/450 | 8.38 | 2.14 | 50.4 | 7.1 |
+   | A\* f=parent (label-consistent) | 401/450 | 8.36 | 2.12 | 50.1 | 5.1 |
+   | A\* f=parent, best-at-budget | 401/450 | 8.27 | 2.03 | 50.6 | 5.2 |
+   | **MCTS** (PUCT c=1.5, min backup, best-at-budget) | 401/450 | **7.92** | **1.68** | **55.1** | 28.3 |
+   | MCTS mean backup | 401/450 | 7.92 | 1.68 | 55.1 | 28.3 (identical decisions; trees differ by 1–2 visits) |
+   | g24r4 bench.solved, exact pair | | | | | |
+   | greedy | 135/232 | 10.95 | 3.96 | 43.0 | 1.9 |
+   | A\* f=child, first plan (= arena; 11.80/4.20 on CPU, 3 float-drift rows) | 205/232 | 11.84 | 4.25 | 38.5 | 26.6 |
+   | A\* f=parent | 205/232 | 12.80 | 5.20 | 34.6 | 15.7 |
+   | A\* f=parent, best-at-budget | 205/232 | 12.42 | 4.83 | 34.6 | 16.3 |
+   | **MCTS** min (= mean) | 205/232 | **11.48** | **3.89** | 38.5 | 38.6 |
+   Paired tests (spr.gate, both-solved subsets, sign test on moves; McNemar
+   on solved vectors): MCTS vs greedy g16r4 7.44 vs 8.03 (58 wins / 0 losses,
+   p=7e-18; +35 solves, p=6e-11), g24r4 9.06 vs 10.95 (29/0, p=4e-9; +70
+   solves, p=2e-21) → **M2 gate met at both sizes** (strictly better moves
+   at higher solve rate). MCTS vs the arena A\* on the identical solved sets:
+   g16r4 57/0 (p=1e-17), g24r4 15/0 (p=6e-5).
+   Reading. (a) Search over subgoal decisions has real headroom: MCTS
+   removes 0.46 (g16r4) / 0.36 (g24r4) moves per solved puzzle from the
+   supervised A\* rows without any retraining, at ~4×/1.5× the expansions
+   (still ≤3% of the 1200 cap) — the loop's data will therefore be better
+   than the descent labels it was bootstrapped from. (b) The label-consistent
+   f (fixed_g(parent)+ctg) is WORSE at 24×24 (+0.96 regret) and neutral at
+   16×16: the arena's extra fixed-increment term penalizes deep commitments
+   and buys plan quality with more expansions; kept as-is (§1's observation
+   closed: not a bug worth fixing). (c) No search variant changes the solve
+   SET (401 / 205 in every arm): with these nets and k=5 the unsolved
+   instances are pruned by the nets, not by search — solve-rate gains must
+   come from training (M3+) or wider k, and the language ceiling (§3) is
+   408 / 216. (d) min vs mean backup are indistinguishable on these shallow
+   trees. Sources: `results/m2/persize_{v2_g16r4,exact_g24r4}_*.json`
+   (+ `.vs_greedy.json` paired tables), `runs/spr/spr-m2-ps{16,24}-*.out`.
