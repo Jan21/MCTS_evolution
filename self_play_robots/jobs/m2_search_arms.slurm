@@ -11,7 +11,7 @@
 #   mcts_mean     PUCT c=1.5 mean-backup, best-at-budget
 # (arena_astar = the M1 gate row already exists in results/m1/.)
 #
-#   sbatch -J spr-m2 self_play_robots/jobs/m2_search_arms.slurm <TAG> <POLICY.ckpt|DIR> <VALUE.ckpt|DIR> [cfgs="g24r4 g16r4"] [device=cuda]
+#   sbatch -J spr-m2 self_play_robots/jobs/m2_search_arms.slurm <TAG> <POLICY.ckpt|DIR> <VALUE.ckpt|DIR> [cfgs="g24r4 g16r4"] [device=cuda] [arch=sizefree|persize]
 # Outputs results/m2/<TAG>_<cfg>_<arm>.json + paired tables. Cost basis:
 # 6 arms x 2 configs, each <=30 min 8-wide on GPU -> ~4-6 h = 0.5-0.75 nh.
 #SBATCH -A open-37-42
@@ -27,7 +27,7 @@ REPO=/scratch/project/open-37-42/petrhyner/MCTS_evolution
 source /scratch/project/open-37-42/petrhyner/venv/bin/activate
 cd "$REPO/self_play_robots"
 export PYTHONPATH="$REPO/supervised_valuenet:$REPO/self_play_robots" PYTHONUNBUFFERED=1
-TAG="$1"; P="$2"; V="$3"; CFGS="${4:-g24r4 g16r4}"; DEV="${5:-cuda}"; ARCH="${ARCH:-sizefree}"   # ARCH=persize for PolicyTF/LoopedValueNet pairs
+TAG="$1"; P="$2"; V="$3"; CFGS="${4:-g24r4 g16r4}"; DEV="${5:-cuda}"; ARCH="${6:-sizefree}"   # persize = PolicyTF/LoopedValueNet pairs
 best_ckpt() { if [ -d "$1" ]; then ls -t "$1"/lightning_logs/version_*/checkpoints/epoch=*.ckpt | head -1; else echo "$1"; fi; }
 BP=$(best_ckpt "$P"); BV=$(best_ckpt "$V")
 [ -s "$BP" ] && [ -s "$BV" ] || { echo "FATAL: checkpoints"; exit 1; }
