@@ -1,0 +1,29 @@
+{
+ "updated": "2026-08-17T15:10:00",
+ "project": "self_play_robots",
+ "milestones": {
+  "M0": {"title": "arena parity", "status": "running",
+         "note": "spr.arena re-runs the recorded supervised rows (g16r4 B1-seed21 pair under B2 flags on bench450; g24r4 exact pair prefix-check on bench.solved) through this folder's harness; per-row parity vs the recorded JSONs.",
+         "sources": ["results/m0/g16r4_b1s21_b2flags.json", "results/m0/g24r4_exact_prefix.json"],
+         "jobs": [4679719]},
+  "M1": {"title": "size-free rebuild matches supervised", "status": "pending",
+         "note": "pe=none policy+value trained on the exact g16r4 (legacy nn/data/combined.jsonl) + g24r4 corpora; gate: solve within 3.5 pts, optimality within 6.6 pts of the per-size base-vocabulary pairs (g16r4 v2 pair prefix-check 401/450; g24r4 exact pair prefix-check 205/232). Awaiting owner sign-off on PROBLEM.md 6.1/6.2.",
+         "sources": [], "jobs": []},
+  "M2": {"title": "search beats greed at inference", "status": "pending", "sources": [], "jobs": []},
+  "M3": {"title": "one self-play iteration helps", "status": "pending", "sources": [], "jobs": []},
+  "M4": {"title": "the loop climbs", "status": "pending", "sources": [], "jobs": []},
+  "M5": {"title": "scale + zero-shot transfer", "status": "pending", "sources": [], "jobs": []},
+  "M6": {"title": "beyond the oracle", "status": "pending", "sources": [], "jobs": []}
+ },
+ "side_studies": {
+  "ceiling": {"title": "candidate-generator / plan-language ceiling on the moves metric", "status": "running",
+              "sources": ["results/ceiling/g16r4_base.json", "results/ceiling/g24r4_base.json",
+                          "results/ceiling/g16r4_b2.json", "results/ceiling/g24r4_b2.json"],
+              "jobs": [4679720]}
+ },
+ "decisions": {
+  "action_space": {"recommendation": "subgoal MCTS (primitive-move MCTS as a cheap comparison arm at g16r4)", "status": "awaiting owner"},
+  "network": {"recommendation": "size-free pe=none rebuild of policy+value on the labeler recipe", "status": "awaiting owner"}
+ },
+ "node_hours": {"spent": 0.0, "projected_next": 0.7, "note": "M0 <=0.125 nh, ceiling <=0.5 nh"}
+}

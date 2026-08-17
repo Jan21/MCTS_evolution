@@ -43,6 +43,8 @@ class Arm:
     expansions: int = 1200
     k: int = 5
     notes: str = ""
+    driver: str = "compare"     # "compare" = eval.compare (per-size nets);
+                                # "spr" = spr.bench (size-free nets / spr searches)
 
 
 ARMS = {a.name: a for a in [
@@ -86,7 +88,7 @@ def config_env(config: str) -> dict:
         e.pop(k, None)
     if not cfg.legacy:
         e.update(cfg_env(cfg))
-    e["PYTHONPATH"] = str(SV)
+    e["PYTHONPATH"] = f"{SV}:{SV.parent / 'self_play_robots'}"
     e["PYTHONUNBUFFERED"] = "1"
     return e
 
@@ -107,7 +109,7 @@ def _stamp(*parts) -> str:
 
 def bench(arm: Arm, out: Path, width=8, threads=2, chunk_lines=8,
           run_root: Path | None = None, limit: int | None = None,
-          log=print) -> Path:
+          device="cpu", log=print) -> Path:
     inst = SV / arm.instances
     if not inst.is_file():
         raise SystemExit(f"missing instances {inst}")
@@ -134,7 +136,8 @@ def bench(arm: Arm, out: Path, width=8, threads=2, chunk_lines=8,
         chunks.append(cp)
     env = config_env(arm.config)
     env["OMP_NUM_THREADS"] = str(threads)
-    env["CUDA_VISIBLE_DEVICES"] = ""
+    if device == "cpu":
+        env["CUDA_VISIBLE_DEVICES"] = ""
     log(f"[arena] {arm.name}: {len(lines)} instances, {len(chunks)} chunks, "
         f"width={width} threads={threads} run={run}")
 
@@ -143,12 +146,20 @@ def bench(arm: Arm, out: Path, width=8, threads=2, chunk_lines=8,
         if outp.is_file() and outp.stat().st_size > 0:
             return cp.name, "skip"
         tmp = outp.with_suffix(f".json.tmp.{os.getpid()}")
-        cmd = [sys.executable, "-m", "eval.compare",
-               "--instances", str(cp), "--expansions", str(arm.expansions),
-               "--k", str(arm.k), "--backward-policy", arm.policy,
-               "--backward-value", arm.value, *arm.flags,
-               "--forward-ckpts", "", "--device", "cpu", "--dump-moves",
-               "--out", str(tmp), "--md", "/dev/null"]
+        if arm.driver == "spr":
+            cmd = [sys.executable, "-m", "spr.bench",
+                   "--instances", str(cp), "--expansions", str(arm.expansions),
+                   "--k", str(arm.k), "--policy", arm.policy,
+                   "--value", arm.value, *arm.flags,
+                   "--device", device, "--dump-moves",
+                   "--out", str(tmp), "--md", "/dev/null"]
+        else:
+            cmd = [sys.executable, "-m", "eval.compare",
+                   "--instances", str(cp), "--expansions", str(arm.expansions),
+                   "--k", str(arm.k), "--backward-policy", arm.policy,
+                   "--backward-value", arm.value, *arm.flags,
+                   "--forward-ckpts", "", "--device", device, "--dump-moves",
+                   "--out", str(tmp), "--md", "/dev/null"]
         with open(cp.with_suffix(".log"), "w") as lf:
             rc = subprocess.call(cmd, cwd=SV, env=env, stdout=lf,
                                  stderr=subprocess.STDOUT)
@@ -190,11 +201,13 @@ def bench(arm: Arm, out: Path, width=8, threads=2, chunk_lines=8,
     payload = json.loads(tmp.read_text())
     payload["spr"] = {
         "arm": arm.name, "config": arm.config, "flags": list(arm.flags),
+        "driver": arm.driver, "expansions": arm.expansions, "k": arm.k,
         "policy": arm.policy, "value": arm.value,
         "instances": str(inst), "run_dir": str(run),
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "wall_seconds": round(time.time() - t0, 1),
         "replay_certified": True, "width": width, "omp_threads": threads,
+        "device": device,
         "date": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
     tmp.write_text(json.dumps(payload, indent=1) + "\n")
@@ -256,13 +269,23 @@ def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = p.add_subparsers(dest="cmd", required=True)
     b = sub.add_parser("bench")
-    b.add_argument("--arm", required=True, choices=sorted(ARMS))
+    b.add_argument("--arm", default=None, help="a registered arm name, or a NEW "
+                   "name when --config/--instances/--policy/--value are given")
+    b.add_argument("--config", default=None)
+    b.add_argument("--instances", default=None, help="SV-relative")
+    b.add_argument("--policy", default=None)
+    b.add_argument("--value", default=None)
+    b.add_argument("--driver", default="spr", choices=["compare", "spr"])
+    b.add_argument("--flags", default="", help="extra driver flags, one string")
+    b.add_argument("--expansions", type=int, default=1200)
+    b.add_argument("--k", type=int, default=5)
     b.add_argument("--out", default=None,
                    help="default self_play_robots/results/m0/<arm>.json")
     b.add_argument("--width", type=int, default=8)
     b.add_argument("--threads", type=int, default=2)
     b.add_argument("--chunk-lines", type=int, default=8)
     b.add_argument("--limit", type=int, default=None, help="smoke: first N instances")
+    b.add_argument("--device", default="cpu", help="cpu (arena protocol) or cuda")
     q = sub.add_parser("parity")
     q.add_argument("--arm", required=True, choices=sorted(ARMS))
     q.add_argument("--new", default=None)
@@ -272,10 +295,18 @@ def main(argv=None):
     a = p.parse_args(argv)
 
     if a.cmd == "bench":
-        arm = ARMS[a.arm]
+        if a.arm in ARMS and not a.policy:
+            arm = ARMS[a.arm]
+        else:
+            if not (a.arm and a.config and a.instances and a.policy and a.value):
+                raise SystemExit("ad-hoc arm needs --arm NAME --config --instances "
+                                 "--policy --value")
+            arm = Arm(a.arm, a.config, a.instances, str(Path(a.policy).resolve()),
+                      str(Path(a.value).resolve()), tuple(a.flags.split()),
+                      ref=None, expansions=a.expansions, k=a.k, driver=a.driver)
         out = Path(a.out) if a.out else RESULTS / "m0" / f"{arm.name}.json"
         bench(arm, out, width=a.width, threads=a.threads,
-              chunk_lines=a.chunk_lines, limit=a.limit)
+              chunk_lines=a.chunk_lines, limit=a.limit, device=a.device)
     elif a.cmd == "parity":
         arm = ARMS[a.arm]
         new = Path(a.new) if a.new else RESULTS / "m0" / f"{arm.name}.json"
