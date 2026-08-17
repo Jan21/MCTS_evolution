@@ -2662,3 +2662,61 @@ record what was done about the first three items.)_
    Sources: `scaling/results/g32r4/comparison{,_ungraded}_nndeploy.json`,
    `nn_labeler/results/deploy_g32r4.jsonl` (+manifests),
    `runs/nnlab/deployment_{4669684,4670119}.out`.
+
+80. **The causality package launched: controlled label-corruption arms at
+   g24r4 + the g32r4 twin seed replicate (2026-08-17, jobs 4678370–73,
+   ~3.5 nh projected).** Four decision briefs (archived in
+   `analysis/followup_2026-08-17/`) converged on the review's #1 objection
+   (03_nnlabeler.md:13-15): in all three dose-response cells fidelity
+   co-varies with corpus size and robot count — no cell isolates fidelity
+   as the causal knob. The fix, launched:
+   (a) **Three corruption arms** (`nn_labeler/corrupt.py`, seed 11): the
+   exact g24r4 corpus subsampled by whole decision groups to twin size
+   (39,454 rec / 7,280 groups vs twin's 39,452 / 8,414), then argmin
+   redirected to the runner-up in a calibrated fraction of NEAR-TIE groups
+   (second-best within 2 moves — the labeler's real error morphology; gate
+   gap p90 = 2 at every 4-robot cell). Achieved doses exact: d1000 = 100%
+   (pure size control), d860 = 86.00%, d822 = 82.20% (the g24r8 collapse
+   cell's dose, at 4 robots), injected argmin-gap mean 1.42 (twin g24r8:
+   1.20). All three arms share ONE subsample; the only variable between
+   them is argmin agreement. Same recipe/bench as every g24r4 arm
+   (`jobs/corruption_arm.slurm`, default torch seed) →
+   `comparison_corrupt_{d1000,d860,d822}.json`. Jobs 4678370/71/72,
+   ~0.6 nh each.
+   (b) **g32r4 twin seed 21** (job 4678373, twin_retrain.slurm with
+   TWIN_SEED=21, ~1.6 nh): the study's most noise-vulnerable claim — the
+   §74 optimality slip (45.9 vs 51.7 %opt, 5.8 pts) is SMALLER than the
+   6.6-pt %opt spread between g24r4's two twin seeds →
+   `comparison_nntwin-seed21.json` at g32r4 (the suite's standing pending
+   row).
+   (c) **Pre-registered reading** (04_paper_leverage.md): d1000-vs-exact
+   isolates the corpus-shrinkage effect alone; d822 collapse ⇒ fidelity is
+   causal and the threshold claim is licensed; d822 ≈ exact ⇒ the g24r8
+   collapse was a robot-count effect and the claim retreats to a band;
+   d860 between ⇒ monotone dose-response on one unconfounded axis.
+   (d) Not funded, with reasons on file: B2 rescue (~8 nh design in
+   03_b2_rescue_design.md — it is the by-reference/Paper-A track's
+   experiment and revives an economic claim PAPER_PLAN.md:114 drops);
+   remaining seed replicates (insurance on effects that dwarf measured
+   noise; costs in 02_seed_costs.md).
+
+81. **80/96 downstream validation REJECTED on architectural grounds — the
+   planner nets are not size-free (2026-08-17, code study, zero compute).**
+   The feasibility brief (analysis/followup_2026-08-17/
+   01_8096_planner_feasibility.md) settles §72c's open question negatively:
+   both planner nets carry a learned n²-sized positional table
+   (`train/looped_pc.py:146`, `train/policy_tf.py:116`) — the exact
+   parameter the labeler deliberately removed to become size-free
+   (`nn_labeler/model.py:4,110`). At 80×80 that is 1.23 M fresh parameters
+   (~50% of the net) against ~190 training decisions (~6,500 params per
+   example): memorization guaranteed, no warm-start possible (strict
+   state_dict shape mismatch), and batch-1 training silently disables the
+   ranking loss (`looped_pc.py:175-183` — a different recipe, not a memory
+   workaround). 96×96 does not fit an A100-40GB in fp32 at all (51.7 GB
+   retained at batch-1, validated against the §63 OOM's 13 GB/step). The
+   eval path additionally cannot load lean boards (`eval/compare.py:340`)
+   and lacks `no_grad`. The citable finding costs nothing: the labeler
+   generalizes across sizes BECAUSE it has no positional table; the planner
+   cannot, for a one-line architectural reason. The 80/96 corpora stay as
+   §72c scoped them — certified labels whose warranty is the flat 17–64
+   curve.
