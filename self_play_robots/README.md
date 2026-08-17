@@ -23,6 +23,7 @@ in `supervised_valuenet/` is modified.
 | `selfplay.py` | generation: fresh lean boards → instances → MCTS → certified labels (18-field records + provenance) with worker pool; manifest + per-instance stats | `nn_labeler.leanboard`, `nn.generate.random_instance` |
 | `gauge.py` | fidelity gauge: sample depth-0 decisions, exact-label them with the Rust engine, run `nn_labeler.audit_descent` → argmin agreement | `scaling.rust_bridge.EngineProc`, `nn_labeler.audit_descent` |
 | `gate.py` | milestone gates: M1 bars (3.5 solve / 6.6 optimality pts), paired A/B (McNemar on solved vectors, both-solved moves sign test) | — |
+| `fwd/` | primitive-move arm (owner: both action spaces): `mcts.py` PUCT over slides on the forward MoveNet Guide (arena budget unit), `bench.py`/`arena.py` (run_forward row schema + parity), `selfplay.py` (move_planner_v2 record schema), `train.py` (warm-start MoveNet), `gate.py` shim; jobs `fwd_*.slurm` | `move_planner`, `move_planner_v2`, `eval.compare.run_forward` |
 
 ## Jobs (`jobs/`, all `-A open-37-42`, qgpu partitions, logs in `runs/spr/`)
 

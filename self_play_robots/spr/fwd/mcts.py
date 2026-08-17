@@ -351,6 +351,12 @@ def mcts(guide, env_id, start, target_idx, target, wr, wd, size=None, k=5,
             nodes += 1
             qmin, qmax = min(qmin, c.Q), max(qmax, c.Q)
             if c.goal:
+                # exact leaves are closed at birth and never re-selected, so they
+                # would keep N=0 and vanish from the recorded visit distribution;
+                # credit the one exact evaluation they did receive. (Visit counts
+                # still UNDER-represent terminal actions -- `best_moves` on the
+                # certified path, not visits, is the policy label this arm trains on.)
+                c.N = 1
                 n_goals += 1
                 if best_cost is None or c.g < best_cost:
                     ok, _why = verify_path(start, c.path(), target_idx, target,
