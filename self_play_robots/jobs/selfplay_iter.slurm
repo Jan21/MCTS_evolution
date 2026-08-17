@@ -32,7 +32,7 @@ CFG="$1"; K="$2"; PPREV="$3"; VPREV="$4"; PREV_BENCH="${5:-}"
 BOARDS=${BOARDS:-120}; PER_BOARD=${PER_BOARD:-8}; EXP=${EXP:-600}; STOP=${STOP:-150}
 WORKERS=${WORKERS:-8}; WINDOW=${WINDOW:-3}; ANCHOR=${ANCHOR:-1}; EP_P=${EP_P:-6}; EP_V=${EP_V:-6}
 LR=${LR:-1e-4}; NOISE=${NOISE:-0.25}; SIB=${SIB:-1}
-IT="$REPO/runs/spr/selfplay/${CFG}_iter${K}"; RES="results/selfplay/${CFG}_iter${K}"
+IT="$REPO/runs/spr/selfplay/${CFG}_iter${K}"; RES="$REPO/self_play_robots/results/selfplay/${CFG}_iter${K}"
 mkdir -p "$IT" "$RES" "$REPO/runs/spr/boards"
 ID0=$((5000 + BOARDS * (K - 1))); ID1=$((ID0 + BOARDS - 1))
 echo "SPR ITER $CFG k=$K start $(date +%F' '%T) job=$SLURM_JOB_ID prev=$PPREV|$VPREV boards=$ID0-$ID1"
