@@ -112,3 +112,31 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
    moves-ceiling reference for M5.
    Sources: `results/ceiling/{g16r4,g24r4}_{base,base_slack4,b2}.json`,
    `runs/spr/spr-ceiling-4679720.out`.
+
+4. **The size-free policy net does not train under the supervised recipe
+   (lr 3e-4, no clipping): it peaks at epoch 0 and degrades; gradient
+   clipping fixes it, lr 1e-4 + labeler-encoder init is best (2026-08-17,
+   jobs 4680211/4680212 [first M1 attempt] + probe 4680628 ≈ 0.25 nh).**
+   First M1 attempt (PolicyTF's recipe verbatim minus `self.pos`): g16r4
+   legacy corpus val_regret@1 4.74 (epoch 0) → 6.3–7.75 by epochs 6–24,
+   recall@5 0.57 → 0.37; g24r4 4.21 (epoch 0) → 4.9–5.5 afterwards; the
+   per-size PolicyTF improves monotonically on the same data (e.g. the B1
+   seed-21 policy 2.14 → 1.14 over 25 epochs). Probe on the g16r4 legacy
+   corpus, 8 epochs each, seed 21 (val_regret@1 / recall@5 at the best epoch):
+   A lr 1e-4 + clip 1.0 → **2.99 / 0.75**; B pe=sin2d, lr 3e-4 + clip → 3.11 /
+   0.73 (noisier; FINDINGS 53's sin2d verdict holds for the policy too);
+   C encoder (LoopedLayer) initialized from the labeler prod_v1_s11 + lr 1e-4
+   + clip → **2.90 / 0.77** (best from epoch 0 on); D lr 3e-4 + clip → 3.07 /
+   0.74. Reading: without positional embeddings the pointer heads' gradients
+   through 12 weight-tied recurrences blow up at 3e-4; clipping alone
+   restores monotone training, and the size-free VALUE encoder transfers to
+   the policy (recipe C adopted for M1: 25 epochs, lr 1e-4, clip 1.0,
+   encoder init). The size-free value net warm-started from the labeler
+   trains cleanly on the legacy g16r4 corpus (val_regret 2.21 → 2.02, top-1
+   0.49, spread 1.1–1.5, no collapse; `runs/spr/m1/g16_value_warm_s21`).
+   Housekeeping: the unstable runs are kept as `runs/spr/m1/*_lr3e4_unstable`
+   (the g24 one was renamed while its job was still logging, which killed
+   that arm's CSV logger — irrelevant to the result; retrains queued as
+   4680913/4680914/4680915, bench 4680916, size-free M2 4680917).
+   Sources: `runs/spr/m1/recipe_g16_*/lightning_logs/version_0/metrics.csv`,
+   `runs/spr/spr-m1-recipe-4680628.out`, `runs/spr/spr-m1-g16-4680211.out`.

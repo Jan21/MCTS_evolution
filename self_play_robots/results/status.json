@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-17T18:13:00",
+ "updated": "2026-08-17T19:48:46",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -20,16 +20,19 @@
   "M1": {
    "title": "size-free rebuild matches supervised",
    "status": "running",
-   "note": "size-free pairs trained on {mixed g16r4+g24r4, g16r4 only, g24r4 only} exact corpora (policy cold; value warm from labeler prod_v1_s11 + cold control on mixed), each benched at BOTH sizes (single-size pairs' other size = zero-shot cross-size transfer); per-size comparison arm = the supervised per-size pairs (already benched). Gate: within 3.5 solve / 6.6 optimality pts of g16r4 v2 pair (401/450) and g24r4 exact pair (205/232).",
+   "note": "size-free pairs trained on {mixed g16r4+g24r4, g16r4 only, g24r4 only} exact corpora (policy cold; value warm from labeler prod_v1_s11 + cold control on mixed), each benched at BOTH sizes (single-size pairs' other size = zero-shot cross-size transfer); per-size comparison arm = the supervised per-size pairs (already benched). Gate: within 3.5 solve / 6.6 optimality pts of g16r4 v2 pair (401/450) and g24r4 exact pair (205/232). Recipe fix (FINDINGS \u00a74): pe=none policy needs grad-clip + lr 1e-4 (+labeler encoder init); retrains queued.",
    "sources": [
     "results/m1/"
    ],
    "jobs": [
     4680209,
-    4680210,
     4680211,
     4680212,
-    4680213
+    4680628,
+    4680913,
+    4680914,
+    4680915,
+    4680916
    ]
   },
   "M2": {
@@ -113,7 +116,7 @@
   "findings_log": "self_play_robots/FINDINGS.md (owner choice)"
  },
  "node_hours": {
-  "spent": 0.31,
+  "spent": 0.75,
   "projected_next": 2.5,
   "note": "spent: smoke 0.02 + M0 0.09 + fwd-M0 0.02 (+ ceiling pending); next: M1 ~1.5-2, M2 ~1"
  }
