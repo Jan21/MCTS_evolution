@@ -1,0 +1,38 @@
+{
+ "banked": "prod_v1_s11.ckpt",
+ "source_run": "nn_labeler/runs/prod_mix8to16_none_s11/lightning_logs/version_1/checkpoints/epoch=0-step=12913.ckpt",
+ "job": 4609800,
+ "seed": 11,
+ "hparams": {
+  "d_model": 192,
+  "recurrence": 12,
+  "heads": 4,
+  "num_classes": 96,
+  "lr": 0.0003,
+  "weight_decay": 0.0001,
+  "pe": "none",
+  "in_channels": 9
+ },
+ "best_val_regret": 0.2671,
+ "epoch_in_full_fit": 0,
+ "why_epoch0": "run collapsed to the constant-value mode at epoch 2 (val_group_spread 2.12->0.00 for 24 epochs); ModelCheckpoint(min val_regret) preserved the healthy net",
+ "audits_test_split": {
+  "g8r4": {
+   "regret": 0.178,
+   "top1": 0.915
+  },
+  "g12r4": {
+   "regret": 0.254,
+   "top1": 0.898
+  },
+  "g16r6": {
+   "regret": 0.432,
+   "top1": 0.852
+  },
+  "g24r4": {
+   "regret": 0.425,
+   "top1": 0.883
+  }
+ },
+ "sha256_16": "dd0e7211b1cbd39f"
+}
