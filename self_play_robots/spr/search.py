@@ -267,6 +267,38 @@ class Certifier:
 
 
 # ---------------------------------------------------------------------------
+# greedy descent (the labeler's completion rule: one expansion per decision,
+# policy top-k -> value argmin, prefix filter; the M2 "greed" baseline)
+# ---------------------------------------------------------------------------
+
+def greedy(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=None,
+           acct=None, dump_moves=False, f_mode="parent", max_depth=32):
+    from skeleton.astar import _initial_plan
+    cert = Certifier(env, state, acct, dump_moves)
+    plan = forced_fixes(env, state, solver, _initial_plan(env, state), acct)
+    expansions = pruned = 0
+    while not plan.is_complete() and expansions < max_expansions and expansions < max_depth:
+        expansions += 1
+        kids, pr = expand(env, state, solver, plan, env_id, n, ev, k, prefix_filter, acct, f_mode)
+        pruned += pr
+        if not kids:
+            return SearchResult(expansions=expansions, pruned=pruned)
+        best = min(kids, key=lambda c: c.ctg_hat)
+        plan = forced_fixes(env, state, solver, best.plan, acct)
+    res = SearchResult(plan=plan, expansions=expansions, pruned=pruned)
+    if plan.is_complete():
+        m, mv = cert(plan)
+        if m is None:
+            res.rejected = 1
+        else:
+            res.strict, res.moves = m, mv
+            res.extra = {"first_certified_expansion": expansions, "best_strict": m}
+    else:
+        res.plan = None
+    return res
+
+
+# ---------------------------------------------------------------------------
 # A* (own loop)
 # ---------------------------------------------------------------------------
 
@@ -321,7 +353,7 @@ def astar(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=No
 class Node:
     __slots__ = ("plan", "parent", "child_obj", "children", "N", "Q", "v_est", "prior",
                  "complete", "cert", "dead", "solved", "closed", "depth", "fixed_g",
-                 "expanded", "best_cert")
+                 "expanded", "best_cert", "best_abs")
 
     def __init__(self, plan, parent=None, child_obj=None, depth=0):
         self.plan, self.parent, self.child_obj = plan, parent, child_obj
@@ -340,6 +372,7 @@ class Node:
         self.fixed_g = None
         self.expanded = False
         self.best_cert = None       # min certified strict cost in this subtree
+        self.best_abs = None        # abstract plan cost of that same certified plan
 
 
 def mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=None,
@@ -437,6 +470,7 @@ def mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=Non
                 node.Q = float(m)
                 node.solved = node.closed = True
                 node.best_cert = m
+                node.best_abs = float(node.plan.cost())
                 n_certified += 1
                 if best is None or m < best[0]:
                     best = (m, node, mv)
@@ -444,7 +478,8 @@ def mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=Non
                     if first_cert_exp is None:
                         first_cert_exp = expansions
                 for a in reversed(path[:-1]):
-                    a.best_cert = m if a.best_cert is None else min(a.best_cert, m)
+                    if a.best_cert is None or m < a.best_cert:
+                        a.best_cert, a.best_abs = m, node.best_abs
             _backup(path)
             if best is not None and not best_at_budget:
                 break
@@ -497,7 +532,10 @@ def run(name, env, state, solver, policy, value_net, env_id, dev, k, max_expansi
     from simulate import _board_size
     n = _board_size(env.grid_data, None)
     ev = Evaluator(policy, value_net, dev)
-    if name == "spr_astar":
+    if name == "greedy":
+        res = greedy(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter,
+                     acct, dump_moves, f_mode)
+    elif name == "spr_astar":
         res = astar(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter,
                     best_at_budget, f_mode, acct, dump_moves)
     elif name == "mcts":

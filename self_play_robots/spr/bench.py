@@ -39,7 +39,7 @@ def main(argv=None):
     p.add_argument("--policy", required=True)
     p.add_argument("--value", required=True)
     p.add_argument("--search", default="arena_astar",
-                   choices=["arena_astar", "spr_astar", "mcts"])
+                   choices=["arena_astar", "spr_astar", "mcts", "greedy"])
     p.add_argument("--expansions", type=int, default=1200)
     p.add_argument("--k", type=int, default=5)
     p.add_argument("--prefix-check", action="store_true")
