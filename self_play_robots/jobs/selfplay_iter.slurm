@@ -107,19 +107,23 @@ BP=$(best_ckpt "$IT/policy"); BV=$(best_ckpt "$IT/value")
 printf 'policy=%s\nvalue=%s\n' "$BP" "$BV" > "$IT/nets.txt"; cp "$IT/nets.txt" "$RES/nets.txt"
 echo "SPR ITER nets policy=$BP value=$BV"
 # ---- F bench ------------------------------------------------------------------
-INST=scaling/data/${CFG}/bench.solved.jsonl
-[ "$CFG" = g16r4 ] && INST=eval/data/bench450.jsonl
-bench_one() {  # bench_one <tag> <flags>
+INST=scaling/data/${CFG}/bench.solved.jsonl; FRONT=scaling/data/${CFG}/bench.unsolved.jsonl
+[ "$CFG" = g16r4 ] && { INST=eval/data/bench450.jsonl; FRONT=""; }
+bench_one() {  # bench_one <tag> <flags> <instances>
   local out="$RES/bench_${CFG}_$1.json"
   [ -s "$out" ] && { echo "SPR ITER SKIP bench $1"; return 0; }
   local t0=$SECONDS
-  python -m spr.arena bench --arm "sp_${CFG}_it${K}_$1" --config "$CFG" --instances "$INST" \
+  python -m spr.arena bench --arm "sp_${CFG}_it${K}_$1" --config "$CFG" --instances "$3" \
       --policy "$BP" --value "$BV" --driver spr --flags "$2" --width 8 --threads 2 --device cuda \
       --out "$out" || { echo "SPR ITER FAILED bench $1"; return 1; }
   echo "SPR ITER bench $1 took $((SECONDS-t0))s"
 }
-bench_one astar "--search arena_astar --prefix-check" || exit 1
-bench_one mcts  "--search mcts --prefix-check --best-at-budget" || exit 1
+bench_one astar "--search arena_astar --prefix-check" "$INST" || exit 1
+bench_one mcts  "--search mcts --prefix-check --best-at-budget" "$INST" || exit 1
+if [ -n "$FRONT" ]; then   # the frontier set is where the headroom is (FINDINGS §8)
+  bench_one frontier_astar "--search arena_astar --prefix-check" "$FRONT" || true
+  bench_one frontier_mcts  "--search mcts --prefix-check --best-at-budget" "$FRONT" || true
+fi
 # ---- G gate -------------------------------------------------------------------
 REF=g24r4_exact_prefix; [ "$CFG" = g16r4 ] && REF=g16r4_v2_prefix
 python -m spr.gate m1 --new "$RES/bench_${CFG}_astar.json" --ref-arm "$REF" --out "$RES/gate_vs_supervised.json" || true
