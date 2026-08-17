@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-17T23:36:06",
+ "updated": "2026-08-18T00:39:34",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -54,12 +54,15 @@
   },
   "M3": {
    "title": "one self-play iteration helps",
-   "status": "queued",
+   "status": "running (iteration 1 done, verdict on frontier pending)",
    "sources": [],
    "jobs": [
-    4681263
+    4681263,
+    4682171,
+    4682173,
+    4682172
    ],
-   "note": "iteration 1 at g24r4 with the mixed size-free pair (job 4681263 after size-free M2 4680957): 120 fresh lean boards x 8 instances, MCTS best-at-budget 600 exp / stop-after 150, root-all + sibling completion, gauge, buffer + exact anchors, warm retrain, arena bench, paired gate vs M1 pair."
+   "note": "iter1 g24r4: 12,244 certified records, gauge 0.915, retrain OK, graded bench = M1 (saturated exam); frontier/zero-shot probe of iter1 nets 4682171; iter2 with hard-instance filter 4682173. FINDINGS \u00a710."
   },
   "M4": {
    "title": "the loop climbs",
@@ -137,7 +140,7 @@
   "findings_log": "self_play_robots/FINDINGS.md (owner choice)"
  },
  "node_hours": {
-  "spent": 3.6,
+  "spent": 3.9,
   "projected_next": 2.5,
   "note": "spent: smoke 0.02 + M0 0.09 + fwd-M0 0.02 (+ ceiling pending); next: M1 ~1.5-2, M2 ~1"
  }

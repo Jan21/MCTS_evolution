@@ -323,3 +323,39 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
    job; the same probe re-run on the retrained nets).
    Sources: `results/transfer/*.json`, `results/ceiling/{g32r4,g24r8}_base.json`,
    `runs/spr/spr-transfer-4681264.out`.
+
+10. **M3, iteration 1 (g24r4): the loop runs end to end — 1,774 fresh
+    instances searched, 12,244 certified records, fidelity gauge 0.915,
+    warm retrain, arena bench — in 1 h 51 min (0.23 nh); on the saturated
+    graded exam the retrained pair equals the M1 pair (no gain, no
+    regression), as §8 predicted (2026-08-17/18, job 4681263).**
+    Generation: 120 fresh lean 24×24 boards (ids 5000–5119), 8 instances per
+    board (up to 3× attempts), MCTS best-at-budget (600 expansions, stop 150
+    after the last improvement, c=1.5, root Dirichlet 0.25, ALL root
+    candidates scored, greedy sibling completion), 8 GPU workers: 1,268 of
+    1,774 instances certified (71.5%), mean 49.6 expansions / 6.8 s per
+    instance, 12,244 records (1,160 training + 203 validation decision
+    groups), 4 transient CUDA OOMs caught per instance (root-all value passes
+    with 8 workers on one A100). **Fidelity gauge** (`spr.gauge`, 200 depth-0
+    decisions exact-labeled by the Rust engine, `nn_labeler.audit_descent`):
+    argmin agreement **0.915**, optimal-set Jaccard 0.86, mean gap 0.99 (0.82
+    on exact-optimal candidates), no negative gaps — inside FINDINGS 74's
+    "downstream-equivalent" band from the first iteration. Training: policy
+    + value warm from the M1 pair, 6 epochs at lr 1e-4 (clip 1.0) on the
+    buffer + exact anchors; val regret 1.97 → 2.00 (policy), 1.24 → 1.22
+    (value), no collapse. Bench (arena A\*): **216/232, 10.07 mv, regret 2.48,
+    54.6% opt** vs M1's 215/232, 10.00, 2.43, 54.4% (paired: +1 solve, moves
+    8/7, n.s.); MCTS: 216/232, 9.45, 1.86, 57.4% vs 215, 9.35, 1.78, 57.2%
+    (5/3, n.s.). Reading: the loop's data is certified and near-exact
+    (0.915), its cost is small (0.23 nh/iteration at 24×24), and — exactly as
+    §8 said — the graded g24r4 exam cannot register improvement (216 = the
+    language ceiling; regret 0.1 above it). The M3 verdict is therefore
+    deferred to the exams with headroom: the iteration-1 nets are being
+    probed on the frontier sets and zero-shot at 32×32 / 8 robots (job
+    4682171, same protocol as §9), and iteration 2 (job 4682173) generates
+    with a hard-instance filter (`--min-expansions 3`) so the data targets
+    the frontier-like tail (PROBLEM.md §6.4).
+    Sources: `results/selfplay/g24r4_iter1/{generation.manifest.json,
+    gauge.json,bench_g24r4_{astar,mcts}.json,gate_vs_supervised.json,
+    gate_vs_prev.json,nets.txt}`, `runs/spr/selfplay/g24r4_iter1/`,
+    `runs/spr/spr-it1-g24-4681263.out`.
