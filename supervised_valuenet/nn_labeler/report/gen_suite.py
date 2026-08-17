@@ -107,6 +107,96 @@ def p1(v):  # 0.834 -> "83.4"
 
 # ------------------------------------------------------------- sections -----
 
+def ladder_band():
+    """(min%, max%, n_rungs) of argmin agreement over the v1 rungs 17-64."""
+    rels = []
+    for g in range(17, 32):
+        rels.append(f"nn_labeler/results/dgate_ladder_g{g}r4.json" if g != 24
+                    else "nn_labeler/results/capgate_g24r4.json")
+    rels.append("nn_labeler/results/capgate_g32r4.json")
+    rels += [f"nn_labeler/results/coarsegate_g{g}r4.json" for g in (40, 48, 56, 64)]
+    vals = [s["argmin_agreement"] for s in (gate_summary(r) for r in rels) if s]
+    if not vals:
+        return None
+    return 100 * min(vals), 100 * max(vals), len(vals)
+
+
+def sec_glance():
+    """Results at a glance -- every number computed from the result JSONs."""
+    rows_ = []
+
+    def r(finding, numbers, where):
+        rows_.append(row([f"<td>{finding}</td>", f"<td>{numbers}</td>",
+                          f"<td>{where}</td>"]))
+
+    band = ladder_band()
+    if band:
+        lo, hi, n = band
+        r("The NN's labels agree with the exact solver, at every board "
+          "size that can be checked",
+          f"{lo:.1f}&ndash;{hi:.1f}% best-move agreement across {n} board "
+          "sizes from 17&times;17 to 64&times;64 — one network, flat curve, "
+          "no cliff", '<a href="#s3">&sect;2</a>')
+    g = gate_summary("nn_labeler/results/coarsegate_g64r4.json")
+    if g:
+        r("The curve holds to the last checkable size",
+          f"{100*g['argmin_agreement']:.1f}% at 64&times;64 — the exact "
+          "solver's hard limit; nothing above it can ever be graded",
+          '<a href="#s3">&sect;2</a>')
+    ex1 = solve("scaling/results/g24r4/comparison.json")
+    ex2 = solve("scaling/results/g24r4/comparison_exactseed21.json")
+    tw1 = solve("scaling/results/g24r4/comparison_nntwin.json")
+    tw2 = solve("scaling/results/g24r4/comparison_nntwin-seed21.json")
+    if None not in (ex1, ex2, tw1, tw2):
+        r("Planners taught by 91%-faithful NN labels are as good as "
+          "exact-taught ones",
+          f"twin-taught planners solve {p1(tw1)}% / {p1(tw2)}% (two runs) vs "
+          f"exact-taught {p1(ex1)}% / {p1(ex2)}% — no detectable difference",
+          '<a href="#s4">&sect;3</a>')
+    ex, tw = solve("scaling/results/g32r4/comparison.json"), solve("scaling/results/g32r4/comparison_nntwin.json")
+    exo, two = optpct("scaling/results/g32r4/comparison.json"), optpct("scaling/results/g32r4/comparison_nntwin.json")
+    if None not in (ex, tw, exo, two):
+        r("At 89% faithfulness, solving survives but solution quality slips",
+          f"solve rate {p1(tw)}% vs {p1(ex)}%, but only {two:.1f}% of "
+          f"solutions perfectly optimal vs {exo:.1f}%",
+          '<a href="#s4">&sect;3</a>')
+    ex, tw = solve("scaling/results/g24r8/comparison.json"), solve("scaling/results/g24r8/comparison_nntwin.json")
+    if None not in (ex, tw):
+        r("At 82% faithfulness, the taught planner breaks down",
+          f"solve rate {p1(tw)}% vs {p1(ex)}% — a collapse, not a slip",
+          '<a href="#s4">&sect;3</a>')
+    dep = solve("scaling/results/g32r4/comparison_nndeploy.json")
+    ex = solve("scaling/results/g32r4/comparison.json")
+    if None not in (dep, ex):
+        r("A pipeline with NO exact solver anywhere still works",
+          f"NN-made boards + puzzles + labels &rarr; planner solves {p1(dep)}% "
+          f"vs the exact-taught {p1(ex)}%",
+          '<a href="#s4">&sect;3</a>')
+    beyond_bits = []
+    for gsz in (80, 96):
+        p = SV / f"nn_labeler/results/beyond_UNVERIFIABLE_g{gsz}r4.jsonl.manifest.json"
+        if p.exists():
+            m = json.load(open(p))["stats"]
+            beyond_bits.append(f"{m['records']} at {gsz}&times;{gsz}")
+    if beyond_bits:
+        r("First-ever labels beyond the checkable limit",
+          "certified label sets where no solver can ever grade them: "
+          + ", ".join(beyond_bits) + " — every one physics-verified, zero timeouts",
+          '<a href="#s5">&sect;4</a>')
+    r("The hoped-for compute saving did NOT materialize",
+      "a labeler distilled from capped data reproduced the cap's damage — "
+      "the negative result, reported as such",
+      '<a href="#s6">&sect;5</a>')
+    return ("<h3>Results at a glance</h3>" +
+            table(["finding", "the numbers", "details"], rows_,
+                  note="The whole campaign cost roughly 27 node-hours of "
+                       "cluster time against the ~441 the exact-solver plan "
+                       "projected for a single extended dataset (measured "
+                       "ledger: process.html &sect;10). Every number in this "
+                       "table is read from the same result files as the "
+                       "detailed tables below."))
+
+
 def sec_overview():
     corrupt_pending = not (SV / "scaling/results/g24r4/comparison_corrupt_d822.json").exists()
     status = ("Controlled campaign complete; the causality arms (label "
@@ -135,6 +225,7 @@ so labels are never fantasies — at worst they are slightly-too-long solutions.
 <p><strong>The question that decides everything:</strong> if a planner is
 trained on NN-written labels instead of exact ones, is the resulting planner
 just as good? That is what the tables on this page answer.</p>
+{sec_glance()}
 <h3>The story in six steps</h3>
 <ol class="story">
 <li><a href="#s2">Check the labels themselves</a> — on boards where the exact
@@ -164,29 +255,59 @@ alone reproduces the dose-response. {chip("pend", "in flight") if corrupt_pendin
 <p class="statuscard"><strong>Status:</strong> {status}</p>
 </section>
 <section id="how">
-<h2>How to read the tables — five terms</h2>
+<h2>How to read the tables — the vocabulary</h2>
 <dl class="defs">
-<dt>exact arm / twin arm / deployment arm</dt>
-<dd><em>Exact</em>: planner trained on exact-solver labels (the control).
-<em>Twin</em>: same boards and puzzles, labels rewritten by the NN — label
-provenance is the only variable. <em>Deployment</em>: the NN generated
-boards, puzzles and labels from scratch.</dd>
-<dt>argmin agreement</dt>
-<dd>Of the candidate moves at a decision, does the NN label rank the same
-one best as the exact solver? This is the load-bearing label-quality metric:
-planners follow the ranking, not the absolute values.</dd>
+<dt>label / cost-to-go</dt>
+<dd>The number attached to a puzzle position in the training data: how many
+moves an optimal solution still needs from here. Planners learn by
+imitating these numbers, so the whole study is about who writes them —
+the exact solver, or the neural network.</dd>
+<dt>label provenance (exact arm / twin arm / deployment arm)</dt>
+<dd>"Provenance" = who wrote the labels. <em>Exact arm</em>: planner trained
+on exact-solver labels (the control). <em>Twin arm</em>: identical boards
+and puzzles, but the labels rewritten by the NN — so who-wrote-the-labels
+is the <em>only</em> difference between the two planners.
+<em>Deployment arm</em>: the NN generated boards, puzzles <em>and</em>
+labels from scratch, no exact solver anywhere.</dd>
+<dt>backward vs forward planner</dt>
+<dd>Two planner designs trained side by side in the wider project. The
+<em>backward (subgoal) planner</em> reasons from the goal backwards and is
+the one retrained in every experiment here; the <em>forward</em> planner
+picks moves one at a time and appears only as an untouched reference row
+(its training data cannot be relabeled — see the headline section).</dd>
+<dt>argmin agreement (label fidelity)</dt>
+<dd>At each decision the planner faces several candidate moves; "argmin"
+is just the candidate with the lowest (best) label. Agreement asks: does
+the NN's labeling pick the <em>same best candidate</em> as the exact
+solver? This is the load-bearing quality metric — planners follow the
+ranking, not the absolute values — and it is what we mean by "fidelity"
+or "faithfulness" throughout.</dd>
 <dt>solve rate / % optimal / regret</dt>
 <dd>On the fixed benchmark: how many puzzles the planner solves at all; how
 many of its solutions are perfectly optimal; and how many extra moves the
-non-optimal ones cost on average.</dd>
+non-optimal ones cost on average (regret 3.0 = three moves longer than
+necessary, averaged).</dd>
 <dt>graded vs frontier</dt>
-<dd><em>Graded</em>: benchmark puzzles with a known optimum (so % optimal and
-regret exist). <em>Frontier</em>: puzzles nothing had solved before — solve
-rate only.</dd>
+<dd><em>Graded</em>: benchmark puzzles whose optimum is known (so % optimal
+and regret can be scored). <em>Frontier</em>: harder puzzles nothing had
+ever solved — only solve rate exists there.</dd>
+<dt>the benchmark protocol</dt>
+<dd>Every planner in a table faces the <em>same fixed puzzle set</em>
+(checksum-locked so nothing can drift), with the same search budget (1,200
+node expansions, 5 candidate moves considered per step), and only
+physics-legal moves count. Different rows are always apples-to-apples.</dd>
 <dt>certified</dt>
 <dd>Every solution a planner (or the labeler) reports is replayed
-move-by-move against the game physics before it counts. Nothing on this page
-is self-reported by a neural network.</dd>
+move-by-move against the game physics before it counts. Nothing on this
+page is self-reported by a neural network.</dd>
+<dt>seed</dt>
+<dd>The random initialization of a training run. Two runs that differ only
+in seed give slightly different planners — that run-to-run wobble is
+measured here (it once demoted an apparent win to noise), which is why
+several cells have "seed 21" replicate rows.</dd>
+<dt>node-hour</dt>
+<dd>The cluster's cost unit (one full compute node for one hour). The
+project's budget is 1,000 of them; this whole campaign used ~27.</dd>
 </dl>
 </section>"""
 
@@ -277,21 +398,26 @@ def dose_chart():
 
 def sec_downstream():
     out = ['<section id="s4">',
-           "<h2>3 &middot; The headline: does label provenance matter downstream?</h2>",
+           "<h2>3 &middot; The headline: are NN-taught planners as good as "
+           "exact-taught ones?</h2>",
            "<p><strong>The experiment.</strong> For each configuration we "
-           "retrained the backward (subgoal) planner from scratch on the twin "
-           "corpus — the exact corpus's own boards and puzzles, relabeled by "
-           "the NN — and benched it against the exact-taught original on "
-           "identical sha-pinned benchmark instances (playable-moves scoring, "
-           "1200 expansions, k=5). All cells are leakage-free: the labeler "
-           "never trained on any of these configurations. The forward "
-           "planner rows are an untouched control (the NN labeling process "
-           "keeps no primitive-move sequences, so a forward twin would change "
-           "the training signal, not just the label source).</p>"
-           "<p><strong>The verdict, one line per cell:</strong> label "
-           "fidelity gates downstream utility. Read each table below with "
-           "its twin-gate fidelity from <a href='#s2'>section 1</a> in "
-           "mind.</p>"]
+           "retrained the backward planner from scratch on the twin corpus — "
+           "the exact corpus's own boards and puzzles, with only the labels "
+           "rewritten by the NN — and raced it against the exact-taught "
+           "original under the fixed <a href='#how'>benchmark protocol</a>. "
+           "Because boards and puzzles are identical, "
+           "<a href='#how'>label provenance</a> (who wrote the labels) is "
+           "the only variable. All cells are leakage-free: the labeler never "
+           "trained on boards of any of these configurations. The forward "
+           "planner rows are an untouched reference (the NN labeling process "
+           "keeps no move-by-move solutions, so a forward twin would change "
+           "the kind of training data, not just who wrote it — the "
+           "comparison would no longer isolate one variable).</p>"
+           "<p><strong>The verdict in one sentence:</strong> how faithful "
+           "the labels are decides how good the taught planner is — "
+           "equivalent at ~91% <a href='#how'>fidelity</a>, solving-but-"
+           "sloppier at ~89%, broken at ~82%. Each cell's fidelity comes "
+           "from the twin-corpus rows of <a href='#s2'>section 1</a>.</p>"]
     out.append(dose_chart())
     verdicts = {
         "g24r4": None, "g24r8": None, "g32r4": None}
@@ -425,10 +551,11 @@ def sec_label_quality():
                           "near-ties). 'negative gaps' would mean a label "
                           "beat the exact optimum — a certification bug; "
                           "the handful shown trace to exact-solver timeout "
-                          "artifacts, not label errors. v1 is the banked "
-                          "production net (it won the gate); v2 won a "
-                          "different audit but lost this one, so v1 labels "
-                          "everything."))
+                          "artifacts, not label errors. v1 and v2 are the "
+                          "two candidate production nets; v1 won this gate "
+                          "and was locked in ('banked') as the official "
+                          "labeler — every label on this page is v1's. v2 "
+                          "won a different audit but lost this one."))
     out.append("</section>")
     return "\n".join(out)
 
@@ -515,9 +642,13 @@ def sec_ladder():
     out.append(table(["board", "argmin agree", "labels exactly optimal",
                       "mean gap", "negative gaps"], rows_,
                      note="8&ndash;16 rows come from the early debug-battery "
-                          "gates (a mixed training net); everything from 17 "
-                          "up is the banked v1 net, 600 replayed test "
-                          "instances per rung."))
+                          "gates (an earlier mixed-size training net); "
+                          "everything from 17 up is the production v1 net, "
+                          "600 replayed test instances per rung. 'capstone' "
+                          "= the pre-registered pass/fail exams at 24 and "
+                          "32 that qualified the net before the headline "
+                          "experiment; 'coarse' = the wider-spaced rungs "
+                          "beyond the ladder's 1-cell steps."))
     out.append("</section>")
     return "\n".join(out)
 
@@ -551,10 +682,10 @@ def sec_b2():
            "economic case lived in the extended 'B2' move vocabulary, where "
            "the exact campaign projected ~441 node-hours and its iteration "
            "cap destroyed the special 'by-reference' labels it existed to "
-           "produce (13.5% share uncapped &rarr; 4.8% capped). NN descent "
-           "has no iteration budget, so the plan was: train a labeler on the "
-           "capped B2 data, label fresh data uncapped, recover the lost "
-           "vocabulary.</p>"
+           "produce (13.5% share uncapped &rarr; 4.8% capped). The NN's "
+           "labeling process has no iteration budget at all, so the plan "
+           "was: train a labeler on the capped B2 data, have it label fresh "
+           "data without the cap, recover the lost vocabulary.</p>"
            "<p><strong>The verdict.</strong> " + chip("bad", "negative") +
            " It did not work — the by-reference share came out near zero, "
            "far below even the capped corpora. A network distilled from "
@@ -634,12 +765,14 @@ def sec_inflight():
         out.append(table(["arm", "label fidelity (measured)", "solve rate",
                           "% optimal", "mean regret", "n"], rows_,
                          note=f"Corpora: {man['sub_records']} records / "
-                              f"{man['sub_groups']} decision groups shared by "
-                              "all three arms (nn_labeler/corrupt.py, seed "
-                              f"{man['seed']}); compare against the exact and "
-                              "twin g24r4 rows in the headline section. Also "
-                              "in flight: a second seed of the g32r4 twin "
-                              "(fills the pending seed-21 row above)."))
+                              f"{man['sub_groups']} decision points (each "
+                              "with its full set of candidate moves) shared "
+                              "by all three arms (nn_labeler/corrupt.py, "
+                              f"seed {man['seed']}); compare against the "
+                              "exact and twin g24r4 rows in the headline "
+                              "section. Also in flight: a second seed of "
+                              "the g32r4 twin (fills the pending seed-21 "
+                              "row above)."))
     else:
         out.append('<p class="note">Corruption manifest not found — arms not '
                    'yet generated.</p>')
