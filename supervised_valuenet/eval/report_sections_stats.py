@@ -445,6 +445,197 @@ def _seed_block(D):
 
 
 # ---------------------------------------------------------------------------
+# 1d-bis. Seed replicates of the g16r8 zero-shot headline pair (FINDINGS 77a)
+# ---------------------------------------------------------------------------
+
+SH_SRC = "analysis/artifacts/seed_headline_g16r8.json"
+SH_SETS = [("graded", "gradable set", "266"),
+           ("frontier", "beyond the oracle", "184"),
+           ("pooled", "whole pool", "450"),
+           ("base450", "base pool (16\u00d716 \u00b7 4 robots)", "450")]
+SH_ARMS = [("production", "seed of record (the published row)"),
+           ("seed21", "fresh seed 21"),
+           ("seed37", "fresh seed 37"),
+           ("seed53", "fresh seed 53")]
+
+
+def _sh_num(sh, set_key, arm, field, fmt="{}"):
+    """A check-tagged number out of the seed-headline artifact."""
+    c = ((sh.get("sets") or {}).get(set_key, {}).get("arms") or {}).get(arm)
+    if not c or c.get(field) is None:
+        return '<span class="muted">\u2014</span>'
+    v = c[field]
+    return ck(fmt.format(v), SH_SRC, f"seedhl {set_key} {arm} {field}", raw=v)
+
+
+def _seed_headline_block(D):
+    """The 16x16 / 8-robot headline pair, retrained under three fresh seeds."""
+    sh = D.get("seed_headline_g16r8")
+    head = ("<h3>Seed replicates of the headline pair "
+            "(16\u00d716 \u00b7 8 robots)</h3>")
+    if not sh or not (sh.get("sets") or {}).get("pooled", {}).get("arms"):
+        return head + progress_tag(
+            "the 8-robot headline pair is being retrained under three fresh "
+            "seeds (jobs/patterns/seed_headline_pair.slurm); the per-seed "
+            "benchmark rows render here when "
+            "analysis/artifacts/seed_headline_g16r8.json lands")
+    sets = sh["sets"]
+
+    body = []
+    for arm, label in SH_ARMS:
+        if arm not in (sets["pooled"].get("arms") or {}):
+            continue
+        vr = (sh.get("val_regret") or {}).get(arm) or {}
+        v, basin = vr.get("val_regret"), vr.get("basin")
+        if v is None:
+            vcell = '<span class="muted">\u2014</span>'
+        else:
+            vcell = ck(f"{v:.2f}", SH_SRC, f"seedhl val_regret {arm}", raw=v)
+            vcell += (" " + chip("bad basin", "warn") if basin == "bad"
+                      else " " + chip("good basin"))
+        cells = "".join(
+            '<td class="num">' + _sh_num(sh, k, arm, "solved_backward")
+            + "</td>" for k, _, _ in SH_SETS)
+        body.append(f'<tr><td><b>{esc(label)}</b></td>'
+                    f'<td class="num small">{vcell}</td>{cells}</tr>')
+
+    med = "".join(
+        '<td class="num">'
+        + ck(f'{sets[k]["summary"]["median3_seeds"]:g}', SH_SRC,
+             f"seedhl {k} median-of-3",
+             raw=sets[k]["summary"]["median3_seeds"])
+        + '<div class="cellnote">band '
+        + ck(f'{sets[k]["summary"]["min3_seeds"]}\u2013'
+             f'{sets[k]["summary"]["max3_seeds"]}', SH_SRC,
+             f"seedhl {k} band",
+             raw=(sets[k]["summary"]["min3_seeds"],
+                  sets[k]["summary"]["max3_seeds"]))
+        + "</div></td>" for k, _, _ in SH_SETS)
+    body.append('<tr class="hl"><td><b>median of the three fresh seeds</b>'
+                '<div class="cellnote">what this rung now reports</div></td>'
+                '<td class="num small"><span class="muted">\u2014</span></td>'
+                + med + "</tr>")
+    fwd = "".join(
+        '<td class="num">'
+        + ck(str(sets[k]["solved_forward"]), SH_SRC, f"seedhl {k} forward",
+             raw=sets[k]["solved_forward"]) + "</td>" for k, _, _ in SH_SETS)
+    body.append('<tr><td>move-by-move control (unchanged)</td>'
+                '<td class="num small"><span class="muted">\u2014</span></td>'
+                + fwd + "</tr>")
+
+    heads = "".join(f'<th class="num">{esc(lab)}<br>'
+                    f'<span class="small">{esc(n)} puzzles</span></th>'
+                    for _, lab, n in SH_SETS)
+    table = scroll(
+        "<table><thead><tr><th>training run of the network pair</th>"
+        '<th class="num">value-net<br>validation error</th>'
+        + heads + "</tr></thead><tbody>" + "".join(body) + "</tbody></table>")
+
+    def marg(arm):
+        return (_sh_num(sh, "pooled", arm, "diff_points", "{:+.1f}")
+                + " points, p&nbsp;=&nbsp;"
+                + _pv(sh, "pooled", arm))
+
+    reading = (
+        "<p><b>Bimodal again \u2014 and, as at 6 robots, which outcome you "
+        "drew is visible in training, before a single puzzle is "
+        "benchmarked.</b> The value network's validation error splits the "
+        "four runs cleanly: one of the three fresh seeds lands at "
+        + _shv(sh, "seed21") + " against " + _shv(sh, "seed37") + " and "
+        + _shv(sh, "seed53") + " for the other two (the published pair sits "
+        "with the good ones, at " + _shv(sh, "production") + "). This is the "
+        "same two-basin signature the 6-robot retrain showed above, in the "
+        "same network, and it is diagnosable from the training run alone.</p>"
+        "<p><b>The two good-basin seeds reproduce the headline; the "
+        "bad-basin seed does not.</b> Beyond the oracle the good seeds solve "
+        + _sh_num(sh, "frontier", "seed37", "solved_backward") + " and "
+        + _sh_num(sh, "frontier", "seed53", "solved_backward")
+        + " of 184 against the published "
+        + _sh_num(sh, "frontier", "production", "solved_backward")
+        + ", while the bad-basin seed manages "
+        + _sh_num(sh, "frontier", "seed21", "solved_backward")
+        + ". It still finishes ahead of the move-by-move control there ("
+        + _sh_num(sh, "frontier", "seed21", "diff_points", "{:+.1f}")
+        + " points, p&nbsp;=&nbsp;" + _pv(sh, "frontier", "seed21")
+        + ", so ahead but no longer beyond doubt), and over the whole 450 its "
+        "margin shrinks to " + marg("seed21") + " \u2014 against "
+        + marg("seed37") + " and " + marg("seed53") + " for the good seeds "
+        "and " + marg("production") + " for the published row. Nothing of "
+        "this shows at the networks' home size: on the base pool all four "
+        "runs land within "
+        + ck(f'{sets["base450"]["summary"]["max4"] - sets["base450"]["summary"]["min4"]}',
+             SH_SRC, "seedhl base450 spread4",
+             raw=sets["base450"]["summary"]["max4"]
+             - sets["base450"]["summary"]["min4"])
+        + " puzzles of each other, so the damage is specific to carrying the "
+        "pair, unchanged, to a harder board. Solution length is not what "
+        "moves: on the puzzles a run and the control both solve, the subgoal "
+        "plans average "
+        + _sh_num(sh, "pooled", "production", "mean_len_backward", "{:.1f}")
+        + ", " + _sh_num(sh, "pooled", "seed37", "mean_len_backward", "{:.1f}")
+        + " and "
+        + _sh_num(sh, "pooled", "seed53", "mean_len_backward", "{:.1f}")
+        + " moves for the three good-basin runs and "
+        + _sh_num(sh, "pooled", "seed21", "mean_len_backward", "{:.1f}")
+        + " for the bad-basin one, against about "
+        + _sh_num(sh, "pooled", "production", "mean_len_forward", "{:.1f}")
+        + " for the move-by-move control throughout \u2014 the subgoal "
+        "planner keeps solving more puzzles with longer plans, whichever "
+        "basin it drew.</p>"
+        "<p><b>What the page now reports for this rung.</b> The rule was "
+        "fixed before the seeds ran: a split draw like this one forces the "
+        "headline to be the median of the three replicates rather than any "
+        "single run. So 16\u00d716 \u00b7 8 robots is reported as "
+        + ck(f'{sets["pooled"]["summary"]["median3_seeds"]:g}', SH_SRC,
+             "seedhl pooled median-of-3 (reading)",
+             raw=sets["pooled"]["summary"]["median3_seeds"])
+        + " of 450 solved, band "
+        + ck(f'{sets["pooled"]["summary"]["min3_seeds"]}\u2013'
+             f'{sets["pooled"]["summary"]["max3_seeds"]}', SH_SRC,
+             "seedhl pooled band (reading)",
+             raw=(sets["pooled"]["summary"]["min3_seeds"],
+                  sets["pooled"]["summary"]["max3_seeds"]))
+        + ", with the published run kept visible as the seed of record; the "
+        "margin over the move-by-move control at that median is "
+        + ck(f'{sets["pooled"]["summary"]["median3_margin_points"]:+.1f}',
+             SH_SRC, "seedhl pooled median-of-3 margin",
+             raw=sets["pooled"]["summary"]["median3_margin_points"])
+        + " points, and the band spans "
+        + _sh_num(sh, "pooled", "seed21", "diff_points", "{:+.1f}") + " to "
+        + _sh_num(sh, "pooled", "seed37", "diff_points", "{:+.1f}")
+        + " points. The same three-seed replicate is still in flight "
+        "for 32\u00d732 \u00b7 4 robots; that rung stays single-seed until "
+        "it lands.</p>")
+
+    return (head
+            + "<p>The 8-robot row is a <b>zero-shot</b> result: the network "
+            "pair was trained once at the smallest board size and applied "
+            "here unchanged. That pair is a single training draw, so the "
+            "recipe was repeated under three fresh random seeds \u2014 "
+            "nothing else altered \u2014 and each pair re-benchmarked with "
+            "the headline protocol verbatim (same budget, same pinned "
+            "puzzles, every solved plan replayed). The last column is the "
+            "networks' home size, where they were trained.</p>"
+            + table + reading)
+
+
+def _shv(sh, arm):
+    """Check-tagged val_regret quote from the seed-headline artifact."""
+    v = ((sh.get("val_regret") or {}).get(arm) or {}).get("val_regret")
+    if v is None:
+        return '<span class="muted">\u2014</span>'
+    return ck(f"{v:.2f}", SH_SRC, f"seedhl val_regret {arm} (reading)", raw=v)
+
+
+def _pv(sh, set_key, arm):
+    """Check-tagged McNemar p from the seed-headline artifact."""
+    c = ((sh.get("sets") or {}).get(set_key, {}).get("arms") or {}).get(arm)
+    if not c or c.get("mcnemar_p") is None:
+        return '<span class="muted">\u2014</span>'
+    return ck(_fp(c["mcnemar_p"]), SH_SRC,
+              f"seedhl {set_key} {arm} McNemar p", raw=c["mcnemar_p"])
+
+# ---------------------------------------------------------------------------
 # 1e. The no-network control (FINDINGS 48)
 # ---------------------------------------------------------------------------
 
@@ -690,6 +881,7 @@ def sec_significance(D):
             + _retrained_block(cells)
             + _corpus_block(cells, D)
             + _seed_block(D)
+            + _seed_headline_block(D)
             + _heuristic_block(cells)
             + _nonsig_block(cells)
             + _twobytwo_block(cells)

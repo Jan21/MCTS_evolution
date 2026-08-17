@@ -690,6 +690,10 @@ def collect():
     D["seed_spread"] = load_json("analysis/artifacts/seed_spread.json")
     # value-net mode diagnostic (analysis/valnet_modes.py; FINDINGS 44)
     D["valnet_modes"] = load_json("analysis/artifacts/valnet_modes.json")
+    # seed replicates of the g16r8 zero-shot headline pair
+    # (analysis/seed_headline_g16r8.py; FINDINGS 77a)
+    D["seed_headline_g16r8"] = load_json(
+        "analysis/artifacts/seed_headline_g16r8.json")
     # failure gallery for the hardest measured pool (analysis/failure_examples.py)
     D["failure_examples"] = load_json("analysis/artifacts/failure_examples.json")
 

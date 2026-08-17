@@ -2720,3 +2720,41 @@ record what was done about the first three items.)_
    cannot, for a one-line architectural reason. The 80/96 corpora stay as
    §72c scoped them — certified labels whose warranty is the flat 17–64
    curve.
+
+80. **Seed replicates of the 16×16·8-robot headline pair: bimodal again —
+   2 of 3 fresh seeds reproduce the headline, 1 falls into the bad value
+   basin and the pooled margin over forward shrinks to +1.6 pts (p=0.49);
+   per the pre-registered rule (§77a) the rung's headline is now the
+   median of three seeds, 418/450 (band 361–424), vs forward 354
+   (2026-08-17, jobs 4670563/65/67, ~4.5 nh).** Recipe identical to the
+   production B1 pair (policy 25 ep cold, value 20 ep warm from value_v2),
+   `--torch-seed` 21/37/53 on both nets; every bench replay-certified.
+   | pair | value val_regret | graded /266 | frontier /184 | base /450 | pooled /450 (vs fwd 354) | McNemar pooled |
+   |---|---|---|---|---|---|---|
+   | production (seed of record) | 0.589 | 262 | 163 | 430 | 425 (+15.8) | p<1e-14 |
+   | seed 21 | **2.448 (bad basin)** | 253 | 108 | 432 | 361 (+1.6) | p=0.49 |
+   | seed 37 | 0.544 | 259 | 165 | 432 | 424 (+15.6) | p<1e-14 |
+   | seed 53 | 0.660 | 261 | 157 | 429 | 418 (+14.2) | p<1e-12 |
+   | median of 3 seeds | — | 259 | 157 | 432 | **418** | — |
+   Forward control: graded 261, frontier 93.
+   Reading. (a) §44's bistability reproduces on the headline recipe itself,
+   not only on the B2 retrains: 1 in 4 draws is bad, and val_regret
+   separates the modes by 4× before any benchmark (production's 0.589 was
+   recovered from the ModelCheckpoint state inside `value_b1.ckpt`; its
+   training log left with the origin machine). (b) Good-basin seeds land
+   within ±6 of the production row on every set — the headline was a
+   representative good-basin draw, not a lucky outlier. (c) The bad seed
+   still beats forward on the frontier (108 vs 93, p=0.077) and ties on
+   graded (253 vs 261), so even the worst draw does not invert the rung;
+   it just removes the margin. (d) The base pool is basin-insensitive
+   (429–432 across all four): the collapse is a transfer effect at 8
+   robots, matching §41/§45/§47. (e) Practical rule for the paper: report
+   median-of-3 with the band at this rung, and select value nets by
+   val_regret (a validation quantity) — cheap and pre-benchmark. 32×32·4r
+   seeds are queued (4670569/81/83).
+   Sources: `analysis/seed_headline_g16r8.py` →
+   `analysis/artifacts/seed_headline_g16r8.json`;
+   `scaling/results/g16r8/comparison{,_ungraded}_b2_seed{21,37,53}.json`,
+   `eval/results/final450_backward_b2_seed{21,37,53}.json`,
+   `runs/seedhl/rr-seedhl-g16r8-s*.out`. Report: fairness tab
+   "Seed replicates of the headline pair"; headline row footnoted.

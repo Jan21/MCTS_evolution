@@ -558,6 +558,61 @@ def sec_verdict(D):
     return html
 
 
+def _seed_of_record_note(sh, SH_SRC):
+    """The 16x16 / 8-robot cellnote: median of three seed replicates + band.
+
+    The 8-robot networks are applied zero-shot (trained once at the smallest
+    size), and that single training draw turned out to be seed-sensitive
+    (FINDINGS 77a): one of three fresh seeds lands in the value net's bad
+    basin. The pre-registered rule makes the median of the three replicates
+    the reported number for this rung; the published run stays visible as the
+    seed of record.
+    """
+    if not sh:
+        return ""
+    su = ((sh.get("sets") or {}).get("pooled") or {}).get("summary") or {}
+    if su.get("median3_seeds") is None:
+        return ""
+    return ('number shown is the <b>seed of record</b> \u2014 the published '
+            'run; retrained under three fresh seeds this rung\'s median is '
+            + ck(f'{su["median3_seeds"]:g}/450', SH_SRC,
+                 "headline g16r8 median-of-3", raw=su["median3_seeds"])
+            + " (band "
+            + ck(f'{su["min3_seeds"]}\u2013{su["max3_seeds"]}', SH_SRC,
+                 "headline g16r8 band",
+                 raw=(su["min3_seeds"], su["max3_seeds"]))
+            + "), see below")
+
+
+def _seed_of_record_foot(D):
+    sh = D.get("seed_headline_g16r8")
+    SH_SRC = "analysis/artifacts/seed_headline_g16r8.json"
+    if not sh:
+        return ""
+    su = ((sh.get("sets") or {}).get("pooled") or {}).get("summary") or {}
+    if su.get("median3_seeds") is None:
+        return ""
+    return ('<p class="small muted">One footnote on the 8-robot row: those '
+            "networks are trained once at the smallest size and applied "
+            "here unchanged, and repeating that training under three fresh "
+            "random seeds showed one seed in three landing in a degenerate "
+            "solution (visible in the value network's validation error "
+            "before any benchmarking). By a rule fixed before those runs, "
+            "this rung is reported as the median of the three replicates, "
+            + ck(f'{su["median3_seeds"]:g}/450', SH_SRC,
+                 "headline g16r8 median-of-3 (footnote)",
+                 raw=su["median3_seeds"])
+            + " (band "
+            + ck(f'{su["min3_seeds"]}\u2013{su["max3_seeds"]}', SH_SRC,
+                 "headline g16r8 band (footnote)",
+                 raw=(su["min3_seeds"], su["max3_seeds"]))
+            + "), with the published run above kept visible as the seed of "
+            "record; the table's own margin is that published run's. The "
+            "full per-seed breakdown is in the “Is it fair?” tab. The same "
+            "replicate is still in flight for 32\u00d732 \u00b7 4 robots, "
+            "which stays single-seed until it lands.</p>")
+
+
 def sec_headline_first(D):
     """The whole-study result, first — before any exposition.
 
@@ -582,11 +637,15 @@ def sec_headline_first(D):
              ("g24r4", "pooled", "24×24 board · 4 robots", ""),
              ("g24r8", "pooled", "24×24 board · 8 robots", ""),
              ("g32r4", "pooled", "32×32 board · 4 robots", "")]
+    sh = D.get("seed_headline_g16r8")
+    SH_SRC = "analysis/artifacts/seed_headline_g16r8.json"
     body = []
     for rung, set_, label, note in order:
         c = cells.get((rung, set_))
         if not c:
             continue
+        if rung == "g16r8":
+            note = _seed_of_record_note(sh, SH_SRC) or note
         d = f"headline {rung}"
         diff = c["diff"] * 100
         winner = ("bwd" if diff > 0 else "fwd")
@@ -595,7 +654,9 @@ def sec_headline_first(D):
                     else "move-by-move planner"))
         body.append(
             f'<tr><td><b>{esc(label)}</b>'
-            + (f'<div class="cellnote">{esc(note)}</div>' if note else "")
+            + (f'<div class="cellnote">'
+               + (note if rung == "g16r8" else esc(note))
+               + "</div>" if note else "")
             + '</td><td class="num">'
             + ck(f'{c["solved_a"]}/{c["n"]}', SRC, d + " — subgoal solved",
                  raw=c["solved_a"])
@@ -627,6 +688,7 @@ def sec_headline_first(D):
         "move by move, on the real board — every solved row was "
         "independently replayed through the physics alone.")
         + table
+        + _seed_of_record_foot(D)
         + '<p class="small">On the smallest board the move-by-move '
         "planner is the champion. On every other configuration the "
         "subgoal planner wins, by a margin that grows with both "
