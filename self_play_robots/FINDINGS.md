@@ -288,3 +288,38 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
    vocabulary (ceiling 0.90/1.17), or the primitive-move space at 24×24+.
    Sources: `results/m2/sizefree_mixed_warm_{g16r4,g24r4}_*.json`,
    `runs/spr/spr-m2-sf-4680957.out`.
+
+9. **Zero-shot, the one size-free pair (trained on 16×16 + 24×24 with 4 robots)
+   matches or beats every per-size supervised backward planner at 32×32 and
+   at 8 robots, on graded AND frontier sets, and sits at the base language's
+   solve ceiling there too; the frontier sets are the only exams with
+   material headroom left for the subgoal loop (2026-08-17, job 4681264
+   ≈ 0.2 nh; mixed pair of §7; arena protocol; recorded rows from
+   `scaling/results/<cfg>/comparison{,_ungraded}.json`).**
+   | exam (n) | supervised per-size pair (recorded) | size-free A\* (zero-shot) | size-free MCTS | base-language ceiling (`spr.ceiling`) |
+   |---|---|---|---|---|
+   | g24r4 frontier (218, no d\*) | 90/218 (twin pair, base vocab), 19.97 mv | **99/218**, 18.93 mv (McNemar p=0.02) | 99/218, 18.17 mv | — (not probed yet) |
+   | g32r4 graded (175) | 147/175, regret 2.37, 51.7% opt, 13.8 exp | **156/175, 1.84, 56.4%, 1.9 exp** (p=0.004; 20/4 mv wins) | 156/175, **1.63, 57.1%**, 13.0 exp | **156/175 = 89.1%**; best-plan regret 1.56, 57.7% |
+   | g32r4 frontier (275) | 127/275, 21.28 mv | **141/275**, 20.40 mv (p=1e-4) | — | — |
+   | g24r8 graded (161) | 144/161, 2.49, 50.7%, 44.0 exp | 147/161, 2.29, 53.7%, 14.8 exp (p=0.25; 17/8) | 147/161, **1.92, 57.1%** (22/5 mv wins vs recorded, p=0.0015) | 148/161 = 91.9%; regret 1.58, 58.8% |
+   | g24r8 frontier (289) | 154/289, 15.68 mv | **171/289**, 15.21 mv (p=9e-4; 46 mv wins) | — | — |
+   Reading. (a) **Cross-size AND cross-robot-count transfer** without a
+   single training example at 32×32 or with 8 robots: the pair beats the
+   32×32-trained supervised pair by 9 solves and 0.5 regret with 7× fewer
+   expansions, and matches the 8-robot-trained pair — the "size-free
+   self-play" bet of PROBLEM.md §9(2) holds already at the supervised
+   stage, in the policy as well as the value (FINDINGS 53/54/70 for the
+   labeler). (b) **Saturation**: at g32r4 the zero-shot A\* solve count equals
+   the exhaustive language ceiling (156) and MCTS's regret is 0.07 above the
+   ceiling's; at g24r8 it is 1 solve short and 0.3 regret above (a little
+   room; 8 robots is where PROBLEM.md §4.4 warned about value-net collapse —
+   note the size-free value trained on 4-robot corpora only). (c) **Where
+   the loop can still show gains**: the frontier sets (+9/+14/+17 solves
+   over the recorded rows and 100+ instances still unsolved) — beyond-oracle
+   instances have no d\*, so their gate is solve rate + paired McNemar and
+   both-solved moves; and the extended vocabulary/primitive-move space for
+   the moves-vs-forward question (§3). Iteration 1 of the loop is being
+   evaluated on exactly these sets (frontier bench added to the iteration
+   job; the same probe re-run on the retrained nets).
+   Sources: `results/transfer/*.json`, `results/ceiling/{g32r4,g24r8}_base.json`,
+   `runs/spr/spr-transfer-4681264.out`.

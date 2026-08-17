@@ -1,0 +1,39 @@
+{
+ "config": "g24r4",
+ "grid": 24,
+ "robots": 4,
+ "iter": 1,
+ "policy": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt",
+ "value": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt",
+ "boards_dir": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/boards/g24r4_iter1",
+ "board_ids": "5000-5119",
+ "per_board": 8,
+ "seed": 1,
+ "search": {
+  "k": 5,
+  "expansions": 600,
+  "stop_after": 150,
+  "c_puct": 1.5,
+  "backup": "min",
+  "root_noise": 0.25,
+  "prefix_check": true,
+  "emit": "path",
+  "complete_siblings": true,
+  "root_all": true,
+  "timeout": 600
+ },
+ "workers": 8,
+ "device": "cuda",
+ "slurm_job_id": "4681263",
+ "seconds": 1554.3,
+ "instances": 1774,
+ "solved": 1268,
+ "records": 12244,
+ "mean_strict": 12.201104100946372,
+ "mean_expansions": 49.5608793686584,
+ "mean_seconds": 6.772226606538892,
+ "status_counts": {
+  "error:OutOfMemoryError": 4,
+  "ok": 1770
+ }
+}
