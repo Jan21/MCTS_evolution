@@ -33,6 +33,7 @@ def main(argv=None):
     p.add_argument("--upto", type=int, required=True)
     p.add_argument("--window", type=int, default=3)
     p.add_argument("--val-frac", type=float, default=0.15)
+    p.add_argument("--tag", default="", help="iteration dir tag, e.g. _b2 -> <cfg>_b2_iter<k>")
     p.add_argument("--out", required=True)
     a = p.parse_args(argv)
     root = Path(a.sp_root)
@@ -48,7 +49,7 @@ def main(argv=None):
     tmp = out.with_suffix(".jsonl.tmp")
     with open(tmp, "w") as f:
         for k in iters:
-            rp = root / f"{a.config}_iter{k}" / "records.jsonl"
+            rp = root / f"{a.config}{a.tag}_iter{k}" / "records.jsonl"
             if not rp.is_file():
                 print(f"[buffer] iteration {k}: missing {rp} -- skipped")
                 continue

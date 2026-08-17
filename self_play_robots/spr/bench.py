@@ -57,6 +57,9 @@ def main(argv=None):
     p.add_argument("--device", default="cpu")
     p.add_argument("--dump-moves", action="store_true")
     p.add_argument("--boards", choices=["pkl", "lean"], default="pkl")
+    p.add_argument("--vocab", choices=["base", "b1", "b2"], default="base",
+                   help="plan language: b2 = propose_b1 + by-reference + park repairs "
+                        "(the arena's --backward-anytime --backward-b2 --backward-byref)")
     p.add_argument("--arch", choices=["sizefree", "persize"], default="sizefree",
                    help="net family: spr.nets size-free ckpts, or the per-size "
                         "PolicyTF/LoopedValueNet ckpts (train/*.py)")
@@ -81,7 +84,12 @@ def main(argv=None):
     policy = load_policy(a.policy, dev, a.arch)
     value_net = load_value(a.value, dev, a.arch)
     value = ValueAdapter(value_net)
-    solver = AStar(propose=heuristics.propose, max_iters=4000, max_frontier=40_000)
+    from nn.generate import make_solver
+    from skeleton.astar import park_repairs
+    from simulate import wall_sets
+    solver = make_solver(a.vocab)          # base: propose; b1/b2: propose_b1 (+by_reference)
+    parks = a.vocab in ("b1", "b2")
+    byref = a.vocab == "b2"
     load_env = leanboard.from_env if a.boards == "lean" else GridEnv.from_env
 
     instances, sha, meta = load_instances(a.instances)
@@ -110,18 +118,37 @@ def main(argv=None):
                 "rejected_plan_pops": 0, "physics_calls_prefix_check": 0,
                 "physics_calls_strict_realize": 0, "physics_calls_park_repair": 0,
                 "park_plans_pushed": 0}
-        moves_cache, check_cache = {}, {}
+        moves_cache, check_cache, fail_cache = {}, {}, {}
         t0 = time.perf_counter()
         realize_check = None
+        park_hook = None
         if a.anytime:
             def realize_check(pl, _env=env, _st=st):
                 mv = [] if a.dump_moves else None
+                fi = {} if parks else None
                 acct["physics_calls_strict_realize"] += 1
-                m = strict_moves(_env, _st, pl, log=None, moves_out=mv)
+                m = strict_moves(_env, _st, pl, log=None, moves_out=mv, fail_info=fi)
                 check_cache[id(pl)] = m
                 if a.dump_moves and m is not None:
                     moves_cache[id(pl)] = mv
+                if m is None and fi:
+                    fail_cache[id(pl)] = fi
                 return m is not None
+            if parks:                              # eval/compare.py:387-405 (B2 setting)
+                _wr, _wd = wall_sets(env.grid_data)
+                _size = int(round(len(env.grid_data) ** 0.5))
+                def park_hook(pl, _env=env, _st=st):
+                    fi = fail_cache.get(id(pl))
+                    if not fi:
+                        return []
+                    acct["physics_calls_park_repair"] += 1
+                    try:
+                        rps = park_repairs(_env, _st, pl, fi, _wr, _wd, _size, max_parks=2,
+                                           pairwise=True, multi_slide=True)
+                    except Exception:  # noqa: BLE001
+                        return []
+                    acct["park_plans_pushed"] += len(rps)
+                    return rps
         prefix_filter = None
         if a.prefix_check:
             pfx = {}
@@ -134,17 +161,20 @@ def main(argv=None):
                 return hit
         extra = {}
         if a.search == "arena_astar":
+            if byref:
+                acct["byref_cands_ranked"] = 0
+                acct["byref_cands_topk"] = 0
             plan, expansions, rejected, pruned = _nn_astar_backward(
                 env, st, solver, policy, value, env_id, dev, a.k, a.expansions,
                 realize_check=realize_check, prefix_filter=prefix_filter,
-                park_hook=None, acct=acct)
+                park_hook=park_hook, acct=acct, byref=byref)
         else:
             res = search_impl.run(
                 a.search, env, st, solver, policy, value_net, env_id, dev,
                 k=a.k, max_expansions=a.expansions, prefix_filter=prefix_filter,
                 best_at_budget=a.best_at_budget, f_mode=a.f_mode,
                 c_puct=a.mcts_c, backup=a.mcts_backup, acct=acct,
-                dump_moves=a.dump_moves, anytime=a.anytime)
+                dump_moves=a.dump_moves, anytime=a.anytime, vocab=a.vocab)
             plan, expansions, rejected, pruned = (res.plan, res.expansions,
                                                  res.rejected, res.pruned)
             if res.strict is not None:
@@ -184,6 +214,8 @@ def main(argv=None):
             print(f"  [spr.bench] {i + 1}/{len(instances)}", flush=True)
 
     name = f"spr {a.search} {'per-size' if a.arch == 'persize' else 'size-free'} planner"
+    if a.vocab != "base":
+        name += f" [{a.vocab.upper()} vocabulary]"
     if a.anytime:
         name += " (anytime)"
     if a.prefix_check:
@@ -202,7 +234,7 @@ def main(argv=None):
         "checkpoints": ckpt_info, "device": dev, "d_star_placeholder": placeholder,
         "count_slides": False, "dump_moves": a.dump_moves, "byref": False,
         "byref_pool": None, "date": time.strftime("%Y-%m-%dT%H:%M:%S"),
-        "results_file": a.out, "search": a.search, "arch": a.arch,
+        "results_file": a.out, "search": a.search, "arch": a.arch, "vocab": a.vocab,
         "search_options": {"prefix_check": a.prefix_check, "anytime": a.anytime,
                            "best_at_budget": a.best_at_budget, "f_mode": a.f_mode,
                            "mcts_c": a.mcts_c, "mcts_backup": a.mcts_backup},

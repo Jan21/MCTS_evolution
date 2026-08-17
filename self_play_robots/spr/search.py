@@ -70,8 +70,14 @@ def cand_record(env_id, state, seg, ctx, cand):
     }
 
 
-def hidx(state, helper_pos):
-    """Helper slot by START position (eval/end2end.py::_hidx, byref off)."""
+def hidx(state, helper_pos, helper_color=None):
+    """Helper slot by START position (eval/end2end.py::_hidx); with
+    `helper_color` (B2 by-reference candidates) resolve by robot identity
+    first, exactly as the arena does under --backward-byref."""
+    if helper_color is not None:
+        for i, h in enumerate(state.helpers):
+            if h.color == helper_color:
+                return i
     for i, h in enumerate(state.helpers):
         if (int(h.position[0]), int(h.position[1])) == tuple(helper_pos):
             return i
@@ -100,9 +106,10 @@ class Evaluator:
     """Policy prior + value cost-to-go for candidate record groups. Holds the
     per-board adjacency cache. `acct` counters mirror the arena's."""
 
-    def __init__(self, policy, value, device="cpu"):
+    def __init__(self, policy, value, device="cpu", byref=False):
         from nn_labeler import encode as _enc
         self.policy, self.value, self.dev = policy, value, device
+        self.byref = byref              # B2: helper slots by robot identity
         self._adj = {}
         self._enc = _enc
         self.acct = {"nn_policy_calls": 0, "nn_value_calls": 0}
@@ -121,7 +128,7 @@ class Evaluator:
     @torch.no_grad()
     def policy_logp(self, recs, env, env_id, n):
         """{key: logp} for the group's candidates (keys = (bn_flat, sp_flat, hslot))."""
-        m = policy_meta(recs, n)
+        m = policy_meta(recs, n, byref=self.byref)
         if m is None:
             return None
         A_all, A_ind = self.adjacency(env, env_id, n)
@@ -181,20 +188,27 @@ def expand(env, state, solver, plan, env_id, n, ev: Evaluator, k, prefix_filter=
     One expansion: propose -> apply -> policy pass (prior over the valid
     candidates) -> top-k by prior -> value pass -> children carrying
     ctg_hat and their own fixed_g. `pruned` counts prefix-filter drops (Lever
-    A, physics, free). Returns (children, pruned) -- children may be empty."""
-    from skeleton.astar import _segment, _apply
+    A, physics, free). Returns (children, pruned) -- children may be empty.
+    Vocabulary follows the solver: `solver.by_reference` (B2) injects the
+    plan's already-placed robots as reference helpers (skeleton/astar.py::
+    _reference_helpers), applies with by_reference=True and resolves helper
+    slots by robot identity -- the arena's --backward-byref path."""
+    from skeleton.astar import _segment, _apply, _reference_helpers
     from nn.generate import _context, _fixed_g
+    byref = bool(getattr(solver, "by_reference", False))
     parent, child = plan.open_edges()[0]
     seg = _segment(plan, state, parent, child)
+    if byref:
+        seg.helpers = seg.helpers + _reference_helpers(plan, seg.mover.color)
     cands = solver.propose(env, seg.end, seg.mover, seg.helpers, seg.support)
     ctx = _context(plan)
     kids = []
     for cand in cands:
-        cp = _apply(env, plan, parent, child, seg, cand)
+        cp = _apply(env, plan, parent, child, seg, cand, by_reference=byref)
         if cp is None:
             continue
         r = cand_record(env_id, state, seg, ctx, cand)
-        hi = hidx(state, r["cand_helper"][0])
+        hi = hidx(state, r["cand_helper"][0], r["cand_helper"][1] if byref else None)
         if hi is None:
             continue
         kids.append(Child(plan=cp, rec=r,
@@ -249,27 +263,58 @@ class SearchResult:
 
 
 class Certifier:
-    """strict_moves with memo + move dump + counters (the arena's realize_check)."""
+    """strict_moves with memo + move dump + counters (the arena's realize_check).
+    With `parks=True` (B1/B2 vocabularies) a failed certification also yields
+    the deterministic park repairs of the plan (skeleton/astar.py::park_repairs,
+    cap 2, pairwise + multi-slide as the arena's B2 mode) via `repairs(plan)`."""
 
-    def __init__(self, env, state, acct=None, dump=False):
+    def __init__(self, env, state, acct=None, dump=False, parks=False):
         from eval.realize import strict_moves
+        from simulate import wall_sets, _board_size
         self._sm, self.env, self.state = strict_moves, env, state
-        self.acct, self.dump = acct, dump
+        self.acct, self.dump, self.parks = acct, dump, parks
         self.cache = {}
+        self.fails = {}
+        self.size = _board_size(env.grid_data, None)
+        self.wr, self.wd = wall_sets(env.grid_data, self.size)
 
     def __call__(self, plan):
         hit = self.cache.get(id(plan))
         if hit is not None and hit[2] is plan:
             return hit[:2]
         mv = [] if self.dump else None
+        fi = {} if self.parks else None
         if self.acct is not None:
             self.acct["physics_calls_strict_realize"] = \
                 self.acct.get("physics_calls_strict_realize", 0) + 1
-        m = self._sm(self.env, self.state, plan, log=None, moves_out=mv)
+        m = self._sm(self.env, self.state, plan, log=None, moves_out=mv, fail_info=fi)
         # keep the plan alive: id() keys are recycled by CPython once a plan
         # is freed, and a stale hit would certify an unrealized plan
         self.cache[id(plan)] = (m, mv if m is not None else None, plan)
+        if m is None and fi:
+            self.fails[id(plan)] = fi
         return self.cache[id(plan)][:2]
+
+    def repairs(self, plan):
+        """Park-augmented variants of a plan whose certification failed."""
+        if not self.parks:
+            return []
+        fi = self.fails.get(id(plan))
+        if not fi:
+            return []
+        from skeleton.astar import park_repairs
+        if self.acct is not None:
+            self.acct["physics_calls_park_repair"] = \
+                self.acct.get("physics_calls_park_repair", 0) + 1
+        try:
+            rps = park_repairs(self.env, self.state, plan, fi, self.wr, self.wd,
+                               int(self.size), max_parks=2, pairwise=True,
+                               multi_slide=True)
+        except Exception:  # noqa: BLE001 -- the arena swallows repair errors too
+            return []
+        if self.acct is not None:
+            self.acct["park_plans_pushed"] = self.acct.get("park_plans_pushed", 0) + len(rps)
+        return rps
 
 
 # ---------------------------------------------------------------------------
@@ -310,14 +355,14 @@ def greedy(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=N
 
 def astar(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=None,
           best_at_budget=False, f_mode="parent", acct=None, dump_moves=False,
-          anytime=True):
+          anytime=True, parks=False):
     """`anytime=False` reproduces the arena's plain mode: the FIRST complete
     plan popped is returned (certified or not; the caller strict-realizes it).
     `anytime=True` (implied by best_at_budget) certifies at pop, discards
     unplayable plans and keeps searching (= `--backward-anytime`)."""
     from skeleton.astar import _initial_plan
     anytime = anytime or best_at_budget
-    cert = Certifier(env, state, acct, dump_moves)
+    cert = Certifier(env, state, acct, dump_moves, parks=parks)
     cnt = itertools.count()
     frontier = [(0.0, next(cnt), forced_fixes(env, state, solver, _initial_plan(env, state), acct))]
     expansions = rejected = pruned = 0
@@ -344,6 +389,8 @@ def astar(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=No
                 rejected += 1
                 if first_failed is None:
                     first_failed = plan
+                for rp in cert.repairs(plan):          # B1/B2 park repairs re-enter costed
+                    heapq.heappush(frontier, (float(rp.cost()), next(cnt), rp))
                 continue
             if best is None or m < best[0]:
                 best = (m, plan, mv)
@@ -401,7 +448,7 @@ class Node:
 def mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=None,
          best_at_budget=True, c_puct=1.5, backup="min", acct=None, dump_moves=False,
          root_noise=0.0, noise_alpha=0.3, rng=None, f_mode="parent",
-         stop_after_certified=None, root_k=None):
+         stop_after_certified=None, root_k=None, parks=False):
     """PUCT tree search over subgoal decisions. Returns SearchResult with .root.
 
     Every loop iteration makes progress: it expands a leaf (budget), certifies
@@ -418,7 +465,7 @@ def mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=Non
     from skeleton.astar import _initial_plan
     from nn.generate import _fixed_g
     rng = rng or random.Random(0)
-    cert = Certifier(env, state, acct, dump_moves)
+    cert = Certifier(env, state, acct, dump_moves, parks=parks)
     root = Node(forced_fixes(env, state, solver, _initial_plan(env, state), acct))
     root.fixed_g = float(_fixed_g(root.plan))
     expansions = rejected = pruned = 0
@@ -490,10 +537,24 @@ def mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=Non
             m, mv = cert(node.plan)
             if m is None:
                 node.cert = False
-                node.dead = node.closed = True
                 rejected += 1
                 if first_failed is None:
                     first_failed = node.plan
+                rps = cert.repairs(node.plan) if not node.expanded else []
+                if rps:
+                    # B1/B2: park-repaired variants become the failed terminal's
+                    # children (complete plans, physics-costed, uniform prior)
+                    node.expanded = True
+                    node.complete = False      # it now has selectable children
+                    for rp in rps:
+                        c = Child(plan=rp, rec=None, key=None, prior=1.0 / len(rps),
+                                  ctg_hat=0.0, fixed_g=float(rp.cost()), v_est=float(rp.cost()))
+                        ch = Node(rp, parent=node, child_obj=c, depth=node.depth + 1)
+                        ch.fixed_g = float(rp.cost())
+                        node.children.append(ch)
+                        qmin, qmax = min(qmin, ch.Q), max(qmax, ch.Q)
+                else:
+                    node.dead = node.closed = True
             else:
                 node.cert = m
                 node.best_abs = float(node.plan.cost())
@@ -565,23 +626,26 @@ _EV = {}
 
 def run(name, env, state, solver, policy, value_net, env_id, dev, k, max_expansions,
         prefix_filter=None, best_at_budget=False, f_mode="parent", c_puct=1.5,
-        backup="min", acct=None, dump_moves=False, anytime=False, **kw):
+        backup="min", acct=None, dump_moves=False, anytime=False, vocab="base", **kw):
     from simulate import _board_size
     n = _board_size(env.grid_data, None)
-    ev = _EV.get((id(policy), id(value_net), dev))
+    byref = vocab == "b2"
+    parks = vocab in ("b1", "b2")
+    ev = _EV.get((id(policy), id(value_net), dev, byref))
     if ev is None:
         _EV.clear()
-        ev = _EV[(id(policy), id(value_net), dev)] = Evaluator(policy, value_net, dev)
+        ev = _EV[(id(policy), id(value_net), dev, byref)] = Evaluator(policy, value_net, dev, byref)
     ev.acct = {"nn_policy_calls": 0, "nn_value_calls": 0}
     if name == "greedy":
         res = greedy(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter,
                      acct, dump_moves, f_mode)
     elif name == "spr_astar":
         res = astar(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter,
-                    best_at_budget, f_mode, acct, dump_moves, anytime=anytime)
+                    best_at_budget, f_mode, acct, dump_moves, anytime=anytime, parks=parks)
     elif name == "mcts":
         res = mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter,
-                   best_at_budget, c_puct, backup, acct, dump_moves, f_mode=f_mode, **kw)
+                   best_at_budget, c_puct, backup, acct, dump_moves, f_mode=f_mode,
+                   parks=parks, **kw)
     else:
         raise ValueError(name)
     if acct is not None:

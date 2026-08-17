@@ -34,9 +34,13 @@ CFG="$1"; K="$2"; PPREV="$3"; VPREV="$4"; PREV_BENCH="${5:-}"
 BOARDS=${BOARDS:-120}; PER_BOARD=${PER_BOARD:-8}; EXP=${EXP:-600}; STOP=${STOP:-150}
 WORKERS=${WORKERS:-8}; WINDOW=${WINDOW:-3}; ANCHOR=${ANCHOR:-1}; EP_P=${EP_P:-6}; EP_V=${EP_V:-6}
 LR=${LR:-1e-4}; NOISE=${NOISE:-0.25}; SIB=${SIB:-1}; MINEXP=${MINEXP:-0}   # MINEXP>0 = hard-instance focus
-IT="$REPO/runs/spr/selfplay/${CFG}_iter${K}"; RES="$REPO/self_play_robots/results/selfplay/${CFG}_iter${K}"
+VOCAB=${VOCAB:-base}          # base | b2 (extended language; FINDINGS §11): separate
+                              # run/result dirs, board ids from 8000, b2 arena flags,
+                              # policy trained with --byref, NO base-vocab anchors
+TAGV=""; ID_BASE=5000; [ "$VOCAB" = b2 ] && { TAGV="_b2"; ID_BASE=8000; ANCHOR=0; }
+IT="$REPO/runs/spr/selfplay/${CFG}${TAGV}_iter${K}"; RES="$REPO/self_play_robots/results/selfplay/${CFG}${TAGV}_iter${K}"
 mkdir -p "$IT" "$RES" "$REPO/runs/spr/boards"
-ID0=$((5000 + BOARDS * (K - 1))); ID1=$((ID0 + BOARDS - 1))
+ID0=$((ID_BASE + BOARDS * (K - 1))); ID1=$((ID0 + BOARDS - 1))
 echo "SPR ITER $CFG k=$K start $(date +%F' '%T) job=$SLURM_JOB_ID prev=$PPREV|$VPREV boards=$ID0-$ID1"
 nvidia-smi -L
 phase() { [ -f "$IT/DONE.$1" ]; }
@@ -47,7 +51,7 @@ if ! phase gen; then
   t0=$SECONDS
   SIBFLAG=""; [ "$SIB" = 1 ] && SIBFLAG="--complete-siblings --root-all"
   python -m spr.selfplay --config "$CFG" --policy "$PPREV" --value "$VPREV" \
-      --boards-dir "$REPO/runs/spr/boards/${CFG}_iter${K}" --board-ids "$ID0-$ID1" \
+      --boards-dir "$REPO/runs/spr/boards/${CFG}${TAGV}_iter${K}" --board-ids "$ID0-$ID1" --vocab "$VOCAB" \
       --per-board "$PER_BOARD" --seed "$K" --iter "$K" --expansions "$EXP" --stop-after "$STOP" \
       --root-noise "$NOISE" $SIBFLAG --workers "$WORKERS" --threads 2 --device cuda \
       --timeout 600 --min-expansions "$MINEXP" --out "$IT/records.jsonl" || { echo "SPR ITER FAILED gen"; exit 1; }
@@ -63,7 +67,7 @@ fi
 # ---- C buffer -----------------------------------------------------------------
 if ! phase buffer; then
   python -m spr.buffer --config "$CFG" --sp-root "$REPO/runs/spr/selfplay" --upto "$K" \
-      --window "$WINDOW" --out "$IT/buffer.jsonl" || { echo "SPR ITER FAILED buffer"; exit 1; }
+      --window "$WINDOW" --tag "$TAGV" --out "$IT/buffer.jsonl" || { echo "SPR ITER FAILED buffer"; exit 1; }
   mark buffer
 fi
 SPLITS=$(cat "$IT/buffer.jsonl.splits.txt")
@@ -95,6 +99,7 @@ train_one() {  # train_one <policy|value> <init> <epochs>
   local extra=""
   [ "$sys" = value ] && extra="--batch-size 4 --max-per-group 8"
   [ "$sys" = policy ] && extra="--batch-size 8 --grad-clip 1.0"     # FINDINGS §4 recipe
+  [ "$sys" = policy ] && [ "$VOCAB" = b2 ] && extra="$extra --byref"  # keep by-reference records
   local t0=$SECONDS
   RR_RESUME=$resume OMP_NUM_THREADS=16 python -m spr.train --system "$sys" $DATA --splits "$SPLITS" \
       --init "$init" --epochs "$ep" --lr "$LR" $extra --torch-seed $((21 + K)) --num-workers 4 \
@@ -120,11 +125,12 @@ bench_one() {  # bench_one <tag> <flags> <instances>
       --out "$out" || { echo "SPR ITER FAILED bench $1"; return 1; }
   echo "SPR ITER bench $1 took $((SECONDS-t0))s"
 }
-bench_one astar "--search arena_astar --prefix-check" "$INST" || exit 1
-bench_one mcts  "--search mcts --prefix-check --best-at-budget" "$INST" || exit 1
+VF=""; [ "$VOCAB" = b2 ] && VF="--vocab b2 --anytime"    # arena's B2 convention: anytime + b2 + byref
+bench_one astar "--search arena_astar --prefix-check $VF" "$INST" || exit 1
+bench_one mcts  "--search mcts --prefix-check --best-at-budget $VF" "$INST" || exit 1
 if [ -n "$FRONT" ]; then   # the frontier set is where the headroom is (FINDINGS §8)
-  bench_one frontier_astar "--search arena_astar --prefix-check" "$FRONT" || true
-  bench_one frontier_mcts  "--search mcts --prefix-check --best-at-budget" "$FRONT" || true
+  bench_one frontier_astar "--search arena_astar --prefix-check $VF" "$FRONT" || true
+  bench_one frontier_mcts  "--search mcts --prefix-check --best-at-budget $VF" "$FRONT" || true
 fi
 # ---- G gate -------------------------------------------------------------------
 REF=g24r4_exact_prefix; [ "$CFG" = g16r4 ] && REF=g16r4_v2_prefix

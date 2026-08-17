@@ -67,10 +67,11 @@ def _init_worker(cfg_name, boards_dir, policy_path, value_path, device, opts):
     _W["cfg"] = cfg
     _W["boards_dir"] = Path(boards_dir)
     _W["leanboard"] = leanboard
-    _W["solver"] = AStar(propose=heuristics.propose, max_iters=4000, max_frontier=40_000)
+    from nn.generate import make_solver
+    _W["solver"] = make_solver(opts.get("vocab", "base"))   # base | b1 | b2 (propose_b1 + by-reference)
     _W["policy"] = load_policy(policy_path, device)
     _W["value"] = load_value(value_path, device)
-    _W["ev"] = Evaluator(_W["policy"], _W["value"], device)
+    _W["ev"] = Evaluator(_W["policy"], _W["value"], device, byref=(opts.get("vocab") == "b2"))
     _W["opts"] = opts
     _W["device"] = device
     signal.signal(signal.SIGALRM, _alarm)
@@ -133,6 +134,8 @@ def _extract_records(root, env, state, solver, ev, env_id, n, opts, cert, label_
         fixed_g = float(_fixed_g(nd.plan))
         labeled = []
         for c in nd.children:
+            if c.child_obj is None or c.child_obj.rec is None:
+                continue                      # park-repair children are not decisions
             strict, abs_cost = c.best_cert, c.best_abs
             if strict is None and complete_sib and not c.dead:
                 done = _greedy_complete(env, state, solver, ev, env_id, n, c.plan, k,
@@ -167,6 +170,7 @@ def _extract_records(root, env, state, solver, ev, env_id, n, opts, cert, label_
                 # them by node index (path mode keeps the corpus depth semantics)
                 "depth": nd.depth if not emit_all else 1000 * depth + nd.depth,
                 "n": n, "label_source": "spr_mcts", "ctg_certified": True,
+                "vocab": opts.get("vocab", "base"),
                 "strict_total": int(strict), "abstract_total": int(ab), "fixed_g": fixed_g,
                 "visits": int(c.N), "prior": round(float(c.prior), 5),
                 "ctg_hat": round(float(c.child_obj.ctg_hat), 3),
@@ -228,7 +232,8 @@ def _work(task):
                        dump_moves=False, root_noise=opts["root_noise"],
                        rng=random.Random(rng.randrange(1 << 30)),
                        stop_after_certified=opts["stop_after"],
-                       root_k=(0 if opts.get("root_all") else None))
+                       root_k=(0 if opts.get("root_all") else None),
+                       parks=(opts.get("vocab") in ("b1", "b2")))
             recs, st_ = ([], {})
             if res.strict is not None:
                 first = (res.extra or {}).get("first_certified_expansion")
@@ -291,6 +296,9 @@ def main(argv=None):
                         "labels cover the full candidate set (fidelity gauge "
                         "comparability); one value pass over all root candidates")
     p.add_argument("--timeout", type=int, default=300, help="per-instance wall cap (s)")
+    p.add_argument("--vocab", choices=["base", "b1", "b2"], default="base",
+                   help="plan-language vocabulary (house rule: one vocabulary per "
+                        "dataset); b2 = transient supports + by-reference + parks")
     p.add_argument("--min-expansions", type=int, default=0,
                    help="drop instances whose first certified plan needed fewer "
                         "expansions than this (hard-instance focus, PROBLEM.md 6.4; "
@@ -326,7 +334,7 @@ def main(argv=None):
                 backup=a.backup, root_noise=a.root_noise,
                 prefix_check=not a.no_prefix_check, emit=a.emit,
                 complete_siblings=a.complete_siblings, root_all=a.root_all,
-                timeout=a.timeout, min_expansions=a.min_expansions,
+                timeout=a.timeout, min_expansions=a.min_expansions, vocab=a.vocab,
                 iter=a.iter, threads=a.threads,
                 label_model=f"{Path(a.policy).name}|{Path(a.value).name}")
     tasks = [(i, a.per_board, a.seed) for i in ids]
@@ -361,7 +369,7 @@ def main(argv=None):
         "search": {k2: opts[k2] for k2 in ("k", "expansions", "stop_after", "c_puct",
                                             "backup", "root_noise", "prefix_check",
                                             "emit", "complete_siblings", "root_all",
-                                            "timeout", "min_expansions")},
+                                            "timeout", "min_expansions", "vocab")},
         "workers": a.workers, "device": a.device,
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "seconds": round(time.time() - t0, 1),
