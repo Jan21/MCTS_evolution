@@ -110,6 +110,7 @@ def _stamp(*parts) -> str:
 def bench(arm: Arm, out: Path, width=8, threads=2, chunk_lines=8,
           run_root: Path | None = None, limit: int | None = None,
           device="cpu", log=print) -> Path:
+    out = Path(out).resolve()          # merge/replay run with cwd=SV: never relative
     inst = SV / arm.instances
     if not inst.is_file():
         raise SystemExit(f"missing instances {inst}")
