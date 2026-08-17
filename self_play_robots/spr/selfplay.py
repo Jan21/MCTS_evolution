@@ -332,7 +332,8 @@ def main(argv=None):
 
     opts = dict(k=a.k, expansions=a.expansions, stop_after=a.stop_after, c_puct=a.c_puct,
                 backup=a.backup, root_noise=a.root_noise,
-                prefix_check=not a.no_prefix_check, emit=a.emit,
+                # eval.realize.prefix_key cannot order B1/B2 (park / by-reference) plans
+                prefix_check=(not a.no_prefix_check) and a.vocab == "base", emit=a.emit,
                 complete_siblings=a.complete_siblings, root_all=a.root_all,
                 timeout=a.timeout, min_expansions=a.min_expansions, vocab=a.vocab,
                 iter=a.iter, threads=a.threads,

@@ -125,12 +125,12 @@ bench_one() {  # bench_one <tag> <flags> <instances>
       --out "$out" || { echo "SPR ITER FAILED bench $1"; return 1; }
   echo "SPR ITER bench $1 took $((SECONDS-t0))s"
 }
-VF=""; [ "$VOCAB" = b2 ] && VF="--vocab b2 --anytime"    # arena's B2 convention: anytime + b2 + byref
-bench_one astar "--search arena_astar --prefix-check $VF" "$INST" || exit 1
-bench_one mcts  "--search mcts --prefix-check --best-at-budget $VF" "$INST" || exit 1
+VF="--prefix-check"; [ "$VOCAB" = b2 ] && VF="--vocab b2 --anytime"    # arena's B2 convention: anytime + b2 + byref, NO prefix-check (prefix_key cannot sort park/by-ref plans)
+bench_one astar "--search arena_astar $VF" "$INST" || exit 1
+bench_one mcts  "--search mcts --best-at-budget $VF" "$INST" || exit 1
 if [ -n "$FRONT" ]; then   # the frontier set is where the headroom is (FINDINGS §8)
-  bench_one frontier_astar "--search arena_astar --prefix-check $VF" "$FRONT" || true
-  bench_one frontier_mcts  "--search mcts --prefix-check --best-at-budget $VF" "$FRONT" || true
+  bench_one frontier_astar "--search arena_astar $VF" "$FRONT" || true
+  bench_one frontier_mcts  "--search mcts --best-at-budget $VF" "$FRONT" || true
 fi
 # ---- G gate -------------------------------------------------------------------
 REF=g24r4_exact_prefix; [ "$CFG" = g16r4 ] && REF=g16r4_v2_prefix

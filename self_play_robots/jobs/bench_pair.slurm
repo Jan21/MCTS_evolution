@@ -22,7 +22,8 @@ echo "SPR BENCHPAIR $TAG start $(date +%F' '%T) job=$SLURM_JOB_ID extra='$EXTRA'
 for spec in "$@"; do
   cfg="${spec%%:*}"; inst="${spec#*:}"; base=$(basename "$inst" .jsonl | tr '.' '_')
   for s in astar mcts; do
-    fl="--search arena_astar --prefix-check $EXTRA"; [ "$s" = mcts ] && fl="--search mcts --prefix-check --best-at-budget $EXTRA"
+    PF="--prefix-check"; case "$EXTRA" in *b2*|*b1*) PF="";; esac   # prefix_key cannot sort B2 (park/by-ref) plans; the recorded B2 rows ran without it
+    fl="--search arena_astar $PF $EXTRA"; [ "$s" = mcts ] && fl="--search mcts $PF --best-at-budget $EXTRA"
     out="$OUTD/${TAG}_${cfg}_${base}_${s}.json"; [ -s "$out" ] && continue
     t0=$SECONDS
     python -m spr.arena bench --arm "bp_${TAG}_${cfg}_${base}_${s}" --config "$cfg" --instances "$inst" \
