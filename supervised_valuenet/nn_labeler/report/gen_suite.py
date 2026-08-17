@@ -219,9 +219,13 @@ label where it clears the bar.</p>
 <p><strong>What this buys.</strong> Training data beyond the solver's
 physical 64&times;64 limit — the first certified label sets at 80&times;80
 and 96&times;96 already exist — and data generation at roughly a fortieth
-of the projected exact-solver cost. What it does <em>not</em> buy: the B2
-compute-saving bet failed (a network distilled from damaged data inherits
-the damage), and that claim is dropped, not softened. {caveat}</p>
+of the projected exact-solver cost. One side-bet failed and is reported as
+a failure: the project also hoped the network could cheaply repair a
+<em>different, damaged dataset</em> (a richer move language called "B2"
+that the exact solver could only produce in a crippled form — full story
+in <a href="#s6">&sect;5</a>). It could not: a network that learns from
+damaged data reproduces the damage. That money-saving claim is dropped,
+not softened — and it never touched the headline result above. {caveat}</p>
 </div>"""
     return (verdict + "<h3>Results at a glance</h3>" +
             table(["finding", "the numbers", "details"], rows_,
@@ -342,6 +346,14 @@ physics-legal moves count. Different rows are always apples-to-apples.</dd>
 <dd>Every solution a planner (or the labeler) reports is replayed
 move-by-move against the game physics before it counts. Nothing on this
 page is self-reported by a neural network.</dd>
+<dt>move vocabulary (base vs B2, "by-reference")</dt>
+<dd>The language a plan is written in. The <em>base</em> vocabulary names
+plan steps by absolute board cells ("park the blue robot at cell 12,7").
+<em>B2</em> is a richer language that adds <em>by-reference</em> steps
+("park blue where the red robot currently stands") — more expressive, but
+far more expensive for the exact solver to label. Everything on this page
+is base vocabulary except section 5, which is the B2 experiment; the two
+are never mixed in one dataset (house rule).</dd>
 <dt>seed</dt>
 <dd>The random initialization of a training run. Two runs that differ only
 in seed give slightly different planners — that run-to-run wobble is
@@ -752,17 +764,25 @@ absent from the planners — is a finding in itself.</p>
 def sec_b2():
     out = ['<section id="s6">',
            "<h2>5 &middot; The negative result: the B2 vocabulary</h2>",
-           "<p><strong>The hope.</strong> Base-vocabulary labeling is "
-           "170&ndash;250&times; cheaper done exactly, so the labeler's "
-           "economic case lived in the extended 'B2' move vocabulary, where "
-           "the exact campaign projected ~441 node-hours and its iteration "
-           "cap destroyed the special 'by-reference' labels it existed to "
-           "produce: 13.5% share uncapped vs 4.8% capped, measured at the "
-           "same configuration (other configurations' capped corpora reach "
-           "up to 12.7%, all short of the uncapped target). The NN's "
-           "labeling process has no iteration budget at all, so the plan "
-           "was: train a labeler on the capped B2 data, have it label fresh "
-           "data without the cap, recover the lost vocabulary.</p>"
+           "<p><strong>What B2 is.</strong> Everything above uses the "
+           "<em>base</em> move vocabulary: plan steps name absolute board "
+           "cells. <a href='#how'>B2</a> is a richer plan language that adds "
+           "<em>by-reference</em> steps — 'park this robot where that robot "
+           "currently stands' — which make some plans dramatically shorter "
+           "and more general. The catch: B2 is far more expensive for the "
+           "exact solver, and the exact-solver campaign could only afford "
+           "it with an iteration cap that quietly destroyed the very "
+           "by-reference labels the language exists for (their share fell "
+           "from 13.5% uncapped to 4.8% capped at the measured "
+           "configuration; other capped datasets reach at most 12.7%).</p>"
+           "<p><strong>The hope.</strong> For ordinary base-vocabulary data "
+           "the exact solver is actually 170&ndash;250&times; cheaper than "
+           "the NN, so the NN's <em>economic</em> case lived here: B2 "
+           "labeling was projected at ~441 node-hours exactly, and the NN's "
+           "labeling process has no iteration budget at all. The plan: "
+           "train a labeler on the existing (capped, damaged) B2 data, "
+           "have it write fresh labels without any cap, and recover the "
+           "lost by-reference vocabulary cheaply.</p>"
            "<p><strong>The verdict.</strong> " + chip("bad", "negative") +
            " It did not work — the by-reference share came out near zero, "
            "far below even the capped corpora. A network distilled from "
