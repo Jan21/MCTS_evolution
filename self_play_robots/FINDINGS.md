@@ -248,3 +248,43 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
    Sources: `results/m1/{mixed_value_warm,mixed_value_cold,g16_value_warm,
    g24_value_warm}_s21_{g16r4,g24r4}.json` (+ `.gate.json`),
    `runs/spr/spr-m1-bench-4680956.out`, `runs/spr/m1/*/lightning_logs/`.
+
+8. **M2 PASSES for the size-free family too — and MCTS with the M1 nets sits
+   at the base language's moves ceiling at both sizes, so the subgoal loop's
+   measurable headroom on these two exams is nearly gone (2026-08-17, job
+   4680957 ≈ 0.25 nh; mixed size-free pair, same protocol as §5).**
+   | exam | search | solved | mean moves | regret | % opt | mean exp |
+   |---|---|---|---|---|---|---|
+   | g16r4 bench450 | greedy | 348/450 | 7.94 | 1.99 | 52.3 | 1.4 |
+   | | A\* f=child (arena) | 401/450 | 8.26 | 2.04 | 52.1 | 8.9 |
+   | | A\* f=parent / best-at-budget | 401/450 | 8.39 / 8.28 | 2.17 / 2.06 | 48.6 / 48.9 | 5.7 / 5.8 |
+   | | **MCTS** (min = mean) | 401/450 | **7.76** | **1.54** | **57.4** | 30.7 |
+   | | language ceiling (§3, over 408 solvable) | 408 | 7.68 | 1.42 | 61.8 | — |
+   | g24r4 bench.solved | greedy | 205/232 | 9.44 | 1.97 | 57.1 | 1.0 |
+   | | A\* f=child (arena) | 215/232 | 10.00 | 2.43 | 54.4 | 5.3 |
+   | | A\* f=parent / best-at-budget | 215/232 | 9.96 / 9.90 | 2.39 / 2.33 | 54.4 | 4.2 |
+   | | **MCTS** (min = mean) | 215/232 | **9.35** | **1.78** | **57.2** | 19.5 |
+   | | language ceiling (§3, over 216 solvable) | 216 | 9.31 | 1.72 | 57.4 | — |
+   Paired: MCTS vs greedy g16r4 80/0 (p=2e-24; +53 solves), g24r4 24/0
+   (p=1e-7; +10 solves); MCTS vs arena A\* on identical solved sets g16r4 59/0
+   (p=3e-18), g24r4 27/0 (p=1e-8); size-free MCTS vs per-size MCTS (§5)
+   g16r4 42/27 (p=0.09), g24r4 9.35 vs 11.48 (same 215 vs 205 solves).
+   → **M2 gate met for both net families at both sizes.**
+   Reading. (a) With the size-free nets, greedy descent alone already matches
+   the per-size supervised A\* solve count at g24r4 (205) with a 2.2-move
+   lower regret on its subset — the labels the loop will generate start
+   from a far better place than the descent labeler's. (b) **The ceiling is
+   reached**: MCTS's regret sits 0.06–0.12 above the exhaustive
+   language optimum (§3) at both sizes and its solve counts are within 1
+   (g24r4) / 7 (g16r4) of the solvable set; % optimal equals the ceiling's at
+   g24r4 (57.2 vs 57.4). Any further gain a self-play iteration could show on
+   THESE exams is ≤ 0.1 moves and ≤ 7 solves — below the seed-noise bars of
+   §4.7 by construction. (c) Consequence for M3+: iteration 1 (job 4681263,
+   g24r4) still runs to validate the loop end-to-end and to measure
+   generation cost and label fidelity, but the promotion evidence must come
+   from exams with headroom: the frontier sets (bench.unsolved: 218 g24r4
+   instances the supervised planner solves ~90 of), 32×32 and 8 robots
+   (zero-shot transfer + ceiling probes queued as job 4681264), the B2
+   vocabulary (ceiling 0.90/1.17), or the primitive-move space at 24×24+.
+   Sources: `results/m2/sizefree_mixed_warm_{g16r4,g24r4}_*.json`,
+   `runs/spr/spr-m2-sf-4680957.out`.

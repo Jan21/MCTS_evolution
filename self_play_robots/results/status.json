@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-17T22:32:26",
+ "updated": "2026-08-17T22:44:37",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -38,7 +38,7 @@
   },
   "M2": {
    "title": "search beats greed at inference",
-   "status": "pass (per-size); size-free pending M1",
+   "status": "pass",
    "sources": [
     "results/m2/"
    ],
@@ -47,10 +47,10 @@
     4680481,
     4681012,
     4681029,
-    4680466,
-    4680957
+    4680957,
+    4680466
    ],
-   "note": "Per-size family at both sizes: MCTS (PUCT, best-at-budget) beats greedy and the arena A* on moves at the same solve set (g16r4 7.92 vs 8.38 vs greedy 8.03 [366 solved]; g24r4 11.48 vs 11.84 vs 10.95 [135 solved]); FINDINGS \u00a75. Size-free arms 4680957 wait for M1 (bench 4680956); forward F-M2 4680466 running."
+   "note": "PASS both families, both sizes. Size-free MCTS: g16r4 401/450, 7.76 mv, regret 1.54, 57.4% opt; g24r4 215/232, 9.35, 1.78, 57.2% -- at the base-language ceiling (\u00a73). FINDINGS \u00a75, \u00a78."
   },
   "M3": {
    "title": "one self-play iteration helps",
@@ -109,6 +109,18 @@
     4680466
    ],
    "note": "spr/fwd: PUCT over slides on MoveNet Guide; F-M0 parity vs comparison_forward.json (candidate_scored 450/450), F-M2 arms (astar/greedy/mcts) on bench450, fwd_iter loop ready."
+  },
+  "transfer": {
+   "title": "headroom probe: mixed size-free pair zero-shot on g24r4 frontier, g32r4, g24r8 (+ceilings)",
+   "status": "queued",
+   "jobs": [
+    4681264
+   ],
+   "sources": [
+    "results/transfer/",
+    "results/ceiling/g32r4_base.json",
+    "results/ceiling/g24r8_base.json"
+   ]
   }
  },
  "decisions": {
@@ -123,7 +135,7 @@
   "findings_log": "self_play_robots/FINDINGS.md (owner choice)"
  },
  "node_hours": {
-  "spent": 3.0,
+  "spent": 3.3,
   "projected_next": 2.5,
   "note": "spent: smoke 0.02 + M0 0.09 + fwd-M0 0.02 (+ ceiling pending); next: M1 ~1.5-2, M2 ~1"
  }
