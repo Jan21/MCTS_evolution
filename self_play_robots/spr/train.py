@@ -154,6 +154,12 @@ def main(argv=None):
     p.add_argument("--num-workers", type=int, default=0)
     p.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
     p.add_argument("--byref", action="store_true", help="policy: keep by-reference records")
+    p.add_argument("--grad-clip", type=float, default=0.0,
+                   help="gradient-norm clipping (0 = off; the supervised trainers use none)")
+    p.add_argument("--init-encoder", default=None,
+                   help="policy: warm-start ONLY the LoopedLayer encoder from a "
+                        "SizeFreeValueNet checkpoint (the labeler's size-free encoder); "
+                        "heads and the 7-channel input Linear stay cold")
     p.add_argument("--arch", choices=["sizefree", "persize"], default="sizefree",
                    help="persize: train/policy_tf.py PolicyTF or train/looped_pc.py "
                         "LoopedValueNet (learned n^2 positional table; ONE config per "
@@ -225,6 +231,7 @@ def main(argv=None):
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "DATA.json").write_text(json.dumps(dict(
         system=a.system, arch=a.arch, corpora=corpus_info, init=a.init, lr=lr, epochs=a.epochs,
+        grad_clip=a.grad_clip, init_encoder=a.init_encoder,
         batch_size=a.batch_size, max_per_group=a.max_per_group, pe=a.pe,
         num_classes=a.num_classes, torch_seed=a.torch_seed, splits=a.splits,
         started=time.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -302,6 +309,11 @@ def main(argv=None):
             model = SizeFreePolicyNet(d_model=a.d_model, recurrence=a.recurrence,
                                       heads=a.heads, temp=a.temp, lr=lr,
                                       weight_decay=a.weight_decay, pe=a.pe)
+            if a.init_encoder:
+                src = SizeFreeValueNet.load_from_checkpoint(a.init_encoder, map_location="cpu")
+                model.layer.load_state_dict(src.layer.state_dict())
+                print(f"[spr.train] policy encoder (LoopedLayer) initialized from {a.init_encoder}",
+                      flush=True)
         monitor = "val_regret"
         callbacks_extra = []
     if a.arch != "persize":
@@ -338,7 +350,8 @@ def main(argv=None):
     max_ep = max(a.epochs - warm_epochs, 1)
     trainer = pl.Trainer(max_epochs=max_ep, accelerator=accel, devices=1,
                          default_root_dir=str(out_dir),
-                         callbacks=[ckpt, *callbacks_extra], log_every_n_steps=50)
+                         callbacks=[ckpt, *callbacks_extra], log_every_n_steps=50,
+                         gradient_clip_val=(a.grad_clip or None))
     trainer.fit(model, dl_tr, dl_va, ckpt_path=resume)
     already_done = resume is not None and trainer.current_epoch >= max_ep
     if "val_regret" not in trainer.callback_metrics and not already_done:
