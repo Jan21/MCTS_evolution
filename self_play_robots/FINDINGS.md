@@ -42,7 +42,7 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
    Jobs: M0 arena parity 4679719 (qgpu_exp), ceiling 4679720 (qgpu, 4 arms),
    GPU smoke 4680209 (qgpu_exp), M1 training 4680210 (mixed: policy +
    value_warm + value_cold) / 4680211 (g16 only) / 4680212 (g24 only), M1
-   bench 4680213 (afterany the three). Projected M1 cost ≈ 1.5–2 nh; note the
+   bench 4680213 (afterany the three); M2 search-arm jobs for the PER-SIZE family (no training needed: the supervised pairs) 4680221 (g16r4 v2 pair) / 4680222 (g24r4 exact pair), gated afterok on M0. Projected M1 cost ≈ 1.5–2 nh; note the
    GPU nodes sit in a daily 10:00–18:00 cooling maintenance reservation
    (`scontrol show reservation`), so GPU work runs overnight.
    Sources: `spr/*.py`, `jobs/*.slurm`, `results/status.json`.

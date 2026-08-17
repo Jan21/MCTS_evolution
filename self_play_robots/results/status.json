@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-17T16:24:39",
+ "updated": "2026-08-17T16:30:11",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -31,9 +31,15 @@
   },
   "M2": {
    "title": "search beats greed at inference",
-   "status": "pending",
-   "sources": [],
-   "jobs": []
+   "status": "queued",
+   "sources": [
+    "results/m2/"
+   ],
+   "jobs": [
+    4680221,
+    4680222
+   ],
+   "note": "same nets, same exam/budget, searches: greedy (the M2 opponent) / A* child-f (arena) / A* parent-f / A* parent anytime / A* best-at-budget / MCTS min / MCTS mean. Per-size family (supervised pairs) submitted gated on M0 (jobs 4680221 g16r4 v2 pair, 4680222 g24r4 exact pair); size-free family follows M1."
   },
   "M3": {
    "title": "one self-play iteration helps",
