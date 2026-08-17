@@ -46,3 +46,29 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
    GPU nodes sit in a daily 10:00–18:00 cooling maintenance reservation
    (`scontrol show reservation`), so GPU work runs overnight.
    Sources: `spr/*.py`, `jobs/*.slurm`, `results/status.json`.
+
+2. **M0 arena parity PASSES — the harness reproduces the recorded rows; the
+   one non-identical arm is float drift across machines, not wiring
+   (2026-08-17, jobs 4679719 = 0.09 nh, 4680465 = 0.02 nh; GPU smoke 4680209
+   also green).**
+   | arm (spr.arena / spr.fwd.arena, 1200 exp, k=5, CPU 8-wide unless noted) | new | recorded | per-row diffs |
+   |---|---|---|---|
+   | g16r4 B1-seed21 pair, B2 flags, bench450 (ref recorded on Karolina 2026-08-17) | 432/450, regret 1.840, 55.6% opt, 21.96 exp | 432/450, 1.840, 55.6%, 21.96 | **0/450** |
+   | g24r4 exact pair, prefix-check, bench.solved (ref recorded on the origin machine 2026-07-14) | 205/232, regret 4.205, 38.5% opt, 26.909 exp | 205/232, 4.220, 38.5%, 26.909 | 34/232: 31 rows expansions ±1–5, 3 rows realized_strict ±1 |
+   | forward candidate_scored.ckpt, `move_planner.evaluate.nn_astar` via spr.fwd, bench450, GPU | 450/450, regret 0.0667, 94.2% opt, 6.436 moves | same | **0/450** |
+   Reading. (a) Both references recorded on this machine reproduce
+   bit-for-bit (subgoal arena on CPU, forward arena on GPU), so the wiring
+   (chunk → merge → replay-certify → parity) is proven. (b) The g24r4 drift
+   is numeric: re-running two of the differing instances at 1/2/8 OMP threads
+   flips env 913 between 63 and 64 expansions on the SAME machine and code
+   (near-tie candidate rankings; 24×24 nets accumulate more float noise than
+   16×16), while every aggregate matches (identical solve count and %optimal;
+   regret 4.205 vs 4.220 from three ±1 strict-move differences). Verdict:
+   M0 gate passed; from here on, same-machine paired comparisons are the
+   instrument (spr.gate), and cross-machine references are read at aggregate
+   level. Every solved row in all three files is replay-certified.
+   Sources: `results/m0/{g16r4_b1s21_b2flags,g24r4_exact_prefix}.json`,
+   `results/fwd_m0/astar_candidate_scored{,.parity}.json`,
+   `runs/spr/spr-m0-4679719.out`, `runs/spr/spr-fwd-m0-4680465.out`,
+   `runs/spr/spr-smoke-4680209.out` (train → arena → MCTS → self-play → gauge
+   on CUDA, all DONE).

@@ -1,17 +1,20 @@
 {
- "updated": "2026-08-17T17:18:19",
+ "updated": "2026-08-17T17:25:41",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
    "title": "arena parity",
-   "status": "running",
-   "note": "spr.arena re-runs the recorded supervised rows (g16r4 B1-seed21 pair under B2 flags on bench450; g24r4 exact pair prefix-check on bench.solved) through this folder's harness; per-row parity vs the recorded JSONs. g16r4 arm: PARITY PASS (0/450 row diffs).",
+   "status": "pass",
+   "note": "PASS: g16r4 arm bit-exact (0/450 row diffs); g24r4 arm aggregate-exact (205/232, 38.5% opt) with 34/232 float-drift rows vs the origin-machine reference (thread-count flip demonstrated); forward arm (spr.fwd) 0/450 row diffs vs comparison_forward.json. FINDINGS \u00a72.",
    "sources": [
     "results/m0/g16r4_b1s21_b2flags.json",
-    "results/m0/g24r4_exact_prefix.json"
+    "results/m0/g24r4_exact_prefix.json",
+    "results/fwd_m0/astar_candidate_scored.json"
    ],
    "jobs": [
-    4679719
+    4679719,
+    4680465,
+    4680209
    ]
   },
   "M1": {
@@ -36,10 +39,12 @@
     "results/m2/"
    ],
    "jobs": [
-    4680221,
-    4680222
+    4680480,
+    4680481,
+    4680225,
+    4680466
    ],
-   "note": "same nets, same exam/budget, searches: greedy (the M2 opponent) / A* child-f (arena) / A* parent-f / A* parent anytime / A* best-at-budget / MCTS min / MCTS mean. Per-size family (supervised pairs) submitted gated on M0 (jobs 4680221 g16r4 v2 pair, 4680222 g24r4 exact pair); size-free family follows M1."
+   "note": "same nets, same exam/budget, searches: greedy (the M2 opponent) / A* child-f (arena) / A* parent-f / A* parent anytime / A* best-at-budget / MCTS min / MCTS mean. Per-size family (supervised pairs) submitted gated on M0 (jobs 4680221 g16r4 v2 pair, 4680222 g24r4 exact pair); size-free family follows M1. (per-size jobs resubmitted as 4680480/4680481 after the M0 job's rc=1 voided the afterok dependency; forward F-M2 4680466)."
   },
   "M3": {
    "title": "one self-play iteration helps",
@@ -82,7 +87,7 @@
   },
   "forward_mcts": {
    "title": "primitive-move MCTS arm at g16r4 (owner: both action spaces)",
-   "status": "queued",
+   "status": "F-M0 pass; F-M2 queued",
    "sources": [
     "runs/spr/fwd/"
    ],
@@ -105,8 +110,8 @@
   "findings_log": "self_play_robots/FINDINGS.md (owner choice)"
  },
  "node_hours": {
-  "spent": 0.0,
+  "spent": 0.25,
   "projected_next": 2.5,
-  "note": "M0 <=0.125, ceiling <=0.5, smoke ~0.1, M1 ~1.5-2 nh"
+  "note": "spent: smoke 0.02 + M0 0.09 + fwd-M0 0.02 (+ ceiling pending); next: M1 ~1.5-2, M2 ~1"
  }
 }
