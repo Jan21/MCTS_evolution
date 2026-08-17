@@ -28,14 +28,22 @@ BWD = "backward subgoal planner (prefix-check)"
 
 # ---------------------------------------------------------------- loaders ---
 
+_CACHE = {}
+
+
 def load(rel):
+    if rel in _CACHE:
+        return _CACHE[rel]
     p = SV / rel
     if not p.exists():
+        _CACHE[rel] = None
         return None
     try:
-        return json.load(open(p))
+        d = json.load(open(p))
     except Exception as e:  # truncated mid-write etc. — show, don't crash
-        return {"_load_error": f"{rel}: {e}"}
+        d = {"_load_error": f"{rel}: {e}"}
+    _CACHE[rel] = d
+    return d
 
 
 def agg(rel, system=BWD, prefix=False):
@@ -107,15 +115,41 @@ def p1(v):  # 0.834 -> "83.4"
 
 # ------------------------------------------------------------- sections -----
 
+def ladder_specs():
+    """[(board size, row suffix, result file, series)] for the whole ladder.
+
+    series "mix" = the early mixed-size debug net, "v1" = the production net
+    (the rungs the flat-curve claim is made over)."""
+    out = [(g, "mixed net", f"nn_labeler/results/dgate_mix_none_s11_g{g}r4.json",
+            "mix") for g in (8, 10, 12, 16)]
+    for g in range(17, 32):
+        if g == 24:
+            out.append((24, "v1, capstone",
+                        "nn_labeler/results/capgate_g24r4.json", "v1"))
+        else:
+            out.append((g, "v1", f"nn_labeler/results/dgate_ladder_g{g}r4.json",
+                        "v1"))
+    out.append((32, "v1, capstone", "nn_labeler/results/capgate_g32r4.json", "v1"))
+    out += [(g, "v1, coarse", f"nn_labeler/results/coarsegate_g{g}r4.json", "v1")
+            for g in (40, 48, 56, 64)]
+    return out
+
+
+def beyond_stats():
+    """[(board size, stats block)] for the certified-only 80/96 label sets."""
+    out = []
+    for g in (80, 96):
+        m = load(f"nn_labeler/results/beyond_UNVERIFIABLE_g{g}r4.jsonl.manifest.json")
+        if m and "_load_error" not in m and "stats" in m:
+            out.append((g, m["stats"]))
+    return out
+
+
 def ladder_band():
     """(min%, max%, n_rungs) of argmin agreement over the v1 rungs 17-64."""
-    rels = []
-    for g in range(17, 32):
-        rels.append(f"nn_labeler/results/dgate_ladder_g{g}r4.json" if g != 24
-                    else "nn_labeler/results/capgate_g24r4.json")
-    rels.append("nn_labeler/results/capgate_g32r4.json")
-    rels += [f"nn_labeler/results/coarsegate_g{g}r4.json" for g in (40, 48, 56, 64)]
-    vals = [s["argmin_agreement"] for s in (gate_summary(r) for r in rels) if s]
+    vals = [s["argmin_agreement"]
+            for s in (gate_summary(rel) for _, _, rel, ser in ladder_specs()
+                      if ser == "v1") if s]
     if not vals:
         return None
     return 100 * min(vals), 100 * max(vals), len(vals)
@@ -174,12 +208,8 @@ def sec_glance():
           f"NN-made boards + puzzles + labels &rarr; planner solves {p1(dep)}% "
           f"vs the exact-taught {p1(ex)}%",
           '<a href="#s4">&sect;3</a>')
-    beyond_bits = []
-    for gsz in (80, 96):
-        p = SV / f"nn_labeler/results/beyond_UNVERIFIABLE_g{gsz}r4.jsonl.manifest.json"
-        if p.exists():
-            m = json.load(open(p))["stats"]
-            beyond_bits.append(f"{m['records']} at {gsz}&times;{gsz}")
+    beyond_bits = [f"{m['records']} at {gsz}&times;{gsz}"
+                   for gsz, m in beyond_stats()]
     if beyond_bits:
         r("First-ever labels beyond the checkable limit",
           "certified label sets where no solver can ever grade them: "
@@ -299,7 +329,11 @@ corrupt exact labels to a controlled fidelity dose and see whether fidelity
 alone reproduces the dose-response. {chip("pend", "in flight") if corrupt_pending else chip("good", "done")}</li>
 </ol>
 <p class="statuscard"><strong>Status:</strong> {status}</p>
-</section>
+</section>"""
+
+
+def sec_howto():
+    return """
 <section id="how">
 <h2>How to read the tables — the vocabulary</h2>
 <dl class="defs">
@@ -408,8 +442,9 @@ def dose_chart():
                 pts.append((100 * arm["achieved_argmin_agreement"],
                             100 * (cr - d1000), f"corrupt {tag[1:3]}%", "corrupt"))
     if len(pts) < 2:
-        return ('<p class="note">Chart appears here once at least two arms '
-                'have landed.</p>')
+        return ('<figure class="fig" id="fig-dose"><h3>Label fidelity vs '
+                'downstream solve rate</h3><p class="note">Chart appears '
+                'here once at least two arms have landed.</p></figure>')
     xs = [p[0] for p in pts]
     ys = [p[1] for p in pts] + [0.0]
     x0, x1 = min(xs) - 2, max(xs) + 2
@@ -462,9 +497,241 @@ def dose_chart():
             'control (orange diamonds)' if has_corrupt else
             '. Orange diamonds — the controlled-corruption arms — will '
             'join the chart automatically when those jobs land')
-    cap += '. Hover a point for its numbers.'
-    return ('<figure class="fig">' + "".join(s) +
+    cap += ('. Hover a point for its numbers. Points above the dashed line '
+            'beat their control, points below it lose to it — the whole '
+            'claim of the study is that the blue points sit on the line '
+            'until fidelity drops.')
+    return ('<figure class="fig" id="fig-dose"><h3>Label fidelity vs '
+            'downstream solve rate</h3>' + "".join(s) +
             f'<figcaption>{cap}</figcaption></figure>')
+
+
+def ladder_chart():
+    """SVG line chart: argmin agreement (y) vs board size (x), every gated rung.
+
+    Blue circles + line: the production v1 rungs (17-64) the flat-curve claim
+    rests on. Green triangles: the early mixed-size debug net (8-16). Points
+    below the 75% floor are drawn clamped at the floor and labelled with their
+    true value. Everything comes from the gate JSONs of the ladder table."""
+    pts = []
+    for g, _suf, rel, ser in ladder_specs():
+        s = gate_summary(rel)
+        if s:
+            legacy = "combined.jsonl" in str((load(rel) or {}).get("exact", ""))
+            pts.append((g, 100 * s["argmin_agreement"], ser, legacy))
+    if not pts:
+        return ('<figure class="fig" id="fig-ladder"><p class="note">Ladder '
+                'chart appears once the gate files exist.</p></figure>')
+    W, H, L, B, R, T = 640, 320, 50, 40, 16, 30
+    y0, y1, x0, x1 = 75.0, 100.0, 4.0, 104.0
+
+    def X(v):
+        return L + (v - x0) / (x1 - x0) * (W - L - R)
+
+    def Y(v):
+        return (H - B) - (max(v, y0) - y0) / (y1 - y0) * (H - B - T)
+
+    s = [f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="Argmin agreement '
+         f'with the exact solver, by board size">']
+    for gy in range(int(y0), int(y1) + 1, 5):
+        s.append(f'<line x1="{L}" y1="{Y(gy):.0f}" x2="{W-R}" y2="{Y(gy):.0f}" '
+                 f'class="grid"/>')
+        s.append(f'<text x="{L-6}" y="{Y(gy)+4:.0f}" class="axl" '
+                 f'text-anchor="end">{gy}%</text>')
+    for gx in (8, 16, 24, 32, 40, 48, 56, 64, 80, 96):
+        s.append(f'<text x="{X(gx):.0f}" y="{H-B+15}" class="axl" '
+                 f'text-anchor="middle">{gx}</text>')
+    s.append(f'<text x="{(L+W)/2:.0f}" y="{H-6}" class="axl" '
+             f'text-anchor="middle">board size (cells per side)</text>')
+    s.append(f'<text x="12" y="{(H-B)/2:.0f}" class="axl" text-anchor="middle" '
+             f'transform="rotate(-90 12 {(H-B)/2:.0f})">argmin agreement with '
+             f'the exact solver</text>')
+    # the wall: nothing above 64 can ever be graded
+    wall = X(72)
+    s.append(f'<line x1="{wall:.0f}" y1="{T-16}" x2="{wall:.0f}" y2="{H-B}" '
+             f'class="dash"/>')
+    s.append(f'<text x="{wall+6:.0f}" y="{T-6}" class="ptl">no ground truth '
+             f'beyond here</text>')
+    yb = T + 12
+    for g, m in beyond_stats():
+        s.append(f'<text x="{wall+6:.0f}" y="{yb}" class="axl">'
+                 f'{g}&times;{g}: {m["records"]} labels'
+                 f'<title>{g}x{g}: {m["records"]} certified records from '
+                 f'{m["kept"]}/{m["attempted"]} instances, {m["timeouts"]} '
+                 f'timeouts — certified upper bounds, ungradable forever'
+                 f'</title></text>')
+        yb += 15
+    if not beyond_stats():
+        s.append(f'<text x="{wall+6:.0f}" y="{yb}" class="axl">no labels '
+                 f'beyond 64 yet</text>')
+    v1 = sorted([p for p in pts if p[2] == "v1"])
+    if len(v1) > 1:
+        line = " ".join(f"{X(g):.1f},{Y(v):.1f}" for g, v, _, _ in v1)
+        s.append(f'<polyline points="{line}" class="line"/>')
+    for g, v, ser, legacy in pts:
+        cx, cy = X(g), Y(v)
+        off = " (below the chart's floor)" if v < y0 else ""
+        tip = (f"{g}x{g}: {v:.1f}% argmin agreement{off}"
+               + (" — legacy corpus" if legacy else ""))
+        if ser == "v1":
+            s.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="3.5" class="s1">'
+                     f'<title>{esc(tip)}</title></circle>')
+        else:
+            s.append(f'<path d="M {cx:.1f} {cy-4.5:.1f} L {cx+4.5:.1f} '
+                     f'{cy+3.5:.1f} L {cx-4.5:.1f} {cy+3.5:.1f} Z" class="s3">'
+                     f'<title>{esc(tip)}</title></path>')
+        if v < y0:
+            s.append(f'<text x="{cx:.0f}" y="{cy-9:.0f}" class="ptl" '
+                     f'text-anchor="middle">{v:.1f}% &darr;</text>')
+    end = v1[-1] if v1 else None
+    if end:
+        s.append(f'<text x="{X(end[0])-8:.0f}" y="{Y(end[1])-15:.0f}" '
+                 f'class="ptl" text-anchor="end">{end[1]:.1f}% at '
+                 f'{end[0]}&times;{end[0]}</text>')
+    s.append(f'<g class="legend"><circle cx="{L+8}" cy="{T-10}" r="3.5" '
+             f'class="s1"/><text x="{L+18}" y="{T-6}" class="axl">production '
+             f'v1 net (the flat curve)</text>'
+             f'<path d="M {L+188} {T-14} L {L+193} {T-6} L {L+183} {T-6} Z" '
+             f'class="s3"/><text x="{L+200}" y="{T-6}" class="axl">early '
+             f'mixed-size debug net</text></g>')
+    s.append("</svg>")
+    odd = [p for p in pts if p[1] < y0]
+    bits = [f"{m['records']} at {g}&times;{g} ({m['timeouts']} timeouts)"
+            for g, m in beyond_stats()]
+    cap = ("One point per gated rung: 600 held-out instances per rung, NN "
+           "labels replayed against the exact solver. Read it flat — the blue "
+           "curve neither climbs nor falls across a 4&times; size range, which "
+           "is the whole warranty for the labels beyond the wall on the right.")
+    if odd:
+        cap += (" The " + ", ".join(f"{g}&times;{g}" for g, _, _, _ in odd) +
+                " debug rung falls below the chart's 75% floor (drawn clamped, "
+                "true value labelled): it scores against the legacy corpus, not "
+                "the standard pipeline, and is excluded from the band statistic "
+                "quoted elsewhere, which covers the v1 rungs only.")
+    if bits:
+        cap += (" To the right of the wall the y-axis has no meaning at all: "
+                "those label sets — " + ", ".join(bits) + " — are "
+                "physics-certified upper bounds that no solver can ever "
+                "grade.")
+    cap += " Hover a mark for its numbers."
+    return ('<figure class="fig" id="fig-ladder"><h3>The ladder: label quality '
+            'vs board size</h3>' + "".join(s) +
+            f'<figcaption>{cap}</figcaption></figure>')
+
+
+# arm key -> (legend label, colour class, hollow?, file suffix)
+GRADED_ARMS = [("exact", "exact-taught", "s1", False, "comparison.json"),
+               ("exact21", "exact, seed 21", "s1", True, "comparison_exactseed21.json"),
+               ("twin", "NN twin", "s2", False, "comparison_nntwin.json"),
+               ("twin21", "NN twin, seed 21", "s2", True, "comparison_nntwin-seed21.json"),
+               ("deploy", "NN deployment", "s3", False, "comparison_nndeploy.json")]
+FRONTIER_ARMS = [("exact", "exact-taught", "s1", False, "comparison_ungraded.json"),
+                 ("twin", "NN twin", "s2", False, "comparison_ungraded_nntwin.json"),
+                 ("deploy", "NN deployment", "s3", False, "comparison_ungraded_nndeploy.json")]
+
+
+def bar_chart(arms, fid, heading, aria, cap):
+    """Grouped bars: solve rate (y) per configuration (x), one bar per arm.
+
+    Values come from the same comparison JSONs as the headline tables; an arm
+    whose file has not landed leaves a slot marked 'pending'."""
+    W, H, L, B, R, T = 640, 330, 46, 58, 14, 46
+    ymax = 100.0
+    n = len(CFGS)
+    pitch = (W - L - R) / n
+    bw = min(28.0, (pitch - 18) / len(arms) - 4)
+    slot = bw + 4
+    span = len(arms) * slot - 4
+
+    def Y(v):
+        return (H - B) - v / ymax * (H - B - T)
+
+    s = [f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="{esc(aria)}">']
+    for gy in range(0, 101, 20):
+        s.append(f'<line x1="{L}" y1="{Y(gy):.0f}" x2="{W-R}" y2="{Y(gy):.0f}" '
+                 f'class="grid"/>')
+        s.append(f'<text x="{L-6}" y="{Y(gy)+4:.0f}" class="axl" '
+                 f'text-anchor="end">{gy}</text>')
+    s.append(f'<text x="12" y="{(H-B)/2:.0f}" class="axl" text-anchor="middle" '
+             f'transform="rotate(-90 12 {(H-B)/2:.0f})">solve rate (%)</text>')
+    any_val = False
+    for gi, cfg in enumerate(CFGS):
+        gx0 = L + gi * pitch + (pitch - span) / 2
+        for ai, (_key, alab, cls, hollow, fname) in enumerate(arms):
+            x = gx0 + ai * slot
+            rel = f"scaling/results/{cfg}/{fname}"
+            v = solve(rel)
+            if v is None:
+                s.append(f'<text x="{x+bw/2:.0f}" y="{H-B-6:.0f}" '
+                         f'class="pendl" transform="rotate(-90 {x+bw/2:.0f} '
+                         f'{H-B-6:.0f})">pending<title>'
+                         f'{esc(alab)} &middot; {esc(cfg)}: '
+                         f'{esc(fname)} not on disk</title></text>')
+                continue
+            any_val = True
+            v *= 100
+            y = Y(v)
+            s.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{bw:.1f}" '
+                     f'height="{(H-B)-y:.1f}" rx="3" class="{cls}'
+                     f'{"o" if hollow else ""}"><title>{esc(cfg)} &middot; '
+                     f'{esc(alab)}: {v:.1f}% solve rate</title></rect>')
+            s.append(f'<text x="{x+bw/2:.1f}" y="{y-5:.0f}" class="vall" '
+                     f'text-anchor="middle">{v:.1f}</text>')
+        s.append(f'<text x="{L+gi*pitch+pitch/2:.0f}" y="{H-B+16}" '
+                 f'class="ptl" text-anchor="middle">{esc(cfg)}</text>')
+        s.append(f'<text x="{L+gi*pitch+pitch/2:.0f}" y="{H-B+30}" '
+                 f'class="axl" text-anchor="middle">{CFG_HUMAN[cfg]}</text>')
+    s.append(f'<line x1="{L}" y1="{H-B}" x2="{W-R}" y2="{H-B}" class="axis"/>')
+    lx = L
+    s.append('<g class="legend">')
+    for _key, alab, cls, hollow, _f in arms:
+        s.append(f'<rect x="{lx}" y="8" width="10" height="10" rx="2" '
+                 f'class="{cls}{"o" if hollow else ""}"/>')
+        s.append(f'<text x="{lx+14}" y="17" class="axl">{alab}</text>')
+        lx += 24 + 6.2 * len(alab)
+    s.append('</g>')
+    if any([a[3] for a in arms]):
+        s.append(f'<text x="{L}" y="34" class="axl">hollow bar = the same arm '
+                 f'retrained with a different random seed</text>')
+    s.append("</svg>")
+    if not any_val:
+        return (f'<figure class="fig" id="{fid}"><h3>{heading}</h3>'
+                f'<p class="note">Chart appears once the first comparison '
+                f'file lands.</p></figure>')
+    return (f'<figure class="fig" id="{fid}"><h3>{heading}</h3>' + "".join(s) +
+            f'<figcaption>{cap}</figcaption></figure>')
+
+
+def sec_visuals():
+    graded = bar_chart(
+        GRADED_ARMS, "fig-solve",
+        "Downstream solve rate, graded benchmark",
+        "Solve rate by configuration and label provenance",
+        "Bars are grouped by configuration; within a group the only "
+        "difference between arms is who wrote the training labels. Compare "
+        "bars <em>inside</em> a group, never across groups (each "
+        "configuration has its own benchmark). Hollow bars are seed "
+        "replicates of the arm in the same colour — the gap between a solid "
+        "and a hollow bar of one colour is the yardstick any "
+        "twin-versus-exact gap has to beat. Axis starts at zero; hover a bar "
+        "for its numbers.")
+    frontier = bar_chart(
+        FRONTIER_ARMS, "fig-frontier",
+        "Downstream solve rate, frontier (ungraded) benchmark",
+        "Frontier solve rate by configuration and label provenance",
+        "The same planners on the frontier set — harder puzzles with no "
+        "known optimum, so solve rate is the only score that exists there. "
+        "Same axis as the chart above, so the drop in height is the real "
+        "difficulty gap between the two benchmarks.")
+    return "\n".join([
+        '<section id="viz">',
+        "<h2>Visuals &middot; the campaign in four charts</h2>",
+        "<p>Every mark below is drawn from the same result JSONs as the "
+        "tables in the other tabs — nothing here is hand-plotted, and a "
+        "chart whose files have not landed says so instead of guessing. "
+        "Hover any mark for its exact numbers.</p>",
+        ladder_chart(), graded, frontier, dose_chart(),
+        "</section>"])
 
 
 def sec_downstream():
@@ -499,7 +766,9 @@ def sec_downstream():
            + seed_spread_txt() +
            " — that measured wobble is the yardstick every between-arm gap "
            "is judged against.</p>"]
-    out.append(dose_chart())
+    out.append('<p class="note">Charts for this section — the dose-response '
+               'scatter and the solve-rate bars — live in the '
+               '<a href="#fig-dose">Visuals tab</a>.</p>')
     verdicts = {
         "g24r4": None, "g24r8": None, "g32r4": None}
     # computed verdict lines
@@ -684,35 +953,19 @@ def sec_ladder():
            "ever check. Beyond it, labels still exist (bottom rows) but "
            "are certified-only: physics-verified upper bounds whose "
            "warranty is this flat curve.</p>"]
-    specs = [("8&times;8 (mixed net)", "nn_labeler/results/dgate_mix_none_s11_g8r4.json"),
-             ("10&times;10 (mixed net)", "nn_labeler/results/dgate_mix_none_s11_g10r4.json"),
-             ("12&times;12 (mixed net)", "nn_labeler/results/dgate_mix_none_s11_g12r4.json"),
-             ("16&times;16 (mixed net)", "nn_labeler/results/dgate_mix_none_s11_g16r4.json")]
-    for g in range(17, 32):
-        if g == 24:
-            specs.append(("24&times;24 (v1, capstone)",
-                          "nn_labeler/results/capgate_g24r4.json"))
-            continue
-        specs.append((f"{g}&times;{g} (v1)",
-                      f"nn_labeler/results/dgate_ladder_g{g}r4.json"))
-    specs.append(("32&times;32 (v1, capstone)",
-                  "nn_labeler/results/capgate_g32r4.json"))
-    for g in (40, 48, 56, 64):
-        specs.append((f"{g}&times;{g} (v1, coarse)",
-                      f"nn_labeler/results/coarsegate_g{g}r4.json"))
+    out.append('<p class="note">The same curve is plotted in the '
+               '<a href="#fig-ladder">Visuals tab</a>.</p>')
+    specs = [(f"{g}&times;{g} ({suf})", rel) for g, suf, rel, _ in ladder_specs()]
     rows_ = []
     beyond = []
-    for g in (80, 96):
-        p = SV / f"nn_labeler/results/beyond_UNVERIFIABLE_g{g}r4.jsonl.manifest.json"
-        if p.exists():
-            m = json.load(open(p))["stats"]
-            beyond.append(
-                row([f"<td>{g}&times;{g} (v1, UNVERIFIABLE)</td>",
-                     '<td colspan="3">no gate can exist above 64 — '
-                     f'{m["records"]} certified records, '
-                     f'{m["kept"]}/{m["attempted"]} instances, '
-                     f'{m["timeouts"]} timeouts</td>',
-                     fmt(m["cand_uncertified"], "d")]))
+    for g, m in beyond_stats():
+        beyond.append(
+            row([f"<td>{g}&times;{g} (v1, UNVERIFIABLE)</td>",
+                 '<td colspan="3">no gate can exist above 64 — '
+                 f'{m["records"]} certified records, '
+                 f'{m["kept"]}/{m["attempted"]} instances, '
+                 f'{m["timeouts"]} timeouts</td>',
+                 fmt(m["cand_uncertified"], "d")]))
     for label, rel in specs:
         s = gate_summary(rel)
         if s is None:
@@ -726,8 +979,13 @@ def sec_ladder():
     out.append(table(["board", "argmin agree", "labels exactly optimal",
                       "mean gap", "negative gaps"], rows_,
                      note="8&ndash;16 rows come from the early debug-battery "
-                          "gates (an earlier mixed-size training net); "
-                          "everything from 17 up is the production v1 net, "
+                          "gates (an earlier mixed-size training net). "
+                          "Ignore the 16&times;16 row's low number: that "
+                          "gate scored against a legacy corpus rather than "
+                          "true exact references (a measurement artifact of "
+                          "the debug battery, FINDINGS 53c), which is why "
+                          "the band statistic and the chart exclude it. "
+                          "Everything from 17 up is the production v1 net, "
                           "600 replayed test instances per rung. 'capstone' "
                           "= the pre-registered pass/fail exams at 24 and "
                           "32 that qualified the net before the headline "
@@ -910,28 +1168,78 @@ and corpus provenance.</li>
 </section>"""
 
 
-NAV = """<nav class="topnav"><a href="#overview">Overview</a>
-<a href="#how">How to read</a>
-<a href="#s2">1 Label quality</a>
-<a href="#s3">2 The ladder</a>
-<a href="#s4">3 Headline</a>
-<a href="#s5">4 Beyond 64</a>
-<a href="#s6">5 B2 (negative)</a>
-<a href="#s7">6 Causality</a>
-<a href="#s8">7 Provenance</a></nav>"""
+def sec_labelq():
+    return sec_label_quality() + "\n" + sec_audit_curve() + "\n" + sec_ladder()
+
+
+def sec_headline():
+    return sec_downstream() + "\n" + sec_inflight()
+
+
+def sec_edges():
+    return sec_beyond() + "\n" + sec_b2()
+
+
+# (tab label, anchor the tab jumps to, section builder). Deep links to any
+# id inside a panel still work: the hash router opens the owning tab first.
+PANELS = [
+    ("Overview", "overview", sec_overview),
+    ("How to read", "how", sec_howto),
+    ("1&ndash;2 Label quality", "s2", sec_labelq),
+    ("3&middot;6 Headline &amp; causality", "s4", sec_headline),
+    ("4&middot;5 Beyond 64 &amp; B2", "s5", sec_edges),
+    ("Visuals", "viz", sec_visuals),
+    ("7 Provenance", "s8", sec_provenance),
+]
+
+JS = """
+(function () {
+  var D = document, tabs = [].slice.call(D.querySelectorAll(".tabs a"));
+  function panelOf(el) {
+    while (el && el.nodeType === 1 && !el.classList.contains("panel")) {
+      el = el.parentNode;
+    }
+    return el && el.nodeType === 1 ? el : null;
+  }
+  function show(panel, target) {
+    if (!panel) { return; }
+    [].forEach.call(D.querySelectorAll(".panel"), function (p) {
+      p.classList.toggle("on", p === panel);
+    });
+    tabs.forEach(function (a) {
+      var cur = a.getAttribute("data-panel") === panel.id;
+      a.classList.toggle("cur", cur);
+      a.setAttribute("aria-current", cur ? "true" : "false");
+    });
+    if (target && target !== panel && target.scrollIntoView) {
+      target.scrollIntoView();
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }
+  function route() {
+    var id = "", el = null;
+    try { id = decodeURIComponent(location.hash.slice(1)); } catch (e) { id = ""; }
+    if (id) { el = D.getElementById(id); }
+    if (el) { show(panelOf(el), el); } else { show(D.querySelector(".panel"), null); }
+  }
+  window.addEventListener("hashchange", route);
+  route();
+})();
+"""
 
 CSS = """
 :root { --ink:#1a1a1a; --mut:#6a6a6a; --line:#d8d8d8; --hl:#f3f7ee;
         --ctl:#f5f5f5; --bg:#fff; --card:#f7f7f4;
         --good-bg:#e7f2e4; --good-ink:#2c5e1e; --bad-bg:#f7e3e0;
         --bad-ink:#8a2b1d; --warn-bg:#f7eeda; --warn-ink:#7a5a12;
-        --s1:#2563eb; --s2:#d97706; }
+        --s1:#2563eb; --s2:#d97706; --s3:#047857; }
 @media (prefers-color-scheme: dark) {
   :root { --ink:#e8e8e8; --mut:#9a9a9a; --line:#3a3a3a; --hl:#20281c;
           --ctl:#242424; --bg:#161616; --card:#1e1e1c;
           --good-bg:#22371c; --good-ink:#a4d194; --bad-bg:#3d211c;
           --bad-ink:#e0a297; --warn-bg:#37301c; --warn-ink:#d9be7a;
-          --s1:#60a5fa; --s2:#fbbf24; } }
+          --s1:#60a5fa; --s2:#fbbf24; --s3:#10b981; } }
 body { font: 15px/1.55 system-ui, sans-serif; color: var(--ink);
        background: var(--bg); max-width: 62rem; margin: 0 auto 3rem;
        padding: 0 1rem; }
@@ -939,13 +1247,20 @@ h1 { font-size: 1.5rem; margin-top: 1.4rem; }
 h2 { font-size: 1.2rem; margin-top: 2.4rem; }
 h3 { font-size: 1rem; margin: 1.4rem 0 .3rem; }
 .cfgh { color: var(--mut); font-weight: 400; font-size: .85rem; }
-.topnav { position: sticky; top: 0; z-index: 5; background: var(--bg);
-          border-bottom: 1px solid var(--line); padding: .55rem 0;
-          font-size: .82rem; display: flex; flex-wrap: wrap;
-          gap: .25rem 1rem; }
-.topnav a { color: var(--ink); text-decoration: none; white-space: nowrap; }
-.topnav a:hover { text-decoration: underline; }
-section { scroll-margin-top: 3rem; }
+.tabs { position: sticky; top: 0; z-index: 5; background: var(--bg);
+        border-bottom: 1px solid var(--line); padding: .5rem 0 0;
+        font-size: .82rem; display: flex; flex-wrap: wrap; gap: .15rem .3rem; }
+.tabs a { color: var(--mut); text-decoration: none; white-space: nowrap;
+          padding: .3rem .6rem; border-radius: 5px 5px 0 0;
+          border-bottom: 3px solid transparent; }
+.tabs a:hover { color: var(--ink); background: var(--card); }
+.tabs a.cur { color: var(--ink); font-weight: 600; background: var(--card);
+              border-bottom-color: var(--s1); }
+/* progressive enhancement: without JS every panel stays visible and the
+   tab strip degrades to plain jump links. */
+html.js .panel { display: none; }
+html.js .panel.on { display: block; }
+section, figure[id] { scroll-margin-top: 3.4rem; }
 .tw { overflow-x: auto; }
 table { border-collapse: collapse; margin: .4rem 0; min-width: 40rem; }
 th, td { border: 1px solid var(--line); padding: .3rem .6rem;
@@ -983,6 +1298,18 @@ td.pend { color: var(--mut); font-style: italic; text-align: left; }
 .fig .ptl { fill: var(--ink); font-size: 11px; }
 .fig .s1 { fill: var(--s1); }
 .fig .s2 { fill: var(--s2); }
+.fig .s3 { fill: var(--s3); }
+.fig .s1o { fill: none; stroke: var(--s1); stroke-width: 2; }
+.fig .s2o { fill: none; stroke: var(--s2); stroke-width: 2; }
+.fig .s3o { fill: none; stroke: var(--s3); stroke-width: 2; }
+.fig .line { fill: none; stroke: var(--s1); stroke-width: 2; }
+.fig .axis { stroke: var(--line); stroke-width: 1; }
+.fig .dash { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 5 4;
+             opacity: .55; }
+.fig .vall { fill: var(--ink); font-size: 10px;
+             font-variant-numeric: tabular-nums; }
+.fig .pendl { fill: var(--mut); font-size: 9px; font-style: italic; }
+.fig h3 { margin: 0 0 .3rem; }
 """
 
 
@@ -993,20 +1320,29 @@ def main():
     except Exception:
         rev = "?"
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    body = "\n".join([sec_overview(), sec_label_quality(), sec_audit_curve(),
-                      sec_ladder(), sec_downstream(), sec_beyond(), sec_b2(),
-                      sec_inflight(), sec_provenance()])
+    tabs, panels = [], []
+    for i, (label, anchor, fn) in enumerate(PANELS, 1):
+        pid = f"p{i}"
+        tabs.append(f'<a href="#{anchor}" data-panel="{pid}">{label}</a>')
+        panels.append(f'<div class="panel" id="{pid}">\n{fn()}\n</div>')
+    nav = ('<nav class="tabs" aria-label="sections">'
+           + "\n".join(tabs) + "</nav>")
+    body = "\n".join(panels)
     page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Can a neural network replace the exact solver? — results suite</title>
-<style>{CSS}</style></head><body>
-{NAV}
+<style>{CSS}</style>
+<script>document.documentElement.className += " js";</script></head><body>
+{nav}
 <h1>Can a neural network replace the exact solver as the label writer?</h1>
 <p class="banner">Single source of truth for the NN-labeler track.
 Auto-generated by <code>gen_suite.py</code> from result JSONs on disk — no
 hand-typed numbers. Generated {stamp} at git {esc(rev)}. LOCAL FILE — not
 published.</p>
+<noscript><p class="banner">JavaScript is off, so every tab's content is
+shown stacked below and the tab strip acts as plain jump links.</p></noscript>
 {body}
+<script>{JS}</script>
 </body></html>"""
     OUT.write_text(page)
     print(f"wrote {OUT} ({len(page)} bytes)")
