@@ -359,3 +359,37 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     gauge.json,bench_g24r4_{astar,mcts}.json,gate_vs_supervised.json,
     gate_vs_prev.json,nets.txt}`, `runs/spr/selfplay/g24r4_iter1/`,
     `runs/spr/spr-it1-g24-4681263.out`.
+
+11. **The base subgoal language is saturated EVERYWHERE, frontier sets included:
+    the size-free supervised planner sits at (or 1–4 solves from) the
+    exhaustive language ceiling on every pinned exam, so no self-play
+    iteration in the base vocabulary can register a gain on any of them
+    (2026-08-18, jobs 4682172 [frontier ceilings], 4682184 [iteration-1 nets
+    on the frontier]).**
+    | exam | base-language solve ceiling (`spr.ceiling`) | size-free A\* (M1 nets) | iteration-1 nets |
+    |---|---|---|---|
+    | g24r4 frontier (218) | **103** (99 no complete plan, 16 unplayable) | 99 | 100 (paired +1, n.s.) |
+    | g32r4 frontier (275) | **142** (122 / 11) | 141 | (probing) |
+    | g24r4 graded (232) | 216 | 215 → MCTS 215; iter-1 216 | 216 |
+    | g32r4 graded (175) | 156 | 156 | — |
+    | g24r8 graded (161) | 148 | 147 | — |
+    Reading. The recorded B2-vocabulary arm on the g24r4 frontier solves
+    125/218 (`comparison_ungraded_b2.json`) — 22 more than the base language
+    can EVER solve; the extended language (transient/park stoppers,
+    supports-by-reference) is where the remaining solve-rate headroom is,
+    and its moves ceiling is 0.5 move lower on the graded exams (§3). The
+    supervised track showed the B2 supply exists but the nets never learned
+    to rank it (FINDINGS 40/78: "supply is not the bottleneck, the training
+    signal is") — which is precisely what a self-play loop can manufacture at
+    any size. Decision (pending owner steer, proceeding on it): the subgoal
+    loop switches to the B2 vocabulary (search over `propose_b1` + by-reference
+    candidates, park repairs at certification, records with by-reference
+    helpers; nets warm from the M1 pair, ranking B2 candidates zero-shot at
+    first — exactly FINDINGS 78's starting point); the base-vocabulary loop
+    is complete as a negative result (nothing to learn) and its iteration 2
+    (hard-instance filter, job 4682185) runs only to measure that filter's
+    data yield. The primitive-move arm's next target is 24×24, where the
+    forward planner's search cost (191 expansions / 275 s per puzzle) is the
+    headroom.
+    Sources: `results/ceiling/{g24r4,g32r4}_frontier_base.json`,
+    `results/selfplay/g24r4_iter1/transfer/`, `results/transfer/`.
