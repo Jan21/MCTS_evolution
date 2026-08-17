@@ -43,7 +43,7 @@ mark()  { touch "$IT/DONE.$1"; echo "SPR ITER PHASE DONE $1 $(date +%T)"; }
 # ---- A generate --------------------------------------------------------------
 if ! phase gen; then
   t0=$SECONDS
-  SIBFLAG=""; [ "$SIB" = 1 ] && SIBFLAG="--complete-siblings"
+  SIBFLAG=""; [ "$SIB" = 1 ] && SIBFLAG="--complete-siblings --root-all"
   python -m spr.selfplay --config "$CFG" --policy "$PPREV" --value "$VPREV" \
       --boards-dir "$REPO/runs/spr/boards/${CFG}_iter${K}" --board-ids "$ID0-$ID1" \
       --per-board "$PER_BOARD" --seed "$K" --iter "$K" --expansions "$EXP" --stop-after "$STOP" \

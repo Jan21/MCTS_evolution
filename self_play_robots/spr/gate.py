@@ -77,7 +77,9 @@ def gate_m1(new_path, ref_arm):
     ref = _load(SV / ref_rel)
     sn, sr = summarize(new), summarize(ref)
     d_solve = 100.0 * (sn["solve_rate"] - sr["solve_rate"])
-    d_opt = (sn["pct_optimal"] or 0) - (sr["pct_optimal"] or 0)
+    if sn["pct_optimal"] is None or sr["pct_optimal"] is None:
+        raise SystemExit("M1 gate needs a graded set (pct_optimal is None on one side)")
+    d_opt = sn["pct_optimal"] - sr["pct_optimal"]
     ok = d_solve >= -SOLVE_BAR and d_opt >= -OPT_BAR
     out = {"new": sn, "ref": sr, "ref_desc": desc, "delta_solve_pts": d_solve,
            "delta_opt_pts": d_opt, "bars": {"solve": SOLVE_BAR, "opt": OPT_BAR},

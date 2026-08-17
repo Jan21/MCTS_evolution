@@ -68,16 +68,17 @@ def main(argv=None):
 
     # depth-0 groups by instance
     by_inst = {}
-    boards_dir = a.boards_dir
+    dir_of = {}                     # env_id -> board dir (per record, multi-iteration safe)
     n_rec = 0
     for line in open(rec_path):
         r = json.loads(line)
         n_rec += 1
-        if boards_dir is None and r.get("boards_dir"):
-            boards_dir = r["boards_dir"]
+        if r.get("boards_dir"):
+            dir_of[int(r["env_id"])] = r["boards_dir"]
         if r.get("depth") == 0:
             by_inst.setdefault(_key(r), []).append(r)
-    boards_dir = Path(boards_dir) if boards_dir else cfg.env_dir_abs
+    default_dir = (Path(a.boards_dir).resolve() if a.boards_dir else cfg.env_dir_abs)
+    boards_dir = default_dir
     keys = sorted(by_inst, key=repr)
     rng = random.Random(a.seed)
     rng.shuffle(keys)
@@ -97,7 +98,8 @@ def main(argv=None):
     for i, k in enumerate(keys):
         env_id = k[0]
         if env_id not in boards:
-            with open(boards_dir / f"env_{env_id}.pkl", "rb") as fh:
+            bd = Path(dir_of.get(int(env_id), default_dir))
+            with open(bd / f"env_{env_id}.pkl", "rb") as fh:
                 boards[env_id] = list(pickle.load(fh)["grid_data"])
         items.append({
             "task": "backward_rollout", "id": f"g{i}",

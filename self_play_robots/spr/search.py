@@ -119,7 +119,7 @@ class Evaluator:
         return hit
 
     @torch.no_grad()
-    def policy_logp(self, recs, keys, env, env_id, n):
+    def policy_logp(self, recs, env, env_id, n):
         """{key: logp} for the group's candidates (keys = (bn_flat, sp_flat, hslot))."""
         m = policy_meta(recs, n)
         if m is None:
@@ -175,7 +175,7 @@ def forced_fixes(env, state, solver, plan, acct=None):
 
 
 def expand(env, state, solver, plan, env_id, n, ev: Evaluator, k, prefix_filter=None,
-           acct=None, f_mode="parent", score_all=False):
+           acct=None, f_mode="parent"):
     """Generate the top-k children of an (incomplete) plan.
 
     One expansion: propose -> apply -> policy pass (prior over the valid
@@ -201,7 +201,7 @@ def expand(env, state, solver, plan, env_id, n, ev: Evaluator, k, prefix_filter=
                           key=(flat(r["cand_bottleneck"], n), flat(r["cand_support"], n), hi)))
     if not kids:
         return [], 0
-    logp = ev.policy_logp([c.rec for c in kids], [c.key for c in kids], env, env_id, n)
+    logp = ev.policy_logp([c.rec for c in kids], env, env_id, n)
     if logp is None:
         return [], 0
     for c in kids:
@@ -211,7 +211,7 @@ def expand(env, state, solver, plan, env_id, n, ev: Evaluator, k, prefix_filter=
     for c in kids:
         c.prior = math.exp(c.logp - mx) / z
     kids.sort(key=lambda c: -c.logp)
-    top = kids if score_all else kids[:k]
+    top = kids[:k]
     ctgs = ev.value_ctg([c.rec for c in top], env, env_id, n)
     g_parent = float(_fixed_g(plan))
     out, pruned = [], 0
@@ -225,6 +225,10 @@ def expand(env, state, solver, plan, env_id, n, ev: Evaluator, k, prefix_filter=
     # value estimate of the child's whole plan (cost units): parent-consistent
     for c in out:
         c.v_est = (g_parent + c.ctg_hat) if f_mode == "parent" else (c.fixed_g + c.ctg_hat)
+    zp = sum(c.prior for c in out)              # priors renormalized over the kept children
+    if zp > 0:
+        for c in out:
+            c.prior /= zp
     return out, pruned
 
 
@@ -255,15 +259,17 @@ class Certifier:
 
     def __call__(self, plan):
         hit = self.cache.get(id(plan))
-        if hit is not None:
-            return hit
+        if hit is not None and hit[2] is plan:
+            return hit[:2]
         mv = [] if self.dump else None
         if self.acct is not None:
             self.acct["physics_calls_strict_realize"] = \
                 self.acct.get("physics_calls_strict_realize", 0) + 1
         m = self._sm(self.env, self.state, plan, log=None, moves_out=mv)
-        self.cache[id(plan)] = (m, mv if m is not None else None)
-        return self.cache[id(plan)]
+        # keep the plan alive: id() keys are recycled by CPython once a plan
+        # is freed, and a stale hit would certify an unrealized plan
+        self.cache[id(plan)] = (m, mv if m is not None else None, plan)
+        return self.cache[id(plan)][:2]
 
 
 # ---------------------------------------------------------------------------
@@ -303,20 +309,36 @@ def greedy(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=N
 # ---------------------------------------------------------------------------
 
 def astar(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=None,
-          best_at_budget=False, f_mode="parent", acct=None, dump_moves=False):
+          best_at_budget=False, f_mode="parent", acct=None, dump_moves=False,
+          anytime=True):
+    """`anytime=False` reproduces the arena's plain mode: the FIRST complete
+    plan popped is returned (certified or not; the caller strict-realizes it).
+    `anytime=True` (implied by best_at_budget) certifies at pop, discards
+    unplayable plans and keeps searching (= `--backward-anytime`)."""
     from skeleton.astar import _initial_plan
+    anytime = anytime or best_at_budget
     cert = Certifier(env, state, acct, dump_moves)
     cnt = itertools.count()
     frontier = [(0.0, next(cnt), forced_fixes(env, state, solver, _initial_plan(env, state), acct))]
     expansions = rejected = pruned = 0
     best = None                     # (strict, plan, moves)
+    best_abs = None                 # abstract plan cost of `best` (f's units)
     first_failed = None
     first_cert_exp = None
     while frontier and expansions < max_expansions:
         f, _, plan = heapq.heappop(frontier)
-        if best is not None and best_at_budget and f >= best[0]:
-            break                   # nothing estimated cheaper than the certified best
+        if best is not None and best_at_budget and f >= best_abs:
+            break                   # nothing estimated cheaper (abstract units) than the certified best
         if plan.is_complete():
+            if not anytime:
+                res = SearchResult(plan=plan, expansions=expansions, pruned=pruned)
+                m, mv = cert(plan)
+                if m is not None:
+                    res.strict, res.moves = m, mv
+                    res.extra = {"first_certified_expansion": expansions, "best_strict": m}
+                else:
+                    res.rejected = 1
+                return res
             m, mv = cert(plan)
             if m is None:
                 rejected += 1
@@ -325,6 +347,7 @@ def astar(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=No
                 continue
             if best is None or m < best[0]:
                 best = (m, plan, mv)
+                best_abs = float(plan.cost())
                 if first_cert_exp is None:
                     first_cert_exp = expansions
             if not best_at_budget:
@@ -378,7 +401,7 @@ class Node:
 def mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=None,
          best_at_budget=True, c_puct=1.5, backup="min", acct=None, dump_moves=False,
          root_noise=0.0, noise_alpha=0.3, rng=None, f_mode="parent",
-         stop_after_certified=None):
+         stop_after_certified=None, root_k=None):
     """PUCT tree search over subgoal decisions. Returns SearchResult with .root.
 
     Every loop iteration makes progress: it expands a leaf (budget), certifies
@@ -388,7 +411,10 @@ def mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=Non
 
     `stop_after_certified` (int|None): in best-at-budget mode, stop once this
     many expansions have passed since the best certified plan last improved
-    (self-play generation knob; the arena gate uses None = run to budget)."""
+    (self-play generation knob; the arena gate uses None = run to budget).
+    `root_k` (int|None): children per node at the ROOT only (0 = all
+    candidates; generation knob so depth-0 labels cover the full candidate
+    set the fidelity gauge compares against); the arena gate uses None = k."""
     from skeleton.astar import _initial_plan
     from nn.generate import _fixed_g
     rng = rng or random.Random(0)
@@ -406,7 +432,7 @@ def mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=Non
     def _norm(q):
         if qmax <= qmin:
             return 0.5
-        return (qmax - q) / (qmax - qmin)          # lower cost -> closer to 1
+        return min(1.0, max(0.0, (qmax - q) / (qmax - qmin)))   # lower cost -> 1
 
     def _refresh(node):
         """Q from live (non-dead) children; dead when no live child; closed
@@ -444,6 +470,9 @@ def mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=Non
         return best_c
 
     while expansions < max_expansions and not root.closed:
+        if (best is not None and stop_after_certified is not None
+                and expansions - last_improve_exp >= stop_after_certified):
+            break
         # ---- select down to a selectable leaf / terminal
         node, path = root, [root]
         while node.expanded and not node.complete and not node.closed:
@@ -467,10 +496,10 @@ def mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=Non
                     first_failed = node.plan
             else:
                 node.cert = m
-                node.Q = float(m)
+                node.best_abs = float(node.plan.cost())
+                node.Q = node.best_abs      # exact leaf, in the estimates' (abstract) units
                 node.solved = node.closed = True
                 node.best_cert = m
-                node.best_abs = float(node.plan.cost())
                 n_certified += 1
                 if best is None or m < best[0]:
                     best = (m, node, mv)
@@ -478,7 +507,8 @@ def mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=Non
                     if first_cert_exp is None:
                         first_cert_exp = expansions
                 for a in reversed(path[:-1]):
-                    if a.best_cert is None or m < a.best_cert:
+                    if (a.best_cert is None or m < a.best_cert
+                            or (m == a.best_cert and node.best_abs < a.best_abs)):
                         a.best_cert, a.best_abs = m, node.best_abs
             _backup(path)
             if best is not None and not best_at_budget:
@@ -489,7 +519,10 @@ def mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=Non
             continue
         # ---- expand leaf
         expansions += 1
-        kids, pr = expand(env, state, solver, node.plan, env_id, n, ev, k, prefix_filter,
+        kk = k
+        if node is root and root_k is not None:
+            kk = root_k if root_k > 0 else 10 ** 6
+        kids, pr = expand(env, state, solver, node.plan, env_id, n, ev, kk, prefix_filter,
                           acct, f_mode)
         pruned += pr
         node.expanded = True
@@ -507,6 +540,7 @@ def mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=Non
             ch = Node(cp, parent=node, child_obj=c, depth=node.depth + 1)
             ch.fixed_g = float(_fixed_g(cp))
             node.children.append(ch)
+            qmin, qmax = min(qmin, ch.Q), max(qmax, ch.Q)
         _backup(path)
 
     res = SearchResult(expansions=expansions, rejected=rejected, pruned=pruned, root=root)
@@ -526,18 +560,25 @@ def mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter=Non
 # dispatcher
 # ---------------------------------------------------------------------------
 
+_EV = {}
+
+
 def run(name, env, state, solver, policy, value_net, env_id, dev, k, max_expansions,
         prefix_filter=None, best_at_budget=False, f_mode="parent", c_puct=1.5,
-        backup="min", acct=None, dump_moves=False, **kw):
+        backup="min", acct=None, dump_moves=False, anytime=False, **kw):
     from simulate import _board_size
     n = _board_size(env.grid_data, None)
-    ev = Evaluator(policy, value_net, dev)
+    ev = _EV.get((id(policy), id(value_net), dev))
+    if ev is None:
+        _EV.clear()
+        ev = _EV[(id(policy), id(value_net), dev)] = Evaluator(policy, value_net, dev)
+    ev.acct = {"nn_policy_calls": 0, "nn_value_calls": 0}
     if name == "greedy":
         res = greedy(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter,
                      acct, dump_moves, f_mode)
     elif name == "spr_astar":
         res = astar(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter,
-                    best_at_budget, f_mode, acct, dump_moves)
+                    best_at_budget, f_mode, acct, dump_moves, anytime=anytime)
     elif name == "mcts":
         res = mcts(env, state, solver, ev, env_id, n, k, max_expansions, prefix_filter,
                    best_at_budget, c_puct, backup, acct, dump_moves, f_mode=f_mode, **kw)

@@ -162,7 +162,10 @@ def _extract_records(root, env, state, solver, ev, env_id, n, opts, cert, label_
             rec = dict(c.child_obj.rec)
             rec.update({
                 "cost_to_go": int(ab - fixed_g), "is_optimal": ab == best,
-                "depth": nd.depth,
+                # group key = (..., seg_start, seg_end, depth): off-path nodes at
+                # the same tree depth could alias, so `all` mode namespaces
+                # them by node index (path mode keeps the corpus depth semantics)
+                "depth": nd.depth if not emit_all else 1000 * depth + nd.depth,
                 "n": n, "label_source": "spr_mcts", "ctg_certified": True,
                 "strict_total": int(strict), "abstract_total": int(ab), "fixed_g": fixed_g,
                 "visits": int(c.N), "prior": round(float(c.prior), 5),
@@ -224,7 +227,8 @@ def _work(task):
                        c_puct=opts["c_puct"], backup=opts["backup"], acct=acct,
                        dump_moves=False, root_noise=opts["root_noise"],
                        rng=random.Random(rng.randrange(1 << 30)),
-                       stop_after_certified=opts["stop_after"])
+                       stop_after_certified=opts["stop_after"],
+                       root_k=(0 if opts.get("root_all") else None))
             recs, st_ = ([], {})
             if res.strict is not None:
                 recs, st_ = _extract_records(res.root, env, st, solver, ev, board_id, n,
@@ -276,6 +280,10 @@ def main(argv=None):
     p.add_argument("--complete-siblings", action="store_true",
                    help="greedy value-descent completion + certification for "
                         "top-k siblings the tree never certified")
+    p.add_argument("--root-all", action="store_true",
+                   help="score ALL candidates at the root (not top-k) so depth-0 "
+                        "labels cover the full candidate set (fidelity gauge "
+                        "comparability); one value pass over all root candidates")
     p.add_argument("--timeout", type=int, default=300, help="per-instance wall cap (s)")
     p.add_argument("--workers", type=int, default=8)
     p.add_argument("--threads", type=int, default=2, help="torch threads per worker")
@@ -307,7 +315,8 @@ def main(argv=None):
     opts = dict(k=a.k, expansions=a.expansions, stop_after=a.stop_after, c_puct=a.c_puct,
                 backup=a.backup, root_noise=a.root_noise,
                 prefix_check=not a.no_prefix_check, emit=a.emit,
-                complete_siblings=a.complete_siblings, timeout=a.timeout,
+                complete_siblings=a.complete_siblings, root_all=a.root_all,
+                timeout=a.timeout,
                 iter=a.iter, threads=a.threads,
                 label_model=f"{Path(a.policy).name}|{Path(a.value).name}")
     tasks = [(i, a.per_board, a.seed) for i in ids]
@@ -341,7 +350,8 @@ def main(argv=None):
         "board_ids": a.board_ids, "per_board": a.per_board, "seed": a.seed,
         "search": {k2: opts[k2] for k2 in ("k", "expansions", "stop_after", "c_puct",
                                             "backup", "root_noise", "prefix_check",
-                                            "emit", "complete_siblings", "timeout")},
+                                            "emit", "complete_siblings", "root_all",
+                                            "timeout")},
         "workers": a.workers, "device": a.device,
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "seconds": round(time.time() - t0, 1),

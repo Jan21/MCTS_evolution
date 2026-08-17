@@ -141,12 +141,13 @@ def main(argv=None):
                 k=a.k, max_expansions=a.expansions, prefix_filter=prefix_filter,
                 best_at_budget=a.best_at_budget, f_mode=a.f_mode,
                 c_puct=a.mcts_c, backup=a.mcts_backup, acct=acct,
-                dump_moves=a.dump_moves)
+                dump_moves=a.dump_moves, anytime=a.anytime)
             plan, expansions, rejected, pruned = (res.plan, res.expansions,
                                                  res.rejected, res.pruned)
-            if res.moves is not None:
-                moves_cache[id(plan)] = res.moves
+            if res.strict is not None:
                 check_cache[id(plan)] = res.strict
+                if res.moves is not None:
+                    moves_cache[id(plan)] = res.moves
             extra = res.extra
         acct["rejected_plan_pops"] = rejected
         dt = time.perf_counter() - t0

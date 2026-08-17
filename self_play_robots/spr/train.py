@@ -83,6 +83,8 @@ def parse_splits(specs):
         # id specs contain commas themselves, so split only where a 'name=' follows
         for m in re.finditer(r"(train|val|test)=([0-9,\-]+?)(?=(,(?:train|val|test)=)|$)", rest):
             d[m.group(1)] = parse_ids(m.group(2))
+        if not d or any(not v for v in d.values()):
+            raise SystemExit(f"--splits {s!r}: could not parse any non-empty split")
         out[cfg] = d
     return out
 
@@ -134,6 +136,9 @@ def main(argv=None):
         name, path = item.split("=", 1)
         specs.append((get(name), _abs(path)))
     overrides = parse_splits(a.splits)
+    unknown = set(overrides) - {c.name for c, _ in specs}
+    if unknown:
+        raise SystemExit(f"--splits names configs not in --data: {sorted(unknown)}")
     ranges = {}
     for cfg, _ in specs:
         r = {s: cfg.ids(s) for s in ("train", "val", "test")}

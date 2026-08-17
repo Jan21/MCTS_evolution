@@ -1,29 +1,100 @@
 {
- "updated": "2026-08-17T15:10:00",
+ "updated": "2026-08-17T16:24:39",
  "project": "self_play_robots",
  "milestones": {
-  "M0": {"title": "arena parity", "status": "running",
-         "note": "spr.arena re-runs the recorded supervised rows (g16r4 B1-seed21 pair under B2 flags on bench450; g24r4 exact pair prefix-check on bench.solved) through this folder's harness; per-row parity vs the recorded JSONs.",
-         "sources": ["results/m0/g16r4_b1s21_b2flags.json", "results/m0/g24r4_exact_prefix.json"],
-         "jobs": [4679719]},
-  "M1": {"title": "size-free rebuild matches supervised", "status": "pending",
-         "note": "pe=none policy+value trained on the exact g16r4 (legacy nn/data/combined.jsonl) + g24r4 corpora; gate: solve within 3.5 pts, optimality within 6.6 pts of the per-size base-vocabulary pairs (g16r4 v2 pair prefix-check 401/450; g24r4 exact pair prefix-check 205/232). Awaiting owner sign-off on PROBLEM.md 6.1/6.2.",
-         "sources": [], "jobs": []},
-  "M2": {"title": "search beats greed at inference", "status": "pending", "sources": [], "jobs": []},
-  "M3": {"title": "one self-play iteration helps", "status": "pending", "sources": [], "jobs": []},
-  "M4": {"title": "the loop climbs", "status": "pending", "sources": [], "jobs": []},
-  "M5": {"title": "scale + zero-shot transfer", "status": "pending", "sources": [], "jobs": []},
-  "M6": {"title": "beyond the oracle", "status": "pending", "sources": [], "jobs": []}
+  "M0": {
+   "title": "arena parity",
+   "status": "running",
+   "note": "spr.arena re-runs the recorded supervised rows (g16r4 B1-seed21 pair under B2 flags on bench450; g24r4 exact pair prefix-check on bench.solved) through this folder's harness; per-row parity vs the recorded JSONs.",
+   "sources": [
+    "results/m0/g16r4_b1s21_b2flags.json",
+    "results/m0/g24r4_exact_prefix.json"
+   ],
+   "jobs": [
+    4679719
+   ]
+  },
+  "M1": {
+   "title": "size-free rebuild matches supervised",
+   "status": "running",
+   "note": "size-free pairs trained on {mixed g16r4+g24r4, g16r4 only, g24r4 only} exact corpora (policy cold; value warm from labeler prod_v1_s11 + cold control on mixed), each benched at BOTH sizes (single-size pairs' other size = zero-shot cross-size transfer); per-size comparison arm = the supervised per-size pairs (already benched). Gate: within 3.5 solve / 6.6 optimality pts of g16r4 v2 pair (401/450) and g24r4 exact pair (205/232).",
+   "sources": [
+    "results/m1/"
+   ],
+   "jobs": [
+    4680209,
+    4680210,
+    4680211,
+    4680212,
+    4680213
+   ]
+  },
+  "M2": {
+   "title": "search beats greed at inference",
+   "status": "pending",
+   "sources": [],
+   "jobs": []
+  },
+  "M3": {
+   "title": "one self-play iteration helps",
+   "status": "pending",
+   "sources": [],
+   "jobs": []
+  },
+  "M4": {
+   "title": "the loop climbs",
+   "status": "pending",
+   "sources": [],
+   "jobs": []
+  },
+  "M5": {
+   "title": "scale + zero-shot transfer",
+   "status": "pending",
+   "sources": [],
+   "jobs": []
+  },
+  "M6": {
+   "title": "beyond the oracle",
+   "status": "pending",
+   "sources": [],
+   "jobs": []
+  }
  },
  "side_studies": {
-  "ceiling": {"title": "candidate-generator / plan-language ceiling on the moves metric", "status": "running",
-              "sources": ["results/ceiling/g16r4_base.json", "results/ceiling/g24r4_base.json",
-                          "results/ceiling/g16r4_b2.json", "results/ceiling/g24r4_b2.json"],
-              "jobs": [4679720]}
+  "ceiling": {
+   "title": "candidate-generator / plan-language ceiling on the moves metric",
+   "status": "running",
+   "sources": [
+    "results/ceiling/g16r4_base.json",
+    "results/ceiling/g24r4_base.json",
+    "results/ceiling/g16r4_b2.json",
+    "results/ceiling/g24r4_b2.json"
+   ],
+   "jobs": [
+    4679720
+   ]
+  },
+  "forward_mcts": {
+   "title": "primitive-move MCTS arm at g16r4 (owner: both action spaces)",
+   "status": "planned",
+   "sources": [],
+   "jobs": []
+  }
  },
  "decisions": {
-  "action_space": {"recommendation": "subgoal MCTS (primitive-move MCTS as a cheap comparison arm at g16r4)", "status": "awaiting owner"},
-  "network": {"recommendation": "size-free pe=none rebuild of policy+value on the labeler recipe", "status": "awaiting owner"}
+  "action_space": {
+   "recommendation": "subgoal MCTS main line + primitive-move MCTS at g16r4",
+   "status": "owner 2026-08-17: BOTH from the start"
+  },
+  "network": {
+   "recommendation": "size-free pe=none rebuild",
+   "status": "owner 2026-08-17: research it -- train both families at two sizes (g16r4, g24r4) and compare"
+  },
+  "findings_log": "self_play_robots/FINDINGS.md (owner choice)"
  },
- "node_hours": {"spent": 0.0, "projected_next": 0.7, "note": "M0 <=0.125 nh, ceiling <=0.5 nh"}
+ "node_hours": {
+  "spent": 0.0,
+  "projected_next": 2.5,
+  "note": "M0 <=0.125, ceiling <=0.5, smoke ~0.1, M1 ~1.5-2 nh"
+ }
 }
