@@ -10,7 +10,9 @@
 # Idempotent per phase (DONE sentinels); a walltime kill resumes on resubmit.
 #
 #   sbatch -J spr-it1 self_play_robots/jobs/selfplay_iter.slurm g24r4 1 <POLICY.ckpt> <VALUE.ckpt> [PREV_BENCH.json]
-# Knobs via env: BOARDS (120) PER_BOARD (8) EXP (600) STOP (150) WORKERS (8)
+# Knobs via env (sbatch --export=... is avoided per house rule; pass via a wrapper
+# `env VAR=.. sbatch`? no -- Slurm copies the environment by default): BOARDS (120)
+# PER_BOARD (8) EXP (600) STOP (150) WORKERS (8) MINEXP (0)
 #   WINDOW (3) ANCHOR (1: add the exact g24r4+g16r4 corpora to training)
 #   EP_P (6) EP_V (6) LR (1e-4) NOISE (0.25) SIB (1: complete siblings)
 # Cost basis (to be measured on iteration 1): generation ~2-4 h, training
@@ -31,7 +33,7 @@ export PYTHONPATH="$REPO/supervised_valuenet:$REPO/self_play_robots" PYTHONUNBUF
 CFG="$1"; K="$2"; PPREV="$3"; VPREV="$4"; PREV_BENCH="${5:-}"
 BOARDS=${BOARDS:-120}; PER_BOARD=${PER_BOARD:-8}; EXP=${EXP:-600}; STOP=${STOP:-150}
 WORKERS=${WORKERS:-8}; WINDOW=${WINDOW:-3}; ANCHOR=${ANCHOR:-1}; EP_P=${EP_P:-6}; EP_V=${EP_V:-6}
-LR=${LR:-1e-4}; NOISE=${NOISE:-0.25}; SIB=${SIB:-1}
+LR=${LR:-1e-4}; NOISE=${NOISE:-0.25}; SIB=${SIB:-1}; MINEXP=${MINEXP:-0}   # MINEXP>0 = hard-instance focus
 IT="$REPO/runs/spr/selfplay/${CFG}_iter${K}"; RES="$REPO/self_play_robots/results/selfplay/${CFG}_iter${K}"
 mkdir -p "$IT" "$RES" "$REPO/runs/spr/boards"
 ID0=$((5000 + BOARDS * (K - 1))); ID1=$((ID0 + BOARDS - 1))
@@ -48,7 +50,7 @@ if ! phase gen; then
       --boards-dir "$REPO/runs/spr/boards/${CFG}_iter${K}" --board-ids "$ID0-$ID1" \
       --per-board "$PER_BOARD" --seed "$K" --iter "$K" --expansions "$EXP" --stop-after "$STOP" \
       --root-noise "$NOISE" $SIBFLAG --workers "$WORKERS" --threads 2 --device cuda \
-      --timeout 600 --out "$IT/records.jsonl" || { echo "SPR ITER FAILED gen"; exit 1; }
+      --timeout 600 --min-expansions "$MINEXP" --out "$IT/records.jsonl" || { echo "SPR ITER FAILED gen"; exit 1; }
   cp "$IT/records.jsonl.manifest.json" "$RES/generation.manifest.json"
   echo "SPR ITER gen took $((SECONDS-t0))s"; mark gen
 fi

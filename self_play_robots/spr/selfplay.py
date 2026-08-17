@@ -231,9 +231,15 @@ def _work(task):
                        root_k=(0 if opts.get("root_all") else None))
             recs, st_ = ([], {})
             if res.strict is not None:
-                recs, st_ = _extract_records(res.root, env, st, solver, ev, board_id, n,
-                                             opts, cert, label_meta)
-            status = "ok"
+                first = (res.extra or {}).get("first_certified_expansion")
+                if first is not None and first < opts.get("min_expansions", 0):
+                    status = "trivial"      # hard-instance focus (PROBLEM.md 6.4)
+                else:
+                    recs, st_ = _extract_records(res.root, env, st, solver, ev, board_id, n,
+                                                 opts, cert, label_meta)
+                    status = "ok"
+            else:
+                status = "ok"
         except _Timeout:
             res, recs, st_, status = None, [], {}, "timeout"
         except Exception as e:  # noqa: BLE001 -- one bad instance must not kill the worker
@@ -285,6 +291,10 @@ def main(argv=None):
                         "labels cover the full candidate set (fidelity gauge "
                         "comparability); one value pass over all root candidates")
     p.add_argument("--timeout", type=int, default=300, help="per-instance wall cap (s)")
+    p.add_argument("--min-expansions", type=int, default=0,
+                   help="drop instances whose first certified plan needed fewer "
+                        "expansions than this (hard-instance focus, PROBLEM.md 6.4; "
+                        "0 = keep all)")
     p.add_argument("--workers", type=int, default=8)
     p.add_argument("--threads", type=int, default=2, help="torch threads per worker")
     p.add_argument("--device", default="cuda")
@@ -316,7 +326,7 @@ def main(argv=None):
                 backup=a.backup, root_noise=a.root_noise,
                 prefix_check=not a.no_prefix_check, emit=a.emit,
                 complete_siblings=a.complete_siblings, root_all=a.root_all,
-                timeout=a.timeout,
+                timeout=a.timeout, min_expansions=a.min_expansions,
                 iter=a.iter, threads=a.threads,
                 label_model=f"{Path(a.policy).name}|{Path(a.value).name}")
     tasks = [(i, a.per_board, a.seed) for i in ids]
@@ -351,7 +361,7 @@ def main(argv=None):
         "search": {k2: opts[k2] for k2 in ("k", "expansions", "stop_after", "c_puct",
                                             "backup", "root_noise", "prefix_check",
                                             "emit", "complete_siblings", "root_all",
-                                            "timeout")},
+                                            "timeout", "min_expansions")},
         "workers": a.workers, "device": a.device,
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "seconds": round(time.time() - t0, 1),

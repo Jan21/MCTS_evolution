@@ -21,10 +21,10 @@ source /scratch/project/open-37-42/petrhyner/venv/bin/activate
 cd "$REPO/self_play_robots"
 export PYTHONPATH="$REPO/supervised_valuenet:$REPO/self_play_robots" PYTHONUNBUFFERED=1
 BP="$1"; BV="$2"
-mkdir -p results/transfer results/ceiling
+OUTD="${3:-results/transfer}"; mkdir -p "$OUTD" results/ceiling
 echo "SPR TRANSFER start $(date +%F' '%T) job=$SLURM_JOB_ID policy=$BP value=$BV"
 bench() {  # bench <cfg> <instances> <tag> <flags>
-  local out="results/transfer/${1}_${3}.json"; [ -s "$out" ] && { echo "SKIP $out"; return 0; }
+  local out="$OUTD/${1}_${3}.json"; [ -s "$out" ] && { echo "SKIP $out"; return 0; }
   local t0=$SECONDS
   python -m spr.arena bench --arm "tr_${1}_${3}" --config "$1" --instances "$2" --policy "$BP" --value "$BV" \
       --driver spr --flags "$4" --width 8 --threads 2 --device cuda --out "$out" || echo "SPR TRANSFER FAILED $1 $3"
