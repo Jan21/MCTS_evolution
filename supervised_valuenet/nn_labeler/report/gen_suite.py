@@ -151,7 +151,9 @@ def sec_glance():
         r("Planners taught by 91%-faithful NN labels are as good as "
           "exact-taught ones",
           f"twin-taught planners solve {p1(tw1)}% / {p1(tw2)}% (two runs) vs "
-          f"exact-taught {p1(ex1)}% / {p1(ex2)}% — no detectable difference",
+          f"exact-taught {p1(ex1)}% / {p1(ex2)}% — the twin runs straddle "
+          "the exact pair, and the run-to-run spread within one arm exceeds "
+          "any gap between arms",
           '<a href="#s4">&sect;3</a>')
     ex, tw = solve("scaling/results/g32r4/comparison.json"), solve("scaling/results/g32r4/comparison_nntwin.json")
     exo, two = optpct("scaling/results/g32r4/comparison.json"), optpct("scaling/results/g32r4/comparison_nntwin.json")
@@ -204,12 +206,18 @@ def sec_overview():
               "flight — their rows below fill in automatically when the "
               "jobs land." if corrupt_pending else
               "Campaign complete, including the causality arms.")
+    band = ladder_band()
+    band_txt = (f"{band[0]:.0f}&ndash;{band[1]:.0f}%" if band
+                else "~86&ndash;93%")
     return f"""
 <section id="overview">
 <h2>What is this project?</h2>
 <p><strong>The setting.</strong> We train neural-network <em>planners</em> to
-solve Ricochet Robots puzzles — robots sliding on a grid until they hit a
-wall — at board sizes from 16&times;16 up. Planners learn from training data
+solve Ricochet Robots puzzles: several robots sit on a walled grid, a move
+slides one robot in a straight line until it hits a wall or another robot,
+and the goal is to bring a designated robot to a target cell in as few
+moves as possible (often by first parking other robots as blockers). We
+study boards from 16&times;16 up. Planners learn from training data
 in which every puzzle position carries a <em>label</em>: the number of moves
 an optimal solution still needs from that position ("cost-to-go"). Until this
 track, those labels came from an <strong>exact Rust solver</strong> — perfect
@@ -230,7 +238,7 @@ just as good? That is what the tables on this page answer.</p>
 <ol class="story">
 <li><a href="#s2">Check the labels themselves</a> — on boards where the exact
 solver still works, NN labels pick the same best move as the exact solver
-~89&ndash;93% of the time ("argmin agreement"), and their errors are small
+{band_txt} of the time ("argmin agreement"), and their errors are small
 near-ties.</li>
 <li><a href="#s3">Check that quality survives scale</a> — one net, gated at
 every board size 17&ndash;64: the quality curve is flat all the way to
@@ -312,6 +320,18 @@ project's budget is 1,000 of them; this whole campaign used ~27.</dd>
 </section>"""
 
 
+def seed_spread_txt():
+    """Measured same-arm seed spread at g24r4 (twin pair), computed live."""
+    a1 = agg("scaling/results/g24r4/comparison_nntwin.json")
+    a2 = agg("scaling/results/g24r4/comparison_nntwin-seed21.json")
+    if not (a1 and a2):
+        return ""
+    ds = abs(a1["solve_rate"] - a2["solve_rate"]) * 100
+    do = abs(a1["pct_optimal"] - a2["pct_optimal"])
+    return (f" (measured at 24&times;24: {ds:.1f} points of solve rate and "
+            f"{do:.1f} points of optimality between the two twin seeds)")
+
+
 def dose_chart():
     """SVG scatter: label fidelity (x) vs twin-minus-exact solve gap (y).
     Series 1 (blue circles): real twin cells. Series 2 (orange diamonds):
@@ -388,12 +408,17 @@ def dose_chart():
                    f'<text x="{L+193}" y="28" class="axl">corruption arms (controlled dose)</text>')
     s.append(legend + "</g>")
     s.append("</svg>")
+    has_corrupt = any(p[3] == "corrupt" for p in pts)
+    cap = ('Each point is one retrained planner compared with its control '
+           'on the same fixed benchmark: real twin cells against the '
+           'exact-taught planner (blue circles)')
+    cap += (', controlled-corruption arms against their size-matched '
+            'control (orange diamonds)' if has_corrupt else
+            '. Orange diamonds — the controlled-corruption arms — will '
+            'join the chart automatically when those jobs land')
+    cap += '. Hover a point for its numbers.'
     return ('<figure class="fig">' + "".join(s) +
-            '<figcaption>Each point is one retrained planner compared with '
-            'its control on the same fixed benchmark: real twin cells against '
-            'the exact-taught planner (blue circles), controlled-corruption '
-            'arms against their size-matched control (orange diamonds). '
-            'Hover a point for its numbers.</figcaption></figure>')
+            f'<figcaption>{cap}</figcaption></figure>')
 
 
 def sec_downstream():
@@ -417,7 +442,17 @@ def sec_downstream():
            "the labels are decides how good the taught planner is — "
            "equivalent at ~91% <a href='#how'>fidelity</a>, solving-but-"
            "sloppier at ~89%, broken at ~82%. Each cell's fidelity comes "
-           "from the twin-corpus rows of <a href='#s2'>section 1</a>.</p>"]
+           "from the twin-corpus rows of <a href='#s2'>section 1</a>.</p>"
+           "<p class='note'>Table columns: <em>mean s</em> = average "
+           "wall-clock seconds the planner spends per benchmark puzzle "
+           "(CPU); <em>n</em> = number of benchmark puzzles. Frontier rows "
+           "show '&mdash;' for optimality metrics because no optimum is "
+           "known there. 'Equivalent' throughout means: the gap between "
+           "arms is no larger than the gap between two runs of the "
+           "<em>same</em> arm that differ only in random seed"
+           + seed_spread_txt() +
+           " — that measured wobble is the yardstick every between-arm gap "
+           "is judged against.</p>"]
     out.append(dose_chart())
     verdicts = {
         "g24r4": None, "g24r8": None, "g32r4": None}
@@ -428,9 +463,12 @@ def sec_downstream():
         verdicts["g24r4"] = (chip("good", "equivalent") +
             f" At ~91% label fidelity the two twin seeds ({p1(tw)}% / {p1(tw21)}% solve) "
             f"straddle the two exact seeds ({p1(ex)}% / {p1(ex21)}%): a full 2&times;2 "
-            "seed square with no detectable difference. (The first twin run "
-            "looked <em>better</em> than exact; the replicate demoted that to "
-            "seed noise — the campaign's own honesty check.)")
+            "seed square with no gap larger than the same-arm seed wobble. "
+            "(The first twin run looked <em>better</em> than exact; the "
+            "replicate demoted that to seed noise — the campaign's own "
+            "honesty check. The secondary metrics wobble the same way: "
+            "optimality and regret vary between the two <em>exact</em> "
+            "seeds by margins similar to any twin-vs-exact gap.)")
     ex, tw = solve("scaling/results/g24r8/comparison.json"), solve("scaling/results/g24r8/comparison_nntwin.json")
     if None not in (ex, tw):
         verdicts["g24r8"] = (chip("bad", "collapse") +
@@ -667,10 +705,13 @@ indirect: the same net, under the same protocol, stayed inside the
 86&ndash;93% band at every one of the twenty sizes where checking was
 possible. A follow-up question — could the downstream <em>planners</em> be
 trained at 80/96? — was answered by code analysis, not compute: no. The
-planner networks carry a learned position table that grows with the board
-(n&sup2; parameters) and would dwarf the available training data; the
-labeler generalizes across sizes precisely because it has no such table
-(FINDINGS 81). That asymmetry is a finding in itself.</p>
+planner networks memorize a learned table with one entry per board cell
+(so an 80&times;80 board means 6,400 fresh table entries — over a million
+parameters — that would have to be learned from only a few hundred
+training examples); the labeler generalizes across sizes precisely because
+it was built <em>without</em> any such per-cell table (FINDINGS 81). That
+asymmetry — the same design choice that makes the labeler size-free is
+absent from the planners — is a finding in itself.</p>
 </section>"""
 
 
@@ -682,7 +723,9 @@ def sec_b2():
            "economic case lived in the extended 'B2' move vocabulary, where "
            "the exact campaign projected ~441 node-hours and its iteration "
            "cap destroyed the special 'by-reference' labels it existed to "
-           "produce (13.5% share uncapped &rarr; 4.8% capped). The NN's "
+           "produce: 13.5% share uncapped vs 4.8% capped, measured at the "
+           "same configuration (other configurations' capped corpora reach "
+           "up to 12.7%, all short of the uncapped target). The NN's "
            "labeling process has no iteration budget at all, so the plan "
            "was: train a labeler on the capped B2 data, have it label fresh "
            "data without the cap, recover the lost vocabulary.</p>"
@@ -717,7 +760,7 @@ def sec_b2():
             pct(g.get("argmin_agreement") if g else None),
             fmt(g.get("gap_mean") if g else None)]))
     out.append(table(["config", "by-reference share (uncapped exact: 13.5%; "
-                      "capped: 4.8&ndash;12.7%)", "argmin agree vs exact B2",
+                      "capped: 4.8–12.7%)", "argmin agree vs exact B2",
                       "mean gap"], rows_,
                      note="Source: jobs 4620064&rarr;4623993 (b2_payoff.slurm) "
                           "— B2 net trained on the capped corpora, then "
@@ -739,10 +782,21 @@ def sec_inflight():
            "of labels — redirecting the best-candidate choice to the "
            "runner-up, only in near-ties, mimicking how the real labeler "
            "actually errs. Three arms share one identical subsample; the "
-           "<em>only</em> difference between them is argmin agreement. "
-           "Pre-registered reading: if the 82% arm collapses like the "
-           "8-robot cell did, fidelity is causal; if it does not, that "
-           "collapse was about robot count. Either answer is publishable.</p>"]
+           "<em>only</em> difference between them is argmin agreement.</p>"
+           "<p><strong>Pre-registered reading</strong> (written down before "
+           "the jobs ran):</p><ul>"
+           "<li>If the <strong>82% arm collapses</strong> the way the real "
+           "8-robot cell did &rarr; fidelity is proven to be the causal "
+           "knob, and the threshold claim is licensed.</li>"
+           "<li>If the <strong>82% arm stays healthy</strong> &rarr; the "
+           "8-robot collapse was about robot count, not label quality, and "
+           "the claim retreats to a fidelity band.</li>"
+           "<li>The <strong>size-control arm</strong> (100% fidelity, same "
+           "shrunk corpus) isolates the corpus-shrinkage effect on its own; "
+           "the <strong>86% arm</strong> adds a middle dose for a "
+           "monotone-curve check.</li></ul>"
+           "<p>Either headline outcome is publishable — that is what makes "
+           "this the right experiment to run.</p>"]
     rows_ = []
     if man and "arms" in man:
         arm_desc = {"d1000": "size control (labels untouched)",
