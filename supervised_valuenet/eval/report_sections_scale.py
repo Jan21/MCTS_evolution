@@ -4,7 +4,8 @@ from eval.report_util import (esc, ck, fnum, ffrac, dot, chip, scroll,
                               pending, progress_tag, kicker_h2, need, fact,
                               SOURCES, CHECKS, NEEDLES)
 from eval.report_data import RUNGS, probe_counts
-from eval.report_tables import sys_table
+from eval.report_tables import (sys_table, retrain_story_html,
+                                retrain_story_short)
 from eval import report_charts as C
 
 
@@ -243,8 +244,9 @@ def sec_ladder(D):
             if rc:
                 row.append(_score_cell(rc, desc + " bwd_retrained"))
             else:
-                row.append('<td class="num"><span class="chip run">in '
-                           "progress</span></td>")
+                row.append('<td class="num"><span class="chip warn">not '
+                           'run</span><div class="cellnote">never '
+                           "launched</div></td>")
             row.append(_score_cell(f, desc + " fwd", win=win_f, fam="fwd"))
             body.append("<tr>" + "".join(row) + "</tr>")
     table = scroll("<table id='ladder-table'><thead>" + head + "</thead>"
@@ -258,12 +260,15 @@ def sec_ladder(D):
         "“Beyond the oracle” rows have no move optima — solving there is "
         "self-certifying. The full-language rows run zero-shot (networks "
         "never trained on the newest step type). Retrained rows show the "
-        "regenerated-corpus retrain wherever it completed; read them with "
+        "regenerated-corpus retrain wherever it was run; read them with "
         "the fairness tab's seed-robustness section, which found retraining "
-        "outcomes are decided by which of two training basins the value "
-        "network lands in — a retrained row can sit far below its zero-shot "
-        "sibling for that reason, and the zero-shot rows remain the "
-        "method's best measured configuration. Rows from the earlier "
+        "outcomes are decided by which of two training <i>basins</i> the "
+        "value network lands in — a basin being one of two sharply "
+        "separated outcomes the same recipe falls into, visible in the "
+        "validation error before any benchmarking. A retrained row can sit "
+        "far below its zero-shot sibling for that reason. "
+        + retrain_story_short(D)
+        + " Rows from the earlier "
         "depleted label corpus appear only inside the fairness tab's "
         "label-budget experiment, never here.") \
         + table + """
@@ -405,8 +410,10 @@ def _detail_rows(e, group):
     label_of = {
         "bwd_old": ("Subgoals — original language", "bwd-old",
                     "checked search; the language the networks were bred on"),
-        "bwd_b1": ("Subgoals — extended language (B1), retrained", "bwd",
-                   "wall-less stoppers + step-asides; retrained networks"),
+        "bwd_b1": ("Subgoals — extended language (B1)", "bwd",
+                   "wall-less stoppers + step-asides; the banked B1-corpus "
+                   "network pair, which the B2 row below then re-uses "
+                   "unchanged — not the cap-20,000 retrain further down"),
         "bwd_b2": ("Subgoals — full language (B2), same networks", "bwd",
                    "generalized repairs live; the re-use step type is not "
                    "reachable by the learned proposal path (plan-language "
@@ -434,8 +441,10 @@ def _detail_rows(e, group):
                  "agg": rc["agg"] if rc else None,
                  "src": rc["src"] if rc else None,
                  "machine": rc["machine"] if rc else None,
-                 "pending_msg": "row fills automatically when the result "
-                 "file lands"})
+                 "pending_chip": "not run",
+                 "pending_msg": "this retrain was never launched — no job is "
+                 "queued or running for it; the row fills in automatically "
+                 "if one ever is"})
     return rows
 
 
@@ -661,13 +670,27 @@ def sec_fair_matched(D):
 def sec_fair_ledger(D):
     acc = D.get("compute_accounting")
     hook = ""
-    if acc:
+    n_rec = len((acc or {}).get("records") or [])
+    if acc and n_rec:
         hook = ("<p><b>Instrumented counters have landed</b> "
                 "(<code>eval/results/compute_accounting.json</code>): "
-                "per-rung counts of network calls and physics-slide calls "
-                "for both planners, measured in separate instrumented "
-                "runs so the headline rows' timings stay uncontaminated. "
-                "The pilot numbers quoted below agree with them.</p>")
+                f"{n_rec} per-rung records of network calls and "
+                "physics-slide calls for both planners, measured in "
+                "separate instrumented runs so the headline rows' timings "
+                "stay uncontaminated. The pilot medians quoted above agree "
+                "with them.</p>")
+    elif acc:
+        hook = ("<p><b>The accounting file exists but is still empty of "
+                "measurements.</b> "
+                "<code>eval/results/compute_accounting.json</code> carries "
+                "the counter's unit definition, bucket semantics and "
+                "reporting rule — and <b>zero records</b>. So the "
+                "per-rung counts this section once promised are <b>not on "
+                "this page</b>: the five-puzzle pilot medians quoted in "
+                "the paragraph above are the only slide counts the study "
+                "has measured, and they are labelled as a pilot "
+                "throughout. The section fills in automatically if records "
+                "are ever appended.</p>")
     else:
         hook = progress_tag(
             "measurement queued: instrumented re-runs will publish "
@@ -710,7 +733,8 @@ def sec_fair_ledger(D):
   side, so the honest position is to measure them rather than assert
   them away. Two complementary checks exist today: <b>wall-clock time</b>
   (below), which counts everything including the unmetered bookkeeping,
-  and the <b>instrumented counters</b> already collected (<code>compute_accounting.json</code>).</p>
+  and the <b>instrumented counter harness</b> (<code>compute_accounting.json</code>),
+  whose status is stated exactly below.</p>
   <p><b>The exclusion is not one-sided, and saying so was an error.</b> The
   expansion counter meters network passes, so it misses the forward
   planner's physics too: generating one move-level successor set calls the
@@ -1371,6 +1395,19 @@ def sec_glossary():
          "plan during search so doomed branches are dropped immediately"),
         ("anytime mode", "test-playing each finished plan; on failure the "
          "search discards it and continues"),
+        ("training basin", "one of two sharply separated outcomes the same "
+         "retraining recipe falls into, distinguishable before any "
+         "benchmarking by the value network's validation error "
+         "(val_regret); which basin a run lands in decides its benchmark "
+         "row"),
+        ("cap-20,000 corpus", "the regenerated label corpus: the cap is the "
+         "search budget each labelling attempt was given. The earlier "
+         "corpus used a 4× cheaper cap and was depleted of the newest "
+         "candidate type"),
+        ("integration gap", "the distance between what the plan language "
+         "can express (the ceiling) and what the learned planner reaches, "
+         "caused by a step type missing from its proposal path, "
+         "featurization and policy training rather than by mis-ranking"),
         ("ceiling", "the share of benchmark puzzles for which at least one "
          "playable plan exists in the plan language at all, measured by "
          "exhaustive probe"),
@@ -1388,16 +1425,21 @@ def sec_provenance(D):
         rows.append(f"<tr><td><code class='small'>{esc(rel)}</code></td>"
                     f"<td>{chip(e['status'], cls)}</td>"
                     f"<td class='small muted'>{esc(e['note'])}</td></tr>")
+    n_all = len(SOURCES)
     n_ok = sum(1 for e in SOURCES.values() if e["status"] == "ok")
+    n_gone = n_all - n_ok
     table = scroll("<table><thead><tr><th>file</th><th>status</th>"
                    "<th>note</th></tr></thead><tbody>"
                    + "".join(rows) + "</tbody></table>")
     return kicker_h2(
         "provenance", "Every file this page was built from",
-        f"{n_ok} files loaded; “missing” rows are expected results that "
-        "render as pending until they land.") + \
-        f"<details><summary class='small muted'>file list "\
-        f"({len(SOURCES)} entries)</summary>{table}</details></section>"
+        f"The build referenced {n_all} files: {n_ok} loaded and {n_gone} "
+        "absent. Both counts come from the same list — the one in the "
+        "collapsed table below — and every absent file's row says why it "
+        "is absent.") + \
+        f"<details><summary class='small muted'>the full file list — all "\
+        f"{n_all} entries ({n_ok} loaded, {n_gone} absent), with the "\
+        f"status and reason for each</summary>{table}</details></section>"
 
 
 def sec_selfcheck(D):
@@ -1427,8 +1469,10 @@ def sec_selfcheck(D):
   plus {n_needles} structural assertions (values that must or must never
   appear). <b>Any mismatch aborts the build</b> — if you are reading this
   page, every check passed at generation time.</p>
-  <details><summary class="small muted">the {len(CHECKS)} checked numbers
-  </summary>{table}</details>
+  <details><summary class="small muted">open the full audit table — all
+  {len(CHECKS)} checked numbers, each with its source file, the value read
+  from that file, and the string printed on the page (long)</summary>
+  {table}</details>
   <p class="cellnote">Regenerate any time with
   <code>PYTHONPATH=. python3 -m eval.build_report</code> from the repository
   root — new result files (for example the retrained-network rows) are
@@ -1436,8 +1480,8 @@ def sec_selfcheck(D):
 </section>"""
 
 
-def sec_footnotes():
-    return """
+def sec_footnotes(D):
+    return f"""
 <section id="footnotes">
   <div class="sechead"><div class="kicker">fine print</div>
   <h2>Footnotes</h2></div>
@@ -1454,10 +1498,9 @@ def sec_footnotes():
     this report, and the published 8-robot rows use the stability-controlled
     retrain.</li>
     <li><b>Zero-shot full-language rows</b> use networks never trained on
-    the newest candidate type. Retraining did not improve on them — the
-    fairness tab's seed-robustness section explains why (a bistable
-    value-network training), so the zero-shot rows stand as the method's
-    best measured configuration.</li>
+    the newest candidate type. {retrain_story_short(D)} The fairness tab's
+    seed-robustness section carries the mechanism behind the regressions (a
+    bistable value-network training).</li>
     <li><b>Sources of truth:</b> where a document and a result file
     disagree, the result file wins. This page renders result files only.
     </li>
@@ -1469,4 +1512,4 @@ def tab_methods(D):
     from eval.report_sections_hygiene import sec_hygiene, sec_databudget
     return (sec_protocol(D) + sec_design(D) + sec_hygiene(D)
             + sec_databudget(D) + sec_glossary()
-            + sec_provenance(D) + sec_selfcheck(D) + sec_footnotes())
+            + sec_provenance(D) + sec_selfcheck(D) + sec_footnotes(D))

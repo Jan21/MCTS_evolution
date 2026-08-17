@@ -41,6 +41,7 @@ def sec_strata(D):
     head = kicker_h2(
         "selection, tested",
         "Does the frontier margin survive its own selection?",
+        "(“Frontier” is this page's shorthand for a beyond-oracle set.) "
         "The beyond-oracle sets are defined by a failure: they hold exactly "
         "the puzzles the exact move-level solver could not grade at its "
         "budget. That selection is adversarial to the move-by-move planner "

@@ -48,6 +48,30 @@ def proto_date(comp):
 KAROLINA_SINCE = "2026-07-20"
 
 
+def newest_source_file():
+    """(iso date, relpath) of the most recently WRITTEN file the build read.
+
+    The masthead used to quote the newest `protocol.date` inside the loaded
+    JSONs, which lags behind reality whenever a file is regenerated or a new
+    artifact without a protocol block lands.  This reads the filesystem
+    instead, so the date on the page can never be stale.
+    """
+    newest, newest_rel = None, None
+    for rel, e in SOURCES.items():
+        if e.get("status") != "ok":
+            continue
+        try:
+            m = os.path.getmtime(rp(rel))
+        except OSError:
+            continue
+        if newest is None or m > newest:
+            newest, newest_rel = m, rel
+    if newest is None:
+        return "—", None
+    import datetime as _dt
+    return _dt.date.fromtimestamp(newest).isoformat(), newest_rel
+
+
 def machine_of(comp):
     """Which machine produced this file: 'karolina' or 'origin'.
 
@@ -62,9 +86,16 @@ def machine_of(comp):
 # ---------------------------------------------------------------------------
 # The scaling ladder — every configuration the study runs, in order.
 # Each slot names the file and which system inside it to read.  A missing
-# file renders as a pending row.  `future` slots are expected results that
-# render as "retraining in progress" until their file lands.
+# file renders as a pending row.  `future` slots are retrain results; every
+# one that is absent today was NEVER LAUNCHED (no queued job) — the page says
+# "not run", not "in progress" (see NOT_RUN_NOTE).
 # ---------------------------------------------------------------------------
+
+# The note attached to every retrain file that does not exist.  As of the last
+# build no retraining job is queued or running for any of them, so nothing on
+# the page may promise them as forthcoming.
+NOT_RUN_NOTE = ("not run — this retrain was never launched (no queued or "
+                "running job); the row fills in automatically if it ever is")
 
 RUNGS = [
     {
@@ -361,7 +392,7 @@ def load_rung_files(rung):
             data = None
             SOURCES.setdefault(rel, {
                 "status": "missing",
-                "note": "expected from the B2 retraining in progress"})
+                "note": NOT_RUN_NOTE})
         slots[("future", slot)] = (rel, data, "backward")
     if rung.get("fwd_withheld"):
         fname, kind = rung["fwd_withheld"]
@@ -532,8 +563,14 @@ def worked_example(probe_rows, want_idx=333):
 # was never wired into the learned planner (FINDINGS 40); it is now wired
 # behind a flag that defaults off.  Each entry below is one benchmark set:
 # the SAME banked cap-20,000 B2 network pair run over the identical pinned
-# 16x16 6-robot instances with the flag on and off, plus the production file
-# whose rows the flag-off arm must reproduce exactly (the regression check).
+# 16x16 6-robot instances with the flag on and off, plus the file whose rows
+# the flag-off arm must reproduce exactly (the regression check).
+#
+# NOTE on what that regression file IS: it is the cap-20,000 RETRAINED row at
+# 16x16 6 robots (310/316 gradable, 105/134 beyond-oracle), because that is
+# the network pair the A/B runs.  It is NOT the zero-shot production row of
+# the headline tables (306/316, 108/134).  Any prose claiming the flag-off arm
+# "reproduces every production row on this page" would be false.
 #
 # Rows pair by POSITION, not by env_id: these files are merged from 40 shard
 # runs and env_ids repeat across shards (146 distinct ids over 316 graded
@@ -628,8 +665,9 @@ def build_byref_ab():
     fact("by-reference A/B: both arms pin the identical instance file "
          "(sha256) and the identical row order, so rows pair one-to-one",
          pins_ok)
-    fact("by-reference A/B: the flag-off arm reproduces the production rows "
-         "exactly (solved, plan length and expansions, both sets)",
+    fact("by-reference A/B: the flag-off arm reproduces the 16×16 · 6-robot "
+         "cap-20,000 RETRAINED rows exactly (solved, plan length and "
+         "expansions, both sets) — not the zero-shot production rows",
          regression_ok)
     return {"sets": sets, "pooled": tot}
 
@@ -676,7 +714,7 @@ def collect():
         rel = "eval/results/" + BASE_FUTURE["bwd_retrained"][0]
         SOURCES.setdefault(rel, {
             "status": "missing",
-            "note": "expected from the B2 retraining in progress"})
+            "note": NOT_RUN_NOTE})
 
     # matched-150 fixes ladder
     D["postfix1"] = load_json("eval/results/comparison_backward_postfix.json")
@@ -783,6 +821,7 @@ def collect():
     D["byref_ab"] = build_byref_ab()
 
     D["ladder"] = build_ladder(D)
+    D["retrain"] = retrain_verdict(D)
 
     # per-puzzle wall-clock, recomputed from the row arrays (median + tail)
     comps = {}
@@ -809,6 +848,68 @@ def _base_cell(comp, kind="backward"):
         return None
     return {"agg": agg, "src": None, "machine": machine_of(comp),
             "date": proto_date(comp)[:10], "name": pick_name(comp, kind)}
+
+
+# ---------------------------------------------------------------------------
+# The retraining story, derived (never asserted)
+#
+# Three separate places used to state, in prose, that "retraining did not
+# improve on the zero-shot rows".  That is false at 32x32 4 robots and it was
+# only ever true rung by rung, so the claim is now COMPUTED from the loaded
+# ladder cells and rendered from this one structure.
+# ---------------------------------------------------------------------------
+
+RETRAIN_MATCH_BAND = 3.0   # percentage points: inside this, call it a wash
+
+SET_LABEL = {"graded": "gradable", "frontier": "beyond-oracle"}
+
+
+def retrain_verdict(D):
+    """Per-rung verdict on the cap-20,000 retrain vs its zero-shot sibling.
+
+    A rung counts as `improved` when every measured set gains more than
+    RETRAIN_MATCH_BAND points, `regressed` when any set loses more than that,
+    `matched` otherwise, and `not run` when no retrain file exists at all.
+    """
+    rungs = []
+    for e in D["ladder"]:
+        sets = []
+        for group in ("graded", "frontier"):
+            cells = e.get(group) or {}
+            rc, zc = cells.get("bwd_retrained"), cells.get("bwd_b2")
+            if not rc or not zc:
+                continue
+            sets.append({
+                "set": group, "set_label": SET_LABEL[group],
+                "retrained": rc, "zeroshot": zc,
+                "delta": (rc["agg"]["solve_rate"]
+                          - zc["agg"]["solve_rate"]) * 100})
+        if not sets:
+            verdict = "not run"
+        else:
+            lo = min(s["delta"] for s in sets)
+            if lo > RETRAIN_MATCH_BAND:
+                verdict = "improved"
+            elif lo < -RETRAIN_MATCH_BAND:
+                verdict = "regressed"
+            else:
+                verdict = "matched"
+        rungs.append({"key": e["key"], "label": e["label"],
+                      "short": e["short"], "sets": sets, "verdict": verdict})
+    by = {}
+    for r in rungs:
+        by.setdefault(r["verdict"], []).append(r)
+    out = {"rungs": rungs, "n_total": len(rungs),
+           "n_landed": sum(1 for r in rungs if r["verdict"] != "not run"),
+           "improved": by.get("improved", []),
+           "matched": by.get("matched", []),
+           "regressed": by.get("regressed", []),
+           "not_run": by.get("not run", [])}
+    fact("retraining story: a verdict is derived from result files for every "
+         f"one of the {len(rungs)} configurations, and at least one rung is "
+         "recorded as improved (so no text may claim retraining never helped)",
+         len(rungs) == len(RUNGS) and bool(out["improved"]))
+    return out
 
 
 def build_ladder(D):

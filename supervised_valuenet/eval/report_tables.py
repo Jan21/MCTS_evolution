@@ -64,9 +64,11 @@ def sys_table(rows, frontier=False, table_id=None):
         syscell = (f'<td class="syscell">{dot(r["family"])}'
                    f'<b>{esc(r["label"])}</b>{sub}</td>')
         if r.get("agg") is None:
+            chip_txt = r.get("pending_chip", "in progress")
+            chip_cls = "chip run" if chip_txt == "in progress" else "chip warn"
             body.append(
                 f'<tr>{syscell}<td class="num" colspan="{ncols - 1}">'
-                f'<span class="chip run">in progress</span> '
+                f'<span class="{chip_cls}">{esc(chip_txt)}</span> '
                 f'<span class="small muted">{esc(r.get("pending_msg", ""))}'
                 f"</span></td></tr>")
             continue
@@ -95,3 +97,89 @@ def sys_table(rows, frontier=False, table_id=None):
     return (scroll(f"<table{tid}><thead>{head}</thead>"
                    f'<tbody>{"".join(body)}</tbody></table>')
             + machine_legend(mixed))
+
+
+# ---------------------------------------------------------------------------
+# The retraining story, rendered from report_data.retrain_verdict()
+#
+# Three places on the page used to assert, in fixed prose, that retraining
+# "did not improve on" the zero-shot rows and had "landed at four of six
+# configurations".  Both were false against the files.  Every one of those
+# places now calls one of the two renderers below, so the claim is derived
+# per rung and cannot drift again.
+# ---------------------------------------------------------------------------
+
+def _rung_list(rungs):
+    names = [esc(r["short"]) for r in rungs]
+    if not names:
+        return ""
+    if len(names) == 1:
+        return names[0]
+    return ", ".join(names[:-1]) + " and " + names[-1]
+
+
+def _improved_clause(r):
+    """'32×32 · 4r (97.7% gradable / 77.8% beyond-oracle vs 88.0% / 71.3%)'."""
+    got, was = [], []
+    for s in r["sets"]:
+        d = f'retrain verdict {r["key"]} {s["set"]}'
+        got.append(ck(f'{s["retrained"]["agg"]["solve_rate"] * 100:.1f}%',
+                      s["retrained"]["src"], d + " — retrained",
+                      raw=s["retrained"]["agg"]["solved"])
+                   + f' {esc(s["set_label"])}')
+        was.append(ck(f'{s["zeroshot"]["agg"]["solve_rate"] * 100:.1f}%',
+                      s["zeroshot"]["src"], d + " — zero-shot",
+                      raw=s["zeroshot"]["agg"]["solved"]))
+    return (f'<b>{esc(r["short"])}</b> (' + " / ".join(got)
+            + " solved, against " + " / ".join(was) + " zero-shot)")
+
+
+def retrain_story_html(D):
+    """The full per-rung retraining paragraph (tabs 3 and 4)."""
+    rv = D.get("retrain")
+    if not rv:
+        return ""
+    parts = []
+    if rv["improved"]:
+        parts.append("it clearly <b>improves</b> "
+                     + "; ".join(_improved_clause(r) for r in rv["improved"]))
+    if rv["matched"]:
+        parts.append("it is a <b>wash</b> at " + _rung_list(rv["matched"]))
+    if rv["regressed"]:
+        parts.append("and it <b>regresses</b> at " + _rung_list(rv["regressed"])
+                     + ", where a collapsed value-network training run is the "
+                     "cause — measured in the fairness tab's seed-robustness "
+                     "section, not a property of the puzzles")
+    not_run = (" The " + _rung_list(rv["not_run"]) + " retrain was never run."
+               if rv["not_run"] else "")
+    return (
+        "<p class='small'>Retraining on the full-vocabulary corpus has since "
+        f"landed at <b>{rv['n_landed']} of the {rv['n_total']}</b> "
+        f"configurations.{not_run} The outcome is <b>not uniform</b>, so the "
+        "page states it per rung: " + "; ".join(parts) + ". The zero-shot "
+        "rows are therefore <i>not</i> the best measured configuration "
+        "everywhere — they are the one configuration measured identically at "
+        "every rung, which is why the headline table uses them. The newest "
+        "step type never reaches the learned planner in either arm (the "
+        "integration gap), which the flag experiment below quantifies.</p>")
+
+
+def retrain_story_short(D):
+    """One-sentence version for captions and footnotes."""
+    rv = D.get("retrain")
+    if not rv:
+        return ""
+    bits = []
+    if rv["improved"]:
+        bits.append("improves at " + _rung_list(rv["improved"]))
+    if rv["matched"]:
+        bits.append("is a wash at " + _rung_list(rv["matched"]))
+    if rv["regressed"]:
+        bits.append("regresses at " + _rung_list(rv["regressed"]))
+    not_run = (" the " + _rung_list(rv["not_run"]) + " retrain was never run;"
+               if rv["not_run"] else "")
+    return ("Retraining on the regenerated corpus " + ", ".join(bits) + ";"
+            + not_run + " it is not a uniform upgrade in either direction. "
+            "The zero-shot rows are the one configuration measured "
+            "identically at every rung — that, not superiority everywhere, "
+            "is why the headline uses them.")

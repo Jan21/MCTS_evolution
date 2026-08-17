@@ -5,8 +5,10 @@ import os
 from eval.report_util import (esc, ck, fnum, ffrac, dot, chip, scroll,
                               pending, progress_tag, kicker_h2, need, fact,
                               rp)
-from eval.report_data import pick, systems_of_kind, proto_date
-from eval.report_tables import sys_table
+from eval.report_data import (pick, systems_of_kind, proto_date,
+                              newest_source_file)
+from eval.report_tables import (sys_table, retrain_story_html,
+                                retrain_story_short)
 from eval import report_charts as C
 from eval.report_boards import board_svg, slide_rule_svg, SLOT_NAMES, SLOT_VARS
 from eval.plan_viz_core import (GEOM_COMPACT, dag_svg, board_inset,
@@ -51,9 +53,9 @@ def masthead(D):
         for (g, s), (rel, comp, kind) in slots.items():
             if comp:
                 dates.append(proto_date(comp)[:10])
-    newest = max(d for d in dates if d) if dates else "—"
-    n_files = len([1 for slots in D["rungs"].values()
-                   for (_, v) in slots.items() if v[1]])
+    newest_run = max(d for d in dates if d) if dates else "—"
+    # the date that must never look stale: when a source file was last WRITTEN
+    newest_file, newest_rel = newest_source_file()
     return f"""
 <header class="masthead">
   <div class="doctag">Measurement report · Ricochet Robots planner study</div>
@@ -63,11 +65,67 @@ def masthead(D):
   time, the other in goal-directed subgoals. This report follows the
   comparison from a 16×16 training ground to 32×32 boards that have outgrown
   exact search, and reports every result from its machine-readable source.</p>
-  <p class="meta">newest result: {esc(newest)}<span class="sep">·</span>
+  {abstract(D)}
+  <p class="meta">newest source file: {esc(newest_file)}
+  {f'(<code>{esc(newest_rel)}</code>)' if newest_rel else ''}
+  <span class="sep">·</span>newest benchmark run recorded inside a result
+  file: {esc(newest_run)}<span class="sep">·</span>
   every number on this page is read from a result file at build time and
   machine-verified — see <a href="#selfcheck">the self-check appendix</a></p>
 </header>
 """
+
+
+def abstract(D):
+    """Five plain sentences, before anything technical (readability audit §5).
+
+    The margins are read out of the same pooled cells the headline table
+    uses, so the abstract cannot disagree with the table under it.
+    """
+    st = D.get("stats_tests") or {}
+    cells = [c for c in (st.get("cells") or [])
+             if "skipped" not in c and c.get("a") == "bwd_b2"
+             and c.get("b") == "fwd"
+             and (c.get("set") == "pooled"
+                  or (c.get("rung") == "g16r4" and c.get("set") == "graded"))]
+    wins = [c for c in cells if c["diff"] > 0]
+    losses = [c for c in cells if c["diff"] < 0]
+    if not cells:
+        return ""
+    lo = min(c["diff"] for c in wins) * 100
+    hi = max(c["diff"] for c in wins) * 100
+    SRC = "eval/results/stats_tests.json"
+    n_win, n_all = len(wins), len(cells)
+    fwd_edge = f"{abs(losses[0]['diff']) * 100:.1f}" if losses else None
+    return f"""
+  <div class="panel abstract">
+  <p><b>In short.</b> This report compares two planners for Ricochet Robots,
+  a puzzle where robots slide until they hit something: a
+  <b>move-by-move</b> planner that picks one robot move at a time, and a
+  <b>subgoal</b> planner that works backward from the goal in
+  multi-move chunks — <b>both built in this study</b>, so there is no
+  third-party system anywhere on this page and every number is one of our
+  planners against the other, never against a published baseline. They
+  were tested on six
+  configurations of board size and robot count (16×16 up to 32×32, 4 to 8
+  robots), 450 fixed puzzles each, with identical search budgets, and a
+  puzzle counts as solved only when the plan replays legally on the real
+  board. The subgoal planner wins {n_win} of the {n_all} configurations by
+  {ck(f'{lo:.1f}', SRC, "abstract: smallest winning margin", raw=lo)} to
+  {ck(f'{hi:.1f}', SRC, "abstract: largest winning margin", raw=hi)}
+  percentage points, the margin growing with both board size and robot
+  count. Two caveats we do not bury: the move-by-move planner still
+  <b>wins the smallest configuration outright</b>{
+  f" (by {ck(fwd_edge, SRC, 'abstract: forward edge at base', raw=fwd_edge)} points)"
+  if fwd_edge else ""} and keeps a real solution-quality edge wherever the
+  exact solver can grade quality, and every headline arm is a
+  <b>single training seed</b> on both sides — seed variation has been
+  measured and is large, and replicate runs are under way. The first half
+  of this page (tabs 1–3) explains the puzzle, the two planners and the
+  plan language; the second half (tabs 4–6) is the audit trail: the
+  rung-by-rung ladder, whether the comparison is compute-fair, and the
+  protocol, provenance and machine self-check.</p>
+  </div>"""
 
 
 # ---------------------------------------------------------------------------
@@ -211,7 +269,8 @@ def sec_verdict_tiles(D):
                 raw=fg["agg"]["mean_expansions"])
         tiles.append(f"""
   <div class="tile"><div class="tlabel">Search effort where both planners
-  excel (16×16, 8 robots, gradable set)</div>
+  excel (16×16, 8 robots, gradable set — the puzzles the exact solver
+  managed to solve, so an optimal move count exists for each)</div>
   <div class="tvalue">{v1} <span class="vs">vs</span> {v2}</div>
   <div class="tsub">search steps per puzzle, subgoals vs move-by-move — at
   near-equal solve rates ({rate_txt(bg["agg"])} vs {rate_txt(fg["agg"])}).
@@ -228,13 +287,26 @@ def sec_verdict_tiles(D):
                 "tile: language ceiling", raw=n_unres)
         v2 = ck(rate_txt(b_b2), "eval/results/final450_backward_b2.json",
                 "tile: achieved vs ceiling", raw=b_b2["solved"])
+        ab = D.get("byref_ab")
+        if ab:
+            p = ab["pooled"]
+            net = ck(str(p["on"] - p["off"]),
+                     "scaling/results/g16r6/comparison_b2retrained_cap20000"
+                     "_byref_on.json", "tile: byref net gain",
+                     raw=p["on"] - p["off"])
+            wired = (f"It has since been wired behind a flag: turning it on "
+                     f"moves {net} more puzzles of {p['n']} at 16×16 · 6 "
+                     "robots — see the plan-language tab.")
+        else:
+            wired = ("It has since been wired behind a flag; the on/off "
+                     "measurement is in the plan-language tab.")
         tiles.append(f"""
   <div class="tile"><div class="tlabel">What the extended plan language
   permits vs what today's networks reach (base benchmark)</div>
   <div class="tvalue">{v1} <span class="vs">vs</span> {v2}</div>
   <div class="tsub">the gap is an integration gap, not a design wall — the
-  newest step type was never wired into the learned planner's proposal
-  path or featurization (see the plan-language tab).</div></div>""")
+  newest step type was missing from the learned planner's proposal path and
+  featurization. {wired}</div></div>""")
 
     return f'<div class="kpirow">{"".join(tiles)}</div>'
 
@@ -441,8 +513,11 @@ def sec_verdict(D):
   every trend along the two hardness axes bends the other way.</b> The exact
   solver its training depends on fails on a growing majority of puzzles as
   boards and robot counts grow, and its per-puzzle search cost explodes with
-  board size. On the whole pinned pool at each rung — gradable and
-  beyond-oracle puzzles together, the only view free of any selection — the
+  board size. On the whole pinned pool at each rung — gradable puzzles (the
+  exact solver graded them, so an optimal move count exists) and
+  beyond-oracle puzzles (it failed at its practical budget, so no optimum
+  exists and a solution proves itself by playing out) together, the only
+  view free of any selection — the
   full-language subgoal planner wins <b>every rung measured</b>, by 7.8 to
   47.8 points, with the margin growing along both axes.</p>
   <p><b>Three qualifications, stated here rather than in a footnote.</b>
@@ -465,8 +540,10 @@ def sec_verdict(D):
   <p>The subgoal planner's remaining handicaps are honest and measured:
   longer solutions where no optimum exists, and a gap between what its
   extended plan language permits and what its current networks reach —
-  an integration gap: the newest step type is not yet wired into the
-  learned planner's proposal path or featurization.</p>
+  an integration gap: the newest step type was absent from the learned
+  planner's proposal path and featurization. It is now wired behind a flag,
+  and the measured effect of switching it on is small (plan-language
+  tab).</p>
   </div>
 """
     html += ladder_chart_frontier(D)
@@ -1102,7 +1179,11 @@ def ceiling_meter_fig(D):
         "base benchmark (450 puzzles): light track = share of puzzles for "
         "which a playable plan exists in the language at all (exhaustive "
         "no-network probe); solid bar = what the trained networks actually "
-        "solve",
+        "solve. B1 and B2 name the two plan-language extensions: B1 lets a "
+        "stopper park on a cell with no wall behind it and lets a robot "
+        "step aside before a named slide; B2 additionally lets a plan "
+        "re-use a robot it has already placed and step two robots aside "
+        "at once",
         "", svg,
         "The black tick is the measured ceiling. The remaining gap between "
         "bar and tick is an integration gap: the search that produced the "
@@ -1266,15 +1347,7 @@ def sec_lang_b2(D):
   (proposal path, featurization, policy training), not a ranking failure.
   That gap has since been closed behind a flag, and the step's zero-shot
   value measured — see “the re-use step, wired at last” below.</p>"""
-    html += ("<p class='small'>Retraining on the full-vocabulary corpus has "
-             "since landed at four of six configurations. The outcome is "
-             "mixed and is reported in full in the fairness tab: the "
-             "retrained planner matches its zero-shot predecessor at "
-             "16×16 · 6 robots and regresses at the 8-robot rungs — "
-             "training turned out to be seed-fragile, and the newest step "
-             "type never reaches the learned planner regardless (the "
-             "integration gap above). The zero-shot rows remain the "
-             "method's best measured configuration everywhere.</p>")
+    html += retrain_story_html(D)
     if os.path.exists(rp("eval", "results", "plan_structures.html")):
         html += ("<p class='small muted'>All five plan diagrams, with full "
                  "board layouts, are also drawn in the "
@@ -1341,7 +1414,9 @@ def sec_lang_attribution(D):
             + '<div class="cellnote">same nets, old language</div>',
             ck(str(b1_n), b1_src, f"lang-attrib g16r6 {set_} b1", raw=b1_n),
             ck(str(b2_n), b2_src, f"lang-attrib g16r6 {set_} b2", raw=b2_n),
-            "all three columns: the same base-trained network pair"))
+            "all three columns run the SAME banked network pair "
+            "(checkpoints_backward/policy_b1.ckpt + value_b1.ckpt); only "
+            "the plan vocabulary changes"))
     if not rows:
         return ""
     body = "".join(
@@ -1355,6 +1430,35 @@ def sec_lang_attribution(D):
         "<th class='num'>+ extension 1 (B1)</th>"
         "<th class='num'>+ extension 2 (B2), zero-shot</th>"
         "<th>provenance</th></tr></thead><tbody>" + body + "</tbody></table>")
+    # Which "old language" arm is which -- the two numbers differ and the page
+    # shows both, so each is labelled by the file it comes from.
+    arm_note = ""
+    og, _, og_src = slot_solved("g16r6", "graded", "bwd_old")
+    of, _, of_src = slot_solved("g16r6", "frontier", "bwd_old")
+    fg, _n_g = fixed_old("g16r6", "graded")
+    ff, _n_f = fixed_old("g16r6", "frontier")
+    if None not in (og, of, fg, ff):
+        arm_note = (
+            "<p class='small muted'><b>Two different “old language” arms "
+            "appear on this page; they are not the same run.</b> The column "
+            "above is the <i>fixed-nets</i> control — the banked B1 network "
+            "pair driven with the old vocabulary "
+            "(<code>comparison_basenets_oldvocab.json</code> and its "
+            "<code>_ungraded</code> twin): "
+            + ck(str(fg), SRC, "arm note: fixed-nets old graded", raw=fg)
+            + "/" + ck(str(ff), SRC, "arm note: fixed-nets old frontier",
+                       raw=ff)
+            + ". The scaling ladder's “original language” row is a "
+            "<i>different</i> arm — networks trained per configuration on "
+            "the old vocabulary (<code>comparison.json</code> / "
+            "<code>comparison_ungraded.json</code>): "
+            + ck(str(og), og_src, "arm note: ladder old graded", raw=og)
+            + "/" + ck(str(of), of_src, "arm note: ladder old frontier",
+                       raw=of)
+            + ". Only the first isolates the language, which is why this "
+            "table uses it; the difference between the pairs is the "
+            "net-provenance effect, tested separately in the fairness "
+            "tab.</p>")
     abl = D.get("byref_topk_ablation")
     ABL_SRC = "analysis/artifacts/byref_topk_ablation.json"
     if abl and abl.get("summary"):
@@ -1366,7 +1470,9 @@ def sec_lang_attribution(D):
             "<p>An instrumented re-run of the production search on the "
             f'beyond-oracle set ({ck(str(s.get("n")), ABL_SRC, "ablation n", raw=s.get("n"))} '
             "puzzles, production budget and networks) counted, at every "
-            "expansion, both what the as-shipped planner offered and what a "
+            "expansion (one expansion = one search step, the matched unit "
+            "defined in tab 1), both what the as-shipped planner offered "
+            "and what a "
             "correctly wired robot-re-use proposal step "
             "<i>would</i> have offered. The as-shipped planner generated, "
             "ranked, shortlisted and expanded "
@@ -1398,11 +1504,12 @@ def sec_lang_attribution(D):
         "Holding the networks fixed, the first extension moves the solve "
         "count by tens of puzzles; adding the second moves it by 0–2. The "
         "second extension's value is what a plan can EXPRESS — the "
-        "ceiling — and its measured shortfall is an integration gap: the "
-        "re-use step type was never wired into the learned planner's "
-        "proposal path, featurization, or policy training, so no ranking "
-        "of it could be measured until the wiring landed (next section).")
-        + table + abl_html + "</section>")
+        "ceiling — and its measured shortfall is an integration gap: until "
+        "the wiring landed, the re-use step type was absent from the "
+        "learned planner's proposal path, featurization and policy "
+        "training, so no ranking of it could be measured. It is wired "
+        "now, behind a flag, and the next section measures it.")
+        + table + arm_note + abl_html + "</section>")
 
 
 def sec_lang_byref(D):
@@ -1413,13 +1520,18 @@ def sec_lang_byref(D):
     regression check against the production rows (asserted there).
     """
     ab = D.get("byref_ab")
+    net = (ab["pooled"]["on"] - ab["pooled"]["off"]) if ab else None
+    n_pool = ab["pooled"]["n"] if ab else 450
     head = kicker_h2(
         "the re-use step, wired at last",
         "Switching the missing step type on changes almost nothing — and "
         "that is informative",
-        "The step the ceiling depends on is now offered to the learned "
-        "planner. Turning it on, with networks that were never trained on "
-        "it, moves the solve count by 3 puzzles in 450.")
+        "One rung only: <b>16×16 · 6 robots</b>, all "
+        f"{n_pool} of its pinned puzzles. The step the ceiling depends on "
+        "is now offered to the learned planner. Turning it on, with "
+        "networks that were never trained on it, moves the solve count by "
+        + (f"{net} more puzzles of {n_pool} at that rung."
+           if net is not None else "a handful of puzzles."))
     if not ab:
         return head + pending(
             "the on/off A/B files (scaling/results/g16r6/comparison"
@@ -1519,21 +1631,49 @@ def sec_lang_byref(D):
             + " of them respectively made a shortlist and were expanded. "
             "The as-shipped count, in the census just above, is zero.</p>")
 
+    # the rows the flag-off arm reproduces (the cap-20,000 RETRAINED rows),
+    # and the zero-shot production rows it is often mistaken for
+    ab_off_g = ck(str(g["off"]["solved"]), g["src_prod"],
+                  "byref A/B: flag-off reproduces retrained graded",
+                  raw=g["off"]["solved"])
+    ab_off_f = ck(str(f_["off"]["solved"]), f_["src_prod"],
+                  "byref A/B: flag-off reproduces retrained frontier",
+                  raw=f_["off"]["solved"])
+    lad6 = {e["key"]: e for e in D["ladder"]}.get("g16r6") or {}
+    pg = ((lad6.get("graded") or {}).get("bwd_b2") or {})
+    pf = ((lad6.get("frontier") or {}).get("bwd_b2") or {})
+    prod_g = (ck(f'{pg["agg"]["solved"]}/{pg["agg"]["n"]}', pg["src"],
+                 "byref A/B: zero-shot production graded",
+                 raw=pg["agg"]["solved"]) if pg else "—")
+    prod_f = (ck(f'{pf["agg"]["solved"]}/{pf["agg"]["n"]}', pf["src"],
+                 "byref A/B: zero-shot production frontier",
+                 raw=pf["agg"]["solved"]) if pf else "—")
+
     body = f"""
   <p><b>What the step is.</b> A plan may point at a robot it has already
   positioned instead of recruiting a fresh helper. That permission is what
   lifts the language ceiling — and, as the census above shows, the learned
   planner could never propose it: the proposal path, the helper
   featurization and a silent training filter all skipped it. That step is
-  now wired, behind a flag that defaults off. With the flag off the planner
-  reproduces every production row on this page exactly, which is what makes
-  the pair below a clean A/B — same banked networks, same pinned puzzles
+  now wired, behind a flag that defaults off.</p>
+  <p><b>Which rows this A/B is, exactly.</b> Both arms run the banked
+  <b>cap-20,000 retrained</b> network pair at <b>16×16 · 6 robots</b> —
+  “cap-20,000” names the label corpus these networks were trained on (the
+  cap is the search budget each labelling attempt was given). With the flag
+  off the planner reproduces <i>those</i> rows exactly, row by row —
+  {ab_off_g} of {g["n"]} on the gradable set and {ab_off_f} of {f_["n"]}
+  beyond the oracle, machine-checked here on solved status, plan length and
+  search steps. They are <b>not</b> the zero-shot production rows of the
+  headline tables at this rung ({prod_g} and {prod_f}), which come from a
+  different network pair. That exact reproduction is what makes the pair
+  below a clean A/B — same banked networks, same pinned puzzles
   (sha256-checked), same budget of 1,200 search steps and 5 proposals,
   every solve replayed on the real board.</p>
   {table}
   {supply}
   <p><b>The honest reading.</b> The direction is right and the size is
-  noise — 3 puzzles in 450, comfortably inside what the paired test calls
+  noise — {net} more puzzles of {n_pool} at this one rung, comfortably
+  inside what the paired test calls
   chance — with the beyond-oracle search slightly cheaper and its plans
   slightly longer ({num(f_["on"]["mean_len_both"], 1, f_["src_on"],
   "byref A/B frontier: mean plan length on")} vs

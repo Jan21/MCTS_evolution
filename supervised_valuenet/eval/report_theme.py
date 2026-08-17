@@ -82,6 +82,9 @@ header.masthead{padding:54px 0 8px}
 .masthead h1{font-size:33px; line-height:1.16; margin:0 0 12px; font-weight:700;
   letter-spacing:-.015em; max-width:24em}
 .masthead .subtitle{font-size:16.5px; color:var(--muted); max-width:56em; margin:0 0 18px}
+.abstract{max-width:76ch; margin:0 0 18px}
+.abstract p{font-size:15px; line-height:1.6; margin:0}
+.abstract code{font-size:12px}
 .masthead .meta{font-size:12.5px; color:var(--faint)}
 .masthead .meta .sep{margin:0 .6em; opacity:.6}
 
