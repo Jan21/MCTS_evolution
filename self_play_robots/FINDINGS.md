@@ -72,3 +72,43 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
    `runs/spr/spr-m0-4679719.out`, `runs/spr/spr-fwd-m0-4680465.out`,
    `runs/spr/spr-smoke-4680209.out` (train → arena → MCTS → self-play → gauge
    on CUDA, all DONE).
+
+3. **The subgoal plan language's ceiling on the MOVES metric is far above the
+   exact optimum — no subgoal-space planner can approach the forward planner
+   on moves; the owner's "both action spaces" call is vindicated, and the
+   subgoal loop's honest target is the 2.5-move gap between the supervised
+   planner and its own language ceiling (2026-08-17, job 4679720 = 0.06 nh
+   + two slack re-runs on the login node).** `spr.ceiling`: exhaustive
+   no-network best-first search over partial plans in abstract-cost order,
+   every complete plan strictly realized with the arena's certifier, on the
+   WHOLE pinned bench; `best` = cheapest certified plan popped before the
+   abstract cost reaches it (+ a `slack` re-run to check tightness), `first` =
+   the first certified plan popped (what a perfect-ranking first-solution
+   search returns). No probe hit its caps in the base arms.
+   | bench (n) | vocab | solve ceiling | mean d\* | best plan moves (regret) | % reach d\* | first plan (regret) |
+   |---|---|---|---|---|---|---|
+   | g16r4 bench450 (450) | base | 408 = **90.7%** (22 no plan, 20 unplayable — reproduces FINDINGS §4 exactly) | 6.26 | 7.68 (**+1.42**; slack-4 re-run 7.66/+1.40) | 61.8% | 8.08 (+1.82) |
+   | g16r4 bench450 (450) | B2 (+parks) | 441 = 98.0% (9 inconclusive at 60 s/200k caps) | 6.32 | 7.22 (+0.90) | 66.9% | 7.76 (+1.44) |
+   | g24r4 bench.solved (232) | base | 216 = **93.1%** (9 no plan, 7 unplayable) | 7.59 | 9.31 (**+1.72**; slack-4 9.28/+1.69) | 57.4% | 9.73 (+2.13) |
+   | g24r4 bench.solved (232) | B2 (+parks) | 228 = 98.3% (4 inconclusive) | 7.64 | 8.81 (+1.17) | 62.7% | 9.35 (+1.71) |
+   Reading. (a) **Moves ceiling.** Even with a perfect ranker and unlimited
+   search, the base subgoal language cannot get below ≈1.4 (g16r4) / ≈1.7
+   (g24r4) mean regret or above ≈60% optimal; the extended B2 language
+   lowers this to ≈0.9 / ≈1.2 — all an order of magnitude above the forward
+   planner's 0.07 regret / 94% optimal (`comparison_forward.json`,
+   `scaling/results/g24r4/comparison.json`). PROBLEM.md §7's "moves closer to
+   optimal than forward" is therefore unreachable in the subgoal action space
+   at these sizes; it lives in the primitive-move arm (`spr/fwd`, F-M0 passed
+   today). (b) **Headroom for the subgoal loop.** The supervised backward
+   planner sits at 205/232, regret 4.22, 38.5% opt (g24r4) and 401/450, 2.14,
+   50.4% (g16r4 v2 pair): 2.5 / 0.7 moves and 11 / 7 solves above its own
+   ceiling — that gap (ranking + search), not d\*, is what M2–M4 can recover.
+   (c) **Anytime search is worth ≈0.4 moves at both sizes** even under perfect
+   ranking (first vs best): the arena's first-solution convention leaves
+   moves on the table, so best-at-budget arms are in M2. (d) The probe is
+   cheap (6–15 s per bench for base, ~100 s for B2) and reproduces the
+   supervised track's solve ceilings (90.7% base; B2 98.0% here vs the 99.6%
+   recorded with 4× caps), so it can be re-run at every size ≤ 64 as the
+   moves-ceiling reference for M5.
+   Sources: `results/ceiling/{g16r4,g24r4}_{base,base_slack4,b2}.json`,
+   `runs/spr/spr-ceiling-4679720.out`.

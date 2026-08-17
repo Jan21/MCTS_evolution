@@ -67,7 +67,7 @@ def _plan_key(p):
 
 
 def probe(env, state, solver, vocab, max_iters, max_frontier, time_cap,
-          park_cap=2, max_open=None):
+          park_cap=2, max_open=None, slack=0.0):
     from skeleton.astar import _initial_plan, park_repairs
     from eval.realize import strict_moves
     from simulate import wall_sets, _board_size
@@ -95,8 +95,8 @@ def probe(env, state, solver, vocab, max_iters, max_frontier, time_cap,
             capped = True
             break
         cost, _, cur = heapq.heappop(frontier)
-        if best_real is not None and cost >= best_real:
-            bound_hit = True          # nothing cheaper (abstract) remains
+        if best_real is not None and cost >= best_real + slack:
+            bound_hit = True          # nothing cheaper (abstract, + slack) remains
             break
         k = _plan_key(cur)
         if k in seen:
@@ -173,7 +173,8 @@ def _work(item):
     caps = _G["caps"]
     try:
         res = probe(env, st, _G["solver"], _G["vocab"], caps["max_iters"],
-                    caps["max_frontier"], caps["time_cap"], caps["park_cap"])
+                    caps["max_frontier"], caps["time_cap"], caps["park_cap"],
+                    slack=caps.get("slack", 0.0))
     except Exception as e:  # never lose the shard to one bad instance
         res = dict(category="ERROR", error=repr(e))
     res.update(idx=idx, env_id=inst["env_id"], d_star=inst.get("d_star"))
@@ -222,6 +223,10 @@ def main(argv=None):
     p.add_argument("--max-iters", type=int, default=200_000)
     p.add_argument("--max-frontier", type=int, default=400_000)
     p.add_argument("--park-cap", type=int, default=2)
+    p.add_argument("--slack", type=float, default=0.0,
+                   help="keep popping until abstract cost >= best strict + slack "
+                        "(strict can undercut abstract when an incidental robot "
+                        "serves as a stopper; slack tightens the ceiling)")
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--out", required=True)
     a = p.parse_args(argv)
@@ -244,7 +249,7 @@ def main(argv=None):
     items = list(enumerate(insts))
     items.sort(key=lambda t: t[1]["env_id"])       # env locality per worker
     caps = dict(max_iters=a.max_iters, max_frontier=a.max_frontier,
-                time_cap=a.time_cap, park_cap=a.park_cap)
+                time_cap=a.time_cap, park_cap=a.park_cap, slack=a.slack)
     print(f"[ceiling] {a.config} vocab={a.vocab} n={len(items)} workers={a.workers} "
           f"caps={caps} instances={inst_path}", flush=True)
     t0 = time.time()
@@ -262,7 +267,7 @@ def main(argv=None):
     summ = summarize(rows)
     out = Path(a.out)
     if not out.is_absolute():
-        out = RESULTS / out
+        out = (RESULTS.parent / out) if str(out).startswith("results/") else (RESULTS / out)
     out.parent.mkdir(parents=True, exist_ok=True)
     payload = {"config": a.config, "vocab": a.vocab, "instances": str(inst_path),
                "caps": caps, "workers": a.workers,

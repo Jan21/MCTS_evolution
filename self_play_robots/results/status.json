@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-17T17:25:41",
+ "updated": "2026-08-17T18:13:00",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -74,16 +74,19 @@
  "side_studies": {
   "ceiling": {
    "title": "candidate-generator / plan-language ceiling on the moves metric",
-   "status": "running",
+   "status": "done",
    "sources": [
     "results/ceiling/g16r4_base.json",
-    "results/ceiling/g24r4_base.json",
+    "results/ceiling/g16r4_base_slack4.json",
     "results/ceiling/g16r4_b2.json",
+    "results/ceiling/g24r4_base.json",
+    "results/ceiling/g24r4_base_slack4.json",
     "results/ceiling/g24r4_b2.json"
    ],
    "jobs": [
     4679720
-   ]
+   ],
+   "note": "base language moves-ceiling: g16r4 90.7% solve, best-plan regret +1.42 (61.8% reach d*); g24r4 93.1%, +1.72 (57.4%); B2 language +0.90/+1.17. Forward planner regret 0.07 -> subgoal space cannot approach it; subgoal loop's target = the 2.5-move gap supervised->ceiling. FINDINGS \u00a73."
   },
   "forward_mcts": {
    "title": "primitive-move MCTS arm at g16r4 (owner: both action spaces)",
@@ -110,7 +113,7 @@
   "findings_log": "self_play_robots/FINDINGS.md (owner choice)"
  },
  "node_hours": {
-  "spent": 0.25,
+  "spent": 0.31,
   "projected_next": 2.5,
   "note": "spent: smoke 0.02 + M0 0.09 + fwd-M0 0.02 (+ ceiling pending); next: M1 ~1.5-2, M2 ~1"
  }
