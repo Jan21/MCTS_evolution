@@ -208,3 +208,43 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
    not quality, is the target.
    Sources: `results/fwd_m2/cand_*.json` (+ `.vs_*.json` paired tables),
    `runs/spr/spr-fwd-m2-4680466.out`.
+
+7. **M1 PASSES — and the size-free rebuild does not merely match the per-size
+   supervised planners, it beats them at 24×24 (+4–5 solve pts, −1.8 moves,
+   +11–16 optimality pts, 5× fewer expansions) and transfers zero-shot across
+   sizes in both directions (2026-08-17, training jobs 4680211/4680212
+   [values], 4680914/4681011/4680953/4680954/4680955 [recipe-fixed policies,
+   mixed value warm/cold], bench 4680956; ≈ 2.2 nh incl. the discarded first
+   attempt).** Every pair benched with the arena's own A\* loop
+   (`eval.compare._nn_astar_backward` via spr.bench, 1200 expansions, k=5,
+   prefix-check, replay-certified) on both pinned exams; gate = within 3.5
+   solve / 6.6 optimality points of the per-size base-vocab pairs.
+   | pair (policy: recipe §4; value: warm from labeler unless noted) | g16r4 bench450 (ref v2 pair 401/450, 8.38 mv, 2.14 regret, 50.4% opt, 7.1 exp) | g24r4 bench.solved (ref exact pair 205/232, 11.80, 4.20, 38.5%, 26.9 exp) |
+   |---|---|---|
+   | **mixed** (g16r4+g24r4 corpora, ONE net for both sizes) | 401/450, 8.26, 2.04, 52.1%, 8.9 exp — PASS (paired 44/37 mv, n.s.) | **215/232, 10.00, 2.43, 54.4%, 5.3 exp** — PASS (+10 solves, McNemar p=0.006; 61/12 mv wins, p=5e-9) |
+   | mixed, value COLD (collapsed: constant output, CollapseStop at ep 3) | 401/450, 8.14, 1.92, 53.4%, 14.8 exp | 215/232, 9.80, 2.23, 54.9%, 10.7 exp |
+   | g16-only (zero-shot at g24) | 397/450, 8.24, 2.03, 52.6%, 9.2 exp — PASS | 213/232, 10.08, 2.53, 49.3%, 8.6 exp — PASS (+8, p=0.04; 58/10, p=2e-9) |
+   | g24-only (zero-shot at g16) | 402/450, 8.15, 1.91, 54.0%, 5.1 exp — PASS (39/21 mv, p=0.03) | 216/232, 9.90, 2.31, 53.7%, 4.1 exp — PASS (+11, p=0.001; 59/11, p=4e-9) |
+   Reading. (a) **Gate met by all four pairs at both sizes** (all deltas
+   positive except g16-only at g16r4: −0.9 solve pts, inside the bar). One
+   size-free pair (mixed) replaces two per-size pairs with no loss at 16 and a
+   large gain at 24; per-size val metrics of the mixed nets equal the
+   single-size ones (policy 2.97/0.93, value 2.02/0.42). (b) **At 24×24 the
+   size-free planner sits within 1 solve of the base-language ceiling
+   (215–216 vs 216, §3) and closes 70% of the regret gap to it (4.20 → 2.2–2.5
+   vs the ceiling's 1.72), using 4–11 expansions instead of 27.** (c)
+   **Cross-size transfer is real in both directions**: trained on 16×16 only,
+   the pair beats the 24×24-trained supervised pair at 24×24; trained on
+   24×24 only, it is the best 16×16 planner in the table. This is the
+   labeler-track headline (FINDINGS 53/54/70) carried into the policy. (d)
+   **The value net contributes little to the arena A\* here**: the collapsed
+   constant-value control scores the same as the warm value (A\* then orders
+   by fixed cost alone over the policy's top-5, whose val recall@5 is 0.98 at
+   g24r4 / 0.77 at legacy g16r4) — the size-free POLICY (labeler-encoder
+   init + pointer heads) is the improvement; the value net's job in this
+   loop is MCTS leaf evaluation and labeling (M2-sf, M3). (e) Bench cost:
+   ~1 min per exam 8-wide on one GPU (vs 15–27 min on CPU); the whole M1
+   bench (8 exams) took 8 min.
+   Sources: `results/m1/{mixed_value_warm,mixed_value_cold,g16_value_warm,
+   g24_value_warm}_s21_{g16r4,g24r4}.json` (+ `.gate.json`),
+   `runs/spr/spr-m1-bench-4680956.out`, `runs/spr/m1/*/lightning_logs/`.

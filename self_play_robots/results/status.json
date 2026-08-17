@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-17T21:54:03",
+ "updated": "2026-08-17T22:32:26",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -19,20 +19,21 @@
   },
   "M1": {
    "title": "size-free rebuild matches supervised",
-   "status": "running",
-   "note": "size-free pairs trained on {mixed g16r4+g24r4, g16r4 only, g24r4 only} exact corpora (policy cold; value warm from labeler prod_v1_s11 + cold control on mixed), each benched at BOTH sizes (single-size pairs' other size = zero-shot cross-size transfer); per-size comparison arm = the supervised per-size pairs (already benched). Gate: within 3.5 solve / 6.6 optimality pts of g16r4 v2 pair (401/450) and g24r4 exact pair (205/232). Recipe fix (FINDINGS \u00a74): pe=none policy needs grad-clip + lr 1e-4 (+labeler encoder init); retrains queued.",
+   "status": "pass",
+   "note": "PASS at both sizes for all four size-free pairs; mixed pair beats the per-size supervised pair at g24r4 (215/232, regret 2.43, 54.4% opt vs 205/232, 4.20, 38.5%) and ties at g16r4; zero-shot cross-size transfer both directions; collapsed cold value = warm value (policy dominates the arena A*). FINDINGS \u00a77.",
    "sources": [
     "results/m1/"
    ],
    "jobs": [
-    4680209,
     4680211,
     4680212,
     4680628,
-    4680913,
     4680914,
-    4680915,
-    4680916
+    4681011,
+    4680953,
+    4680954,
+    4680955,
+    4680956
    ]
   },
   "M2": {
@@ -53,9 +54,12 @@
   },
   "M3": {
    "title": "one self-play iteration helps",
-   "status": "pending",
+   "status": "queued",
    "sources": [],
-   "jobs": []
+   "jobs": [
+    4681263
+   ],
+   "note": "iteration 1 at g24r4 with the mixed size-free pair (job 4681263 after size-free M2 4680957): 120 fresh lean boards x 8 instances, MCTS best-at-budget 600 exp / stop-after 150, root-all + sibling completion, gauge, buffer + exact anchors, warm retrain, arena bench, paired gate vs M1 pair."
   },
   "M4": {
    "title": "the loop climbs",
@@ -119,7 +123,7 @@
   "findings_log": "self_play_robots/FINDINGS.md (owner choice)"
  },
  "node_hours": {
-  "spent": 1.7,
+  "spent": 3.0,
   "projected_next": 2.5,
   "note": "spent: smoke 0.02 + M0 0.09 + fwd-M0 0.02 (+ ceiling pending); next: M1 ~1.5-2, M2 ~1"
  }

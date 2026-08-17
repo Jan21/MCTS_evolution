@@ -92,7 +92,7 @@ train_one() {  # train_one <policy|value> <init> <epochs>
   local resume=0; ls "$dir"/lightning_logs/version_*/checkpoints/last.ckpt >/dev/null 2>&1 && resume=1
   local extra=""
   [ "$sys" = value ] && extra="--batch-size 4 --max-per-group 8"
-  [ "$sys" = policy ] && extra="--batch-size 8"
+  [ "$sys" = policy ] && extra="--batch-size 8 --grad-clip 1.0"     # FINDINGS §4 recipe
   local t0=$SECONDS
   RR_RESUME=$resume OMP_NUM_THREADS=16 python -m spr.train --system "$sys" $DATA --splits "$SPLITS" \
       --init "$init" --epochs "$ep" --lr "$LR" $extra --torch-seed $((21 + K)) --num-workers 4 \
