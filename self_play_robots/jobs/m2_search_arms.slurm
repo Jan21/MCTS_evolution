@@ -27,7 +27,7 @@ REPO=/scratch/project/open-37-42/petrhyner/MCTS_evolution
 source /scratch/project/open-37-42/petrhyner/venv/bin/activate
 cd "$REPO/self_play_robots"
 export PYTHONPATH="$REPO/supervised_valuenet:$REPO/self_play_robots" PYTHONUNBUFFERED=1
-TAG="$1"; P="$2"; V="$3"; CFGS="${4:-g24r4 g16r4}"; DEV="${5:-cuda}"
+TAG="$1"; P="$2"; V="$3"; CFGS="${4:-g24r4 g16r4}"; DEV="${5:-cuda}"; ARCH="${ARCH:-sizefree}"   # ARCH=persize for PolicyTF/LoopedValueNet pairs
 best_ckpt() { if [ -d "$1" ]; then ls -t "$1"/lightning_logs/version_*/checkpoints/epoch=*.ckpt | head -1; else echo "$1"; fi; }
 BP=$(best_ckpt "$P"); BV=$(best_ckpt "$V")
 [ -s "$BP" ] && [ -s "$BV" ] || { echo "FATAL: checkpoints"; exit 1; }
@@ -50,7 +50,7 @@ for cfg in $CFGS; do
     [ -s "$out" ] && { echo "SPR M2 SKIP $cfg $arm"; continue; }
     t0=$SECONDS
     python -m spr.arena bench --arm "m2_${TAG}_${cfg}_${arm}" --config "$cfg" --instances "$INST" \
-        --policy "$BP" --value "$BV" --driver spr --flags "${FLAGS[$arm]}" --width 8 --threads 2 \
+        --policy "$BP" --value "$BV" --driver spr --flags "${FLAGS[$arm]} --arch $ARCH" --width 8 --threads 2 \
         --device "$DEV" --out "$out" || { echo "SPR M2 BENCH FAILED $cfg $arm"; rc_all=1; continue; }
     echo "SPR M2 bench $cfg $arm took $((SECONDS-t0))s"
   done

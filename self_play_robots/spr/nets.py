@@ -111,6 +111,28 @@ def _mlp(din, d):
     return nn.Sequential(nn.Linear(din, d), nn.GELU(), nn.Linear(d, d))
 
 
+def heads_logp_map(net, hi, m):
+    """{(bn, sup, helper_slot): AR log-prob} from any net exposing PolicyTF's
+    heads (`seg`, `q_bn`, `q_sup`, `q_help`) -- SizeFreePolicyNet or the
+    per-size PolicyTF; identical arithmetic to eval/end2end._policy_logp."""
+    dev = hi.device
+    g = net.seg(torch.cat([hi[m["seg_start"]], hi[m["seg_end"]], hi.mean(0)]))
+    vbn = m["valid_bn"]
+    bn_lp = F.log_softmax(hi[torch.tensor(vbn, device=dev)] @ net.q_bn(g), 0)
+    out = {}
+    for bi, bn in enumerate(vbn):
+        sl = m["sup_by_bn"][bn]
+        sup_lp = F.log_softmax(hi[torch.tensor(sl, device=dev)]
+                               @ net.q_sup(torch.cat([g, hi[bn]])), 0)
+        for si, sp in enumerate(sl):
+            hl = F.log_softmax(hi[torch.tensor(m["helper_cells"], device=dev)]
+                               @ net.q_help(torch.cat([g, hi[bn], hi[sp]])), 0)
+            for (b2, s2, hi2) in m["ctg_map"]:
+                if b2 == bn and s2 == sp:
+                    out[(bn, sp, hi2)] = float(bn_lp[bi] + sup_lp[si] + hl[hi2])
+    return out
+
+
 # ---------------------------------------------------------------------------
 # the net
 # ---------------------------------------------------------------------------
@@ -163,22 +185,7 @@ class SizeFreePolicyNet(pl.LightningModule):
     def logp_map(self, hi, m):
         """{(bn, sup, helper_slot): AR log-prob} over the decision's candidates
         (the inference path; identical arithmetic to eval/end2end._policy_logp)."""
-        dev = hi.device
-        g = self.seg(torch.cat([hi[m["seg_start"]], hi[m["seg_end"]], hi.mean(0)]))
-        vbn = m["valid_bn"]
-        bn_lp = F.log_softmax(hi[torch.tensor(vbn, device=dev)] @ self.q_bn(g), 0)
-        out = {}
-        for bi, bn in enumerate(vbn):
-            sl = m["sup_by_bn"][bn]
-            sup_lp = F.log_softmax(hi[torch.tensor(sl, device=dev)]
-                                   @ self.q_sup(torch.cat([g, hi[bn]])), 0)
-            for si, sp in enumerate(sl):
-                hl = F.log_softmax(hi[torch.tensor(m["helper_cells"], device=dev)]
-                                   @ self.q_help(torch.cat([g, hi[bn], hi[sp]])), 0)
-                for (b2, s2, hi2) in m["ctg_map"]:
-                    if b2 == bn and s2 == sp:
-                        out[(bn, sp, hi2)] = float(bn_lp[bi] + sup_lp[si] + hl[hi2])
-        return out
+        return heads_logp_map(self, hi, m)
 
     def _soft_targets(self, m, dev):
         cands = m["cands"]
@@ -320,9 +327,64 @@ class ValueAdapter:
         return self
 
 
-def load_policy(path, device="cpu") -> SizeFreePolicyNet:
+# ---------------------------------------------------------------------------
+# per-size family (train/policy_tf.py PolicyTF, train/looped_pc.py LoopedValueNet)
+# behind the same two call signatures the spr searches use. Importing train.*
+# freezes RR_GRID for the process -- the caller pins one config (as spr.bench does).
+# ---------------------------------------------------------------------------
+
+class PerSizePolicy:
+    """PolicyTF with `logp_map`; `_encode`/`seg`/`q_*` are the net's own."""
+
+    def __init__(self, net):
+        self.net = net
+        self.seg, self.q_bn, self.q_sup, self.q_help = net.seg, net.q_bn, net.q_sup, net.q_help
+
+    def _encode(self, x, A_all, A_ind):
+        return self.net._encode(x, A_all, A_ind)
+
+    def logp_map(self, hi, m):
+        return heads_logp_map(self.net, hi, m)
+
+    def to(self, dev):
+        self.net.to(dev)
+        return self
+
+    def eval(self):
+        self.net.eval()
+        return self
+
+
+class PerSizeValue:
+    """LoopedValueNet behind SizeFreeValueNet's positional signature."""
+
+    def __init__(self, net):
+        self.net = net
+
+    def __call__(self, x, A_all, A_ind, n, key):
+        return self.net(dict(x=x, A_all=A_all, A_ind=A_ind, key=key))
+
+    def _value(self, logits):
+        return self.net._value(logits)
+
+    def to(self, dev):
+        self.net.to(dev)
+        return self
+
+    def eval(self):
+        self.net.eval()
+        return self
+
+
+def load_policy(path, device="cpu", arch="sizefree"):
+    if arch == "persize":
+        from train.policy_tf import PolicyTF
+        return PerSizePolicy(PolicyTF.load_from_checkpoint(path, map_location=device).to(device).eval())
     return SizeFreePolicyNet.load_from_checkpoint(path, map_location=device).to(device).eval()
 
 
-def load_value(path, device="cpu") -> SizeFreeValueNet:
+def load_value(path, device="cpu", arch="sizefree"):
+    if arch == "persize":
+        from train.looped_pc import LoopedValueNet
+        return PerSizeValue(LoopedValueNet.load_from_checkpoint(path, map_location=device).to(device).eval())
     return SizeFreeValueNet.load_from_checkpoint(path, map_location=device).to(device).eval()

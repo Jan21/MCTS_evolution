@@ -57,6 +57,9 @@ def main(argv=None):
     p.add_argument("--device", default="cpu")
     p.add_argument("--dump-moves", action="store_true")
     p.add_argument("--boards", choices=["pkl", "lean"], default="pkl")
+    p.add_argument("--arch", choices=["sizefree", "persize"], default="sizefree",
+                   help="net family: spr.nets size-free ckpts, or the per-size "
+                        "PolicyTF/LoopedValueNet ckpts (train/*.py)")
     p.add_argument("--out", required=True)
     p.add_argument("--md", default="/dev/null")
     a = p.parse_args(argv)
@@ -75,8 +78,8 @@ def main(argv=None):
     from spr.nets import load_policy, load_value, ValueAdapter
 
     dev = a.device
-    policy = load_policy(a.policy, dev)
-    value_net = load_value(a.value, dev)
+    policy = load_policy(a.policy, dev, a.arch)
+    value_net = load_value(a.value, dev, a.arch)
     value = ValueAdapter(value_net)
     solver = AStar(propose=heuristics.propose, max_iters=4000, max_frontier=40_000)
     load_env = leanboard.from_env if a.boards == "lean" else GridEnv.from_env
@@ -180,7 +183,7 @@ def main(argv=None):
         if (i + 1) % 25 == 0:
             print(f"  [spr.bench] {i + 1}/{len(instances)}", flush=True)
 
-    name = f"spr {a.search} size-free planner"
+    name = f"spr {a.search} {'per-size' if a.arch == 'persize' else 'size-free'} planner"
     if a.anytime:
         name += " (anytime)"
     if a.prefix_check:
@@ -199,7 +202,7 @@ def main(argv=None):
         "checkpoints": ckpt_info, "device": dev, "d_star_placeholder": placeholder,
         "count_slides": False, "dump_moves": a.dump_moves, "byref": False,
         "byref_pool": None, "date": time.strftime("%Y-%m-%dT%H:%M:%S"),
-        "results_file": a.out, "search": a.search,
+        "results_file": a.out, "search": a.search, "arch": a.arch,
         "search_options": {"prefix_check": a.prefix_check, "anytime": a.anytime,
                            "best_at_budget": a.best_at_budget, "f_mode": a.f_mode,
                            "mcts_c": a.mcts_c, "mcts_backup": a.mcts_backup},
