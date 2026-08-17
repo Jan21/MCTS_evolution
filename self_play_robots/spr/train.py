@@ -145,6 +145,10 @@ def main(argv=None):
     for cfg, path in specs:
         recs = dataset.load_corpus(str(path), cfg.name, cfg.grid, cfg.env_dir_abs,
                                    limit=a.limit_records)
+        # self-play records live on their own (fresh, lean) board dirs
+        for r in recs:
+            if r.get("boards_dir"):
+                r["_env_dir"] = os.path.abspath(r["boards_dir"])
         tr = dataset.by_split(recs, "train", ranges)
         va = dataset.by_split(recs, "val", ranges)
         gtr, gva = dataset.group_by_decision(tr), dataset.group_by_decision(va)
