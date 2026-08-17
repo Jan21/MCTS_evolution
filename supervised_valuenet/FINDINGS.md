@@ -2758,3 +2758,16 @@ record what was done about the first three items.)_
    `eval/results/final450_backward_b2_seed{21,37,53}.json`,
    `runs/seedhl/rr-seedhl-g16r8-s*.out`. Report: fairness tab
    "Seed replicates of the headline pair"; headline row footnoted.
+
+82. **Successor project opened: `self_play_robots/` (AlphaZero-style self-play
+   loop; 2026-08-17).** Its results are logged in ITS OWN
+   `self_play_robots/FINDINGS.md` (owner's choice), numbered from 1; this
+   entry is the single cross-reference. Scope, decisions and the first jobs
+   (M0 arena parity 4679719, the plan-language ceiling on the moves metric
+   4679720, M1 size-free vs per-size nets at g16r4/g24r4 4680210–4680213,
+   M2 search arms 4680221/22): see `self_play_robots/PROBLEM.md`, `README.md`,
+   `FINDINGS.md` §1. Nothing under `supervised_valuenet/` was modified by that
+   project; it imports the arena (`eval/compare.py::_nn_astar_backward`), the
+   realizer, the labeler nets and the Rust engine in place. (Numbering note:
+   this file carries two §80 entries from two concurrent sessions; the next
+   free number after 81 is 82 — used here.)
