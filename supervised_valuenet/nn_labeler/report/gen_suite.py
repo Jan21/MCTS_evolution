@@ -189,7 +189,41 @@ def sec_glance():
       "a labeler distilled from capped data reproduced the cap's damage — "
       "the negative result, reported as such",
       '<a href="#s6">&sect;5</a>')
-    return ("<h3>Results at a glance</h3>" +
+
+    dep = solve("scaling/results/g32r4/comparison_nndeploy.json")
+    ex = solve("scaling/results/g32r4/comparison.json")
+    depline = ""
+    if None not in (dep, ex):
+        depline = (f" — proven in the hardest way, with the solver removed "
+                   f"from the entire pipeline ({p1(dep)}% vs {p1(ex)}% solve "
+                   "on the same exam)")
+    corrupt_done = (SV / "scaling/results/g24r4/comparison_corrupt_d822.json").exists()
+    caveat = ("The remaining open question — is label faithfulness itself "
+              "the <em>cause</em>, rather than something that merely moves "
+              "with it? — is exactly what the running "
+              "<a href='#s7'>causality experiment</a> was launched to "
+              "settle." if not corrupt_done else
+              "The <a href='#s7'>causality experiment</a> below tests "
+              "whether faithfulness itself is the cause.")
+    verdict = f"""
+<div class="verdict big">
+<p><strong>Did it work? Yes, with one sharply-drawn condition.</strong>
+The exact solver can be retired as the label writer: planners taught by the
+network are indistinguishable from planners taught by the solver{depline}.
+The condition is label faithfulness — everything held at ~91% agreement and
+above, quality slipped at ~89%, and collapsed at ~82%. The network sits
+inside the safe zone at every 4-robot configuration tested, and outside it
+at the one 8-robot configuration — so the method ships with its own
+go/no-go gauge: measure agreement on a checkable sample first, and only
+label where it clears the bar.</p>
+<p><strong>What this buys.</strong> Training data beyond the solver's
+physical 64&times;64 limit — the first certified label sets at 80&times;80
+and 96&times;96 already exist — and data generation at roughly a fortieth
+of the projected exact-solver cost. What it does <em>not</em> buy: the B2
+compute-saving bet failed (a network distilled from damaged data inherits
+the damage), and that claim is dropped, not softened. {caveat}</p>
+</div>"""
+    return (verdict + "<h3>Results at a glance</h3>" +
             table(["finding", "the numbers", "details"], rows_,
                   note="The whole campaign cost roughly 27 node-hours of "
                        "cluster time against the ~441 the exact-solver plan "
@@ -912,6 +946,8 @@ td.pend { color: var(--mut); font-style: italic; text-align: left; }
 .defs dd { margin: .15rem 0 0 0; color: var(--ink); }
 .verdict { background: var(--card); border-left: 3px solid var(--line);
            padding: .5rem .8rem; }
+.verdict.big { border-left-color: var(--s1); margin: 1.2rem 0; }
+.verdict.big p { margin: .4rem 0; }
 .chip { display: inline-block; font-size: .75rem; font-weight: 600;
         padding: .05rem .5rem; border-radius: 99px; margin-right: .4rem; }
 .chip.good { background: var(--good-bg); color: var(--good-ink); }
