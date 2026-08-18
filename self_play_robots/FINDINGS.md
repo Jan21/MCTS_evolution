@@ -550,3 +550,11 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     rows (§8: 1.54 and 1.78) sit 0.15 above the tightened ceilings — the
     "within ~0.1–0.2 moves" wording of (iii) is the one to quote.
     Sources: `results/ceiling/{g16r4,g24r4}_base_slack12.json`.
+    The missing A\* control (arena f=child + best-at-budget, job 4691253) is
+    IDENTICAL to first-plan A\* at both sizes (g24r4 215/232, 10.00 mv, 5.3
+    exp; g16r4 401/450, 8.26, 8.9): with the arena's over-estimating f the
+    best-at-budget bound (frontier f ≥ certified abstract cost) triggers at
+    the first certified plan, so no A\* variant explores the tree further; the
+    MCTS advantage (27/0 and 59/0 paired wins) is exactly the certified
+    enumeration of the top-5 tree that A\*'s bound cannot reach.
+    Sources: `results/m2/sizefree_mixed_warm_{g24r4,g16r4}_astar_child_best.json`.
