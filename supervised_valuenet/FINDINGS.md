@@ -2683,15 +2683,31 @@ record what was done about the first three items.)_
    (`jobs/corruption_arm.slurm`, default torch seed) →
    `comparison_corrupt_{d1000,d860,d822}.json`. Jobs 4678370/71/72
    died in ≤13 s with empty logs, signal 15, all on acn52 (2026-08-17
-   18:00) — the acn18 bad-node signature (§72 ops note); resubmitted
-   2026-08-18 as 4688834/35/36 with `--exclude=acn18,acn52`. ~0.6 nh
-   each.
+   18:00) — read as the acn18 bad-node signature (§72 ops note) and
+   resubmitted 2026-08-18 as 4688834/35/36 with `--exclude=acn18,acn52`;
+   those died the SAME way on acn12, again at exactly 18:00:15. Real
+   cause: both batches were the first jobs placed on nodes at the
+   instant the daily 10:00–18:00 cooling reservation released — such
+   jobs are killed within seconds (acn52 was innocent). Resubmitted
+   at 21:00 onto warm nodes as **4693020/21/22** — running normally,
+   ~0.6 nh each. Ops lesson recorded.
    (b) **g32r4 twin seed 21** (job 4678373, twin_retrain.slurm with
    TWIN_SEED=21, ~1.6 nh): the study's most noise-vulnerable claim — the
    §74 optimality slip (45.9 vs 51.7 %opt, 5.8 pts) is SMALLER than the
    6.6-pt %opt spread between g24r4's two twin seeds →
    `comparison_nntwin-seed21.json` at g32r4 (the suite's standing pending
-   row).
+   row). UPDATE 2026-08-18: `twin_retrain.slurm` loops all three
+   configs (the `TWIN_CONFIGS` knob existed only in the builder job),
+   so 4678373 skipped g24r4 idempotently and spent its 16 h on
+   **g24r8 twin seed 21** first — an unplanned but priced-and-wanted
+   replicate of the collapse cell (02_seed_costs.md item 3):
+   **73.3 solve / 44.1 opt / 2.84 regret** vs twin seed-11's 68.3 /
+   40.9 / 3.39 and exact's 89.4 / 50.7 / 2.49 (n=161). The collapse
+   replicates: two twin seeds 16–21 pts below exact, seed wobble 5 pts —
+   the §73 result is no longer single-seed. Its frontier bench was cut
+   by the walltime; continuation 4693023 (loop now honors
+   `TWIN_CONFIGS`, default unchanged) finishes g24r8 frontier then runs
+   g32r4 seed 21 as intended.
    (c) **Pre-registered reading** (04_paper_leverage.md): d1000-vs-exact
    isolates the corpus-shrinkage effect alone; d822 collapse ⇒ fidelity is
    causal and the threshold claim is licensed; d822 ≈ exact ⇒ the g24r8

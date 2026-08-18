@@ -247,7 +247,7 @@ sys.exit(0 if rows and min(rows)>0 else 1)" 2>/dev/null; then
 # the cheap and stable one, so a broken corpus or recipe surfaces in minutes
 # instead of after a multi-hour value fit (the b2_retrain_one ordering).
 # ---------------------------------------------------------------------------
-for cfg in g24r4 g24r8 g32r4; do
+for cfg in ${TWIN_CONFIGS:-g24r4 g24r8 g32r4}; do
     echo "===== TWINRT CONFIG $cfg $(date +%F' '%T) ====="
     case "$cfg" in
         g24r4) PEPOCHS=30; PBATCH="--batch-size 8"
