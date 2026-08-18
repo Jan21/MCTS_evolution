@@ -479,3 +479,37 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     B2 iterations for the M3/M4 trend on the graded AND frontier exams.
     Sources: `results/selfplay/g24r4_b2_iter1/`, `runs/spr/selfplay/g24r4_b2_iter1/`,
     `runs/spr/spr-b2-it1-4685442.out`.
+
+14. **Three parallel review/audit passes (2026-08-18, agents; memos in
+    `results/audit_claims_2026-08-18.md`, `results/review_b2_pipeline_2026-08-18.md`,
+    `results/audit_findings_vs_files_2026-08-18.md`).** (a) FINDINGS-vs-files:
+    ~260 quoted numbers re-derived; 10 mismatches, none changing a conclusion
+    (three §7 paired counts were computed against the same-machine M0 re-run
+    rather than the recorded file — both now stated; §12's "+34" was over the
+    M1 base nets, +30 over the ceiling — corrected). Untraceable-by-design
+    items (node-hours, wall times, training metrics) live under `runs/`.
+    (b) B2 pipeline review: no invalidating defect in the by-reference /
+    park-repair search, record and training path (arena-parity confirmed:
+    slot resolution, `_apply(by_reference)`, park children semantics, label
+    units); latent low-severity items listed in the memo. Two substantive
+    findings on the **B2 fidelity gauge**: (i) the exact engine was called
+    without a `budget.solver_iters` (its default is 10 M iterations per
+    rollout — hence 2.5 h / 25 GB); the supervised track always sent
+    5k–20k; measured on the 198 finished rollouts, a 100k budget keeps 197/198
+    and finishes in minutes → `spr.gauge --solver-iters 100000` (default now;
+    job 4691066 re-runs the B2 iteration-1 gauge with all candidates).
+    (ii) The 198 finished exact B2 rollouts give **argmin agreement 0.51**
+    (Jaccard 0.41, mean gap +3.9) against the loop's certified B2 labels —
+    but only 13/28 sampled exact-optimal B2 completions strictly REALIZE:
+    exact B2 labels price unplayable plans (and exclude park cost), so the
+    FINDINGS-74 bands do not transfer to B2 and the exact side is the
+    weaker reference there. Consequence: for the B2 loop, drift is monitored
+    through the graded/frontier benches (certified, the metric itself); the
+    gauge is reported on the subset where the exact optimum realizes once
+    that filter exists. (c) Anchoring: keep the B2 loop anchor-free (base
+    anchors would change candidate-set semantics; the existing exact B2
+    corpora — g16r4/g16r6/g16r8/g24r8/g32r4 cap20000, none at g24r4 — are
+    exact-abstract with ~half unplayable optima); a certified B2 seed via
+    `nn_labeler.descent --vocab b2` is the alternative if drift appears.
+    (d) The claims audit (like-for-like protocol, leakage, statistics,
+    ceiling soundness) is appended below when it lands.
