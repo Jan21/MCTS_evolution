@@ -513,3 +513,34 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     `nn_labeler.descent --vocab b2` is the alternative if drift appears.
     (d) The claims audit (like-for-like protocol, leakage, statistics,
     ceiling soundness) is appended below when it lands.
+    (d) **Claims audit (adversarial, independent re-derivation): no blockers;
+    every quoted statistic reproduces; four caveats now attached to the
+    headlines.** (i) `row["search"]["root_closed"]` is true on 100% of graded
+    instances in every MCTS payload: with k=5 the tree closes long before
+    1200 expansions, so "MCTS best-at-budget" is an exhaustive certified
+    enumeration of the top-5 tree (≈5 strict realizations per instance vs 1
+    for A\*; 3–5× wall time) — the 1200 cap is not binding, min = mean backup
+    is then tautological, and the value net only orders visits. The strongest
+    A\* control (arena f + best-at-budget) had not been run; queued (job
+    4691082) at both sizes for the size-free pair. (ii) A stronger per-size
+    baseline exists at g24r4 than the exact pair: the base-vocab twin pair
+    `scaling/results/g24r4/comparison_nntwin.json` scores 212/232, regret
+    3.05 — vs it the size-free A\* gain is +3 solves (n.s.) while the moves
+    gain stays significant (39/13, p=4e-4; MCTS 50/1); all size-free nets are
+    single-seed (21). (iii) The moves ceiling (`spr.ceiling`) assumes strict ≥
+    abstract, which certified plans violate on 4/215 g24r4 and 3/401 g16r4
+    instances (by up to 8–11 moves); a full-enumeration re-probe lowers the
+    ceiling regret by ≈0.04–0.06 — the size of the reported gap to it — so
+    the honest wording is "within ~0.1–0.2 moves of the exhaustive optimum of
+    the top-5 tree"; base probes are being re-run with `--slack 12`
+    (`results/ceiling/*_base_slack12.json`). (iv) The recorded g32r4/g24r8/
+    frontier reference rows carry no move dumps (only the new rows are
+    replay-certified), and "beats every per-size supervised backward planner"
+    holds within base vocabulary + prefix-check (recorded per-size B2 arms
+    reach 154–171/175 at g32r4). Confirmed clean: same instances_sha256,
+    1200/k=5 and prefix-check on both sides of every comparison; 46/46 new
+    payloads replay-certified (6 re-validated: 0 failures); zero bench
+    boards/instances in any training corpus; labeler encoder init trained on
+    g8–g16 only; the g16r4 base ceiling reproduces supervised FINDINGS §4
+    (22 no-plan + 20 unplayable) and no planner ever solves a probe-
+    "unrealizable" instance in 21–27 payloads per exam.
