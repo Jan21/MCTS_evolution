@@ -34,6 +34,11 @@ STATS = {"read": [], "missing": [], "error": []}
 _CACHE: dict = {}
 
 MILESTONE_KEYS = ["M0", "M1", "M2", "M3", "M4", "M5", "M6"]
+# where a status-strip chip jumps to (milestone/side-study key -> anchor)
+STRIP_LINKS = {"M0": "#m0", "M1": "#res-m1", "M2": "#res-m2", "M3": "#res-loops",
+               "M4": "#res-loops", "M5": "#res-transfer", "M6": "#milestones",
+               "ceiling": "#ceiling", "forward_mcts": "#res-fwd",
+               "transfer": "#res-transfer"}
 
 # Gate text quoted from PROBLEM.md section 8 (the only hand-typed numbers on
 # the page besides the glossary definitions; each row cites its source).
@@ -332,9 +337,26 @@ CHIP_CLASS = {"pass": "good", "ok": "good", "done": "good", "fail": "bad",
               "pending": "pend", "awaiting owner": "pend"}
 
 
-def chip(kind, text=None) -> str:
+def chip_class(kind) -> str:
+    """Chip colour from a status string: exact table first, then keywords
+    (status.json carries free text such as "F-M0 pass; F-M2 done" or
+    "B2 loop iteration 1 done (...); iterations 2-3 chained")."""
     k = str(kind).strip().lower()
-    cls = CHIP_CLASS.get(k, "pend")
+    if k in CHIP_CLASS:
+        return CHIP_CLASS[k]
+    if "fail" in k:
+        return "bad"
+    if any(w in k for w in ("running", "queued", "chained", "in progress", "resumed")):
+        return "run"
+    if any(w in k for w in ("pass", "done", "complete")):
+        return "good"
+    if "partial" in k:
+        return "warn"
+    return "pend"
+
+
+def chip(kind, text=None) -> str:
+    cls = chip_class(kind)
     return f'<span class="chip {cls}">{esc(text if text is not None else kind)}</span>'
 
 
@@ -713,7 +735,9 @@ def sec_overview() -> str:
         m = milestone(k)
         stt = m.get("status", "unknown")
         title = m.get("title", "")
-        out.append(f'<a class="stripitem" href="#milestones"><span class="mk">'
+        href = STRIP_LINKS.get(k, "#milestones")
+        tip = f' title="{esc(m.get("note"))}"' if m.get("note") else ""
+        out.append(f'<a class="stripitem" href="{href}"{tip}><span class="mk">'
                    f'{esc(k)}</span>{chip(stt, stt)}<span class="mt">'
                    f'{esc(title)}</span></a>')
     out.append("</div>")
@@ -722,7 +746,9 @@ def sec_overview() -> str:
         out.append('<div class="strip">')
         for k, v in ss.items():
             stt = (v or {}).get("status", "unknown")
-            out.append(f'<a class="stripitem" href="#ceiling"><span class="mk">'
+            href = STRIP_LINKS.get(k, "#results")
+            tip = f' title="{esc((v or {}).get("note"))}"' if (v or {}).get("note") else ""
+            out.append(f'<a class="stripitem" href="{href}"{tip}><span class="mk">'
                        f'{esc(k)}</span>{chip(stt, stt)}<span class="mt">'
                        f'{esc((v or {}).get("title", ""))}</span></a>')
         out.append("</div>")
@@ -1298,44 +1324,83 @@ def sec_ceiling() -> str:
     rows_ = []
     for f, d in found:
         s = d["summary"]
+        caps = d.get("caps") or {}
+        cats = s.get("categories") or {}
+        inst = str(d.get("instances") or "")
+        front = (s.get("n_graded_realizable") in (0, None)
+                 and bool(s.get("n_realizable"))) or "unsolved" in inst
+        capped = s.get("capped") or 0
+        inconclusive = cats.get("INCONCLUSIVE", 0)
+        variant = f.stem
+        vbits = []
+        if caps.get("slack"):
+            vbits.append(f"slack {caps['slack']:g}")
+        if caps.get("time_cap"):
+            vbits.append(f"{caps['time_cap']:g} s")
+        if caps.get("max_frontier"):
+            vbits.append(f"{caps['max_frontier'] // 1000}k frontier")
+        if capped:
+            reading = (f'<span class="tag front">lower bound</span> probe hit a cap on '
+                       f'{capped} instance(s), {inconclusive} inconclusive: the solve '
+                       f'ceiling is &ge; {s.get("n_realizable")}/{s.get("n")}'
+                       + (" and the best-plan columns are upper bounds on the language optimum"
+                          if not front else ""))
+        else:
+            reading = "no cap hit: solve ceiling exact for these caps"
+        sr = s.get("solve_ceiling")
         rows_.append(row([
             td_txt(f"<strong>{esc(d.get('config'))}</strong> / "
-                   f"{esc(d.get('vocab'))}"),
+                   f"{esc(d.get('vocab'))}<br><span class='note'><code>{esc(variant)}</code>"
+                   + (f" &middot; {' &middot; '.join(vbits)}" if vbits else "") + "</span>"),
+            td_txt('<span class="tag front">frontier</span>' if front
+                   else '<span class="tag graded">graded</span>'),
             td(s.get("n"), "d"),
-            td_pct(s.get("solve_ceiling")),
+            td_txt((f"{s.get('n_realizable')}/{s.get('n')} &middot; {100 * sr:.1f}%"
+                    + (" <strong>&ge;</strong>" if capped else ""))
+                   if sr is not None else '<span class="pend">pending</span>'),
             td(s.get("n_graded_realizable"), "d"),
-            td(s.get("mean_d_star"), ".2f"),
-            td(s.get("mean_best_moves"), ".2f", cls="hlnum"),
-            td(s.get("mean_gap_best"), ".2f"),
-            td_pct100(s.get("pct_best_optimal")),
-            td(s.get("mean_first_moves"), ".2f"),
-            td(s.get("mean_gap_first"), ".2f"),
-            td_pct100(s.get("pct_first_optimal")),
-            td(s.get("capped"), "d"),
+            td(s.get("mean_d_star"), ".2f") if not front else DASH,
+            td(s.get("mean_best_moves"), ".2f", cls="hlnum") if not front else DASH,
+            td(s.get("mean_gap_best"), ".2f") if not front else DASH,
+            td_pct100(s.get("pct_best_optimal")) if not front else DASH,
+            td(s.get("mean_first_moves"), ".2f") if not front else DASH,
+            td(s.get("mean_gap_first"), ".2f") if not front else DASH,
+            td_pct100(s.get("pct_first_optimal")) if not front else DASH,
+            td(capped, "d"),
+            td_txt(f'<span class="note">{reading}</span>'),
             td_txt(src(disp(f))),
-        ], "hl"))
+        ], "hl" if not capped else ""))
     for c, v in expected_missing:
         rows_.append(row([td_txt(f"<strong>{esc(c)}</strong> / {esc(v)}"),
-                          '<td class="pend" colspan="11">pending</td>',
+                          '<td class="pend" colspan="13">pending</td>',
                           td_txt(src(f"self_play_robots/results/ceiling/{c}_{v}.json"))]))
-    out.append(table(["config / vocab", "n", "solve ceiling", "graded &amp; "
-                      "realizable", "mean d*", "mean best-plan moves",
+    out.append(table(["config / vocab (file, caps)", "set", "n", "solve ceiling",
+                      "graded &amp; realizable", "mean d*", "mean best-plan moves",
                       "mean gap (best)", "% best = optimal",
                       "mean first-plan moves", "mean gap (first)",
-                      "% first = optimal", "capped", "source file"], rows_,
-                     note="All columns read from <code>summary</code> of "
-                          "<code>results/ceiling/&lt;cfg&gt;_&lt;vocab&gt;.json</code>: "
-                          "<code>n</code>, <code>solve_ceiling</code>, "
+                      "% first = optimal", "capped", "reading", "source file"], rows_,
+                     note="Every <code>results/ceiling/*.json</code> carrying a "
+                          "<code>summary</code> (base, B2, slack re-runs, graded and "
+                          "frontier sets). Columns from <code>summary</code>: "
+                          "<code>n</code>, <code>n_realizable</code>/<code>solve_ceiling</code>, "
                           "<code>n_graded_realizable</code>, "
                           "<code>mean_d_star</code>, <code>mean_best_moves</code>, "
                           "<code>mean_gap_best</code>, <code>pct_best_optimal</code>, "
                           "<code>mean_first_moves</code>, <code>mean_gap_first</code>, "
-                          "<code>pct_first_optimal</code>, <code>capped</code>. "
+                          "<code>pct_first_optimal</code>, <code>capped</code>; the "
+                          "<em>reading</em> column turns <code>capped</code> and "
+                          "<code>categories.INCONCLUSIVE</code> into words: a capped "
+                          "probe proves only a lower bound on the solve ceiling "
+                          "(&ge;), which is why the frontier B2 arms must be read as "
+                          "&ldquo;at least&rdquo;. Frontier sets carry no d*, so the "
+                          "moves/gap/optimal columns are dashed there. "
                           "<em>first</em> = the first realizable plan popped (the "
                           "supervised probe's definition, i.e. what a "
                           "cost-ordered planner would take); <em>best</em> = the "
                           "cheapest realizable plan found before the abstract "
-                          "cost order proves nothing cheaper remains.",
+                          "cost order proves nothing cheaper remains. Caps "
+                          "(<code>caps</code> block: time cap, frontier size, slack) "
+                          "are printed under the arm name.",
                      cls="wide"))
 
     if not found:
@@ -1354,8 +1419,18 @@ def sec_ceiling() -> str:
     for f, d in found:
         s = d["summary"]
         cfg, voc = d.get("config"), d.get("vocab")
-        out.append(f'<h3>{esc(cfg)} &middot; {esc(voc)} vocabulary</h3>')
+        out.append(f'<h3>{esc(cfg)} &middot; {esc(voc)} vocabulary '
+                   f'<span class="note">(<code>{esc(f.stem)}</code>)</span></h3>')
         bits = []
+        if s.get("capped"):
+            cats = s.get("categories") or {}
+            bits.append(
+                f"the probe hit a cap on <strong>{esc(s.get('capped'))}</strong> "
+                f"instance(s) ({esc(cats.get('INCONCLUSIVE', 0))} left inconclusive), "
+                f"so its solve ceiling of {esc(s.get('n_realizable'))}/{esc(s.get('n'))} "
+                f"is a <strong>lower bound</strong>"
+                + (" and its best-plan moves an upper bound on the language optimum"
+                   if s.get("mean_best_moves") is not None else ""))
         if s.get("mean_best_moves") is not None and s.get("mean_d_star") is not None:
             gapb = s.get("mean_gap_best")
             gaptxt = (f" — a mean gap of <strong>{gapb:.2f} moves</strong>"
@@ -1593,6 +1668,745 @@ def sec_milestones() -> str:
     return "\n".join(out)
 
 
+# ------------------------------------------------------- milestone results ---
+# Everything below reads results/m1, results/m2, results/transfer,
+# results/fwd_*, results/selfplay/<loop>_iter<k>/ generically; a missing file
+# is a "pending" cell, a directory that does not exist yet is a pending box.
+
+import re as _re
+
+RESULT_AGG_KEYS = ("n", "solved", "solve_rate", "mean_moves", "mean_regret",
+                   "pct_optimal", "mean_expansions", "mean_seconds")
+
+
+def agg_of(path):
+    """(payload, aggregate-of-first-backward-system-with-rows) or (None, {})."""
+    d = load(path)
+    if not ok(d):
+        return d, {}
+    _, s = backward_system(d)
+    if s is None:                       # forward payloads: first system with rows
+        for _, sys_ in (d.get("systems") or {}).items():
+            if isinstance(sys_, dict) and sys_.get("rows"):
+                s = sys_
+                break
+    return d, ((s or {}).get("aggregate") or {})
+
+
+def frontier_agg(d, a) -> bool:
+    return bool(a) and (a.get("d_star_placeholder") or is_frontier(d, a))
+
+
+def agg_cells(d, a, moves_spec=".2f"):
+    """solved/n · rate, moves, regret, %opt, exp, s/inst — regret/opt dashed on frontier."""
+    if not a:
+        return ['<td class="pend" colspan="6">pending</td>']
+    front = frontier_agg(d, a)
+    n, solved = a.get("n"), a.get("solved")
+    sr = (f"{solved}/{n} &middot; {100 * a['solve_rate']:.1f}%"
+          if None not in (n, solved) and a.get("solve_rate") is not None else None)
+    return [td_txt(sr) if sr else '<td class="pend">pending</td>',
+            td(a.get("mean_moves"), moves_spec, cls="hlnum"),
+            DASH if front else td(a.get("mean_regret"), ".2f"),
+            DASH if front else td_pct100(a.get("pct_optimal")),
+            td(a.get("mean_expansions"), ".1f"),
+            td(a.get("mean_seconds"), ".2f")]
+
+
+AGG_HEADERS = ["solved / rate", "mean moves", "mean regret", "% optimal",
+               "mean exp", "s/inst"]
+AGG_NOTE = ("<em>solved / rate</em> = <code>aggregate.solved</code>/<code>n</code> "
+            "and <code>solve_rate</code>; <em>mean moves</em> = "
+            "<code>aggregate.mean_moves</code> (over solved rows; = "
+            "<code>mean_realized_strict</code> for backward systems); <em>mean "
+            "regret</em> / <em>% optimal</em> = <code>mean_regret</code> / "
+            "<code>pct_optimal</code> over solved rows with a d* (dashed on "
+            "frontier sets, where <code>d_star_placeholder</code> is set); "
+            "<em>mean exp</em> / <em>s/inst</em> = <code>mean_expansions</code> / "
+            "<code>mean_seconds</code> over all rows — the same fields "
+            "<code>spr.arena.summarize()</code> reports.")
+
+
+def paired_cells(pr):
+    """[solves a-only/b-only + McNemar p, both-solved moves, wins/losses + sign p]."""
+    if not pr:
+        return ['<td class="pend" colspan="3">pending</td>']
+    def pf(x):
+        return "&mdash;" if x is None else (f"{x:.2g}" if x < 0.01 else f"{x:.3f}")
+    ao, bo = pr.get("a_only"), pr.get("b_only")
+    solves = (f"+{ao}/&minus;{bo}" if None not in (ao, bo) else "&mdash;")
+    solves += f" (p={pf(pr.get('mcnemar_p'))})"
+    ma, mb = pr.get("mean_moves_a_both"), pr.get("mean_moves_b_both")
+    moves = (f"{ma:.2f} vs {mb:.2f} on {pr.get('both_solved')}"
+             if None not in (ma, mb) else "&mdash;")
+    wins = (f"{pr.get('moves_wins_a')}/{pr.get('moves_wins_b')} "
+            f"(p={pf(pr.get('sign_p_moves'))})")
+    return [td_txt(solves), td_txt(moves), td_txt(wins)]
+
+
+PAIRED_HEADERS = ["solves A&minus;only / B&minus;only (McNemar)",
+                  "moves A vs B (both solved)", "moves wins/losses (sign)"]
+PAIRED_NOTE = ("Paired columns come from the <code>paired</code> block "
+               "(<code>spr.gate.paired</code>): <code>a_only</code>/"
+               "<code>b_only</code> = instances solved by only one side, "
+               "<code>mcnemar_p</code> = two-sided exact McNemar on those "
+               "discordant counts; <code>mean_moves_a_both</code>/"
+               "<code>mean_moves_b_both</code> over <code>both_solved</code>; "
+               "<code>moves_wins_a</code>/<code>moves_wins_b</code> = both-solved "
+               "instances where A needs strictly fewer / more realized moves, "
+               "<code>sign_p_moves</code> = exact sign test on them.")
+
+
+def _pf(x):
+    return "&mdash;" if x is None else (f"{x:.2g}" if x < 0.01 else f"{x:.3f}")
+
+
+# ---- M1 -------------------------------------------------------------------
+
+M1_PAIRS = [("mixed_value_warm_s21", "mixed (g16r4+g24r4 corpora), value warm from labeler"),
+            ("mixed_value_cold_s21", "mixed, value cold (collapse control)"),
+            ("g16_value_warm_s21", "g16r4-only corpus (zero-shot at g24r4)"),
+            ("g24_value_warm_s21", "g24r4-only corpus (zero-shot at g16r4)")]
+M1_EXAMS = ["g16r4", "g24r4"]
+
+
+def m1_pairs():
+    """Pair tags found on disk (the registry list first, then anything else)."""
+    d = RESULTS / "m1"
+    tags = [t for t, _ in M1_PAIRS]
+    if d.is_dir():
+        for f in sorted(d.glob("*_g*r*.json")):
+            if f.name.endswith(".gate.json"):
+                continue
+            m = _re.match(r"^(.*)_(g\d+r\d+)\.json$", f.name)
+            if m and m.group(1) not in tags:
+                tags.append(m.group(1))
+    return tags
+
+
+def sub_m1() -> str:
+    out = ['<h3 id="res-m1">M1 &mdash; size-free rebuild vs the per-size supervised pairs</h3>',
+           "<p class='note'>Every pair benched with the arena's own A* loop "
+           "(<code>spr.bench --search arena_astar --prefix-check</code>, 1200 "
+           "expansions, k=5, replay-certified) on both pinned exams; the gate "
+           "file (<code>spr.gate m1</code>) compares it with the per-size "
+           "supervised base-vocabulary pair on the same exam: PASS = solve rate "
+           "within 3.5 pts AND % optimal within 6.6 pts (PROBLEM.md &sect;8).</p>"]
+    labels = dict(M1_PAIRS)
+    rows_ = []
+    any_ = False
+    for tag in m1_pairs():
+        for cfg in M1_EXAMS:
+            f = RESULTS / "m1" / f"{tag}_{cfg}.json"
+            g = RESULTS / "m1" / f"{tag}_{cfg}.gate.json"
+            d, a = agg_of(f)
+            gd = load(g)
+            gd = gd if ok(gd) else {}
+            if d is None and not gd:
+                rows_.append(row([td_txt(f"<strong>{esc(tag)}</strong><br><span class='note'>{esc(labels.get(tag, ''))}</span>"),
+                                  td_txt(esc(cfg)),
+                                  '<td class="pend" colspan="12">pending</td>',
+                                  td_txt(src(disp(f)))]))
+                continue
+            any_ = True
+            ref = gd.get("ref") or {}
+            refcells = ([td_txt(f"{ref.get('solved')}/{ref.get('n')}"),
+                         td(ref.get("mean_moves"), ".2f"),
+                         td(ref.get("mean_regret"), ".2f"),
+                         td_pct100(ref.get("pct_optimal"))]
+                        if ref else ['<td class="pend" colspan="4">no gate file</td>'])
+            verdict = ('<td class="pend">pending</td>' if not gd else
+                       td_txt(chip("pass" if gd.get("pass") else "fail",
+                                   "PASS" if gd.get("pass") else "FAIL")
+                              + f"<br><span class='note'>&Delta;solve {gd.get('delta_solve_pts', 0):+.1f} pts, "
+                                f"&Delta;opt {gd.get('delta_opt_pts', 0):+.1f} pts</span>"))
+            rows_.append(row([
+                td_txt(f"<strong>{esc(tag)}</strong><br><span class='note'>{esc(labels.get(tag, ''))}</span>"),
+                td_txt(esc(cfg)),
+                *agg_cells(d, a),
+                *refcells,
+                verdict,
+                *paired_cells(gd.get("paired")),
+                td_txt(src(disp(f)) + (f"<br>{src(disp(g))}" if gd else "")),
+            ], "hl" if tag == "mixed_value_warm_s21" else ""))
+    out.append(table(["pair (nets)", "exam", *AGG_HEADERS,
+                      "ref solved", "ref moves", "ref regret", "ref % opt",
+                      "M1 gate", *PAIRED_HEADERS, "source"], rows_,
+                     note=AGG_NOTE + " Reference columns = the <code>ref</code> "
+                          "block of the <code>.gate.json</code> (the recorded "
+                          "per-size supervised pair named in <code>ref_desc</code>); "
+                          "gate verdict = its <code>pass</code>, "
+                          "<code>delta_solve_pts</code>, <code>delta_opt_pts</code>. "
+                          + PAIRED_NOTE + " A = the size-free pair, B = the "
+                          "supervised reference.",
+                     cls="wide"))
+    if not any_:
+        out.append(pend_note(f"nothing under {disp(RESULTS / 'm1')}"))
+    return "\n".join(out)
+
+
+# ---- M2 -------------------------------------------------------------------
+
+M2_VARIANTS = [("greedy", "greedy descent (the labeler's rule)"),
+               ("astar_child", "A* f = fixed_g(child) + ctg, first plan (= arena)"),
+               ("astar_parent", "A* f = fixed_g(parent) + ctg (label-consistent), first plan"),
+               ("astar_parent_any", "A* f = parent, anytime realization"),
+               ("astar_best", "A* f = parent, best-at-budget"),
+               ("mcts_min", "MCTS (PUCT, min backup, best-at-budget)"),
+               ("mcts_mean", "MCTS (PUCT, mean backup, best-at-budget)")]
+
+
+def sub_m2() -> str:
+    out = ['<h3 id="res-m2">M2 &mdash; search beats greed at inference</h3>',
+           "<p class='note'>Same nets, same exam, same 1200-expansion / k=5 "
+           "budget, replay-certified; each variant's <code>.vs_greedy.json</code> "
+           "is the paired test against the greedy row (gate: strictly better mean "
+           "moves at equal-or-better solve rate, PROBLEM.md &sect;8). Files are "
+           "grouped by <code>&lt;family&gt;_&lt;nets&gt;_&lt;exam&gt;_&lt;variant&gt;.json</code>.</p>"]
+    d2 = RESULTS / "m2"
+    groups = {}
+    if d2.is_dir():
+        for f in sorted(d2.glob("*.json")):
+            if ".vs_" in f.name:
+                continue
+            m = _re.match(r"^(persize|sizefree)_(.+)_(g\d+r\d+)_(.+)\.json$", f.name)
+            if not m:
+                continue
+            fam, nets, cfg, var = m.groups()
+            groups.setdefault((fam, nets, cfg), {})[var] = f
+    if not groups:
+        out.append(pend_note(f"nothing under {disp(d2)}"))
+        return "\n".join(out)
+    labels = dict(M2_VARIANTS)
+    order = [v for v, _ in M2_VARIANTS]
+    rows_ = []
+    for (fam, nets, cfg), vars_ in sorted(groups.items()):
+        rows_.append(row([f'<td class="grp" colspan="12"><strong>{esc(fam)}</strong> '
+                          f'family &middot; nets <code>{esc(nets)}</code> &middot; '
+                          f'exam <strong>{esc(cfg)}</strong></td>']))
+        for var in sorted(vars_, key=lambda v: (order.index(v) if v in order else 99, v)):
+            f = vars_[var]
+            d, a = agg_of(f)
+            g = f.with_name(f.stem + ".vs_greedy.json")
+            pr = load(g) if g.is_file() else None
+            pr = pr if ok(pr) else None
+            hl = "hl" if var.startswith("mcts") else ""
+            flags = " ".join((d or {}).get("spr", {}).get("flags") or []) if ok(d) else ""
+            rows_.append(row([
+                td_txt(f"<code>{esc(var)}</code><br><span class='note'>{esc(labels.get(var, ''))}"
+                       + (f"<br><code>{esc(flags)}</code>" if flags else "") + "</span>"),
+                *agg_cells(d, a),
+                *(paired_cells(pr) if var != "greedy" else
+                  ['<td class="dash" colspan="3">&mdash; (the B side)</td>']),
+                td_txt(src(disp(f)) + (f"<br>{src(disp(g))}" if pr else "")),
+            ], hl))
+    out.append(table(["search variant", *AGG_HEADERS, *PAIRED_HEADERS, "source"],
+                     rows_, note=AGG_NOTE + " " + PAIRED_NOTE
+                     + " A = the variant, B = greedy on the same exam.",
+                     cls="wide"))
+    return "\n".join(out)
+
+
+# ---- transfer / headroom ---------------------------------------------------
+
+TRANSFER_SETS = [(RESULTS / "transfer", "M1 mixed pair (zero-shot)"),
+                 (RESULTS / "selfplay" / "g24r4_iter1" / "transfer",
+                  "base loop, iteration-1 nets")]
+# recorded per-size supervised rows per (cfg, set) — file selection only
+TRANSFER_REF = {("g24r4", "frontier"): "scaling/results/g24r4/comparison_ungraded_nntwin.json",
+                ("g32r4", "graded"): "scaling/results/g32r4/comparison.json",
+                ("g32r4", "frontier"): "scaling/results/g32r4/comparison_ungraded.json",
+                ("g24r8", "graded"): "scaling/results/g24r8/comparison.json",
+                ("g24r8", "frontier"): "scaling/results/g24r8/comparison_ungraded.json",
+                ("g24r4", "graded"): "scaling/results/g24r4/comparison.json"}
+
+
+def ceiling_solve(cfg, set_, vocab="base"):
+    """(solved, n, capped, file) of the matching ceiling probe, or None."""
+    name = (f"{cfg}_{vocab}.json" if set_ == "graded" and vocab == "base"
+            else f"{cfg}_{set_}_{vocab}.json")
+    f = RESULTS / "ceiling" / name
+    if not f.is_file() and set_ == "graded":
+        f = RESULTS / "ceiling" / f"{cfg}_graded_{vocab}.json"
+    d = load(f) if f.is_file() else None
+    if not ok(d) or not isinstance(d.get("summary"), dict):
+        return None
+    s = d["summary"]
+    return {"solved": s.get("n_realizable"), "n": s.get("n"),
+            "capped": s.get("capped") or 0, "file": f,
+            "inconclusive": (s.get("categories") or {}).get("INCONCLUSIVE", 0),
+            "gap_best": s.get("mean_gap_best"), "pct_best": s.get("pct_best_optimal")}
+
+
+def sub_transfer() -> str:
+    out = ['<h3 id="res-transfer">Transfer / headroom &mdash; zero-shot at 32&times;32, 8 robots and on the frontier sets</h3>',
+           "<p class='note'>The size-free pair, trained on 16&times;16 + "
+           "24&times;24 with 4 robots only, benched under the arena protocol on "
+           "exams it never saw; the recorded per-size supervised row for the "
+           "same exam and the base-language solve ceiling (<code>spr.ceiling</code>) "
+           "bracket it. Frontier sets have no d*: solve rate and mean moves only.</p>"]
+    found = {}
+    for d_, label in TRANSFER_SETS:
+        if not d_.is_dir():
+            continue
+        for f in sorted(d_.glob("*.json")):
+            m = _re.match(r"^(g\d+r\d+)_(graded|frontier)_(astar|mcts)\.json$", f.name)
+            if not m:
+                continue
+            cfg, set_, search = m.groups()
+            found.setdefault((cfg, set_), []).append((label, search, f))
+    if not found:
+        out.append(pend_note("nothing under results/transfer/ or "
+                             "results/selfplay/*/transfer/ yet"))
+        return "\n".join(out)
+    rows_ = []
+    for (cfg, set_) in sorted(found):
+        rows_.append(row([f'<td class="grp" colspan="9"><strong>{esc(cfg)}</strong> '
+                          f'&middot; {esc(set_)} set</td>']))
+        ref = TRANSFER_REF.get((cfg, set_))
+        if ref:
+            rd = load_sv(ref)
+            _, rs = backward_system(rd)
+            ra = (rs or {}).get("aggregate") or {}
+            rows_.append(row([td_txt("recorded per-size supervised pair"),
+                              td_txt("arena A*"),
+                              *agg_cells(rd, ra),
+                              td_txt(src(ref))], "ctl"))
+        for label, search, f in found[(cfg, set_)]:
+            d, a = agg_of(f)
+            rows_.append(row([td_txt(esc(label)),
+                              td_txt("arena A*" if search == "astar" else "MCTS"),
+                              *agg_cells(d, a),
+                              td_txt(src(disp(f)))],
+                             "hl" if label.startswith("M1") else ""))
+        c = ceiling_solve(cfg, set_)
+        if c:
+            note = ""
+            if c["capped"]:
+                note = (f" <span class='note'>(probe capped on {c['capped']} "
+                        f"instances, {c['inconclusive']} inconclusive: lower bound)</span>")
+            rows_.append(row([td_txt("<strong>base-language solve ceiling</strong>" + note),
+                              td_txt("exhaustive, no net"),
+                              td_txt(f"{c['solved']}/{c['n']} &middot; "
+                                     f"{100 * c['solved'] / c['n']:.1f}%"
+                                     if c["n"] else "&mdash;"),
+                              DASH,
+                              td(c["gap_best"], ".2f") if c["gap_best"] is not None else DASH,
+                              td_pct100(c["pct_best"]) if c["pct_best"] is not None else DASH,
+                              DASH, DASH,
+                              td_txt(src(disp(c["file"])))], "ceil"))
+    out.append(table(["nets", "search", *AGG_HEADERS, "source"], rows_,
+                     note=AGG_NOTE + " Ceiling row: <code>summary.n_realizable</code>/"
+                          "<code>n</code> of the matching <code>results/ceiling/</code> "
+                          "file; its regret column is <code>mean_gap_best</code> "
+                          "(the best expressible plan's gap to d*), its % optimal "
+                          "<code>pct_best_optimal</code>.",
+                     cls="wide"))
+    return "\n".join(out)
+
+
+# ---- forward arm -----------------------------------------------------------
+
+def sub_forward() -> str:
+    out = ['<h3 id="res-fwd">Forward (primitive-move) arm &mdash; <code>spr/fwd</code></h3>',
+           "<p class='note'>The comparison arm in the natural AlphaZero action "
+           "space (PROBLEM.md &sect;6.1): PUCT over slides with the MoveNet guide. "
+           "F-M0 = parity vs the recorded forward row; F-M2 = search variants on "
+           "bench450; F-g24 = the same at 24&times;24 (when it lands).</p>"]
+    dirs = [("fwd_m0", "F-M0 &mdash; parity"), ("fwd_m2", "F-M2 &mdash; search variants at g16r4"),
+            ("fwd_g24", "F-g24 &mdash; 24&times;24")]
+    seen = {n for n, _ in dirs}
+    if RESULTS.is_dir():
+        for p in sorted(RESULTS.iterdir()):
+            if p.is_dir() and p.name.startswith("fwd_") and p.name not in seen:
+                dirs.append((p.name, p.name))
+    any_ = False
+    for name, title in dirs:
+        d_ = RESULTS / name
+        out.append(f"<h4>{title} <span class='note'>{src(disp(d_))}</span></h4>")
+        if not d_.is_dir():
+            out.append(pend_note(f"{disp(d_)} not on disk"))
+            continue
+        files = [f for f in sorted(d_.glob("*.json")) if ".vs_" not in f.name]
+        rows_ = []
+        for f in files:
+            d, a = agg_of(f)
+            if not a:
+                continue
+            any_ = True
+            sysname = ""
+            for n_, k_, a_, nr in systems_of(d):
+                if a_ is a:
+                    sysname = n_
+            vs = sorted(d_.glob(f.stem + ".vs_*.json"))
+            vs_bits = []
+            for g in vs:
+                pr = load(g)
+                if not ok(pr):
+                    continue
+                other = g.name[len(f.stem) + 4:-5]
+                vs_bits.append(f"vs <code>{esc(other)}</code>: solves "
+                               f"+{pr.get('a_only')}/&minus;{pr.get('b_only')} "
+                               f"(McNemar p={_pf(pr.get('mcnemar_p'))}), moves "
+                               f"{pr.get('moves_wins_a')}/{pr.get('moves_wins_b')} "
+                               f"(sign p={_pf(pr.get('sign_p_moves'))})")
+            rows_.append(row([td_txt(f"<code>{esc(f.stem)}</code><br><span class='note'>{esc(sysname[:90])}</span>"),
+                              *agg_cells(d, a, ".3f"),
+                              td_txt("<br>".join(vs_bits) if vs_bits else "&mdash;"),
+                              td_txt(src(disp(f)))]))
+        if rows_:
+            out.append(table(["arm", *AGG_HEADERS, "paired (.vs_*.json)", "source"], rows_,
+                             note=AGG_NOTE + " Paired column: every "
+                                  "<code>&lt;arm&gt;.vs_&lt;other&gt;.json</code> next to the "
+                                  "arm file, A = the arm, B = the other.",
+                             cls="wide"))
+        else:
+            out.append(pend_note(f"no comparison payload under {disp(d_)}"))
+    return "\n".join(out)
+
+
+# ---- loop iterations -------------------------------------------------------
+
+def loop_dirs():
+    """{loop_key: [(k, dir)]} for results/selfplay/<cfg>[_b2]_iter<k>/."""
+    root = RESULTS / "selfplay"
+    loops = {}
+    if not root.is_dir():
+        return loops
+    for p in sorted(root.iterdir()):
+        m = _re.match(r"^(g\d+r\d+)(_b2)?_iter(\d+)$", p.name)
+        if p.is_dir() and m:
+            key = m.group(1) + (m.group(2) or "")
+            loops.setdefault(key, []).append((int(m.group(3)), p))
+    for k in loops:
+        loops[k].sort()
+    return loops
+
+
+def _pick(dir_, patterns):
+    """First existing file among glob patterns (checked in dir_ and dir_/transfer)."""
+    for pat in patterns:
+        for base in (dir_, dir_ / "transfer"):
+            hits = sorted(base.glob(pat)) if base.is_dir() else []
+            if hits:
+                return hits[0]
+    return None
+
+
+def loop_iter_files(cfg, dir_):
+    return {
+        "manifest": dir_ / "generation.manifest.json",
+        "gauge": dir_ / "gauge.json",
+        "astar": _pick(dir_, [f"bench_{cfg}_astar.json", f"*{cfg}_bench_solved_astar.json",
+                              f"*{cfg}_graded_astar.json"]),
+        "mcts": _pick(dir_, [f"bench_{cfg}_mcts.json", f"*{cfg}_bench_solved_mcts.json",
+                             f"*{cfg}_graded_mcts.json"]),
+        "frontier": _pick(dir_, [f"bench_{cfg}_frontier_astar.json",
+                                 f"*{cfg}_bench_unsolved_astar.json",
+                                 f"{cfg}_frontier_astar.json"]),
+        "vs_prev": dir_ / "gate_vs_prev.json",
+        "vs_sup": dir_ / "gate_vs_supervised.json",
+        "nets": dir_ / "nets.txt",
+    }
+
+
+# iteration-0 reference rows (the M1 nets before any self-play data)
+LOOP_ITER0 = {
+    "g24r4": {"astar": RESULTS / "m1" / "mixed_value_warm_s21_g24r4.json",
+              "mcts": RESULTS / "m2" / "sizefree_mixed_warm_g24r4_mcts_min.json",
+              "frontier": RESULTS / "transfer" / "g24r4_frontier_astar.json"},
+}
+
+
+def sub_loops() -> str:
+    out = ['<h3 id="res-loops">M3/M4 &mdash; the self-play loop, iteration by iteration</h3>',
+           "<p class='note'>One row per <code>results/selfplay/&lt;cfg&gt;[_b2]_iter&lt;k&gt;/</code>: "
+           "generation manifest (fresh instances searched, certified, records "
+           "written), fidelity gauge (argmin agreement of the self-play labels "
+           "against the exact Rust engine on sampled depth-0 decisions), the "
+           "arena benches of the retrained pair on the graded exam (A* and MCTS) "
+           "and on the frontier set, and the paired gate against the previous "
+           "iteration's nets. Iteration 0 = the M1 nets before any self-play "
+           "data.</p>"]
+    loops = loop_dirs()
+    if not loops:
+        out.append(pend_note("nothing under results/selfplay/ yet"))
+        return "\n".join(out)
+    hdr = ["iteration", "instances", "certified", "records", "gauge (argmin)",
+           "A* solved", "A* moves", "A* regret", "A* exp",
+           "MCTS solved", "MCTS moves", "MCTS regret", "MCTS exp",
+           "frontier A* solved", "paired vs previous iteration", "vs supervised", "sources"]
+    for key, iters in sorted(loops.items()):
+        cfg = key.split("_")[0]
+        b2 = key.endswith("_b2")
+        out.append(f'<h4>loop <code>{esc(key)}</code> &mdash; {esc(cfg)}, '
+                   f'{"B2 (extended) vocabulary" if b2 else "base vocabulary"}</h4>')
+        rows_ = []
+        ks = [k for k, _ in iters]
+        if 0 not in ks and not b2 and cfg in LOOP_ITER0:
+            f0 = LOOP_ITER0[cfg]
+            _, aa = agg_of(f0["astar"]) if f0["astar"].is_file() else (None, {})
+            _, ma = agg_of(f0["mcts"]) if f0["mcts"].is_file() else (None, {})
+            _, fa = agg_of(f0["frontier"]) if f0["frontier"].is_file() else (None, {})
+            rows_.append(row([
+                td_txt("0 <span class='note'>(M1 nets)</span>"),
+                DASH, DASH, DASH, DASH,
+                td(aa.get("solved"), "d"), td(aa.get("mean_moves"), ".2f"),
+                td(aa.get("mean_regret"), ".2f"), td(aa.get("mean_expansions"), ".1f"),
+                td(ma.get("solved"), "d"), td(ma.get("mean_moves"), ".2f"),
+                td(ma.get("mean_regret"), ".2f"), td(ma.get("mean_expansions"), ".1f"),
+                td(fa.get("solved"), "d"),
+                DASH, DASH,
+                td_txt(" ".join(src(disp(p)) for p in f0.values() if p.is_file())),
+            ], "ctl"))
+        for k, dir_ in iters:
+            F = loop_iter_files(cfg, dir_)
+            man = load(F["manifest"]) if F["manifest"].is_file() else None
+            man = man if ok(man) else {}
+            gg = load(F["gauge"]) if F["gauge"].is_file() else None
+            gg = gg if ok(gg) else {}
+            au = gg.get("audit_summary") or {}
+            _, aa = agg_of(F["astar"]) if F["astar"] else (None, {})
+            _, ma = agg_of(F["mcts"]) if F["mcts"] else (None, {})
+            _, fa = agg_of(F["frontier"]) if F["frontier"] else (None, {})
+            vp = load(F["vs_prev"]) if F["vs_prev"].is_file() else None
+            vp = vp if ok(vp) else None
+            vs = load(F["vs_sup"]) if F["vs_sup"].is_file() else None
+            vs = vs if ok(vs) else None
+            inst = man.get("instances")
+            solved = man.get("solved")
+            cert = (f"{solved} ({100 * solved / inst:.1f}%)"
+                    if None not in (inst, solved) and inst else None)
+            gauge = None
+            if au.get("argmin_agreement") is not None:
+                gauge = (f"{au['argmin_agreement']:.3f}"
+                         + (f" <span class='note'>(n={gg.get('sample')}, "
+                            f"Jaccard {au.get('optimal_set_jaccard', 0):.2f})</span>"
+                            if gg.get("sample") else ""))
+            elif k == 0:
+                gauge = "&mdash;"
+            if vp:
+                pv = (f"solves +{vp.get('a_only')}/&minus;{vp.get('b_only')} "
+                      f"(McNemar p={_pf(vp.get('mcnemar_p'))}); moves "
+                      f"{vp.get('moves_wins_a')}/{vp.get('moves_wins_b')} "
+                      f"(sign p={_pf(vp.get('sign_p_moves'))}) on "
+                      f"{vp.get('both_solved')} both-solved")
+            elif k == 0:
+                pv = "&mdash; (reference iteration)"
+            else:
+                pv = None
+            if vs:
+                sv = (chip("pass" if vs.get("pass") else "fail",
+                           "PASS" if vs.get("pass") else "FAIL")
+                      + f" &Delta;solve {vs.get('delta_solve_pts', 0):+.1f}, "
+                        f"&Delta;opt {vs.get('delta_opt_pts', 0):+.1f} pts")
+            else:
+                sv = None
+            man_bits = []
+            if man.get("board_ids"):
+                man_bits.append(f"boards {esc(man['board_ids'])}")
+            s_ = man.get("search") or {}
+            if s_:
+                man_bits.append(f"MCTS {s_.get('expansions')} exp / stop {s_.get('stop_after')}"
+                                + (f", min-exp {s_.get('min_expansions')}" if s_.get("min_expansions") else "")
+                                + (f", vocab {s_.get('vocab')}" if s_.get("vocab") else ""))
+            if man.get("mean_expansions") is not None:
+                man_bits.append(f"{man['mean_expansions']:.1f} exp / {man.get('mean_seconds', 0):.1f} s per instance")
+            if man.get("slurm_job_id"):
+                man_bits.append(f"job {esc(man['slurm_job_id'])}")
+            srcs = [src(disp(p)) for p in (F["manifest"], F["gauge"], F["astar"], F["mcts"],
+                                             F["frontier"], F["vs_prev"], F["vs_sup"])
+                    if p and Path(p).is_file()]
+            rows_.append(row([
+                td_txt(f"<strong>{k}</strong>" + (" <span class='note'>(M1 nets, zero-shot in B2)</span>" if k == 0 and b2 else "")
+                       + (f"<br><span class='note'>{'; '.join(man_bits)}</span>" if man_bits else "")),
+                td(inst, "d") if inst is not None else (DASH if k == 0 else '<td class="pend">pending</td>'),
+                td_txt(cert) if cert else (DASH if k == 0 else '<td class="pend">pending</td>'),
+                td(man.get("records"), "d") if man.get("records") is not None else (DASH if k == 0 else '<td class="pend">pending</td>'),
+                td_txt(gauge) if gauge else '<td class="pend">pending</td>',
+                td(aa.get("solved"), "d"), td(aa.get("mean_moves"), ".2f"),
+                td(aa.get("mean_regret"), ".2f"), td(aa.get("mean_expansions"), ".1f"),
+                td(ma.get("solved"), "d"), td(ma.get("mean_moves"), ".2f"),
+                td(ma.get("mean_regret"), ".2f"), td(ma.get("mean_expansions"), ".1f"),
+                td(fa.get("solved"), "d"),
+                td_txt(pv) if pv else '<td class="pend">pending</td>',
+                td_txt(sv) if sv else (DASH if k == 0 else '<td class="pend">pending</td>'),
+                td_txt(" ".join(srcs) if srcs else "&mdash;"),
+            ], "hl" if k == max(ks) else ""))
+        out.append(table(hdr, rows_,
+                         note="<em>instances</em> / <em>certified</em> / <em>records</em> = "
+                              "<code>generation.manifest.json</code> <code>instances</code>, "
+                              "<code>solved</code>, <code>records</code> (plus its "
+                              "<code>search</code> block and per-instance means in the first "
+                              "column); <em>gauge</em> = <code>gauge.json</code> "
+                              "<code>audit_summary.argmin_agreement</code> over "
+                              "<code>sample</code> exact-labeled depth-0 decisions "
+                              "(<code>optimal_set_jaccard</code> in brackets); A* / MCTS "
+                              "columns = <code>aggregate</code> of the graded-exam bench "
+                              "payloads (<code>bench_&lt;cfg&gt;_astar.json</code> / "
+                              "<code>_mcts.json</code>, or the iteration-0 file names); "
+                              "<em>frontier A* solved</em> = the frontier bench payload "
+                              "(<code>bench_&lt;cfg&gt;_frontier_astar.json</code>, "
+                              "<code>transfer/&lt;cfg&gt;_frontier_astar.json</code> or "
+                              "<code>*_bench_unsolved_astar.json</code>); paired columns = "
+                              "<code>gate_vs_prev.json</code> (A = this iteration, B = the "
+                              "previous nets) and <code>gate_vs_supervised.json</code> "
+                              "(<code>spr.gate m1</code> against the per-size supervised pair).",
+                         cls="wide"))
+    return "\n".join(out)
+
+
+# ---- chart: regret vs solve rate on the g24r4 graded exam -------------------
+
+CHART_POINTS = [
+    # (series, label, file)
+    ("supervised per-size", "supervised A* (exact pair)", RESULTS / "m0" / "g24r4_exact_prefix.json"),
+    ("size-free, base vocab", "size-free A*", RESULTS / "m1" / "mixed_value_warm_s21_g24r4.json"),
+    ("size-free, base vocab", "size-free MCTS", RESULTS / "m2" / "sizefree_mixed_warm_g24r4_mcts_min.json"),
+    ("B2 vocab (loop)", "B2 A* it0", RESULTS / "selfplay" / "g24r4_b2_iter0" / "m1mixed_b2_g24r4_bench_solved_astar.json"),
+    ("B2 vocab (loop)", "B2 MCTS it0", RESULTS / "selfplay" / "g24r4_b2_iter0" / "m1mixed_b2_g24r4_bench_solved_mcts.json"),
+]
+CHART_SERIES = ["supervised per-size", "size-free, base vocab", "B2 vocab (loop)"]
+CHART_CLASS = {"supervised per-size": "c1", "size-free, base vocab": "c2", "B2 vocab (loop)": "c3"}
+
+
+def chart_points():
+    pts = list(CHART_POINTS)
+    for k, d_ in loop_dirs().get("g24r4_b2", []):
+        if k == 0:
+            continue
+        for search, lab in (("astar", "A*"), ("mcts", "MCTS")):
+            f = d_ / f"bench_g24r4_{search}.json"
+            pts.append(("B2 vocab (loop)", f"B2 {lab} it{k}", f))
+    out = []
+    for series, label, f in pts:
+        d, a = agg_of(f) if Path(f).is_file() else (None, {})
+        if a and a.get("solve_rate") is not None and a.get("mean_regret") is not None:
+            out.append((series, label, 100 * a["solve_rate"], a["mean_regret"], disp(f)))
+        else:
+            out.append((series, label, None, None, disp(f)))
+    return out
+
+
+def svg_regret_vs_solve() -> str:
+    pts = chart_points()
+    have = [p for p in pts if p[2] is not None]
+    refs = []
+    for vocab, lab in (("base", "base-language ceiling"), ("b2", "B2-language ceiling")):
+        f = RESULTS / "ceiling" / f"g24r4_{vocab}.json"
+        d = load(f) if f.is_file() else None
+        s = (d or {}).get("summary") if ok(d) else None
+        if s and s.get("solve_ceiling") is not None and s.get("mean_gap_best") is not None:
+            refs.append((lab, 100 * s["solve_ceiling"], s["mean_gap_best"], disp(f), vocab))
+    if not have:
+        return ""
+    W, H, L, R, T, B = 640, 360, 56, 20, 22, 46
+    xs = [p[2] for p in have] + [r[1] for r in refs]
+    ys = [p[3] for p in have] + [r[2] for r in refs]
+    x0, x1 = min(xs) - 3, min(100.0, max(xs) + 2)
+    y0, y1 = 0.0, max(ys) + 0.5
+    def X(v): return L + (v - x0) / (x1 - x0) * (W - L - R)
+    def Y(v): return (H - B) - (v - y0) / (y1 - y0) * (H - B - T)
+    s = [f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="Mean regret against solve rate on the g24r4 graded exam, one point per planner, ceilings as dashed reference lines">']
+    # grid
+    step_y = 1.0 if y1 <= 6 else 2.0
+    v = 0.0
+    while v <= y1:
+        s.append(f'<line x1="{L}" y1="{Y(v):.1f}" x2="{W - R}" y2="{Y(v):.1f}" class="grid"/>')
+        s.append(f'<text x="{L - 6}" y="{Y(v) + 4:.1f}" class="axl" text-anchor="end">{v:.0f}</text>')
+        v += step_y
+    step_x = 2 if (x1 - x0) <= 16 else 5
+    v = int(x0) // step_x * step_x + step_x
+    while v <= x1:
+        s.append(f'<line x1="{X(v):.1f}" y1="{T}" x2="{X(v):.1f}" y2="{H - B}" class="grid"/>')
+        s.append(f'<text x="{X(v):.1f}" y="{H - B + 14}" class="axl" text-anchor="middle">{v}%</text>')
+        v += step_x
+    s.append(f'<line x1="{L}" y1="{H - B}" x2="{W - R}" y2="{H - B}" class="axis"/>')
+    s.append(f'<line x1="{L}" y1="{T}" x2="{L}" y2="{H - B}" class="axis"/>')
+    s.append(f'<text x="{(L + W - R) / 2:.0f}" y="{H - 6}" class="axl" text-anchor="middle">solve rate on bench.solved (232 graded instances) &rarr; better</text>')
+    s.append(f'<text transform="translate(14 {(T + H - B) / 2:.0f}) rotate(-90)" class="axl" text-anchor="middle">mean regret (moves above d*, over solved) &darr; better</text>')
+    # reference lines
+    for lab, xr, yr, f, vocab in refs:
+        cls = "ref1" if vocab == "base" else "ref2"
+        s.append(f'<line x1="{X(xr):.1f}" y1="{T}" x2="{X(xr):.1f}" y2="{H - B}" class="refl {cls}"><title>{esc(lab)}: solve ceiling {xr:.1f}% ({esc(f)})</title></line>')
+        s.append(f'<line x1="{L}" y1="{Y(yr):.1f}" x2="{W - R}" y2="{Y(yr):.1f}" class="refl {cls}"><title>{esc(lab)}: best-plan regret {yr:.2f} ({esc(f)})</title></line>')
+        s.append(f'<text x="{X(xr) - 4:.1f}" y="{T + 11}" class="refl-t {cls}" text-anchor="end">{esc(lab)} {xr:.1f}%</text>')
+        s.append(f'<text x="{L + 4}" y="{Y(yr) - 4:.1f}" class="refl-t {cls}">{esc(lab)} regret {yr:.2f}</text>')
+    # points (fixed series colours; label every point — few enough)
+    for i, (series, label, xv, yv, f) in enumerate(have):
+        cls = CHART_CLASS.get(series, "c1")
+        s.append(f'<circle cx="{X(xv):.1f}" cy="{Y(yv):.1f}" r="6" class="pt {cls}"><title>{esc(label)}: {xv:.1f}% solved, regret {yv:.2f} ({esc(f)})</title></circle>')
+        dy = -9 if i % 2 == 0 else 16
+        if X(xv) > W - R - 110:            # keep labels inside the canvas
+            s.append(f'<text x="{X(xv) - 8:.1f}" y="{Y(yv) + dy:.1f}" class="ptl" '
+                     f'text-anchor="end">{esc(label)}</text>')
+        else:
+            s.append(f'<text x="{X(xv) + 8:.1f}" y="{Y(yv) + dy:.1f}" class="ptl">{esc(label)}</text>')
+    # legend
+    lx, ly = L + 8, H - B - 14 - 16 * len(CHART_SERIES)
+    for j, series in enumerate(CHART_SERIES):
+        yy = ly + 16 * j
+        s.append(f'<circle cx="{lx}" cy="{yy}" r="5" class="pt {CHART_CLASS[series]}"/>')
+        s.append(f'<text x="{lx + 10}" y="{yy + 4}" class="axl">{esc(series)}</text>')
+    s.append("</svg>")
+    return "".join(s)
+
+
+def sub_chart() -> str:
+    pts = chart_points()
+    svg = svg_regret_vs_solve()
+    out = ['<h3 id="res-chart">Regret vs solve rate on the g24r4 graded exam</h3>']
+    if not svg:
+        out.append(pend_note("none of the chart's source files is on disk yet"))
+    else:
+        out.append('<figure class="fig"><div class="chart">' + svg + "</div>"
+                   "<figcaption>Every point is <code>aggregate.solve_rate</code> "
+                   "&times; <code>aggregate.mean_regret</code> of one bench payload on "
+                   "<code>scaling/data/g24r4/bench.solved.jsonl</code> under the 1200-expansion, "
+                   "k=5 protocol; dashed lines are the exhaustive language ceilings "
+                   "(<code>summary.solve_ceiling</code> and <code>summary.mean_gap_best</code> "
+                   "of <code>results/ceiling/g24r4_base.json</code> / <code>g24r4_b2.json</code>). "
+                   "Down and to the right is better; a planner cannot sit right of its "
+                   "language's vertical line, and its regret is bounded below by the "
+                   "horizontal one only if it solves the same instance set. Later B2 "
+                   "iterations are picked up automatically from "
+                   "<code>results/selfplay/g24r4_b2_iter&lt;k&gt;/bench_g24r4_{astar,mcts}.json</code>."
+                   "</figcaption></figure>")
+    rows_ = [row([td_txt(esc(series)), td_txt(esc(label)),
+                  td_pct100(xv) if xv is not None else '<td class="pend">pending</td>',
+                  td(yv, ".2f"), td_txt(src(f))])
+             for series, label, xv, yv, f in pts]
+    out.append(table(["series", "planner", "solve rate", "mean regret", "source"], rows_,
+                     note="The chart's data, one row per point (the table view of the "
+                          "figure). Missing files render as pending and are left off "
+                          "the plot."))
+    return "\n".join(out)
+
+
+def sec_results() -> str:
+    out = ['<section id="results">', "<h2>Milestone results</h2>",
+           "<p>Every table here is regenerated from result files under "
+           + src(disp(RESULTS))
+           + " at generation time — nothing is hand-typed. Where a milestone's "
+             "files have not landed the cells read <em>pending</em>. Definitions "
+             "of the columns are under each table; the reading of the numbers "
+             "lives in " + src("self_play_robots/FINDINGS.md") + ".</p>",
+           "<p class='note'>Jump to: <a href='#res-m1'>M1</a> &middot; "
+           "<a href='#res-m2'>M2</a> &middot; <a href='#res-transfer'>transfer / headroom</a> "
+           "&middot; <a href='#res-fwd'>forward arm</a> &middot; <a href='#res-loops'>loop "
+           "iterations</a> &middot; <a href='#res-chart'>regret vs solve chart</a>.</p>"]
+    for fn in (sub_m1, sub_m2, sub_transfer, sub_forward, sub_loops, sub_chart):
+        try:
+            out.append(fn())
+        except Exception as e:          # one broken subsection must not kill the tab
+            out.append(f'<p class="pendbox bad">{esc(fn.__name__)} failed to render: '
+                       f'{esc(type(e).__name__)}: {esc(e)}</p>')
+            STATS["error"].append(f"{fn.__name__}: {type(e).__name__}: {e}")
+    out.append("</section>")
+    return "\n".join(out)
+
+
+
 def sec_glossary() -> str:
     d = load_sv("scaling/results/g24r4/comparison.json")
     p = (d or {}).get("protocol") or {}
@@ -1735,6 +2549,7 @@ PANELS = [
     ("Baselines", "baselines", sec_baselines),
     ("M0 arena parity", "m0", sec_m0),
     ("Ceiling study", "ceiling", sec_ceiling),
+    ("Milestone results", "results", sec_results),
     ("Milestones", "milestones", sec_milestones),
     ("Glossary", "glossary", sec_glossary),
 ]
@@ -1901,6 +2716,17 @@ summary { cursor: pointer; color: var(--acc); font-size: .9rem; }
 .fig .s1 { fill: var(--s1); }
 .fig .s2 { fill: var(--s2); }
 .fig .s3 { fill: var(--s3); }
+.fig .chart svg { max-width: 40rem; }
+.fig .pt { stroke: var(--bg); stroke-width: 2; }
+.fig .pt.c1 { fill: var(--mut); }
+.fig .pt.c2 { fill: var(--s1); }
+.fig .pt.c3 { fill: var(--s2); }
+.fig .ptl { fill: var(--ink); font: 11px system-ui, sans-serif; }
+.fig .refl { stroke: var(--mut); stroke-width: 1.2; stroke-dasharray: 5 4; fill: none; }
+.fig .refl.ref2 { stroke: var(--s3); }
+.fig .refl-t { fill: var(--mut); font: 10px system-ui, sans-serif; }
+.fig .refl-t.ref2 { fill: var(--s3); }
+.chip.warn { background: var(--warn-bg); color: var(--warn-ink); }
 footer { margin-top: 2.5rem; border-top: 1px solid var(--line);
          padding-top: .6rem; color: var(--mut); font-size: .82rem; }
 """
@@ -1961,13 +2787,18 @@ def main() -> int:
     arms, _ = arena_arms()
     n_arms = len([a for a in arms.values() if a.ref]) if arms else 0
     ceil_files = len(scan["ceiling"])
+    loops = loop_dirs()
+    loop_txt = ", ".join(f"{k}: iter {'/'.join(str(i) for i, _ in v)}"
+                         for k, v in sorted(loops.items())) or "none"
     print(f"gen_report: wrote {OUT} ({len(page)} bytes) | read {n_read} file(s), "
           f"{n_missing} pending, {len(STATS['error'])} error(s) | "
           f"M0 {m0_files}/{n_arms} arm result(s), ceiling "
-          f"{ceil_files}/{len(CEIL_EXPECTED)} arm(s), "
+          f"{ceil_files} arm file(s), "
           f"{sum(len(v) for v in scan['comparison'].values())} comparison "
           f"payload(s) + {sum(len(v) for v in scan['summary'].values())} "
-          f"summary.json under results/")
+          f"summary.json under results/ | M1 {len(scan['comparison'].get('m1', []))}, "
+          f"M2 {len(scan['comparison'].get('m2', []))}, transfer "
+          f"{len(scan['comparison'].get('transfer', []))} payload(s) | loops: {loop_txt}")
     for e in STATS["error"]:
         print(f"gen_report: WARN {e}")
     return 0

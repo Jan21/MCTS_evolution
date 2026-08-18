@@ -225,6 +225,11 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
    | mixed, value COLD (collapsed: constant output, CollapseStop at ep 3) | 401/450, 8.14, 1.92, 53.4%, 14.8 exp | 215/232, 9.80, 2.23, 54.9%, 10.7 exp |
    | g16-only (zero-shot at g24) | 397/450, 8.24, 2.03, 52.6%, 9.2 exp — PASS | 213/232, 10.08, 2.53, 49.3%, 8.6 exp — PASS (+8, p=0.04; 58/10, p=2e-9) |
    | g24-only (zero-shot at g16) | 402/450, 8.15, 1.91, 54.0%, 5.1 exp — PASS (39/21 mv, p=0.03) | 216/232, 9.90, 2.31, 53.7%, 4.1 exp — PASS (+11, p=0.001; 59/11, p=4e-9) |
+   (Paired tests above use the same-machine M0 re-run of the per-size pair,
+   `results/m0/g24r4_exact_prefix.json`, as §2 recommends; the `.gate.json`
+   files pair against the recorded origin-machine file and read 62/11, 58/8,
+   60/10 with p ≤ 1e-9 — same verdicts. The recorded reference itself is
+   205/232, 11.81 mv, 4.22 regret; the M0 re-run 11.80 / 4.20.)
    Reading. (a) **Gate met by all four pairs at both sizes** (all deltas
    positive except g16-only at g16r4: −0.9 solve pts, inside the bar). One
    size-free pair (mixed) replaces two per-size pairs with no loss at 16 and a
@@ -426,8 +431,8 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     | | base-language ceiling | 103 | | | | |
     | | B2 probe (8 workers, 100k frontier, 120 s): 114 proven, 104 inconclusive → ceiling ≥ 133 | | | | | |
     | g32r4 graded (175) | B2 language ceiling | 166/175 (base 156); regret 1.28 (base 1.56) | | | | |
-    Reading. The B2 language adds +12 graded solves and ≥ +34 frontier solves
-    over the base ceiling at g24r4, and the base-trained size-free nets
+    Reading. The B2 language adds +12 graded solves and ≥ +30 frontier solves
+    over the base ceiling at g24r4 (+34 over what the M1 nets reach in base), and the base-trained size-free nets
     already exploit it zero-shot (they had never seen a transient-support or
     by-reference candidate: FINDINGS 78's "supply is not the bottleneck"),
     but at a large search cost (490–515 expansions vs 5–20 in base) and 0.4
