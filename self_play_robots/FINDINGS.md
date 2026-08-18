@@ -544,3 +544,9 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     g8–g16 only; the g16r4 base ceiling reproduces supervised FINDINGS §4
     (22 no-plan + 20 unplayable) and no planner ever solves a probe-
     "unrealizable" instance in 21–27 payloads per exam.
+    Slack-12 re-probe of the base ceilings (login node, minutes): g16r4 best
+    7.65 / regret 1.39 / 62.5% (was 7.68 / 1.42 / 61.8%), g24r4 9.22 / 1.63 /
+    57.9% (was 9.31 / 1.72 / 57.4%); no probe capped. So the size-free MCTS
+    rows (§8: 1.54 and 1.78) sit 0.15 above the tightened ceilings — the
+    "within ~0.1–0.2 moves" wording of (iii) is the one to quote.
+    Sources: `results/ceiling/{g16r4,g24r4}_base_slack12.json`.
