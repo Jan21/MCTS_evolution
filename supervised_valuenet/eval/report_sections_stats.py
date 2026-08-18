@@ -445,42 +445,80 @@ def _seed_block(D):
 
 
 # ---------------------------------------------------------------------------
-# 1d-bis. Seed replicates of the g16r8 zero-shot headline pair (FINDINGS 77a)
+# 1d-bis. Seed replicates of the backward headline pairs (FINDINGS 77a, 80)
 # ---------------------------------------------------------------------------
 
-SH_SRC = "analysis/artifacts/seed_headline_g16r8.json"
-SH_SETS = [("graded", "gradable set", "266"),
-           ("frontier", "beyond the oracle", "184"),
-           ("pooled", "whole pool", "450"),
-           ("base450", "base pool (16\u00d716 \u00b7 4 robots)", "450")]
+def sh_src(rung):
+    return f"analysis/artifacts/seed_headline_{rung}.json"
+
+
+SH_RUNGS = ("g16r8", "g32r4")
+SH_SET_LABEL = {"graded": "gradable set",
+                "frontier": "beyond the oracle",
+                "pooled": "whole pool",
+                "base450": "base pool (16×16 · 4 robots)"}
+SH_SET_ORDER = ("graded", "frontier", "pooled", "base450")
 SH_ARMS = [("production", "seed of record (the published row)"),
            ("seed21", "fresh seed 21"),
            ("seed37", "fresh seed 37"),
            ("seed53", "fresh seed 53")]
 
 
-def _sh_num(sh, set_key, arm, field, fmt="{}"):
-    """A check-tagged number out of the seed-headline artifact."""
+def _sh_sets(sh):
+    """The set columns this rung actually has, in reading order."""
+    sets = sh.get("sets") or {}
+    return [k for k in SH_SET_ORDER if (sets.get(k) or {}).get("arms")]
+
+
+def _sh_num(sh, rung, set_key, arm, field, fmt="{}"):
+    """A check-tagged number out of one rung's seed-headline artifact."""
     c = ((sh.get("sets") or {}).get(set_key, {}).get("arms") or {}).get(arm)
     if not c or c.get(field) is None:
-        return '<span class="muted">\u2014</span>'
+        return '<span class="muted">—</span>'
     v = c[field]
-    return ck(fmt.format(v), SH_SRC, f"seedhl {set_key} {arm} {field}", raw=v)
+    return ck(fmt.format(v), sh_src(rung), f"seedhl {rung} {set_key} {arm} "
+              f"{field}", raw=v)
 
 
-def _seed_headline_block(D):
-    """The 16x16 / 8-robot headline pair, retrained under three fresh seeds."""
-    sh = D.get("seed_headline_g16r8")
-    head = ("<h3>Seed replicates of the headline pair "
-            "(16\u00d716 \u00b7 8 robots)</h3>")
-    if not sh or not (sh.get("sets") or {}).get("pooled", {}).get("arms"):
-        return head + progress_tag(
-            "the 8-robot headline pair is being retrained under three fresh "
-            "seeds (jobs/patterns/seed_headline_pair.slurm); the per-seed "
-            "benchmark rows render here when "
-            "analysis/artifacts/seed_headline_g16r8.json lands")
-    sets = sh["sets"]
+def _shs(sh, rung, set_key, field, fmt="{}", desc=None):
+    """A check-tagged number out of one rung+set's summary block."""
+    su = ((sh.get("sets") or {}).get(set_key) or {}).get("summary") or {}
+    if su.get(field) is None:
+        return '<span class="muted">—</span>'
+    return ck(fmt.format(su[field]), sh_src(rung),
+              f"seedhl {rung} {set_key} {desc or field}", raw=su[field])
 
+
+def _sh_band(sh, rung, set_key, desc="band"):
+    su = ((sh.get("sets") or {}).get(set_key) or {}).get("summary") or {}
+    if su.get("min3_seeds") is None:
+        return '<span class="muted">—</span>'
+    return ck(f'{su["min3_seeds"]}–{su["max3_seeds"]}', sh_src(rung),
+              f"seedhl {rung} {set_key} {desc}",
+              raw=(su["min3_seeds"], su["max3_seeds"]))
+
+
+def _shv(sh, rung, arm, suffix=""):
+    """Check-tagged val_regret quote from one rung's artifact."""
+    v = ((sh.get("val_regret") or {}).get(arm) or {}).get("val_regret")
+    if v is None:
+        return '<span class="muted">—</span>'
+    return ck(f"{v:.2f}", sh_src(rung), f"seedhl {rung} val_regret {arm}"
+              + suffix, raw=v)
+
+
+def _pv(sh, rung, set_key, arm):
+    """Check-tagged McNemar p from one rung's artifact."""
+    c = ((sh.get("sets") or {}).get(set_key, {}).get("arms") or {}).get(arm)
+    if not c or c.get("mcnemar_p") is None:
+        return '<span class="muted">—</span>'
+    return ck(_fp(c["mcnemar_p"]), sh_src(rung),
+              f"seedhl {rung} {set_key} {arm} McNemar p", raw=c["mcnemar_p"])
+
+
+def _sh_table(sh, rung):
+    """The per-arm × per-set table of one rung's replicate experiment."""
+    sets, cols = sh["sets"], _sh_sets(sh)
     body = []
     for arm, label in SH_ARMS:
         if arm not in (sets["pooled"].get("arms") or {}):
@@ -488,152 +526,243 @@ def _seed_headline_block(D):
         vr = (sh.get("val_regret") or {}).get(arm) or {}
         v, basin = vr.get("val_regret"), vr.get("basin")
         if v is None:
-            vcell = '<span class="muted">\u2014</span>'
+            vcell = '<span class="muted">—</span>'
         else:
-            vcell = ck(f"{v:.2f}", SH_SRC, f"seedhl val_regret {arm}", raw=v)
-            vcell += (" " + chip("bad basin", "warn") if basin == "bad"
-                      else " " + chip("good basin"))
+            vcell = _shv(sh, rung, arm)
+            if basin == "bad":
+                vcell += " " + chip("bad basin", "warn")
+            elif basin == "good":
+                vcell += " " + chip("good basin")
         cells = "".join(
-            '<td class="num">' + _sh_num(sh, k, arm, "solved_backward")
-            + "</td>" for k, _, _ in SH_SETS)
+            '<td class="num">' + _sh_num(sh, rung, k, arm, "solved_backward")
+            + "</td>" for k in cols)
         body.append(f'<tr><td><b>{esc(label)}</b></td>'
                     f'<td class="num small">{vcell}</td>{cells}</tr>')
 
     med = "".join(
-        '<td class="num">'
-        + ck(f'{sets[k]["summary"]["median3_seeds"]:g}', SH_SRC,
-             f"seedhl {k} median-of-3",
-             raw=sets[k]["summary"]["median3_seeds"])
-        + '<div class="cellnote">band '
-        + ck(f'{sets[k]["summary"]["min3_seeds"]}\u2013'
-             f'{sets[k]["summary"]["max3_seeds"]}', SH_SRC,
-             f"seedhl {k} band",
-             raw=(sets[k]["summary"]["min3_seeds"],
-                  sets[k]["summary"]["max3_seeds"]))
-        + "</div></td>" for k, _, _ in SH_SETS)
+        '<td class="num">' + _shs(sh, rung, k, "median3_seeds", "{:g}",
+                                  desc="median-of-3")
+        + '<div class="cellnote">band ' + _sh_band(sh, rung, k)
+        + "</div></td>" for k in cols)
     body.append('<tr class="hl"><td><b>median of the three fresh seeds</b>'
                 '<div class="cellnote">what this rung now reports</div></td>'
-                '<td class="num small"><span class="muted">\u2014</span></td>'
+                '<td class="num small"><span class="muted">—</span></td>'
                 + med + "</tr>")
     fwd = "".join(
         '<td class="num">'
-        + ck(str(sets[k]["solved_forward"]), SH_SRC, f"seedhl {k} forward",
-             raw=sets[k]["solved_forward"]) + "</td>" for k, _, _ in SH_SETS)
+        + ck(str(sets[k]["solved_forward"]), sh_src(rung),
+             f"seedhl {rung} {k} forward", raw=sets[k]["solved_forward"])
+        + "</td>" for k in cols)
     body.append('<tr><td>move-by-move control (unchanged)</td>'
-                '<td class="num small"><span class="muted">\u2014</span></td>'
+                '<td class="num small"><span class="muted">—</span></td>'
                 + fwd + "</tr>")
 
-    heads = "".join(f'<th class="num">{esc(lab)}<br>'
-                    f'<span class="small">{esc(n)} puzzles</span></th>'
-                    for _, lab, n in SH_SETS)
-    table = scroll(
+    heads = "".join(f'<th class="num">{esc(SH_SET_LABEL[k])}<br>'
+                    f'<span class="small">{sets[k]["n"]} puzzles</span></th>'
+                    for k in cols)
+    return scroll(
         "<table><thead><tr><th>training run of the network pair</th>"
         '<th class="num">value-net<br>validation error</th>'
         + heads + "</tr></thead><tbody>" + "".join(body) + "</tbody></table>")
 
-    def marg(arm):
-        return (_sh_num(sh, "pooled", arm, "diff_points", "{:+.1f}")
-                + " points, p&nbsp;=&nbsp;"
-                + _pv(sh, "pooled", arm))
 
-    reading = (
-        "<p><b>Bimodal again \u2014 and, as at 6 robots, which outcome you "
+def _sh_reading_g16r8(sh, D):
+    rung = "g16r8"
+    sets = sh["sets"]
+
+    def marg(arm):
+        return (_sh_num(sh, rung, "pooled", arm, "diff_points", "{:+.1f}")
+                + " points, p&nbsp;=&nbsp;" + _pv(sh, rung, "pooled", arm))
+
+    return (
+        "<p><b>Bimodal — and, as at 6 robots, which outcome you "
         "drew is visible in training, before a single puzzle is "
         "benchmarked.</b> The value network's validation error splits the "
         "four runs cleanly: one of the three fresh seeds lands at "
-        + _shv(sh, "seed21") + " against " + _shv(sh, "seed37") + " and "
-        + _shv(sh, "seed53") + " for the other two (the published pair sits "
-        "with the good ones, at " + _shv(sh, "production") + "). This is the "
+        + _shv(sh, rung, "seed21", " (reading)") + " against "
+        + _shv(sh, rung, "seed37", " (reading)") + " and "
+        + _shv(sh, rung, "seed53", " (reading)")
+        + " for the other two (the published pair sits "
+        "with the good ones, at " + _shv(sh, rung, "production", " (reading)")
+        + "). This is the "
         "same two-basin signature the 6-robot retrain showed above, in the "
         "same network, and it is diagnosable from the training run alone.</p>"
         "<p><b>The two good-basin seeds reproduce the headline; the "
         "bad-basin seed does not.</b> Beyond the oracle the good seeds solve "
-        + _sh_num(sh, "frontier", "seed37", "solved_backward") + " and "
-        + _sh_num(sh, "frontier", "seed53", "solved_backward")
+        + _sh_num(sh, rung, "frontier", "seed37", "solved_backward") + " and "
+        + _sh_num(sh, rung, "frontier", "seed53", "solved_backward")
         + " of 184 against the published "
-        + _sh_num(sh, "frontier", "production", "solved_backward")
+        + _sh_num(sh, rung, "frontier", "production", "solved_backward")
         + ", while the bad-basin seed manages "
-        + _sh_num(sh, "frontier", "seed21", "solved_backward")
+        + _sh_num(sh, rung, "frontier", "seed21", "solved_backward")
         + ". It still finishes ahead of the move-by-move control there ("
-        + _sh_num(sh, "frontier", "seed21", "diff_points", "{:+.1f}")
-        + " points, p&nbsp;=&nbsp;" + _pv(sh, "frontier", "seed21")
+        + _sh_num(sh, rung, "frontier", "seed21", "diff_points", "{:+.1f}")
+        + " points, p&nbsp;=&nbsp;" + _pv(sh, rung, "frontier", "seed21")
         + ", so ahead but no longer beyond doubt), and over the whole 450 its "
-        "margin shrinks to " + marg("seed21") + " \u2014 against "
+        "margin shrinks to " + marg("seed21") + " — against "
         + marg("seed37") + " and " + marg("seed53") + " for the good seeds "
         "and " + marg("production") + " for the published row. Nothing of "
         "this shows at the networks' home size: on the base pool all four "
         "runs land within "
         + ck(f'{sets["base450"]["summary"]["max4"] - sets["base450"]["summary"]["min4"]}',
-             SH_SRC, "seedhl base450 spread4",
+             sh_src(rung), "seedhl g16r8 base450 spread4",
              raw=sets["base450"]["summary"]["max4"]
              - sets["base450"]["summary"]["min4"])
         + " puzzles of each other, so the damage is specific to carrying the "
         "pair, unchanged, to a harder board. Solution length is not what "
         "moves: on the puzzles a run and the control both solve, the subgoal "
         "plans average "
-        + _sh_num(sh, "pooled", "production", "mean_len_backward", "{:.1f}")
-        + ", " + _sh_num(sh, "pooled", "seed37", "mean_len_backward", "{:.1f}")
+        + _sh_num(sh, rung, "pooled", "production", "mean_len_backward",
+                  "{:.1f}")
+        + ", "
+        + _sh_num(sh, rung, "pooled", "seed37", "mean_len_backward", "{:.1f}")
         + " and "
-        + _sh_num(sh, "pooled", "seed53", "mean_len_backward", "{:.1f}")
+        + _sh_num(sh, rung, "pooled", "seed53", "mean_len_backward", "{:.1f}")
         + " moves for the three good-basin runs and "
-        + _sh_num(sh, "pooled", "seed21", "mean_len_backward", "{:.1f}")
+        + _sh_num(sh, rung, "pooled", "seed21", "mean_len_backward", "{:.1f}")
         + " for the bad-basin one, against about "
-        + _sh_num(sh, "pooled", "production", "mean_len_forward", "{:.1f}")
-        + " for the move-by-move control throughout \u2014 the subgoal "
+        + _sh_num(sh, rung, "pooled", "production", "mean_len_forward",
+                  "{:.1f}")
+        + " for the move-by-move control throughout — the subgoal "
         "planner keeps solving more puzzles with longer plans, whichever "
         "basin it drew.</p>"
         "<p><b>What the page now reports for this rung.</b> The rule was "
         "fixed before the seeds ran: a split draw like this one forces the "
         "headline to be the median of the three replicates rather than any "
-        "single run. So 16\u00d716 \u00b7 8 robots is reported as "
-        + ck(f'{sets["pooled"]["summary"]["median3_seeds"]:g}', SH_SRC,
-             "seedhl pooled median-of-3 (reading)",
-             raw=sets["pooled"]["summary"]["median3_seeds"])
-        + " of 450 solved, band "
-        + ck(f'{sets["pooled"]["summary"]["min3_seeds"]}\u2013'
-             f'{sets["pooled"]["summary"]["max3_seeds"]}', SH_SRC,
-             "seedhl pooled band (reading)",
-             raw=(sets["pooled"]["summary"]["min3_seeds"],
-                  sets["pooled"]["summary"]["max3_seeds"]))
-        + ", with the published run kept visible as the seed of record; the "
-        "margin over the move-by-move control at that median is "
-        + ck(f'{sets["pooled"]["summary"]["median3_margin_points"]:+.1f}',
-             SH_SRC, "seedhl pooled median-of-3 margin",
-             raw=sets["pooled"]["summary"]["median3_margin_points"])
+        "single run. So 16×16 · 8 robots is reported as "
+        + _shs(sh, rung, "pooled", "median3_seeds", "{:g}",
+               desc="median-of-3 (reading)")
+        + " of 450 solved, band " + _sh_band(sh, rung, "pooled",
+                                             "band (reading)")
+        + ", with the published run kept visible as the seed of "
+        "record; the margin over the move-by-move control at that median is "
+        + _shs(sh, rung, "pooled", "median3_margin_points", "{:+.1f}",
+               desc="median-of-3 margin")
         + " points, and the band spans "
-        + _sh_num(sh, "pooled", "seed21", "diff_points", "{:+.1f}") + " to "
-        + _sh_num(sh, "pooled", "seed37", "diff_points", "{:+.1f}")
-        + " points. The same three-seed replicate is still in flight "
-        "for 32\u00d732 \u00b7 4 robots; that rung stays single-seed until "
-        "it lands.</p>")
-
-    return (head
-            + "<p>The 8-robot row is a <b>zero-shot</b> result: the network "
-            "pair was trained once at the smallest board size and applied "
-            "here unchanged. That pair is a single training draw, so the "
-            "recipe was repeated under three fresh random seeds \u2014 "
-            "nothing else altered \u2014 and each pair re-benchmarked with "
-            "the headline protocol verbatim (same budget, same pinned "
-            "puzzles, every solved plan replayed). The last column is the "
-            "networks' home size, where they were trained.</p>"
-            + table + reading)
+        + _sh_num(sh, rung, "pooled", "seed21", "diff_points", "{:+.1f}")
+        + " to "
+        + _sh_num(sh, rung, "pooled", "seed37", "diff_points", "{:+.1f}")
+        + " points.</p>")
 
 
-def _shv(sh, arm):
-    """Check-tagged val_regret quote from the seed-headline artifact."""
-    v = ((sh.get("val_regret") or {}).get(arm) or {}).get("val_regret")
-    if v is None:
-        return '<span class="muted">\u2014</span>'
-    return ck(f"{v:.2f}", SH_SRC, f"seedhl val_regret {arm} (reading)", raw=v)
+def _sh_reading_g32r4(sh, D):
+    rung = "g32r4"
+    spread = sh.get("val_regret_spread")
+    spread_html = ('<span class="muted">—</span>' if spread is None else
+                   ck(f"{spread:.2f}", sh_src(rung),
+                      "seedhl g32r4 val_regret spread", raw=spread))
+    return (
+        "<p><b>The largest board tells the opposite story: no split, and "
+        "every replicate at or above the published row.</b> The value "
+        "network's validation error is flat across the four runs — "
+        + _shv(sh, rung, "seed21", " (reading)") + ", "
+        + _shv(sh, rung, "seed37", " (reading)") + " and "
+        + _shv(sh, rung, "seed53", " (reading)") + " for the fresh seeds "
+        "against " + _shv(sh, rung, "production", " (reading)")
+        + " for the published pair, a total spread of " + spread_html
+        + ". (This error is measured against the plan lengths of this board "
+        "size, so it is comparable only down this column, never against the "
+        "8-robot numbers above.) There is no second basin to fall into "
+        "here, and none of the four runs found one.</p>"
+        "<p><b>Every fresh seed beats the published run, on both sets.</b> "
+        "On the gradable set the replicates solve "
+        + _sh_num(sh, rung, "graded", "seed21", "solved_backward") + ", "
+        + _sh_num(sh, rung, "graded", "seed37", "solved_backward") + " and "
+        + _sh_num(sh, rung, "graded", "seed53", "solved_backward")
+        + " of 175 against the published "
+        + _sh_num(sh, rung, "graded", "production", "solved_backward")
+        + "; beyond the oracle, "
+        + _sh_num(sh, rung, "frontier", "seed21", "solved_backward") + ", "
+        + _sh_num(sh, rung, "frontier", "seed37", "solved_backward")
+        + " and "
+        + _sh_num(sh, rung, "frontier", "seed53", "solved_backward")
+        + " of 275 against "
+        + _sh_num(sh, rung, "frontier", "production", "solved_backward")
+        + " — where the move-by-move control solves "
+        + ck(str(sh["sets"]["frontier"]["solved_forward"]), sh_src(rung),
+             "seedhl g32r4 frontier forward (reading)",
+             raw=sh["sets"]["frontier"]["solved_forward"])
+        + ". Over the whole 450 the three replicates land at "
+        + _sh_num(sh, rung, "pooled", "seed21", "solved_backward") + ", "
+        + _sh_num(sh, rung, "pooled", "seed37", "solved_backward") + " and "
+        + _sh_num(sh, rung, "pooled", "seed53", "solved_backward")
+        + " against the published "
+        + _sh_num(sh, rung, "pooled", "production", "solved_backward")
+        + " \u2014 margins of "
+        + _sh_num(sh, rung, "pooled", "seed21", "diff_points", "{:+.1f}")
+        + " to "
+        + _sh_num(sh, rung, "pooled", "seed37", "diff_points", "{:+.1f}")
+        + " points over the control, every one of them at "
+        "p&nbsp;=&nbsp;" + _pv(sh, rung, "pooled", "seed21") + ".</p>"
+        "<p><b>What the page reports for this rung.</b> The same "
+        "pre-registered rule applies, so 32×32 · 4 robots is "
+        "reported as the median of the three replicates, "
+        + _shs(sh, rung, "pooled", "median3_seeds", "{:g}",
+               desc="median-of-3 (reading)")
+        + " of 450 solved, band " + _sh_band(sh, rung, "pooled",
+                                             "band (reading)")
+        + " — a spread of "
+        + _shs(sh, rung, "pooled", "band3_points", "{:.1f}",
+               desc="band in points")
+        + " points, against "
+        + _shs(D.get("seed_headline_g16r8") or {}, "g16r8", "pooled",
+               "band3_points", "{:.1f}", desc="band in points (32×32 text)")
+        + " at 8 robots — with the published run "
+        "kept visible as the seed of record. The margin over the "
+        "move-by-move control at that median is "
+        + _shs(sh, rung, "pooled", "median3_margin_points", "{:+.1f}",
+               desc="median-of-3 margin")
+        + " points, above the published run's "
+        + _sh_num(sh, rung, "pooled", "production", "diff_points", "{:+.1f}")
+        + ". <b>The strongest rung on the page is therefore also the most "
+        "robust one:</b> the seed sensitivity that damages the 8-robot cell "
+        "is a property of that cell, not of the method, and the published "
+        "32×32 row is if anything a conservative draw.</p>")
 
 
-def _pv(sh, set_key, arm):
-    """Check-tagged McNemar p from the seed-headline artifact."""
-    c = ((sh.get("sets") or {}).get(set_key, {}).get("arms") or {}).get(arm)
-    if not c or c.get("mcnemar_p") is None:
-        return '<span class="muted">\u2014</span>'
-    return ck(_fp(c["mcnemar_p"]), SH_SRC,
-              f"seedhl {set_key} {arm} McNemar p", raw=c["mcnemar_p"])
+SH_READING = {"g16r8": _sh_reading_g16r8, "g32r4": _sh_reading_g32r4}
+
+
+def _seed_headline_block(D):
+    """The backward headline pair, retrained under three fresh seeds.
+
+    Two rungs carry this experiment (report_data.SEED_HEADLINE_RUNGS): the
+    zero-shot 8-robot pair, which turns out to be bimodal, and the 32x32
+    pair, which does not.  Each renders its own table and reading; a rung
+    whose artifact has not landed renders nothing (all of them missing
+    renders the in-progress note).
+    """
+    head = "<h3>Seed replicates of the headline pair</h3>"
+    have = [r for r in SH_RUNGS
+            if (D.get("seed_headline_" + r) or {}).get("sets", {})
+            .get("pooled", {}).get("arms")]
+    if not have:
+        return head + progress_tag(
+            "the headline pairs are being retrained under three fresh "
+            "seeds (jobs/patterns/seed_headline_pair.slurm); the per-seed "
+            "benchmark rows render here when "
+            "analysis/artifacts/seed_headline_<rung>.json lands")
+    intro = ("<p>Two rungs of the ladder rest on a network pair that was "
+             "trained exactly once, so both were repeated under three fresh "
+             "random seeds — nothing else altered — and each "
+             "resulting pair re-benchmarked with the headline protocol "
+             "verbatim (same budget, same pinned puzzles, every solved plan "
+             "replayed). At 16×16 · 8 robots the pair is applied "
+             "<b>zero-shot</b> (trained at the smallest board size and used "
+             "here unchanged, so the last column is its home size); at "
+             "32×32 · 4 robots the pair is trained on that "
+             "configuration. The rule was fixed before either ran: if the "
+             "seeds scatter, the rung reports the median of the three with "
+             "its band, and the published run stays visible as the seed of "
+             "record.</p>")
+    out = [head, intro]
+    for rung in have:
+        sh = D["seed_headline_" + rung]
+        out.append(f"<h4>{esc(RUNG_LABEL.get(rung, rung))}</h4>")
+        out.append(_sh_table(sh, rung))
+        out.append(SH_READING[rung](sh, D))
+    return "".join(out)
+
 
 # ---------------------------------------------------------------------------
 # 1e. The no-network control (FINDINGS 48)

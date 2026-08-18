@@ -569,6 +569,49 @@ def sec_failure_gallery(D):
         + "".join(cards) + "</div></section>"
 
 
+def _seed_replicate_bullet(D):
+    """The status bullet for the headline seed replicates (FINDINGS 77a, 80).
+
+    Reads the two per-rung artifacts, so the numbers here are the same
+    machine-checked ones the fairness tab renders; if neither artifact has
+    landed the bullet falls back to the in-flight wording.
+    """
+    def med(rung):
+        sh = D.get("seed_headline_" + rung) or {}
+        su = ((sh.get("sets") or {}).get("pooled") or {}).get("summary") or {}
+        if su.get("median3_seeds") is None:
+            return None
+        src = f"analysis/artifacts/seed_headline_{rung}.json"
+        return (ck(f'{su["median3_seeds"]:g}/450', src,
+                   f"still open: {rung} median-of-3",
+                   raw=su["median3_seeds"])
+                + " (band "
+                + ck(f'{su["min3_seeds"]}\u2013{su["max3_seeds"]}', src,
+                     f"still open: {rung} band",
+                     raw=(su["min3_seeds"], su["max3_seeds"])) + ")")
+
+    m8, m32 = med("g16r8"), med("g32r4")
+    if not (m8 and m32):
+        return ("""    <li><b>Running \u2014 seed replicates of the backward
+    headline pair</b> (16\u00d716\u00b78r and 32\u00d732\u00b74r, seeds
+    21/37/53, ~20 node-hours). Objection answered: \u201cthe headline is a
+    single training run; measured seed swing reaches 28 points.\u201d Rule
+    fixed in advance: if seeds scatter, the headline becomes a median with a
+    range.</li>""")
+    return ("""    <li><b>Done \u2014 seed replicates of the backward headline
+    pair.</b> Both single-draw rungs were retrained under seeds 21/37/53 and
+    re-benchmarked with the headline protocol (~20 node-hours). Objection
+    answered: \u201cthe headline is a single training run; measured seed
+    swing reaches 28 points.\u201d By the rule fixed in advance, both rungs
+    now report the median of three with its band. 16\u00d716\u00b78r
+    scatters \u2014 one seed in three falls into the value network's
+    degenerate basin \u2014 and reports """ + m8 + """;
+    32\u00d732\u00b74r does not, with all three seeds at or above the
+    published run and the four value networks indistinguishable, and reports
+    """ + m32 + """. Tables and readings: the \u201cIs it fair?\u201d
+    tab.</li>""")
+
+
 def sec_open(D):
     return kicker_h2(
         "still open", "What is running and what is next") + """
@@ -576,16 +619,13 @@ def sec_open(D):
   through one lens: thesis, statistics, efficiency, plan language, failures,
   data, scaling, reproducibility, related work, a devil's advocate, and so
   on) judged the work honest and essentially complete, and ranked the gaps
-  a hostile referee would attack. The three that can be closed cheaply are
-  <b>running now</b>; the rest are listed as future work. Memos:
+  a hostile referee would attack. The three that can be closed cheaply were
+  taken on at once — <b>two have landed</b>, one is still running; the
+  rest are listed as future work. Memos:
   <code>analysis/review_2026-08-16/</code>; log: FINDINGS 75–77;
   paper plan: <code>PAPER_PLAN.md</code>.</p>
   <ul>
-    <li><b>Running — seed replicates of the backward headline pair</b>
-    (16×16·8r and 32×32·4r, seeds 21/37/53, ~20 node-hours). Objection
-    answered: “the headline is a single training run; measured seed swing
-    reaches 28 points.” Rule fixed in advance: if seeds scatter, the
-    headline becomes a median with a range.</li>
+""" + _seed_replicate_bullet(D) + """
     <li><b>Running — a fair rescue for the forward planner</b> at 16×16·8r
     (3 seeds × 3 learning rates, winner chosen by its own validation score,
     never by test; ~8 node-hours). Objection answered: “you beat a weak

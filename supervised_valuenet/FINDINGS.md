@@ -2774,3 +2774,38 @@ record what was done about the first three items.)_
    realizer, the labeler nets and the Rust engine in place. (Numbering note:
    this file carries two §80 entries from two concurrent sessions; the next
    free number after 81 is 82 — used here.)
+
+83. **Seed replicates of the 32×32·4-robot headline pair: all three fresh
+   seeds land AT OR ABOVE the headline on every set — the study's strongest
+   rung is robust to seeds; median-of-3 pooled 361/450 (band 357–366, 2.0
+   pts wide) vs forward 135, +50.2 pts (2026-08-18, jobs 4670569/81/83,
+   ~15 h each ≈ 5.6 nh).** Recipe identical to the production per-config
+   base-vocab pair (policy 30 ep bs 8, value 25 ep bs 2 mpg 8, both cold),
+   `--torch-seed` 21/37/53 on both nets; every bench replay-certified.
+   | pair | value val_regret | graded /175 | frontier /275 | pooled /450 (vs fwd 135) | McNemar pooled |
+   |---|---|---|---|---|---|
+   | production (seed of record) | 3.019 | 154 | 196 | 350 (+47.8) | — |
+   | seed 21 | 2.943 | 159 | 198 | 357 (+49.3) | p=2.7e-55 |
+   | seed 37 | 3.020 | 167 | 199 | 366 (+51.3) | p=3.9e-62 |
+   | seed 53 | 3.015 | 163 | 198 | 361 (+50.2) | p=7.6e-59 |
+   | median of 3 seeds | — | 163 (159–167) | 198 (198–199) | **361** (357–366) | — |
+   Forward control: graded 133, frontier 2.
+   Reading. (a) No second basin at this rung: val_regret spread is 0.08
+   across four cold trainings (production's 3.019 recovered from the
+   ModelCheckpoint state in `scaling/runs/g32r4/backward-value/.../
+   epoch=15-step=52528.ckpt`; comparable only within this config), and
+   the frontier count is 196–199 across all four — the +47.8-point
+   headline is, if anything, conservative (median-of-3 gives +50.2).
+   (b) Together with §80: bistability is a property of the warm-started
+   8-robot recipe, not of the method — the cold per-config recipe at
+   32×32 draws the same basin four times out of four. (c) Paper rule:
+   both seed-replicated rungs are now reported as median-of-3 with the
+   band, production kept visible as the seed of record; the 16×16·8r
+   band is wide (361–424) because of one bad draw, the 32×32 band is 9
+   puzzles wide.
+   Sources: `analysis/seed_headline_g16r8.py g32r4` →
+   `analysis/artifacts/seed_headline_g32r4.json`;
+   `scaling/results/g32r4/comparison{,_ungraded}_b2_seed{21,37,53}.json`;
+   `runs/seedhl/rr-seedhl-g32r4-s*.out`. Report: fairness tab "Seed
+   replicates of the headline pair" (both rungs); headline rows footnoted;
+   1612 checks.

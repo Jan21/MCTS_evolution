@@ -532,11 +532,15 @@ def sec_verdict(D):
   extra puzzle in twenty-four there). So "it has stopped working" is
   supportable only at the largest boards; elsewhere the honest statement is
   that it needs several times the search to approach a rate the subgoal
-  planner reaches immediately, and still does not catch up. (3) The headline
-  arms are single-seed on both sides. Where seed sensitivity HAS been
-  measured — the retrained backward networks, see the fairness tab — it is
-  large, so no small difference on this page should be read as real; the
-  headline margins are 8–48 points.</p>
+  planner reaches immediately, and still does not catch up. (3) Seed
+  sensitivity is measured, not assumed. The two rungs whose subgoal pair was
+  a single training draw were repeated under three fresh seeds and now report
+  the median of three with its band (16×16 · 8 robots scatters — one seed in
+  three lands in a degenerate value network; 32×32 · 4 robots does not, with
+  all three seeds at or above the published run). Everywhere else both arms
+  are single-seed, and the forward arm is single-seed at every scaling rung,
+  so no small difference on this page should be read as real; the headline
+  margins are 8–48 points. See the fairness tab.</p>
   <p>The subgoal planner's remaining handicaps are honest and measured:
   longer solutions where no optimum exists, and a gap between what its
   extended plan language permits and what its current networks reach —
@@ -558,59 +562,80 @@ def sec_verdict(D):
     return html
 
 
-def _seed_of_record_note(sh, SH_SRC):
-    """The 16x16 / 8-robot cellnote: median of three seed replicates + band.
+SH_RUNGS = ("g16r8", "g32r4")
 
-    The 8-robot networks are applied zero-shot (trained once at the smallest
-    size), and that single training draw turned out to be seed-sensitive
-    (FINDINGS 77a): one of three fresh seeds lands in the value net's bad
-    basin. The pre-registered rule makes the median of the three replicates
-    the reported number for this rung; the published run stays visible as the
-    seed of record.
-    """
-    if not sh:
-        return ""
+
+def _sh_src(rung):
+    return f"analysis/artifacts/seed_headline_{rung}.json"
+
+
+def _sh_pooled(D, rung):
+    """One rung's pooled-450 summary from its seed-replicate artifact."""
+    sh = D.get("seed_headline_" + rung) or {}
     su = ((sh.get("sets") or {}).get("pooled") or {}).get("summary") or {}
-    if su.get("median3_seeds") is None:
+    return su if su.get("median3_seeds") is not None else None
+
+
+def _sh_median(D, rung, tag):
+    su = _sh_pooled(D, rung)
+    return ck(f'{su["median3_seeds"]:g}/450', _sh_src(rung),
+              f"headline {rung} median-of-3{tag}", raw=su["median3_seeds"])
+
+
+def _sh_band(D, rung, tag):
+    su = _sh_pooled(D, rung)
+    return ck(f'{su["min3_seeds"]}\u2013{su["max3_seeds"]}', _sh_src(rung),
+              f"headline {rung} band{tag}",
+              raw=(su["min3_seeds"], su["max3_seeds"]))
+
+
+def _seed_of_record_note(D, rung):
+    """The headline-row cellnote of a rung whose pair was seed-replicated.
+
+    Both replicated rungs (FINDINGS 77a, 80) report the median of three
+    fresh seeds by a rule fixed before the seeds ran; the published run
+    stays visible as the seed of record, which is the number in the row.
+    At 16x16 / 8 robots the replicates are split (one lands in the value
+    net's bad basin); at 32x32 / 4 robots they are not, and all three sit
+    at or above the published run.
+    """
+    if not _sh_pooled(D, rung):
         return ""
     return ('number shown is the <b>seed of record</b> \u2014 the published '
             'run; retrained under three fresh seeds this rung\'s median is '
-            + ck(f'{su["median3_seeds"]:g}/450', SH_SRC,
-                 "headline g16r8 median-of-3", raw=su["median3_seeds"])
-            + " (band "
-            + ck(f'{su["min3_seeds"]}\u2013{su["max3_seeds"]}', SH_SRC,
-                 "headline g16r8 band",
-                 raw=(su["min3_seeds"], su["max3_seeds"]))
+            + _sh_median(D, rung, "") + " (band " + _sh_band(D, rung, "")
             + "), see below")
 
 
 def _seed_of_record_foot(D):
-    sh = D.get("seed_headline_g16r8")
-    SH_SRC = "analysis/artifacts/seed_headline_g16r8.json"
-    if not sh:
+    """The footnote under the headline table, covering every replicated rung."""
+    have = [r for r in SH_RUNGS if _sh_pooled(D, r)]
+    if not have:
         return ""
-    su = ((sh.get("sets") or {}).get("pooled") or {}).get("summary") or {}
-    if su.get("median3_seeds") is None:
-        return ""
-    return ('<p class="small muted">One footnote on the 8-robot row: those '
-            "networks are trained once at the smallest size and applied "
-            "here unchanged, and repeating that training under three fresh "
-            "random seeds showed one seed in three landing in a degenerate "
-            "solution (visible in the value network's validation error "
-            "before any benchmarking). By a rule fixed before those runs, "
-            "this rung is reported as the median of the three replicates, "
-            + ck(f'{su["median3_seeds"]:g}/450', SH_SRC,
-                 "headline g16r8 median-of-3 (footnote)",
-                 raw=su["median3_seeds"])
-            + " (band "
-            + ck(f'{su["min3_seeds"]}\u2013{su["max3_seeds"]}', SH_SRC,
-                 "headline g16r8 band (footnote)",
-                 raw=(su["min3_seeds"], su["max3_seeds"]))
-            + "), with the published run above kept visible as the seed of "
-            "record; the table's own margin is that published run's. The "
-            "full per-seed breakdown is in the “Is it fair?” tab. The same "
-            "replicate is still in flight for 32\u00d732 \u00b7 4 robots, "
-            "which stays single-seed until it lands.</p>")
+    parts = ['<p class="small muted">Two rows carry a footnote. ']
+    if "g16r8" in have:
+        parts.append(
+            "The 8-robot networks are trained once at the smallest size and "
+            "applied at that rung unchanged, and repeating that training under "
+            "three fresh random seeds showed one seed in three landing in a "
+            "degenerate solution (visible in the value network's validation "
+            "error before any benchmarking): by a rule fixed before those "
+            "runs, that rung is reported as the median of the three "
+            "replicates, " + _sh_median(D, "g16r8", " (footnote)")
+            + " (band " + _sh_band(D, "g16r8", " (footnote)") + "). ")
+    if "g32r4" in have:
+        parts.append(
+            "The 32\u00d732 row was replicated the same way and came out "
+            "flat \u2014 all three seeds land at or above the published run "
+            "and the four value networks are indistinguishable \u2014 so "
+            "its reported number is likewise the median of three, "
+            + _sh_median(D, "g32r4", " (footnote)") + " (band "
+            + _sh_band(D, "g32r4", " (footnote)") + "). ")
+    parts.append(
+        "In both rows the published run is kept visible above as the seed "
+        "of record, and the table's own margin is that published run's. The "
+        "full per-seed breakdown is in the \u201cIs it fair?\u201d tab.</p>")
+    return "".join(parts)
 
 
 def sec_headline_first(D):
@@ -637,15 +662,16 @@ def sec_headline_first(D):
              ("g24r4", "pooled", "24×24 board · 4 robots", ""),
              ("g24r8", "pooled", "24×24 board · 8 robots", ""),
              ("g32r4", "pooled", "32×32 board · 4 robots", "")]
-    sh = D.get("seed_headline_g16r8")
-    SH_SRC = "analysis/artifacts/seed_headline_g16r8.json"
     body = []
     for rung, set_, label, note in order:
         c = cells.get((rung, set_))
         if not c:
             continue
-        if rung == "g16r8":
-            note = _seed_of_record_note(sh, SH_SRC) or note
+        # a rung whose pair was seed-replicated carries the median+band note
+        # in place of any static one (and the note is pre-escaped HTML)
+        seeded = rung in SH_RUNGS and bool(_sh_pooled(D, rung))
+        if seeded:
+            note = _seed_of_record_note(D, rung) or note
         d = f"headline {rung}"
         diff = c["diff"] * 100
         winner = ("bwd" if diff > 0 else "fwd")
@@ -655,7 +681,7 @@ def sec_headline_first(D):
         body.append(
             f'<tr><td><b>{esc(label)}</b>'
             + (f'<div class="cellnote">'
-               + (note if rung == "g16r8" else esc(note))
+               + (note if seeded else esc(note))
                + "</div>" if note else "")
             + '</td><td class="num">'
             + ck(f'{c["solved_a"]}/{c["n"]}', SRC, d + " — subgoal solved",

@@ -219,6 +219,13 @@ RUNGS = [
     },
 ]
 
+# The rungs whose backward headline pair was repeated under fresh torch
+# seeds (jobs/patterns/seed_headline_pair.slurm, seeds 21/37/53).  Each entry
+# needs analysis/artifacts/seed_headline_<rung>.json, produced by
+# `python -m analysis.seed_headline_g16r8 <rung>`; a rung whose artifact is
+# absent simply does not render.  Order = the ladder order.
+SEED_HEADLINE_RUNGS = ("g16r8", "g32r4")
+
 # base-scale future slots (eval/results/...)
 # Corpus-correct rows FIRST. The cap-5000 corpus stripped by-reference
 # candidates and cost 22.4 points at the beyond-oracle set (FINDINGS 36), so a
@@ -690,10 +697,13 @@ def collect():
     D["seed_spread"] = load_json("analysis/artifacts/seed_spread.json")
     # value-net mode diagnostic (analysis/valnet_modes.py; FINDINGS 44)
     D["valnet_modes"] = load_json("analysis/artifacts/valnet_modes.json")
-    # seed replicates of the g16r8 zero-shot headline pair
-    # (analysis/seed_headline_g16r8.py; FINDINGS 77a)
-    D["seed_headline_g16r8"] = load_json(
-        "analysis/artifacts/seed_headline_g16r8.json")
+    # seed replicates of the backward headline pair, per rung
+    # (analysis/seed_headline_g16r8.py <cfg>; FINDINGS 77a, 80).  g16r8 is
+    # the zero-shot B1 pair, g32r4 the per-config base-vocabulary pair; the
+    # report renders whichever artifacts exist (SEED_HEADLINE_RUNGS).
+    for _rung in SEED_HEADLINE_RUNGS:
+        D["seed_headline_" + _rung] = load_json(
+            f"analysis/artifacts/seed_headline_{_rung}.json")
     # failure gallery for the hardest measured pool (analysis/failure_examples.py)
     D["failure_examples"] = load_json("analysis/artifacts/failure_examples.json")
 
