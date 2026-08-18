@@ -393,3 +393,49 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     headroom.
     Sources: `results/ceiling/{g24r4,g32r4}_frontier_base.json`,
     `results/selfplay/g24r4_iter1/transfer/`, `results/transfer/`.
+
+12. **Base-vocabulary loop, iteration 2 (hard-instance filter) is flat, as the
+    ceilings dictate; the extended B2 vocabulary opens the headroom the loop
+    needs — the M1 nets already lift the g24r4 graded row to 223/232 (A\*) and
+    228/232 = the B2 solve ceiling (MCTS), and the frontier to 133/218
+    (2026-08-18, jobs 4682185, 4682184, 4682786, 4682172, 4685187 ≈ 1.2 nh).**
+    (a) Iteration 2 (`--min-expansions 3`: only instances whose first
+    certified plan needed ≥3 expansions are kept — 1,525 of 2,869 dropped as
+    trivial): 4,268 records; **fidelity gauge 0.85** (vs 0.915 unfiltered) —
+    harder instances get looser certified labels, right where FINDINGS 74
+    puts the danger band; retrained pair: A\* 215/232, 9.87 mv, MCTS 215/232,
+    9.25 (1.68) vs iteration 1's 216/10.07 and 216/9.45 (paired 8/7 and n.s.),
+    frontier 100/218 = unchanged. Iteration-1 nets on the transfer exams: equal
+    to the M1 nets within ±1 solve everywhere (g32r4 156=156, g24r8 146 vs
+    147, g32r4 frontier 140 vs 141). Verdict: two base-vocabulary iterations
+    neither help nor hurt any pinned exam — a clean negative result explained
+    by §8/§11 (the base language is saturated), with the loop machinery,
+    certification, gauge and gate all exercised.
+    (b) **B2 vocabulary with the M1 (base-trained) nets, zero-shot ranking**
+    (`spr.bench --vocab b2 --anytime`: propose_b1 + by-reference candidates,
+    park repairs at failed certification, no prefix-check — the arena's B2
+    convention; `eval.realize.prefix_key` cannot order park/by-ref plans):
+    | exam | search | solved | mean moves | regret | % opt | mean exp |
+    |---|---|---|---|---|---|---|
+    | g24r4 graded (232) | supervised B2 arm (recorded, per-size B1 nets) | 199/232 | 12.33 | 4.89 | 36.7 | 53.5 |
+    | | size-free M1 pair, A\* anytime | **223/232** | 9.51 | 1.95 | 55.6 | 52.8 |
+    | | size-free M1 pair, MCTS best-at-budget | **228/232 = B2 ceiling** | 9.19 | 1.55 | 58.8 | 490 |
+    | | B2 language ceiling (§3) | 228 | 8.81 | 1.17 | 62.7 | — |
+    | g24r4 frontier (218) | supervised B2 arm (recorded) | 125/218 | 22.54 | — | — | 110 |
+    | | size-free M1 pair, A\* anytime | **133/218** | 19.43 | — | — | 515 |
+    | | base-language ceiling | 103 | | | | |
+    | | B2 probe (8 workers, 100k frontier, 120 s): 114 proven, 104 inconclusive → ceiling ≥ 133 | | | | | |
+    | g32r4 graded (175) | B2 language ceiling | 166/175 (base 156); regret 1.28 (base 1.56) | | | | |
+    Reading. The B2 language adds +12 graded solves and ≥ +34 frontier solves
+    over the base ceiling at g24r4, and the base-trained size-free nets
+    already exploit it zero-shot (they had never seen a transient-support or
+    by-reference candidate: FINDINGS 78's "supply is not the bottleneck"),
+    but at a large search cost (490–515 expansions vs 5–20 in base) and 0.4
+    regret above the B2 ceiling. **That is the loop's job now**: learn to
+    rank the extended vocabulary so the same solve rate comes at base-like
+    expansions and the regret gap closes — B2 iteration 1 (job 4685442:
+    self-play generation in B2, records with by-reference helpers, policy
+    trained with `--byref`, no base anchors) is queued behind the iteration-0
+    reference bench (4682786).
+    Sources: `results/selfplay/g24r4_iter2/`, `results/selfplay/g24r4_iter1/transfer/`,
+    `results/selfplay/g24r4_b2_iter0/`, `results/ceiling/{g24r4_frontier_b2,g32r4_graded_b2}.json`.

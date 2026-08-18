@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-18T00:42:58",
+ "updated": "2026-08-18T03:55:13",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -54,15 +54,16 @@
   },
   "M3": {
    "title": "one self-play iteration helps",
-   "status": "running (iteration 1 done, verdict on frontier pending)",
+   "status": "base loop: flat (saturated); B2 loop: iteration 1 queued",
    "sources": [],
    "jobs": [
     4681263,
-    4682171,
-    4682173,
-    4682172
+    4682185,
+    4682184,
+    4682786,
+    4685442
    ],
-   "note": "iter1 g24r4: 12,244 certified records, gauge 0.915, retrain OK, graded bench = M1 (saturated exam); frontier/zero-shot probe of iter1 nets 4682171; iter2 with hard-instance filter 4682173. FINDINGS \u00a710. FINDINGS \u00a711: base language saturated on all exams incl. frontier (ceiling 103/218 vs 99-100 solved) -> subgoal loop pivots to the B2 vocabulary; B2 ceilings job 4682187."
+   "note": "FINDINGS \u00a710-\u00a712. Base-vocab iterations 1-2 = M1 nets on every exam (ceiling saturation). B2 vocabulary: M1 nets zero-shot 223/232 (A*) / 228 (MCTS = ceiling), frontier 133/218; B2 iteration 1 job 4685442."
   },
   "M4": {
    "title": "the loop climbs",
@@ -140,7 +141,7 @@
   "findings_log": "self_play_robots/FINDINGS.md (owner choice)"
  },
  "node_hours": {
-  "spent": 3.9,
+  "spent": 5.2,
   "projected_next": 2.5,
   "note": "spent: smoke 0.02 + M0 0.09 + fwd-M0 0.02 (+ ceiling pending); next: M1 ~1.5-2, M2 ~1"
  }
