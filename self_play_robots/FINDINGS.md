@@ -439,3 +439,38 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     reference bench (4682786).
     Sources: `results/selfplay/g24r4_iter2/`, `results/selfplay/g24r4_iter1/transfer/`,
     `results/selfplay/g24r4_b2_iter0/`, `results/ceiling/{g24r4_frontier_b2,g32r4_graded_b2}.json`.
+
+13. **B2 loop, iteration 1 (g24r4): the first self-play data in the extended
+    vocabulary moves the planner in the right direction on the graded exam —
+    +3 solves (A\*), −19% expansions, moves unchanged — not yet beyond noise
+    after one small iteration; the exact B2 gauge is too expensive as-is and
+    was bounded (2026-08-18, job 4685442, ~0.6 nh incl. the wasted gauge
+    hours).** Generation in B2 (`spr.selfplay --vocab b2`, 60 fresh boards,
+    ids 8000–8059, MCTS 300 expansions / stop 80, 6 workers): 681 instances,
+    **598 certified (87.8% vs 71.5% in base)**, 5,822 records of which 71 are
+    by-reference (helper standing on a planned cell), 108 expansions / 37 s
+    per instance (park repairs and by-reference candidates make B2 search
+    ~5× dearer than base). Gauge: the Rust engine's exact B2 rollouts on 200
+    depth-0 decisions with all candidates did not finish in 2.5 h (25 GB
+    RSS) and were killed; `spr.gauge` now takes `--max-candidates` and a
+    `--time-cap` (queued as job 4689629 with 80 instances / 24 candidates /
+    40 min). Training: policy + value warm from the M1 pair, 6 epochs on the
+    5,822 B2 records only (no base anchors: one vocabulary per dataset,
+    PROBLEM.md §10), policy `--byref`; val regret 1.74 (B2 val, 109 groups),
+    value spread 2.5 (no collapse). Bench, B2 arena convention (anytime,
+    park repairs, by-reference, no prefix-check), 1200 expansions:
+    | g24r4 graded (232) | solved | mean moves | regret | % opt | mean exp |
+    |---|---|---|---|---|---|
+    | iteration 0 = M1 nets, A\* | 223 | 9.51 | 1.95 | 55.6 | 52.8 |
+    | **iteration 1, A\*** | **226** | 9.61 | 1.99 | 55.8 | **43.0** |
+    | iteration 0, MCTS | 228 | 9.19 | 1.55 | 58.8 | 490 |
+    | **iteration 1, MCTS** | **229** | 9.22 | 1.56 | 57.6 | 450 |
+    Paired: A\* +4/−1 solves (McNemar p=0.38), moves 12/10; MCTS +2/−1,
+    11/10 — direction consistent (more solves, fewer expansions), size below
+    the seed-noise bar; 229 exceeds the capped B2 probe's 228, so the true
+    B2 ceiling here is ≥229. Frontier benches did not fit the walltime
+    (resumed as job 4689626); iterations 2 and 3 are chained behind it
+    (4689627/4689628, `auto` net hand-off) so tonight's window yields three
+    B2 iterations for the M3/M4 trend on the graded AND frontier exams.
+    Sources: `results/selfplay/g24r4_b2_iter1/`, `runs/spr/selfplay/g24r4_b2_iter1/`,
+    `runs/spr/spr-b2-it1-4685442.out`.

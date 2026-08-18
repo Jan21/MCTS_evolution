@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-18T03:55:13",
+ "updated": "2026-08-18T09:14:37",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -54,16 +54,18 @@
   },
   "M3": {
    "title": "one self-play iteration helps",
-   "status": "base loop: flat (saturated); B2 loop: iteration 1 queued",
+   "status": "B2 loop iteration 1 done (direction right, n.s.); iterations 2-3 chained",
    "sources": [],
    "jobs": [
     4681263,
     4682185,
-    4682184,
-    4682786,
-    4685442
+    4685442,
+    4689626,
+    4689627,
+    4689628,
+    4689629
    ],
-   "note": "FINDINGS \u00a710-\u00a712. Base-vocab iterations 1-2 = M1 nets on every exam (ceiling saturation). B2 vocabulary: M1 nets zero-shot 223/232 (A*) / 228 (MCTS = ceiling), frontier 133/218; B2 iteration 1 job 4685442."
+   "note": "FINDINGS \u00a710-\u00a712. Base-vocab iterations 1-2 = M1 nets on every exam (ceiling saturation). B2 vocabulary: M1 nets zero-shot 223/232 (A*) / 228 (MCTS = ceiling), frontier 133/218; B2 iteration 1 job 4685442. B2 iter1: A* 226 vs 223 solves, 43 vs 53 exp; MCTS 229 vs 228 (FINDINGS \u00a713)."
   },
   "M4": {
    "title": "the loop climbs",
@@ -141,7 +143,7 @@
   "findings_log": "self_play_robots/FINDINGS.md (owner choice)"
  },
  "node_hours": {
-  "spent": 5.2,
+  "spent": 6.0,
   "projected_next": 2.5,
   "note": "spent: smoke 0.02 + M0 0.09 + fwd-M0 0.02 (+ ceiling pending); next: M1 ~1.5-2, M2 ~1"
  }
