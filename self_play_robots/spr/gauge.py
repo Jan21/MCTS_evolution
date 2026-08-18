@@ -50,6 +50,12 @@ def main(argv=None):
     p.add_argument("--max-iters", type=int, default=4000)
     p.add_argument("--vocab", choices=["base", "b1", "b2"], default="base",
                    help="label the exact side in the same vocabulary as the records")
+    p.add_argument("--max-candidates", type=int, default=64,
+                   help="exact rollout candidate cap (the exact labeler used 14; B2 "
+                        "rollouts explode above ~24)")
+    p.add_argument("--time-cap", type=float, default=0.0,
+                   help="wall-clock cap (s) for the exact engine; instances not "
+                        "labeled by then are dropped from the audit (0 = no cap)")
     p.add_argument("--out", required=True)
     a = p.parse_args(argv)
 
@@ -108,7 +114,7 @@ def main(argv=None):
             "board": {"env_id": int(env_id), "n": int(cfg.grid), "grid_data": boards[env_id]},
             "target": list(k[1]), "target_robot": [list(k[2]), k[3]],
             "helpers": [[list(h), c] for h, c in k[4]],
-            "max_candidates": 64, "max_iters": a.max_iters, "max_frontier": 40000,
+            "max_candidates": a.max_candidates, "max_iters": a.max_iters, "max_frontier": 40000,
             "dependent_edge_weight": 2,
             **({"vocab": a.vocab} if a.vocab != "base" else {}),
         })
@@ -116,11 +122,30 @@ def main(argv=None):
     ep = EngineProc(DEFAULT_ENGINE, a.threads, work / "engine.work.jsonl",
                     work / "engine.results.jsonl")
     n_ok = n_ex = 0
-    try:
-        ep.send(items)
-        results = ep.collect([it["id"] for it in items])
-    finally:
-        ep.close()
+    ids = [it["id"] for it in items]
+    ep.send(items)
+    if a.time_cap > 0:
+        # bounded wait: take whatever the engine returned by the cap, then kill it
+        deadline = time.time() + a.time_cap
+        with ep.cond:
+            while not all(i in ep.results for i in ids) and time.time() < deadline:
+                ep.cond.wait(timeout=5.0)
+            results = [ep.results[i] for i in ids if i in ep.results]
+        if len(results) < len(ids):
+            print(f"[gauge] time cap {a.time_cap}s hit: {len(results)}/{len(ids)} instances "
+                  f"labeled by the engine; killing it", flush=True)
+            ep.proc.kill()
+            try:
+                ep.reader.join(timeout=30)
+            except Exception:  # noqa: BLE001
+                pass
+        else:
+            ep.close()
+    else:
+        try:
+            results = ep.collect(ids)
+        finally:
+            ep.close()
     with open(sub_ex, "w") as f:
         for r in results:
             if r.get("status") == "ok" and r.get("records"):

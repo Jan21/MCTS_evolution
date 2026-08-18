@@ -41,6 +41,12 @@ TAGV=""; ID_BASE=5000; [ "$VOCAB" = b2 ] && { TAGV="_b2"; ID_BASE=8000; ANCHOR=0
 IT="$REPO/runs/spr/selfplay/${CFG}${TAGV}_iter${K}"; RES="$REPO/self_play_robots/results/selfplay/${CFG}${TAGV}_iter${K}"
 mkdir -p "$IT" "$RES" "$REPO/runs/spr/boards"
 ID0=$((ID_BASE + BOARDS * (K - 1))); ID1=$((ID0 + BOARDS - 1))
+if [ "$PPREV" = auto ]; then    # chain: nets + reference bench of iteration K-1
+  PREVRES="$REPO/self_play_robots/results/selfplay/${CFG}${TAGV}_iter$((K-1))"
+  PPREV=$(grep '^policy=' "$PREVRES/nets.txt" | cut -d= -f2-); VPREV=$(grep '^value=' "$PREVRES/nets.txt" | cut -d= -f2-)
+  [ -n "$PREV_BENCH" ] || PREV_BENCH="$PREVRES/bench_${CFG}_astar.json"
+  [ -s "$PPREV" ] && [ -s "$VPREV" ] || { echo "SPR ITER FAILED: auto nets missing in $PREVRES"; exit 1; }
+fi
 echo "SPR ITER $CFG k=$K start $(date +%F' '%T) job=$SLURM_JOB_ID prev=$PPREV|$VPREV boards=$ID0-$ID1"
 nvidia-smi -L
 phase() { [ -f "$IT/DONE.$1" ]; }
@@ -60,7 +66,8 @@ if ! phase gen; then
 fi
 # ---- B gauge ------------------------------------------------------------------
 if ! phase gauge; then
-  python -m spr.gauge --config "$CFG" --records "$IT/records.jsonl" --sample 200 --threads 16 \
+  GC="--sample 200"; [ "$VOCAB" = b2 ] && GC="--sample 80 --max-candidates 24 --time-cap 1800"   # B2 exact rollouts are expensive
+  python -m spr.gauge --config "$CFG" --records "$IT/records.jsonl" $GC --threads 16 \
       --vocab "$VOCAB" --out "$RES/gauge.json" || echo "SPR ITER WARN gauge failed (non-fatal)"
   mark gauge
 fi
