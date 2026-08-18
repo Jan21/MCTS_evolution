@@ -89,6 +89,20 @@ exact-labeled by the Rust engine, `nn_labeler.audit_descent` argmin agreement)
 (`spr.gate`: paired McNemar vs iteration k−1, M1 bars vs the supervised
 pair). Idempotent phases (DONE markers), one queue wait per iteration.
 
+## 4b. Vocabulary pivot (FINDINGS §8/§11/§12)
+
+The base subgoal language is saturated by the size-free supervised nets +
+MCTS on every pinned exam (graded and frontier, 16→32, 4 and 8 robots), so
+the loop runs in the **B2 vocabulary** (`--vocab b2` everywhere): candidates
+from `heuristics.propose_b1` plus `_reference_helpers` (by-reference),
+`_apply(by_reference=True)`, helper slots by robot identity, park repairs at
+failed certification (children of the failed MCTS terminal / re-pushed A\*
+plans), no prefix filter (`prefix_key` cannot order park/by-ref plans — the
+arena's recorded B2 rows ran without it), records tagged `vocab=b2`, policy
+trained with `--byref`, no base anchors (one vocabulary per dataset), boards
+from id 8000, its own result dirs `<cfg>_b2_iter<k>`, exact gauge with a
+candidate cap and wall-clock cap (B2 exact rollouts explode).
+
 ## 5. Primitive-move arm (`spr/fwd/`, in progress)
 
 PUCT over slides on the forward MoveNet Guide (`move_planner`), same budget
