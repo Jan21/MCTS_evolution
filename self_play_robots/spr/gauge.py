@@ -51,8 +51,12 @@ def main(argv=None):
     p.add_argument("--vocab", choices=["base", "b1", "b2"], default="base",
                    help="label the exact side in the same vocabulary as the records")
     p.add_argument("--max-candidates", type=int, default=64,
-                   help="exact rollout candidate cap (the exact labeler used 14; B2 "
-                        "rollouts explode above ~24)")
+                   help="exact rollout candidate cap (all candidates by default so the "
+                        "argmin comparison covers the loop's candidate set)")
+    p.add_argument("--solver-iters", type=int, default=100000,
+                   help="per-rollout iteration budget for the exact engine (its default "
+                        "is 10M: unbounded B2 rollouts ran 2.5 h; 100k keeps ~99%% of "
+                        "rollouts and finishes in minutes -- review memo 2026-08-18)")
     p.add_argument("--time-cap", type=float, default=0.0,
                    help="wall-clock cap (s) for the exact engine; instances not "
                         "labeled by then are dropped from the audit (0 = no cap)")
@@ -115,7 +119,7 @@ def main(argv=None):
             "target": list(k[1]), "target_robot": [list(k[2]), k[3]],
             "helpers": [[list(h), c] for h, c in k[4]],
             "max_candidates": a.max_candidates, "max_iters": a.max_iters, "max_frontier": 40000,
-            "dependent_edge_weight": 2,
+            "dependent_edge_weight": 2, "budget": {"solver_iters": a.solver_iters},
             **({"vocab": a.vocab} if a.vocab != "base" else {}),
         })
     t0 = time.time()

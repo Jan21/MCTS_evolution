@@ -66,7 +66,7 @@ if ! phase gen; then
 fi
 # ---- B gauge ------------------------------------------------------------------
 if ! phase gauge; then
-  GC="--sample 200"; [ "$VOCAB" = b2 ] && GC="--sample 80 --max-candidates 24 --time-cap 1800"   # B2 exact rollouts are expensive
+  GC="--sample 200 --time-cap 2400"   # engine budget 100k iters/rollout (spr.gauge default); cap = safety net
   python -m spr.gauge --config "$CFG" --records "$IT/records.jsonl" $GC --threads 16 \
       --vocab "$VOCAB" --out "$RES/gauge.json" || echo "SPR ITER WARN gauge failed (non-fatal)"
   mark gauge
