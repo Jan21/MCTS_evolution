@@ -2681,8 +2681,11 @@ record what was done about the first three items.)_
    1.20). All three arms share ONE subsample; the only variable between
    them is argmin agreement. Same recipe/bench as every g24r4 arm
    (`jobs/corruption_arm.slurm`, default torch seed) →
-   `comparison_corrupt_{d1000,d860,d822}.json`. Jobs 4678370/71/72,
-   ~0.6 nh each.
+   `comparison_corrupt_{d1000,d860,d822}.json`. Jobs 4678370/71/72
+   died in ≤13 s with empty logs, signal 15, all on acn52 (2026-08-17
+   18:00) — the acn18 bad-node signature (§72 ops note); resubmitted
+   2026-08-18 as 4688834/35/36 with `--exclude=acn18,acn52`. ~0.6 nh
+   each.
    (b) **g32r4 twin seed 21** (job 4678373, twin_retrain.slurm with
    TWIN_SEED=21, ~1.6 nh): the study's most noise-vulnerable claim — the
    §74 optimality slip (45.9 vs 51.7 %opt, 5.8 pts) is SMALLER than the
