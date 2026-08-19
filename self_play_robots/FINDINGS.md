@@ -558,3 +558,52 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     MCTS advantage (27/0 and 59/0 paired wins) is exactly the certified
     enumeration of the top-5 tree that A\*'s bound cannot reach.
     Sources: `results/m2/sizefree_mixed_warm_{g24r4,g16r4}_astar_child_best.json`.
+
+15. **M3 PASSES and M4 is on track in the B2 loop: three self-play iterations
+    at 24×24 climb on the exam with headroom — frontier solves 133 → 144 → 139
+    → 158 (iteration 3 vs 0: +28/−3, McNemar p=5e-6) at 22% fewer expansions,
+    hold the graded exam at its B2 solve ceiling with slightly better regret,
+    cut A\* search cost by a third, and the final nets beat the recorded
+    supervised B2 planner beyond any seed bar (2026-08-18/19, jobs 4685442,
+    4691251, 4689627, 4689628 ≈ 2.1 nh incl. reruns).** Protocol: iteration
+    0 = the M1 size-free pair benched under B2 (§12); each iteration = 60
+    fresh lean boards (ids 8000+), MCTS generation (300 expansions, stop 80,
+    root noise 0.25, all root candidates, sibling completion), ~5.7–6.3k
+    certified B2 records, warm retrain (6 epochs, lr 1e-4, clip, `--byref`,
+    no anchors), B2 arena bench (anytime, park repairs, by-reference, no
+    prefix-check, 1200 expansions), gates paired vs iteration k−1 and 0.
+    | iter | certified / instances → records | A\* graded (232) | MCTS graded | A\* frontier (218) | MCTS frontier |
+    |---|---|---|---|---|---|
+    | 0 (M1 pair) | — | 223, 9.51 mv, regret 1.95, 53 exp | 228, 9.19, 1.55, 490 exp | 133, 19.43 mv, 515 exp | (bench timed out) |
+    | 1 | 598/681 → 5,822 | 226, 9.61, 1.99, 43 | 229, 9.22, 1.56, 450 | 144, 19.34, 467 | 169, 19.71, 1019 |
+    | 2 | 588/655 → 5,694 | 227, 9.83, 2.21, 35 | 229, 9.23, 1.58, 468 | 139, 18.80, 476 | 172, 19.72, 1012 |
+    | 3 | 582/660 → 6,301 | 225, 9.48, 1.87, 36 | 228, 9.14, **1.50**, 520 | **158**, 19.99, 402 | 171, 19.44, 992 |
+    Paired tests (spr.gate). Frontier A\* iteration 3 vs 0: +28/−3 solves,
+    p=5e-6 (moves on shared solves 27/24, n.s.); vs iteration 1: n.s. (the
+    frontier flips ~15 instances between neighbouring iterations, so
+    single-step gates are underpowered — the M4 "monotone-ish" reading is
+    133→144→139→158). Graded A\* iteration 3 vs 0: 225 vs 223 (+4/−2, n.s.),
+    moves 14/12 n.s., expansions −32%; graded MCTS regret 1.55→1.50 (best of
+    the series; 0.33 above the B2 ceiling 1.17). Frontier MCTS 169→172→171
+    (all within noise; the 1200-expansion cap binds there, ~1000 mean).
+    **Versus the frozen supervised baselines** (recorded per-size B2 arm,
+    `scaling/results/g24r4/comparison{,_ungraded}_b2.json`): graded 225 vs
+    199 (McNemar p=2e-7; 76/9 move wins on shared solves, mean 9.23 vs
+    12.30), frontier 158 vs 125 (p=4e-5; 61/13 move wins, 18.65 vs 21.94) —
+    and versus the base-vocabulary supervised pair (205 graded / 90–99
+    frontier) the gap is larger still. Fidelity gauge vs the exact-B2
+    reference stays 0.50–0.57 (informational only, §14b: half of the exact
+    B2 optima are unplayable). Reading: (a) the loop climbs where the language
+    leaves room and holds where it does not; the graded exam is pinned at the
+    B2 solve ceiling (228–229 of ≥229) so its signal is regret and cost. (b)
+    What the loop learns is to rank the extended vocabulary: A\* reaches the
+    same solve set with 53→36 expansions and MCTS's frontier solves rise
+    from 133 (base-trained nets zero-shot in B2) to 158–172. (c) M4's
+    literal gate — "final net beats the supervised backward baseline beyond
+    seed noise" — is met against both recorded baselines on both exams; the
+    "monotone-ish" part holds on the frontier trend with one dip (iteration
+    2) inside the per-step noise. Cost: 2.1–2.5 h per iteration on one GPU
+    (generation ~70 min at 36 s/instance; benches dominate — the frontier
+    MCTS bench alone is ~1 h), i.e. ≈0.3 nh per iteration.
+    Sources: `results/selfplay/g24r4_b2_iter{0,1,2,3}/`, `spr.trend --config
+    g24r4 --tag _b2`, `runs/spr/spr-b2-it{1,1r,2,3}-*.out`.

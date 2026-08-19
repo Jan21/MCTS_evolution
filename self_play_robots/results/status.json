@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-18T09:14:37",
+ "updated": "2026-08-19T03:14:11",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -54,24 +54,29 @@
   },
   "M3": {
    "title": "one self-play iteration helps",
-   "status": "B2 loop iteration 1 done (direction right, n.s.); iterations 2-3 chained",
+   "status": "pass (B2 loop)",
    "sources": [],
    "jobs": [
     4681263,
     4682185,
     4685442,
-    4689626,
+    4691251,
     4689627,
-    4689628,
-    4689629
+    4689628
    ],
-   "note": "FINDINGS \u00a710-\u00a712. Base-vocab iterations 1-2 = M1 nets on every exam (ceiling saturation). B2 vocabulary: M1 nets zero-shot 223/232 (A*) / 228 (MCTS = ceiling), frontier 133/218; B2 iteration 1 job 4685442. B2 iter1: A* 226 vs 223 solves, 43 vs 53 exp; MCTS 229 vs 228 (FINDINGS \u00a713)."
+   "note": "B2 loop g24r4: iteration 3 vs 0 frontier 158 vs 133 (p=5e-6), graded at B2 ceiling with regret 1.87/1.50 and -32% expansions; base loop flat (saturated). FINDINGS \u00a710-\u00a715."
   },
   "M4": {
    "title": "the loop climbs",
-   "status": "pending",
-   "sources": [],
-   "jobs": []
+   "status": "on track (3 iterations; final nets beat recorded supervised B2 rows p<1e-4 on both exams; frontier 133->144->139->158)",
+   "sources": [
+    "results/selfplay/g24r4_b2_iter3/"
+   ],
+   "jobs": [
+    4689627,
+    4689628
+   ],
+   "note": "FINDINGS \u00a715"
   },
   "M5": {
    "title": "scale + zero-shot transfer",
@@ -143,7 +148,7 @@
   "findings_log": "self_play_robots/FINDINGS.md (owner choice)"
  },
  "node_hours": {
-  "spent": 6.0,
+  "spent": 8.6,
   "projected_next": 2.5,
   "note": "spent: smoke 0.02 + M0 0.09 + fwd-M0 0.02 (+ ceiling pending); next: M1 ~1.5-2, M2 ~1"
  }

@@ -1,0 +1,42 @@
+{
+ "config": "g24r4",
+ "grid": 24,
+ "robots": 4,
+ "iter": 3,
+ "policy": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/selfplay/g24r4_b2_iter2/policy/lightning_logs/version_0/checkpoints/epoch=3-step=652.ckpt",
+ "value": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/selfplay/g24r4_b2_iter2/value/lightning_logs/version_0/checkpoints/epoch=1-step=650.ckpt",
+ "boards_dir": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/boards/g24r4_b2_iter3",
+ "board_ids": "8120-8179",
+ "per_board": 8,
+ "seed": 3,
+ "search": {
+  "k": 5,
+  "expansions": 300,
+  "stop_after": 80,
+  "c_puct": 1.5,
+  "backup": "min",
+  "root_noise": 0.25,
+  "prefix_check": false,
+  "emit": "path",
+  "complete_siblings": true,
+  "root_all": true,
+  "timeout": 600,
+  "min_expansions": 0,
+  "vocab": "b2"
+ },
+ "workers": 6,
+ "device": "cuda",
+ "slurm_job_id": "4689628",
+ "seconds": 4197.3,
+ "instances": 660,
+ "solved": 582,
+ "records": 6301,
+ "mean_strict": 14.104810996563574,
+ "mean_expansions": 109.18939393939394,
+ "mean_seconds": 36.73804545454541,
+ "status_counts": {
+  "error:OutOfMemoryError": 4,
+  "ok": 655,
+  "timeout": 1
+ }
+}
