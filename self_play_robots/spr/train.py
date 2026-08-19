@@ -107,6 +107,49 @@ def _combined_env_dir(a, cfg):
     return comb
 
 
+class SizeAwareBatchSampler:
+    """SizeBucketBatchSampler with a per-grid batch size: batches shrink with
+    the dense-mask memory ((n^2+1)^2) above `ref_n`, so one --batch-size (the
+    24x24 envelope of FINDINGS 63) serves 16..32 in a mixed-size buffer."""
+
+    def __init__(self, base, batch_size, ref_n):
+        self.base, self.batch_size, self.ref_n = base, int(batch_size), int(ref_n)
+
+    def bs(self, n):
+        if n <= self.ref_n:
+            return self.batch_size
+        return max(1, int(self.batch_size * ((self.ref_n ** 2 + 1) / (n ** 2 + 1)) ** 2))
+
+    def _batches(self, rng):
+        out = []
+        for n in sorted(self.base.buckets):
+            idx = list(self.base.buckets[n])
+            b = self.bs(n)
+            if rng is not None:
+                rng.shuffle(idx)
+            out += [idx[i:i + b] for i in range(0, len(idx), b)]
+        if rng is not None:
+            rng.shuffle(out)
+        return out
+
+    def __iter__(self):
+        import random
+        rng = None
+        if self.base.shuffle:
+            rng = random if self.base.seed is None else random.Random(self.base.seed + self.base._epoch)
+            self.base._epoch += 1
+        yield from self._batches(rng)
+
+    def __len__(self):
+        return sum(-(-len(v) // self.bs(n)) for n, v in self.base.buckets.items())
+
+
+def make_sampler(ds, batch_size, shuffle, seed, ref_n=0):
+    from nn_labeler import dataset
+    base = dataset.SizeBucketBatchSampler(ds, batch_size, shuffle, seed)
+    return SizeAwareBatchSampler(base, batch_size, ref_n) if ref_n else base
+
+
 def parse_splits(specs):
     """--splits CFG:train=a-b,val=c-d[,test=e-f]  ->  {cfg: {split: [ids]}}"""
     import re
@@ -136,6 +179,10 @@ def main(argv=None):
     p.add_argument("--out-dir", required=True)
     p.add_argument("--epochs", type=int, default=20)
     p.add_argument("--batch-size", type=int, default=8, help="decision GROUPS per batch")
+    p.add_argument("--batch-ref-n", type=int, default=0,
+                   help="if >0: --batch-size applies at grid<=this; larger grids get "
+                        "batch_size*((ref^2+1)/(n^2+1))^2 (dense-mask memory), min 1 -- "
+                        "one memory envelope across a mixed-size curriculum (M5)")
     p.add_argument("--max-per-group", type=int, default=32)
     p.add_argument("--lr", type=float, default=None,
                    help="default: 3e-4 cold, 1e-4 warm (FINDINGS 44/50 rescue lr)")
@@ -320,9 +367,13 @@ def main(argv=None):
         print(f"[spr.train] {a.system}: train {len(tr_ds)} val {len(va_ds)} "
               f"(groups/decisions)", flush=True)
         dl_tr = DataLoader(tr_ds, collate_fn=coll, num_workers=a.num_workers,
-                           batch_sampler=dataset.SizeBucketBatchSampler(tr_ds, a.batch_size, True, seed))
+                           batch_sampler=make_sampler(tr_ds, a.batch_size, True, seed, a.batch_ref_n))
         dl_va = DataLoader(va_ds, collate_fn=coll, num_workers=a.num_workers,
-                           batch_sampler=dataset.SizeBucketBatchSampler(va_ds, a.batch_size, False, seed))
+                           batch_sampler=make_sampler(va_ds, a.batch_size, False, seed, a.batch_ref_n))
+        if a.batch_ref_n:
+            print(f"[spr.train] size-aware batches (ref n={a.batch_ref_n}): "
+                  + ", ".join(f"n={n}:{dl_tr.batch_sampler.bs(n)}" for n in sorted(dl_tr.batch_sampler.base.buckets)),
+                  flush=True)
 
     ckpt = pl.callbacks.ModelCheckpoint(monitor=monitor, mode="min", save_top_k=1,
                                         save_last=True)
@@ -341,7 +392,7 @@ def main(argv=None):
         cut = max(1, int(len(tr_ds.groups) * 0.3))
         easy = dataset.GroupDataset(list(tr_ds.groups[:cut]), a.max_per_group, True)
         dl_easy = DataLoader(easy, collate_fn=coll, num_workers=a.num_workers,
-                             batch_sampler=dataset.SizeBucketBatchSampler(easy, a.batch_size, True, seed))
+                             batch_sampler=make_sampler(easy, a.batch_size, True, seed, a.batch_ref_n))
         print(f"[spr.train] warmup fit: {warm_epochs} epochs on easiest {cut} groups", flush=True)
         warm = pl.Trainer(max_epochs=warm_epochs, accelerator=accel, devices=1,
                           default_root_dir=str(out_dir), log_every_n_steps=50,
