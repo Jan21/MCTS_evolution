@@ -701,3 +701,22 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     `results/audit/b2it4.json`,
     `results/selfplay/g24r4_b2_iter0/m1mixed_b2_g24r4_bench_unsolved_mcts.json`,
     `spr.gate compare` pairs, `runs/spr/spr-audit-it{0,4}-470431{1,2}.out`.
+
+18. **Control (asked for by the 2026-08-18 audits, §14): a second seed of the
+    M1 mixed size-free pair replicates §7 to the instance — the "size-free beats
+    per-size at 24×24" claim is not a seed artefact (2026-08-19, jobs 4704318
+    [train 3.6 h] + 4704319 [bench], ≈0.5 nh).** Same recipe as §7 (policy 25 ep
+    lr 1e-4 clip 1.0 labeler-encoder init; value warm from the labeler 12 ep),
+    torch seed 37 instead of 21; arena protocol (1200/k5, prefix-check,
+    replay-certified).
+    | exam | seed 21 (§7) | seed 37 | paired 37 vs 21 | per-size supervised pair |
+    |---|---|---|---|---|
+    | g16r4 bench450 | 401/450, 8.26 mv, regret 2.04, 52.1% opt, 8.9 exp | 402/450, 8.29, 2.06, 52.0%, 9.4 exp | — | 400/450 (v2 pair; gate +0.2 solve / +1.6 opt pts) |
+    | g24r4 graded (232) | 215/232, 10.01 mv, 2.43, 54.4%, 5.3 exp | 215/232, 9.88, **2.31**, 55.3%, 5.0 exp | same solve set (McNemar p=1), moves 10/8 (n.s.) | 205/232, 4.20, 38.5% (gate +4.3 solve / +16.8 opt pts) |
+    Reading: two independently seeded size-free pairs land within 0.1 move
+    and 1 optimality point of each other at both sizes, and both clear the
+    per-size supervised g24r4 pair by 10 solves and ≈1.8 regret — §4.7's seed
+    bars (3.5 / 6.6 pts) are generous relative to this family's actual seed
+    noise. The seed-37 pair is banked as an alternative iteration-0 for
+    future loop-seed controls. Sources: `results/m1/mixed_value_warm_s37_*.json`
+    (+ `.gate.json`), `runs/spr/spr-m1-{mixed,bench}-s37-470431{8,9}.out`.
