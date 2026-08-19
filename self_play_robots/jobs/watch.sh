@@ -13,5 +13,5 @@ while true; do
       | grep -v "SPR ITER PHASE" | grep -v -x -F -f "$seen" > "$f.new" 2>/dev/null
     if [ -s "$f.new" ]; then sed "s|^|$(basename "$f"): |" "$f.new"; cat "$f.new" >> "$seen"; fi
   done
-  sleep 120
+  sleep ${WATCH_INTERVAL:-1800}
 done
