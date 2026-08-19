@@ -37,10 +37,16 @@ in `supervised_valuenet/` is modified.
 - `selfplay_mix_iter.slurm <K> <P|auto> <V|auto>` — M5 mixed-size B2 curriculum iteration
   (`CFGS="g24r4 g32r4 g24r8"`; per-config buffers, one size-free pair, `--batch-ref-n 24`).
 - `bench_pair.slurm`, `gauge_only.slurm`, `audit_far.slurm <TAG> <P> <V> [--byref]`,
-  `transfer_probe.slurm`, `*_ceiling.slurm`, `fwd_*.slurm`; `watch.sh` monitor.
+  `transfer_probe.slurm`, `*_ceiling.slurm`; `watch.sh` monitor.
+- `fwd_iter.slurm <K> <CKPT|auto> [PREV_BENCH|auto] [CFG]` — one PRIMITIVE-MOVE
+  loop iteration; `CFG` (default `g16r4`) picks the exam / anchor corpus /
+  frozen forward reference row / base checkpoint and the `<cfg>_iter<k>` run and
+  result dirs (`results/fwd_selfplay/`). Other `fwd_*.slurm`: the F-M0/F-M2 arms.
 
 ## Results (`results/`, small JSONs, committed)
 
 `m0/<arm>.json`, `ceiling/<cfg>_<vocab>.json`, `m1/<tag>_<cfg>.json` (+ `.gate.json`),
-`selfplay/<cfg>_iter<k>/...` (manifests, gauges, benches), `status.json`.
+`selfplay/<cfg>_iter<k>/...` (manifests, gauges, benches), `status.json`;
+`fwd_selfplay/<cfg>_iter<k>/...` (the primitive-move loop's manifest, train
+result, benches, gates), `fwd_m0/`, `fwd_m2/`, `fwd_g24/`.
 Checkpoints/corpora: `runs/spr/` on scratch (+ `/mnt/proj1/.../petrhyner_archive/`), never git.
