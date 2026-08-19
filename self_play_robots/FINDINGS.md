@@ -607,3 +607,36 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     MCTS bench alone is ~1 h), i.e. ≈0.3 nh per iteration.
     Sources: `results/selfplay/g24r4_b2_iter{0,1,2,3}/`, `spr.trend --config
     g24r4 --tag _b2`, `runs/spr/spr-b2-it{1,1r,2,3}-*.out`.
+
+16. **The B2 loop's gains transfer zero-shot to 32×32 and 8 robots (M5
+    signal) and iteration 4 keeps the trend (2026-08-19, jobs 4698737,
+    4698743 [transfer], 4698741 [iteration 4] ≈ 0.9 nh).** Same protocol as
+    §15; "iteration 0" = the M1 pair, "iteration 3" = its nets after three
+    B2 self-play iterations at 24×24 only; benches under the B2 convention.
+    | exam | recorded per-size supervised B2 arm | iteration-0 nets | iteration-3 nets | paired it3 vs it0 |
+    |---|---|---|---|---|
+    | g32r4 graded (175), A\* | 154/175, regret 2.84, 34.5 exp | 170/175, 1.90, 35 exp | 170/175, 2.36, 48 exp | solves =, moves 6/15 (p=0.08) |
+    | g32r4 graded, MCTS | — | 171/175, 1.75, 297 exp | 172/175, 2.10, 304 exp | 5/12 (n.s.) |
+    | g32r4 frontier (275), A\* | 196/275, 24.6 mv | 194/275, 20.6 mv, 397 exp | **208/275**, 21.9 mv, 355 exp | **+23/−9, p=0.02**; moves 37/36 |
+    | g24r8 graded (161), A\* | 148/161, regret 2.34, 95 exp | 157/161, 2.21, 26 exp | **159/161 (= B2 ceiling probe)**, 2.68, **2.2 exp** | +2/−0; moves 12/18 (n.s.) |
+    | g24r8 graded, MCTS | — | (row) | (row) | — |
+    Reading. (a) The nets that self-played only at 24×24 solve more of the
+    32×32 frontier (+14, p=0.02) and reach the 8-robot B2 ceiling with an
+    order of magnitude fewer expansions (26 → 2.2) — the loop's learned
+    ranking of the extended vocabulary carries across size and robot count,
+    as the size-free bet (§7/§9) predicted. (b) The price is a small,
+    consistent regret increase on the graded 32×32/8-robot exams (n.s.
+    individually: 6/15, 5/12, 12/18) — the loop specializes to what it
+    trains on (24×24 boards, 4 robots); a mixed-size self-play curriculum
+    (M5's plan) is the natural fix and the M1 mixed training already showed
+    that mixing costs nothing per size. (c) Iteration 4 at 24×24: A\* graded
+    **228/232** (best of the series; 26 expansions vs 53 at iteration 0),
+    MCTS graded 228, regret **1.46** (best), frontier A\* 153/218 (vs 133:
+    +25/−5, p=3e-4; the trend 133→144→139→158→153 is a plateau of ≈+20
+    solves after iteration 3). Fidelity gauge vs the exact-B2 reference
+    keeps drifting down (0.51→0.50→0.57→0.45), consistent with §14b (the
+    reference is the weaker labeler in B2), while every certified metric
+    holds or improves — the certified benches, not the gauge, are the
+    instrument in the B2 loop.
+    Sources: `results/selfplay/g24r4_b2_iter{0,3}/transfer/`,
+    `results/selfplay/g24r4_b2_iter4/`, `spr.trend --config g24r4 --tag _b2`.

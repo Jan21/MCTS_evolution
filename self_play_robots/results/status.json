@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-19T03:14:11",
+ "updated": "2026-08-19T06:26:33",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -68,7 +68,7 @@
   },
   "M4": {
    "title": "the loop climbs",
-   "status": "on track (3 iterations; final nets beat recorded supervised B2 rows p<1e-4 on both exams; frontier 133->144->139->158)",
+   "status": "on track (4 iterations)",
    "sources": [
     "results/selfplay/g24r4_b2_iter3/"
    ],
@@ -76,14 +76,14 @@
     4689627,
     4689628
    ],
-   "note": "FINDINGS \u00a715"
+   "note": "FINDINGS \u00a715-\u00a716: frontier 133->144->139->158->153; graded A* 223->228 at 53->26 exp; MCTS regret 1.55->1.46; iteration 5 running"
   },
   "M5": {
    "title": "scale + zero-shot transfer",
-   "status": "partial (zero-shot transfer shown at supervised stage)",
+   "status": "partial: zero-shot transfer of the loop's nets shown (g32r4 frontier +14 p=0.02; g24r8 at ceiling with 2.2 exp); mixed-size self-play curriculum next",
    "sources": [],
    "jobs": [],
-   "note": "see FINDINGS \u00a79; curriculum/self-play at 32 and 8 robots pending M3/M4 outcome"
+   "note": "FINDINGS \u00a79, \u00a716"
   },
   "M6": {
    "title": "beyond the oracle",
@@ -148,7 +148,7 @@
   "findings_log": "self_play_robots/FINDINGS.md (owner choice)"
  },
  "node_hours": {
-  "spent": 8.6,
+  "spent": 10.0,
   "projected_next": 2.5,
   "note": "spent: smoke 0.02 + M0 0.09 + fwd-M0 0.02 (+ ceiling pending); next: M1 ~1.5-2, M2 ~1"
  }

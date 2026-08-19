@@ -1,0 +1,9497 @@
+{
+ "protocol": {
+  "expansions": 1200,
+  "k": 5,
+  "instances_file": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/data/g24r8/bench.solved.jsonl",
+  "instances_sha256": "e3e2fe34ec7784844d29dff1086bf1f442552c249e599ef3746bff027c499c7b",
+  "n_instances": 161,
+  "instances_meta": null,
+  "checkpoints": {
+   "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt": "2026-08-17T21:17:05",
+   "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt": "2026-08-17T21:45:18"
+  },
+  "device": "cuda",
+  "d_star_placeholder": false,
+  "count_slides": false,
+  "dump_moves": true,
+  "byref": false,
+  "byref_pool": null,
+  "date": "2026-08-19T04:04:58",
+  "results_file": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/self_play_robots/results/selfplay/g24r4_b2_iter0/transfer/b2it0_g24r8_bench_solved_astar.json.tmp",
+  "search": "arena_astar",
+  "arch": "sizefree",
+  "vocab": "b2",
+  "search_options": {
+   "prefix_check": false,
+   "anytime": true,
+   "best_at_budget": false,
+   "f_mode": "child",
+   "mcts_c": 1.5,
+   "mcts_backup": "min"
+  },
+  "command": "merged from 21 shard runs: python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.000.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.000.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.001.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.001.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.002.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.002.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.003.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.003.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.004.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.004.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.005.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.005.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.006.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.006.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.007.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.007.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.008.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.008.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.009.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.009.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.010.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.010.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.011.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.011.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.012.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.012.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.013.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.013.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.014.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.014.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.015.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.015.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.016.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.016.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.017.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.017.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.018.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.018.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.019.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.019.json.tmp.1302419 --md /dev/null | python -m spr.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.020.jsonl --expansions 1200 --k 5 --policy /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt --value /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt --search arena_astar --vocab b2 --anytime --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0/chunk.020.json.tmp.1302419 --md /dev/null",
+  "expansion_definition": "one popped/expanded search node whose children are generated (= 1 policy pass + 1 batched value pass over <= k children)"
+ },
+ "systems": {
+  "spr arena_astar size-free planner [B2 vocabulary] (anytime)": {
+   "kind": "backward",
+   "aggregate": {
+    "n": 161,
+    "solved": 157,
+    "solve_rate": 0.9751552795031055,
+    "d_star_placeholder": false,
+    "mean_regret": 2.210191082802548,
+    "pct_optimal": 52.86624203821656,
+    "mean_moves": 7.802547770700637,
+    "mean_expansions": 26.099378881987576,
+    "mean_seconds": 5.131959946198741,
+    "plan_found": 161,
+    "plan_found_rate": 1.0,
+    "mean_plan_cost_abstract": 7.080745341614906,
+    "mean_realized_abstract": 7.031446540880503,
+    "mean_realized_strict": 7.802547770700637,
+    "n_negative_abstract_regret": 5,
+    "mean_children_pruned": 0.0,
+    "accounting": {
+     "nn_policy_calls": 26.099378881987576,
+     "nn_value_calls": 26.099378881987576,
+     "free_exact_fix_expands": 0.2857142857142857,
+     "rejected_plan_pops": 2.8509316770186337,
+     "physics_calls_prefix_check": 0.0,
+     "physics_calls_strict_realize": 3.8260869565217392,
+     "physics_calls_park_repair": 2.8509316770186337,
+     "park_plans_pushed": 2.3664596273291925,
+     "byref_cands_ranked": 1116.1490683229813,
+     "byref_cands_topk": 50.06832298136646
+    }
+   },
+   "rows": [
+    {
+     "env_id": 900,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 0,
+     "expansions": 2,
+     "seconds": 0.6985673820017837,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 2,
+      "nn_value_calls": 2,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 8,
+      "byref_cands_topk": 2
+     }
+    },
+    {
+     "env_id": 901,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 9.0,
+     "realized_abstract": 9,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 1,
+     "expansions": 12,
+     "seconds": 4.346299875003751,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 12,
+      "nn_value_calls": 12,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 556,
+      "byref_cands_topk": 30
+     }
+    },
+    {
+     "env_id": 902,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 3.0,
+     "realized_abstract": 3,
+     "realized_strict": 3,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 3.637596226995811,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 902,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 3.0,
+     "realized_abstract": 3,
+     "realized_strict": 8,
+     "solved": true,
+     "regret": 4,
+     "expansions": 1,
+     "seconds": 0.6413587069982896,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 904,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 3,
+     "expansions": 1,
+     "seconds": 0.7467321199947037,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 905,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 10.0,
+     "realized_abstract": 10,
+     "realized_strict": 16,
+     "solved": true,
+     "regret": 10,
+     "expansions": 2,
+     "seconds": 1.9129801300005056,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 2,
+      "nn_value_calls": 2,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 138,
+      "byref_cands_topk": 2
+     }
+    },
+    {
+     "env_id": 908,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.013661174001754262,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 910,
+     "d_star": 1,
+     "plan_found": true,
+     "plan_cost_abstract": 1.0,
+     "realized_abstract": 1,
+     "realized_strict": 1,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.015076588999363594,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 911,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": null,
+     "solved": false,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 180.75997100300447,
+     "plans_rejected": 18,
+     "children_pruned": 0,
+     "accounting": {
+      "nn_policy_calls": 1200,
+      "nn_value_calls": 1200,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 18,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 18,
+      "physics_calls_park_repair": 18,
+      "park_plans_pushed": 11,
+      "byref_cands_ranked": 37874,
+      "byref_cands_topk": 3390
+     }
+    },
+    {
+     "env_id": 912,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 9,
+     "solved": true,
+     "regret": 2,
+     "expansions": 1,
+     "seconds": 0.9764891479935613,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 914,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 1,
+     "expansions": 1,
+     "seconds": 0.1964878979997593,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 914,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 14.0,
+     "realized_abstract": 14,
+     "realized_strict": 14,
+     "solved": true,
+     "regret": 7,
+     "expansions": 0,
+     "seconds": 0.005311328997777309,
+     "plans_rejected": 1,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 1,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 2,
+      "physics_calls_park_repair": 1,
+      "park_plans_pushed": 3,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 914,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 10,
+     "solved": true,
+     "regret": 4,
+     "expansions": 6,
+     "seconds": 0.4000986909959465,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 6,
+      "nn_value_calls": 6,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 44,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 915,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 10.0,
+     "realized_abstract": 10,
+     "realized_strict": 9,
+     "solved": true,
+     "regret": 1,
+     "expansions": 0,
+     "seconds": 0.024423689996183384,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 915,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 8.0,
+     "realized_abstract": 8,
+     "realized_strict": 8,
+     "solved": true,
+     "regret": 2,
+     "expansions": 0,
+     "seconds": 0.0007014069997239858,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 916,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 13.0,
+     "realized_abstract": 13,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.19845617600367405,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 917,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.6234604860001127,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 917,
+     "d_star": 9,
+     "plan_found": true,
+     "plan_cost_abstract": 10.0,
+     "realized_abstract": 10,
+     "realized_strict": 10,
+     "solved": true,
+     "regret": 1,
+     "expansions": 1,
+     "seconds": 0.08875116600393085,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 919,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 8,
+     "solved": true,
+     "regret": 2,
+     "expansions": 1,
+     "seconds": 0.677688705996843,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 920,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 3.0,
+     "realized_abstract": 3,
+     "realized_strict": 3,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.013381923999986611,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 921,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 15.0,
+     "realized_abstract": 15,
+     "realized_strict": 15,
+     "solved": true,
+     "regret": 7,
+     "expansions": 0,
+     "seconds": 0.021459563002281357,
+     "plans_rejected": 1,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 1,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 2,
+      "physics_calls_park_repair": 1,
+      "park_plans_pushed": 7,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 921,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.5508314540056745,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 923,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 12.0,
+     "realized_abstract": 12,
+     "realized_strict": 10,
+     "solved": true,
+     "regret": 6,
+     "expansions": 0,
+     "seconds": 0.01449948399385903,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 923,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 1,
+     "expansions": 0,
+     "seconds": 0.0005010419990867376,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 923,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 10.0,
+     "realized_abstract": 10,
+     "realized_strict": 15,
+     "solved": true,
+     "regret": 7,
+     "expansions": 1,
+     "seconds": 0.8982217369994032,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 924,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.2352913040012936,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 925,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 4,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.013514271005988121,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 925,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.2401674010034185,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 927,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 9,
+     "solved": true,
+     "regret": 2,
+     "expansions": 5,
+     "seconds": 1.8948351180006284,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 5,
+      "nn_value_calls": 5,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 83,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 929,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 8.0,
+     "realized_abstract": 8,
+     "realized_strict": 19,
+     "solved": true,
+     "regret": 12,
+     "expansions": 1,
+     "seconds": 0.22302298199792858,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 929,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 10.0,
+     "realized_abstract": 10,
+     "realized_strict": 13,
+     "solved": true,
+     "regret": 7,
+     "expansions": 0,
+     "seconds": 0.05824545100040268,
+     "plans_rejected": 1,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 1,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 2,
+      "physics_calls_park_repair": 1,
+      "park_plans_pushed": 64,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 930,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.3280669529995066,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 930,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.5069309630052885,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 931,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 3.0,
+     "realized_abstract": 3,
+     "realized_strict": 3,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 4.134563772000547,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 932,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.013015591997827869,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 933,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 0,
+     "expansions": 4,
+     "seconds": 2.4936704249994364,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 4,
+      "nn_value_calls": 4,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 98,
+      "byref_cands_topk": 5
+     }
+    },
+    {
+     "env_id": 934,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 9.0,
+     "realized_abstract": 9,
+     "realized_strict": 16,
+     "solved": true,
+     "regret": 9,
+     "expansions": 4,
+     "seconds": 0.6332890220000991,
+     "plans_rejected": 1,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 4,
+      "nn_value_calls": 4,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 1,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 2,
+      "physics_calls_park_repair": 1,
+      "park_plans_pushed": 3,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 934,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.2186994629955734,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 935,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.22322071099915775,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 935,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 4,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.00045150100049795583,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 936,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 1.4070510099991225,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 938,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 2,
+     "expansions": 0,
+     "seconds": 0.014254358000471257,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 938,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.5812438450011541,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 938,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.10058133200072916,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 939,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 9.0,
+     "realized_abstract": 9,
+     "realized_strict": null,
+     "solved": false,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 213.35140107299958,
+     "plans_rejected": 216,
+     "children_pruned": 0,
+     "accounting": {
+      "nn_policy_calls": 1200,
+      "nn_value_calls": 1200,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 216,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 216,
+      "physics_calls_park_repair": 216,
+      "park_plans_pushed": 192,
+      "byref_cands_ranked": 54437,
+      "byref_cands_topk": 2295
+     }
+    },
+    {
+     "env_id": 940,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 9.0,
+     "realized_abstract": 9,
+     "realized_strict": 9,
+     "solved": true,
+     "regret": 4,
+     "expansions": 0,
+     "seconds": 0.018940670997835696,
+     "plans_rejected": 1,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 1,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 2,
+      "physics_calls_park_repair": 1,
+      "park_plans_pushed": 2,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 940,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 4,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.0003478780054138042,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 941,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.026567174994852394,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 941,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.004547165000985842,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 942,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 1,
+     "expansions": 0,
+     "seconds": 0.013925334998930339,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 942,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.4163053980009863,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 945,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 8.0,
+     "realized_abstract": 8,
+     "realized_strict": 8,
+     "solved": true,
+     "regret": 3,
+     "expansions": 0,
+     "seconds": 0.014208974003850017,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 947,
+     "d_star": 2,
+     "plan_found": true,
+     "plan_cost_abstract": 2.0,
+     "realized_abstract": 2,
+     "realized_strict": 2,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.014145105000352487,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 947,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 9,
+     "solved": true,
+     "regret": 3,
+     "expansions": 5,
+     "seconds": 6.733736313995905,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 5,
+      "nn_value_calls": 5,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 344,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 948,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 11.0,
+     "realized_abstract": 11,
+     "realized_strict": 15,
+     "solved": true,
+     "regret": 9,
+     "expansions": 1,
+     "seconds": 0.2253724069960299,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 948,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 4,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.08217614499881165,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 950,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 9.0,
+     "realized_abstract": 9,
+     "realized_strict": 17,
+     "solved": true,
+     "regret": 11,
+     "expansions": 2,
+     "seconds": 0.69856572199933,
+     "plans_rejected": 2,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 2,
+      "nn_value_calls": 2,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 2,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 3,
+      "physics_calls_park_repair": 2,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 951,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 8.0,
+     "realized_abstract": 8,
+     "realized_strict": 16,
+     "solved": true,
+     "regret": 10,
+     "expansions": 8,
+     "seconds": 9.469498054000724,
+     "plans_rejected": 6,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 8,
+      "nn_value_calls": 8,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 6,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 7,
+      "physics_calls_park_repair": 6,
+      "park_plans_pushed": 12,
+      "byref_cands_ranked": 617,
+      "byref_cands_topk": 1
+     }
+    },
+    {
+     "env_id": 955,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 14.0,
+     "realized_abstract": 14,
+     "realized_strict": 14,
+     "solved": true,
+     "regret": 7,
+     "expansions": 331,
+     "seconds": 193.27093083500222,
+     "plans_rejected": 6,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 331,
+      "nn_value_calls": 331,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 6,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 7,
+      "physics_calls_park_repair": 6,
+      "park_plans_pushed": 3,
+      "byref_cands_ranked": 75399,
+      "byref_cands_topk": 642
+     }
+    },
+    {
+     "env_id": 955,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 8.0,
+     "realized_abstract": 8,
+     "realized_strict": 8,
+     "solved": true,
+     "regret": 0,
+     "expansions": 2,
+     "seconds": 0.09666971000115154,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 2,
+      "nn_value_calls": 2,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 956,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 13.0,
+     "realized_abstract": 13,
+     "realized_strict": 13,
+     "solved": true,
+     "regret": 10,
+     "expansions": 0,
+     "seconds": 0.013995995999721345,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 956,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 11.0,
+     "realized_abstract": 11,
+     "realized_strict": 8,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.18119469399971422,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 957,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 8.0,
+     "realized_abstract": 8,
+     "realized_strict": 8,
+     "solved": true,
+     "regret": 0,
+     "expansions": 2,
+     "seconds": 0.35198406600102317,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 2,
+      "nn_value_calls": 2,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 958,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 11.0,
+     "realized_abstract": 11,
+     "realized_strict": 11,
+     "solved": true,
+     "regret": 3,
+     "expansions": 11,
+     "seconds": 3.6643075660031172,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 11,
+      "nn_value_calls": 11,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 985,
+      "byref_cands_topk": 3
+     }
+    },
+    {
+     "env_id": 960,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 10,
+     "solved": true,
+     "regret": 3,
+     "expansions": 1,
+     "seconds": 1.0821064569972805,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 961,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 9.0,
+     "realized_abstract": 9,
+     "realized_strict": 9,
+     "solved": true,
+     "regret": 1,
+     "expansions": 0,
+     "seconds": 0.01422538400220219,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 961,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 3.0,
+     "realized_abstract": 3,
+     "realized_strict": 3,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.0003130129989585839,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 962,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.6541362650023075,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 963,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 15.0,
+     "realized_abstract": 15,
+     "realized_strict": 9,
+     "solved": true,
+     "regret": 1,
+     "expansions": 0,
+     "seconds": 0.015662660996895283,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 964,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 11,
+     "solved": true,
+     "regret": 5,
+     "expansions": 1,
+     "seconds": 0.30752425600076094,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 964,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 1,
+     "expansions": 0,
+     "seconds": 0.0006380579943652265,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 964,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 8.0,
+     "realized_abstract": 8,
+     "realized_strict": 8,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.000480293994769454,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 965,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 16.0,
+     "realized_abstract": 16,
+     "realized_strict": 16,
+     "solved": true,
+     "regret": 13,
+     "expansions": 0,
+     "seconds": 0.0033553670000401326,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 966,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 8.0,
+     "realized_abstract": 8,
+     "realized_strict": 12,
+     "solved": true,
+     "regret": 4,
+     "expansions": 1,
+     "seconds": 0.4133010000005015,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 967,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 18,
+     "solved": true,
+     "regret": 10,
+     "expansions": 0,
+     "seconds": 0.01850437199755106,
+     "plans_rejected": 1,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 1,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 2,
+      "physics_calls_park_repair": 1,
+      "park_plans_pushed": 1,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 968,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 4,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.24111309300496941,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 970,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 9.0,
+     "realized_abstract": 9,
+     "realized_strict": 9,
+     "solved": true,
+     "regret": 2,
+     "expansions": 1,
+     "seconds": 0.3991466780062183,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 970,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 1,
+     "expansions": 0,
+     "seconds": 0.0006032930032233708,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 972,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.013818958002957515,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 973,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.23497720799787203,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 973,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 1.770165358997474,
+     "plans_rejected": 1,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 1,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 2,
+      "physics_calls_park_repair": 1,
+      "park_plans_pushed": 3,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 976,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 0,
+     "expansions": 3,
+     "seconds": 1.60119036299875,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 3,
+      "nn_value_calls": 3,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 83,
+      "byref_cands_topk": 2
+     }
+    },
+    {
+     "env_id": 977,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 4,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 1.0711028699952294,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 982,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.5764951539968024,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 983,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 11.0,
+     "realized_abstract": 11,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 0,
+     "expansions": 19,
+     "seconds": 6.470354232005775,
+     "plans_rejected": 4,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 19,
+      "nn_value_calls": 19,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 4,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 5,
+      "physics_calls_park_repair": 4,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 164,
+      "byref_cands_topk": 13
+     }
+    },
+    {
+     "env_id": 983,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.0005274920040392317,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 984,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.013312745999428444,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 984,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 8.0,
+     "realized_abstract": 8,
+     "realized_strict": 9,
+     "solved": true,
+     "regret": 2,
+     "expansions": 1,
+     "seconds": 0.3456934089990682,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 985,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 13.0,
+     "realized_abstract": 13,
+     "realized_strict": 13,
+     "solved": true,
+     "regret": 6,
+     "expansions": 25,
+     "seconds": 10.13316401100019,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 25,
+      "nn_value_calls": 25,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 678,
+      "byref_cands_topk": 17
+     }
+    },
+    {
+     "env_id": 986,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 8.0,
+     "realized_abstract": 8,
+     "realized_strict": 11,
+     "solved": true,
+     "regret": 5,
+     "expansions": 3,
+     "seconds": 0.434358135004004,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 3,
+      "nn_value_calls": 3,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 10,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 987,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 3.0,
+     "realized_abstract": 3,
+     "realized_strict": 3,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.013798950996715575,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 988,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 11.0,
+     "realized_abstract": 11,
+     "realized_strict": 11,
+     "solved": true,
+     "regret": 4,
+     "expansions": 0,
+     "seconds": 0.013578400001279078,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 988,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 13,
+     "solved": true,
+     "regret": 7,
+     "expansions": 3,
+     "seconds": 1.4508370070034289,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 3,
+      "nn_value_calls": 3,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 92,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 989,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.013447286000882741,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 990,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 10.0,
+     "realized_abstract": 10,
+     "realized_strict": 9,
+     "solved": true,
+     "regret": 4,
+     "expansions": 1,
+     "seconds": 0.29131305400369456,
+     "plans_rejected": 1,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 1,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 2,
+      "physics_calls_park_repair": 1,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 991,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 9.0,
+     "realized_abstract": 9,
+     "realized_strict": 9,
+     "solved": true,
+     "regret": 2,
+     "expansions": 0,
+     "seconds": 0.013722679002967197,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 992,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 9.0,
+     "realized_abstract": 9,
+     "realized_strict": 15,
+     "solved": true,
+     "regret": 8,
+     "expansions": 8,
+     "seconds": 1.3908543009965797,
+     "plans_rejected": 69,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 8,
+      "nn_value_calls": 8,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 69,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 70,
+      "physics_calls_park_repair": 69,
+      "park_plans_pushed": 66,
+      "byref_cands_ranked": 10,
+      "byref_cands_topk": 2
+     }
+    },
+    {
+     "env_id": 992,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 3,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.0004025900052511133,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 993,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 3.0,
+     "realized_abstract": 3,
+     "realized_strict": 3,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 2.293774210003903,
+     "plans_rejected": 2,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 2,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 3,
+      "physics_calls_park_repair": 2,
+      "park_plans_pushed": 3,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 994,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 15.0,
+     "realized_abstract": 15,
+     "realized_strict": 8,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.013716007000766695,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 995,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 14.0,
+     "realized_abstract": 14,
+     "realized_strict": 14,
+     "solved": true,
+     "regret": 6,
+     "expansions": 6,
+     "seconds": 0.8343785799952457,
+     "plans_rejected": 3,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 6,
+      "nn_value_calls": 6,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 3,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 4,
+      "physics_calls_park_repair": 3,
+      "park_plans_pushed": 2,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 995,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 0,
+     "expansions": 2,
+     "seconds": 0.22105226299754577,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 2,
+      "nn_value_calls": 2,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 996,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 2,
+     "expansions": 0,
+     "seconds": 0.0130785500005004,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 996,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 1.6334111309988657,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 997,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 4,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.7150102999949013,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 998,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 4,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.01326984600018477,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 999,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 12.0,
+     "realized_abstract": 12,
+     "realized_strict": 10,
+     "solved": true,
+     "regret": 2,
+     "expansions": 0,
+     "seconds": 0.013259565996122546,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1001,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 1,
+     "expansions": 0,
+     "seconds": 0.013623754995933268,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1002,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 4,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 1.1124043650052045,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1002,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 9,
+     "solved": true,
+     "regret": 1,
+     "expansions": 0,
+     "seconds": 0.0006710189991281368,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1003,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.2701287130039418,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1004,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 3.0,
+     "realized_abstract": 3,
+     "realized_strict": 3,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.016140519997861702,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1004,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 11.0,
+     "realized_abstract": 11,
+     "realized_strict": 11,
+     "solved": true,
+     "regret": 3,
+     "expansions": 0,
+     "seconds": 0.0035322870025993325,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1005,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 8.0,
+     "realized_abstract": 8,
+     "realized_strict": 22,
+     "solved": true,
+     "regret": 16,
+     "expansions": 2,
+     "seconds": 0.647464043002401,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 2,
+      "nn_value_calls": 2,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1005,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 9,
+     "solved": true,
+     "regret": 2,
+     "expansions": 1,
+     "seconds": 0.08409480700356653,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1006,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 4,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.5833784289934556,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1006,
+     "d_star": 1,
+     "plan_found": true,
+     "plan_cost_abstract": 1.0,
+     "realized_abstract": 1,
+     "realized_strict": 1,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.00028523099899757653,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1009,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 8.0,
+     "realized_abstract": 8,
+     "realized_strict": 8,
+     "solved": true,
+     "regret": 1,
+     "expansions": 1,
+     "seconds": 0.7155139779933961,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1012,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.01367531999858329,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1012,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 3.0,
+     "realized_abstract": 3,
+     "realized_strict": 3,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.00031645999843021855,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1013,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 11.0,
+     "realized_abstract": 11,
+     "realized_strict": 8,
+     "solved": true,
+     "regret": 3,
+     "expansions": 0,
+     "seconds": 0.0030100739968474954,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1014,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 8.0,
+     "realized_abstract": 8,
+     "realized_strict": 10,
+     "solved": true,
+     "regret": 4,
+     "expansions": 0,
+     "seconds": 0.01449267200223403,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1015,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 12.0,
+     "realized_abstract": 12,
+     "realized_strict": 12,
+     "solved": true,
+     "regret": 6,
+     "expansions": 0,
+     "seconds": 0.019363170002179686,
+     "plans_rejected": 1,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 1,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 2,
+      "physics_calls_park_repair": 1,
+      "park_plans_pushed": 1,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1017,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.5587818959975266,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1018,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 8,
+     "solved": true,
+     "regret": 1,
+     "expansions": 1,
+     "seconds": 0.4040896110018366,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1020,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 10.0,
+     "realized_abstract": 10,
+     "realized_strict": 13,
+     "solved": true,
+     "regret": 7,
+     "expansions": 9,
+     "seconds": 0.9564659300012863,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 9,
+      "nn_value_calls": 9,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1020,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.10304675200313795,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1021,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 3.0,
+     "realized_abstract": 3,
+     "realized_strict": 3,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.01364799000293715,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1022,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 8.0,
+     "realized_abstract": 8,
+     "realized_strict": 8,
+     "solved": true,
+     "regret": 2,
+     "expansions": 2,
+     "seconds": 4.813459558994509,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 2,
+      "nn_value_calls": 2,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 311,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1023,
+     "d_star": 1,
+     "plan_found": true,
+     "plan_cost_abstract": 1.0,
+     "realized_abstract": 1,
+     "realized_strict": 1,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.013413303000561427,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1023,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.0004308520001359284,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1023,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 3.0,
+     "realized_abstract": 3,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 2,
+     "expansions": 1,
+     "seconds": 0.438247976002458,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1024,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 11.0,
+     "realized_abstract": 11,
+     "realized_strict": 8,
+     "solved": true,
+     "regret": 2,
+     "expansions": 0,
+     "seconds": 0.015039170000818558,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1024,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 4,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.00035119400126859546,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1025,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 3.0,
+     "realized_abstract": 3,
+     "realized_strict": 3,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.013363859994569793,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1026,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 0,
+     "expansions": 2,
+     "seconds": 1.8088491610033088,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 2,
+      "nn_value_calls": 2,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1026,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 10.0,
+     "realized_abstract": 10,
+     "realized_strict": 10,
+     "solved": true,
+     "regret": 2,
+     "expansions": 0,
+     "seconds": 0.0078078660008031875,
+     "plans_rejected": 1,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 1,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 2,
+      "physics_calls_park_repair": 1,
+      "park_plans_pushed": 3,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1027,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 10.0,
+     "realized_abstract": 10,
+     "realized_strict": null,
+     "solved": false,
+     "regret": null,
+     "expansions": 1,
+     "seconds": 0.5373551930024405,
+     "plans_rejected": 5,
+     "children_pruned": 0,
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 5,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 5,
+      "physics_calls_park_repair": 5,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1028,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 0,
+     "expansions": 4,
+     "seconds": 7.020425950999197,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 4,
+      "nn_value_calls": 4,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 531,
+      "byref_cands_topk": 1
+     }
+    },
+    {
+     "env_id": 1028,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 0,
+     "expansions": 6,
+     "seconds": 1.73417145699932,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 6,
+      "nn_value_calls": 6,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 70,
+      "byref_cands_topk": 1
+     }
+    },
+    {
+     "env_id": 1030,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 4,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.013455672000418417,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1030,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 4,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.00032704899786040187,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1031,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 13.0,
+     "realized_abstract": 13,
+     "realized_strict": 12,
+     "solved": true,
+     "regret": 6,
+     "expansions": 0,
+     "seconds": 0.014580194998416118,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1033,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 3.0,
+     "realized_abstract": 3,
+     "realized_strict": 3,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.6179774659976829,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1033,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.5143617749999976,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1034,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 9,
+     "solved": true,
+     "regret": 4,
+     "expansions": 2,
+     "seconds": 0.7478574650012888,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 2,
+      "nn_value_calls": 2,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1034,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 10.0,
+     "realized_abstract": null,
+     "realized_strict": 16,
+     "solved": true,
+     "regret": 9,
+     "expansions": 4,
+     "seconds": 0.37349939799605636,
+     "plans_rejected": 1,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 4,
+      "nn_value_calls": 4,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 1,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 2,
+      "physics_calls_park_repair": 1,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 2,
+      "byref_cands_topk": 2
+     }
+    },
+    {
+     "env_id": 1037,
+     "d_star": 8,
+     "plan_found": true,
+     "plan_cost_abstract": 8.0,
+     "realized_abstract": 8,
+     "realized_strict": 8,
+     "solved": true,
+     "regret": 0,
+     "expansions": 2,
+     "seconds": 0.6903669989987975,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 2,
+      "nn_value_calls": 2,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1037,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 3.0,
+     "realized_abstract": 3,
+     "realized_strict": 3,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.00035206499887863174,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1038,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 6.0,
+     "realized_abstract": 6,
+     "realized_strict": 6,
+     "solved": true,
+     "regret": 0,
+     "expansions": 7,
+     "seconds": 1.4274306290026288,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 7,
+      "nn_value_calls": 7,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1039,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 4,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.4342969110002741,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1040,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 0,
+     "expansions": 4,
+     "seconds": 9.762600117996044,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 4,
+      "nn_value_calls": 4,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 564,
+      "byref_cands_topk": 4
+     }
+    },
+    {
+     "env_id": 1041,
+     "d_star": 4,
+     "plan_found": true,
+     "plan_cost_abstract": 4.0,
+     "realized_abstract": 4,
+     "realized_strict": 4,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.0030117470014374703,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1042,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 8.0,
+     "realized_abstract": 8,
+     "realized_strict": 8,
+     "solved": true,
+     "regret": 2,
+     "expansions": 2,
+     "seconds": 1.7651666329984437,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 2,
+      "nn_value_calls": 2,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1042,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 13.0,
+     "realized_abstract": 13,
+     "realized_strict": 17,
+     "solved": true,
+     "regret": 12,
+     "expansions": 0,
+     "seconds": 0.0007225950030260719,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 1,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1043,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 12.0,
+     "realized_abstract": null,
+     "realized_strict": null,
+     "solved": false,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 100.51256435400137,
+     "plans_rejected": 117,
+     "children_pruned": 0,
+     "accounting": {
+      "nn_policy_calls": 1200,
+      "nn_value_calls": 1200,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 117,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 117,
+      "physics_calls_park_repair": 117,
+      "park_plans_pushed": 5,
+      "byref_cands_ranked": 6043,
+      "byref_cands_topk": 1635
+     }
+    },
+    {
+     "env_id": 1043,
+     "d_star": 3,
+     "plan_found": true,
+     "plan_cost_abstract": 3.0,
+     "realized_abstract": 3,
+     "realized_strict": 3,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.0003474260010989383,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1047,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 7.0,
+     "realized_abstract": 7,
+     "realized_strict": 7,
+     "solved": true,
+     "regret": 0,
+     "expansions": 1,
+     "seconds": 0.22798098900238983,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 1,
+      "nn_value_calls": 1,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1048,
+     "d_star": 5,
+     "plan_found": true,
+     "plan_cost_abstract": 5.0,
+     "realized_abstract": 5,
+     "realized_strict": 5,
+     "solved": true,
+     "regret": 0,
+     "expansions": 0,
+     "seconds": 0.014545798003382515,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 0,
+      "byref_cands_topk": 0
+     }
+    },
+    {
+     "env_id": 1049,
+     "d_star": 6,
+     "plan_found": true,
+     "plan_cost_abstract": 10.0,
+     "realized_abstract": 10,
+     "realized_strict": 16,
+     "solved": true,
+     "regret": 10,
+     "expansions": 3,
+     "seconds": 2.5533180499987793,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 3,
+      "nn_value_calls": 3,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 179,
+      "byref_cands_topk": 2
+     }
+    },
+    {
+     "env_id": 1049,
+     "d_star": 7,
+     "plan_found": true,
+     "plan_cost_abstract": 11.0,
+     "realized_abstract": 11,
+     "realized_strict": 17,
+     "solved": true,
+     "regret": 10,
+     "expansions": 33,
+     "seconds": 10.44662772599986,
+     "plans_rejected": 0,
+     "children_pruned": 0,
+     "moves": [
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_policy_calls": 33,
+      "nn_value_calls": 33,
+      "free_exact_fix_expands": 0,
+      "rejected_plan_pops": 0,
+      "physics_calls_prefix_check": 0,
+      "physics_calls_strict_realize": 1,
+      "physics_calls_park_repair": 0,
+      "park_plans_pushed": 0,
+      "byref_cands_ranked": 380,
+      "byref_cands_topk": 12
+     }
+    }
+   ]
+  }
+ },
+ "spr": {
+  "arm": "bp_b2it0_g24r8_bench_solved_astar",
+  "config": "g24r8",
+  "flags": [
+   "--search",
+   "arena_astar",
+   "--vocab",
+   "b2",
+   "--anytime"
+  ],
+  "driver": "spr",
+  "expansions": 1200,
+  "k": 5,
+  "policy": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_policy_s21/lightning_logs/version_0/checkpoints/epoch=10-step=14608.ckpt",
+  "value": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/m1/mixed_value_warm_s21/lightning_logs/version_0/checkpoints/epoch=7-step=21240.ckpt",
+  "instances": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/data/g24r8/bench.solved.jsonl",
+  "run_dir": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/bp_b2it0_g24r8_bench_solved_astar.69565a3468d0",
+  "slurm_job_id": "4698737",
+  "wall_seconds": 236.2,
+  "replay_certified": true,
+  "width": 8,
+  "omp_threads": 2,
+  "device": "cuda",
+  "date": "2026-08-19T04:05:12"
+ }
+}
