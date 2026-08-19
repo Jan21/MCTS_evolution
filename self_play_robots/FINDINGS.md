@@ -640,3 +640,59 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     instrument in the B2 loop.
     Sources: `results/selfplay/g24r4_b2_iter{0,3}/transfer/`,
     `results/selfplay/g24r4_b2_iter4/`, `spr.trend --config g24r4 --tag _b2`.
+
+17. **M5 far-size clause: the size-free pair, trained at 16/24 only, audits
+    zero-shot against exact ground truth at 32–64 at the labeler's level or
+    above; the B2 loop's nets pay 1–2 points on these base-vocabulary decisions
+    (specialization, cf. §16b); and the iteration-0 frontier-MCTS reference
+    shows the loop's frontier gains are A\*'s, not MCTS's (2026-08-19, jobs
+    4704311/4704312 [audits, 0.2 nh], 4704317 [iteration-0 frontier MCTS,
+    0.1 nh], 4707188 [labeler reference 56/64, pending]).** Instrument
+    `spr.audit` (new): on the exact-labeled decision corpora (g32r4 test split
+    of `scaling/data/g32r4/backward.jsonl`; 40/48/56/64 =
+    `backward_audit.rust.jsonl`, the labeler's own fidelity-curve sets,
+    FINDINGS 53/70; base vocabulary, all depths, groups with ≥2 candidates)
+    score the value net's argmin (= `nn_labeler.audit`), the policy's top-k,
+    and the planner's greedy decision (value argmin over the policy's top-5 =
+    what one arena expansion decides). "it0" = the M1 mixed pair (§7), "it4" =
+    the B2 loop's iteration-4 nets (§16); labeler = prod_v1_s11 value
+    (`nn_labeler/results/audit_prod_v1_s11_full.json`, `audit_coarse_g{40,48}r4.json`).
+    | exam (exact groups) | labeler value top1 / regret | it0: value · policy top1 / r@1 / recall@5 · pair top1 / regret | it4: value · policy · pair |
+    |---|---|---|---|
+    | g32r4 (1292) | 0.853 / 0.56 | **0.863** / 0.48 · 0.687 / 1.33 / 0.985 · 0.852 / 0.55 | 0.837 / 0.64 · 0.671 / 1.33 / 0.974 · 0.828 / 0.66 |
+    | g40r4 (2100) | 0.852 / 0.59 | **0.863** / 0.52 · 0.691 / 1.36 / 0.982 · 0.851 / 0.55 | 0.847 / 0.58 · 0.665 / 1.57 / 0.975 · 0.830 / 0.62 |
+    | g48r4 (2082) | 0.842 / 0.63 | **0.854** / 0.53 · 0.677 / 1.33 / 0.988 · 0.848 / 0.56 | 0.846 / 0.62 · 0.643 / 1.57 / 0.980 · 0.836 / 0.68 |
+    | g56r4 (2084) | (job 4707188) | 0.842 / 0.62 · 0.658 / 1.49 / 0.982 · 0.831 / 0.65 | 0.839 / 0.64 · 0.620 / 1.71 / 0.971 · 0.820 / 0.73 |
+    | g64r4 (2049) | (job 4707188) | 0.838 / 0.57 · 0.644 / 1.60 / 0.980 · 0.829 / 0.59 | 0.837 / 0.65 · 0.616 / 1.81 / 0.973 · 0.822 / 0.71 |
+    Reading. (a) The M1 value net beats the labeler that initialized it by
+    ≈1 point at 32/40/48 (its extra 24×24 exact data helps 2–3× beyond its
+    training size) and degrades only 0.863→0.838 from 32 to 64 — the
+    size-free bet (§6.2/§9) holds far past the curriculum. (b) The policy's
+    top-1 is a weak oracle (0.64–0.69) but its top-5 contains an optimum in
+    97–99% of decisions, so the arena's k=5 filter costs ≈0.05 regret — the
+    value net does the choosing (pair ≈ value − 1 pt at every size; the pair
+    loses to the value alone in 20–35 decisions per set and beats it in
+    4–12). (c) The B2 loop's nets are 1–3 points worse than their own
+    initialization on these *base-vocabulary* decisions at every size (value
+    0.837 vs 0.863 at 32; policy top-1 −2 to −3 pts, r@1 1.33→1.57–1.81),
+    the same specialization cost §16b measured on the graded 32/8-robot
+    exams: four iterations of 24×24 B2-only self-play (no exact anchors, by
+    design of §11) drift the nets toward the B2 ranking — the motive for the
+    mixed-size curriculum now running (job chain 4704314–16). Depth split
+    (it0): depth-0 decisions are the hard ones (value top1 0.82–0.84; depth
+    ≥1 0.85–0.99), as in the labeler's own audits. (d) **Frontier MCTS
+    reference.** The iteration-0 pair with MCTS best-at-budget on the g24r4
+    frontier (the row §15 lacked) solves **171/218** (19.50 mv, 1038 exp) —
+    so the frontier MCTS series is 171 → 169 → 172 → 171 → 178 (iteration 4
+    vs 0: +12/−5, McNemar p=0.14; moves 23/31 n.s.): flat within noise. The
+    loop's frontier gain is A\*'s (133→158, p=5e-6): what four iterations
+    bought is a ranking under which the cheap first-solution search reaches
+    what the 1200-expansion MCTS could already reach with the iteration-0
+    nets (graded: A\* 223→228 = MCTS's 228, at 26 vs 500 expansions) — search
+    distilled into the nets, the AlphaZero mechanism, rather than a higher
+    language reach. §15's "monotone-ish" reading stands for A\*; for MCTS the
+    honest statement is "held at the language's reach with slightly better
+    regret (1.55→1.46)". Sources: `results/audit/b2it0_m1mixed.json`,
+    `results/audit/b2it4.json`,
+    `results/selfplay/g24r4_b2_iter0/m1mixed_b2_g24r4_bench_unsolved_mcts.json`,
+    `spr.gate compare` pairs, `runs/spr/spr-audit-it{0,4}-470431{1,2}.out`.
