@@ -159,10 +159,26 @@ def main(argv=None):
     dev = a.device if (a.device == "cpu" or torch.cuda.is_available()) else "cpu"
     policy = load_policy(a.policy, dev)
     value = load_value(a.value, dev)
+    out = _abs(a.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
     report = {"policy": a.policy, "value": a.value, "split": a.split, "byref": a.byref,
               "configs": {}}
+    if out.is_file():      # resume: keep configs already audited with the same nets
+        old = json.loads(out.read_text())
+        if old.get("policy") == a.policy and old.get("value") == a.value and old.get("split") == a.split:
+            report["configs"] = {k: v for k, v in old.get("configs", {}).items() if v.get("n_groups")}
+            print(f"[audit] resuming {out}: {sorted(report['configs'])} done", flush=True)
+
+    def _write():
+        tmp = out.with_suffix(out.suffix + ".tmp")
+        tmp.write_text(json.dumps(report, indent=1))
+        os.replace(tmp, out)
+
     for item in a.data:
         name, path = item.split("=", 1)
+        if name in report["configs"]:
+            print(f"[audit] {name}: done earlier, skipped", flush=True)
+            continue
         cfg = get(name)
         recs = dataset.load_corpus(str(_abs(path)), cfg.name, cfg.grid, cfg.env_dir_abs)
         if a.split != "all":
@@ -175,10 +191,13 @@ def main(argv=None):
             report["configs"][name] = {"n_groups": 0}
             print(f"[audit] {name}: EMPTY", flush=True)
             continue
-        rows = audit_config(policy, value, groups, cfg.grid, dev, a.byref, a.batch)
+        # dense masks are (n^2+1)^2 per record: shrink the group batch above 40x40
+        bs = a.batch if cfg.grid <= 40 else max(1, int(a.batch * ((40 ** 2 + 1) / (cfg.grid ** 2 + 1)) ** 1.5))
+        rows = audit_config(policy, value, groups, cfg.grid, dev, a.byref, bs)
         s = summarize(rows)
         s["path"] = str(path)
         report["configs"][name] = s
+        _write()
         pol = s.get("policy", {})
         print(f"[audit] {name} n={cfg.grid} groups={s['n_groups']} "
               f"value top1={s['value']['top1_optimal']:.3f} regret={s['value']['regret']:.3f} | "
@@ -186,11 +205,7 @@ def main(argv=None):
               f"r@5={pol.get('regret@5', float('nan')):.3f} recall@5={pol.get('recall@5', float('nan')):.3f} | "
               f"pair top1={s.get('pair', {}).get('top1_optimal', float('nan')):.3f} "
               f"regret={s.get('pair', {}).get('regret', float('nan')):.3f}", flush=True)
-    out = _abs(a.out)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    tmp = out.with_suffix(out.suffix + ".tmp")
-    tmp.write_text(json.dumps(report, indent=1))
-    os.replace(tmp, out)
+    _write()
     print(f"SPR AUDIT DONE {out}", flush=True)
 
 
