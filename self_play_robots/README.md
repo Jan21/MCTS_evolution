@@ -22,6 +22,8 @@ in `supervised_valuenet/` is modified.
 | `search.py` | the searches: `expand` (1 expansion = policy pass + value pass over ≤k children), `greedy`, `astar` (f-mode child/parent, best-at-budget), `mcts` (PUCT, min-max normalized Q, min/mean backup, certified terminals, root Dirichlet noise), `Certifier` | `skeleton.astar`, `nn.generate._context/_fixed_g`, `eval.realize` |
 | `selfplay.py` | generation: fresh lean boards → instances → MCTS → certified labels (18-field records + provenance) with worker pool; manifest + per-instance stats | `nn_labeler.leanboard`, `nn.generate.random_instance` |
 | `gauge.py` | fidelity gauge: sample depth-0 decisions, exact-label them with the Rust engine, run `nn_labeler.audit_descent` → argmin agreement | `scaling.rust_bridge.EngineProc`, `nn_labeler.audit_descent` |
+| `buffer.py` / `trend.py` / `tables.py` | replay-buffer window (`--tag _b2`), iteration trend table, markdown rows from payloads | — |
+| `audit.py` | M5 zero-shot exact audit of a (policy, value) pair at ANY size: policy regret@k / recall@5, value argmin, the greedy pair decision, on exact-labeled decision corpora (32 test split; 40/48/56/64 `backward_audit.rust.jsonl`) | `nn_labeler.dataset/encode/model.collate_groups` |
 | `gate.py` | milestone gates: M1 bars (3.5 solve / 6.6 optimality pts), paired A/B (McNemar on solved vectors, both-solved moves sign test) | — |
 | `fwd/` | primitive-move arm (owner: both action spaces): `mcts.py` PUCT over slides on the forward MoveNet Guide (arena budget unit), `bench.py`/`arena.py` (run_forward row schema + parity), `selfplay.py` (move_planner_v2 record schema), `train.py` (warm-start MoveNet), `gate.py` shim; jobs `fwd_*.slurm` | `move_planner`, `move_planner_v2`, `eval.compare.run_forward` |
 
@@ -31,6 +33,11 @@ in `supervised_valuenet/` is modified.
 - `ceiling.slurm` — ceiling study, 4 arms (job 4679720).
 - `m1_train.slurm <policy|value_warm|value_cold> [seed]` — M1 nets.
 - `m1_bench.slurm <TAG> <POLICY_DIR> <VALUE_DIR> [device]` — M1 benches + gate.
+- `selfplay_iter.slurm <cfg> <K> <P|auto> <V|auto>` — one loop iteration (env knobs; `VOCAB=b2`).
+- `selfplay_mix_iter.slurm <K> <P|auto> <V|auto>` — M5 mixed-size B2 curriculum iteration
+  (`CFGS="g24r4 g32r4 g24r8"`; per-config buffers, one size-free pair, `--batch-ref-n 24`).
+- `bench_pair.slurm`, `gauge_only.slurm`, `audit_far.slurm <TAG> <P> <V> [--byref]`,
+  `transfer_probe.slurm`, `*_ceiling.slurm`, `fwd_*.slurm`; `watch.sh` monitor.
 
 ## Results (`results/`, small JSONs, committed)
 

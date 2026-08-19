@@ -103,6 +103,23 @@ trained with `--byref`, no base anchors (one vocabulary per dataset), boards
 from id 8000, its own result dirs `<cfg>_b2_iter<k>`, exact gauge with a
 candidate cap and wall-clock cap (B2 exact rollouts explode).
 
+## 4c. M5 curriculum (`jobs/selfplay_mix_iter.slurm`)
+
+Same phases in the B2 vocabulary, but generation runs per config (g24r4,
+g32r4, g24r8; ids from 9000, seed 100+k), each config keeps its own window
+buffer (`spr.buffer --tag _b2mix` over per-config symlinked iteration dirs),
+one size-free pair trains on the union (`--data` × 3, `--splits` × 3;
+`--batch-ref-n 24` shrinks batches above 24×24 by the dense-mask memory ratio
+so the FINDINGS-63 envelope holds at 32×32: value 4→1 groups × 8 records,
+policy 8→2), benches = arena A\* graded + frontier at all three configs
+(MCTS rows for the final nets via `bench_pair.slurm`), gate = paired vs the
+previous mixed iteration. Far-size transfer (`jobs/audit_far.slurm` →
+`spr.audit`): zero-shot policy/value/pair decision audits against the exact
+corpora at 32 (test) and 40/48/56/64 (`backward_audit.rust.jsonl`, the
+labeler's fidelity-curve sets) — the PROBLEM.md M5 "benched zero-shot at
+40–64 against exact ground truth" clause, decision-level because no pinned
+exam or d\* exists above 32.
+
 ## 5. Primitive-move arm (`spr/fwd/`, in progress)
 
 PUCT over slides on the forward MoveNet Guide (`move_planner`), same budget
