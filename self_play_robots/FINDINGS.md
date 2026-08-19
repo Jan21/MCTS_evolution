@@ -774,3 +774,43 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     frontier MCTS bench is 40% of it).
     Sources: `results/selfplay/g24r4_b2_iter{0..5}/`, `spr.trend`, `spr.gate
     compare`, `runs/spr/spr-b2-it5-4706184.out`.
+
+20. **M5, mixed-size curriculum iteration 1: one iteration of B2 self-play ON
+    the target distributions (24×24 + 32×32 + 8 robots, one size-free pair)
+    beats everything that came before it on every frontier — g24r4 170/218
+    (best 24-only iteration: 158), g32r4 235/275 (24-only loop's transfer:
+    208), g24r8 269/289 (recorded supervised B2 arm: 161; base-vocab
+    size-free row: 171) — at 20–45% fewer expansions, while holding the
+    graded exams at their ceilings (2026-08-19, job 4704314 = 5.2 h ≈ 0.65 nh;
+    iterations 2–3 chained: 4704315/4704316).** Setup (`jobs/selfplay_mix_iter.slurm`,
+    DESIGN §4c): seed nets = the 24-only B2 loop's iteration-4 pair; per config
+    30 fresh lean boards (ids 9000+), B2 MCTS generation as in §15; per-config
+    window buffers; ONE policy+value pair warm-retrained on the union (11,915
+    records: 3.3k/2.9k/5.8k; `--batch-ref-n 24` shrinks batches above 24×24);
+    benches = B2 arena A\* (graded + frontier, all three configs).
+    | exam | best prior planner row | mix iteration 1 | paired |
+    |---|---|---|---|
+    | g24r4 graded (232) | 228/232, regret 2.08, 26 exp (it4, §16) | 226/232, 2.04, 33 exp | −2 solves (n.s.) |
+    | g24r4 frontier (218) | **158** (it3) / 153 (it4/5 seed) | **170**, 20.06 mv, 288 exp | vs it4: +30/−13, **p=0.002** |
+    | g32r4 graded (175) | 170/175, 2.36 (it3 transfer, §16) | **173/175**, 2.61, 26 exp | +3 |
+    | g32r4 frontier (275) | 208 (it3 transfer) / 194 (it0) | **235**, 22.80 mv, 226 exp | vs it3: +38/−11, **p=2e-5**; moves 38/36 |
+    | g24r8 graded (161) | 159/161, 2.68, 2.2 exp (it3 transfer) | 159/161, 2.35, 2.5 exp | regret −0.33 |
+    | g24r8 frontier (289) | 171 (base-vocab size-free §9); recorded B2 arm 161 | **269**, 17.47 mv, 132 exp | vs recorded: +108/−0, **p≈0**; moves 53/38 (n.s.) |
+    Reading. (a) The 24-only loop's frontier plateau (§19d) was a data-
+    distribution limit, not a language or capacity limit: 30 boards per
+    target size in ONE iteration bought +12/+27/+98 frontier solves over the
+    best 24-only rows. (b) The g24r8 frontier jump (171→269 of 289, 93%
+    solved) says the B2 vocabulary's park/by-reference machinery is most
+    valuable in the crowded 8-robot mode — where the supervised B2 arm,
+    trained on exact labels that ignore playability, got 161 — and that
+    nobody had ever trained a B2 ranking on 8-robot boards before this job.
+    (c) Specialization cost is gone: the same single pair now holds all six
+    exams (cf. §17c's drift warning — the far-size audit of these nets after
+    iteration 3 will check the base-vocab cost). (d) Regret on the graded
+    32×32 exam drifts up (1.90 it0 → 2.61) as solves rise — same moves-vs-
+    solves trade as §19b; MCTS rows for the final nets (bench_pair) will say
+    whether the moves gap closes with search. Iterations 2–3 are chained;
+    gates vs this iteration will use `gate_<cfg>_<t>_vs_prev.json`.
+    Sources: `results/selfplay/mix_b2mix_iter1/` (benches, generation
+    manifests, nets.txt), `runs/spr/spr-mix-it1-4704314.out`, `spr.gate
+    compare` pairs above.
