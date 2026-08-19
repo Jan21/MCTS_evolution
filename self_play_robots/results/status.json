@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-19T09:04:42",
+ "updated": "2026-08-19T09:08:28",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -149,6 +149,21 @@
     "results/ceiling/g24r8_base.json"
    ],
    "note": "mixed size-free pair zero-shot: g32r4 156/175 (=ceiling) regret 1.84/1.63 vs supervised 147, 2.37; g24r8 147/161 vs 144; frontier +9/+14/+17 solves. FINDINGS §9."
+  },
+  "forward_loop_g24r4": {
+   "title": "primitive-move arm self-play loop at g24r4 (F-M3/F-M4)",
+   "status": "queued: 2 iterations (jobs 4703446 -> 4703467, qgpu, <=2 nh)",
+   "sources": [
+    "results/fwd_selfplay/g24r4_iter1/",
+    "results/fwd_selfplay/g24r4_iter2/"
+   ],
+   "jobs": [
+    4703311,
+    4703367,
+    4703446,
+    4703467
+   ],
+   "note": "jobs/fwd_iter.slurm generalized to CFG (commit 962ffb3); smoke: eval-distribution instances 106 s/attempt 67% solved, walk instances too shallow -> RAND_MIX=0.5; batch 64 (128/256 OOM at 24x24)"
   }
  },
  "decisions": {
