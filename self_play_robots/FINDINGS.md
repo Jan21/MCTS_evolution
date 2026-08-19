@@ -720,3 +720,57 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     noise. The seed-37 pair is banked as an alternative iteration-0 for
     future loop-seed controls. Sources: `results/m1/mixed_value_warm_s37_*.json`
     (+ `.gate.json`), `runs/spr/spr-m1-{mixed,bench}-s37-470431{8,9}.out`.
+
+19. **M4 verdict after five B2 self-play iterations at 24×24: the gate's two
+    clauses are met — the final nets beat the frozen supervised backward
+    baseline beyond seed noise on both exams, and the bench trend is
+    monotone-ish on the frontier A\* metric — but the loop saturates after
+    iteration 3, and what it learned is search efficiency (the cheap
+    first-solution planner catches the 1200-expansion MCTS), not lower
+    realized moves (2026-08-19, iteration 5 = job 4706184 ≈ 0.6 nh; the
+    series = jobs 4685442, 4691251, 4689627, 4689628, 4698741, 4706184).**
+    Full trend (`spr.trend --config g24r4 --tag _b2`; iteration 0 = the M1
+    pair under B2 flags; frontier MCTS at iteration 0 from §17d):
+    | iter | certified / instances → records | gauge | A\* graded (232) | MCTS graded | A\* frontier (218) | MCTS frontier |
+    |---|---|---|---|---|---|---|
+    | 0 | — | — | 223, 9.51 mv, regret 1.95, 53 exp | 228, 9.19, 1.55, 490 | 133, 19.43 mv, 515 exp | 171, 19.50, 1038 |
+    | 1 | 598/681 → 5,822 | 0.51 | 226, 9.61, 1.99, 43 | 229, 9.22, 1.56, 450 | 144, 19.34, 467 | 169, 19.71, 1019 |
+    | 2 | 588/655 → 5,694 | 0.50 | 227, 9.83, 2.21, 35 | 229, 9.23, 1.58, 468 | 139, 18.80, 476 | 172, 19.72, 1012 |
+    | 3 | 582/660 → 6,301 | 0.57 | 225, 9.48, 1.87, 36 | 228, 9.14, **1.50**, 520 | **158**, 19.99, 402 | 171, 19.44, 992 |
+    | 4 | 600/675 → 6,069 | 0.45 | **228**, 9.72, 2.08, **26** | 228, 9.10, **1.46**, 500 | 153, 19.84, 405 | **178**, 20.34, 975 |
+    | 5 | 609/676 → 6,661 | 0.46 | 227, 9.85, 2.23, 30 | 228, 9.18, 1.55, 543 | 153, 19.79, 398 | 174, 19.79, 1017 |
+    Paired tests, iteration 5 vs 0 (spr.gate): frontier A\* +27/−7 solves,
+    McNemar **p=8e-4** (moves on shared solves 22/27, n.s.); graded A\* 227 vs
+    223 (+6/−2, p=0.29; moves 16/17); graded MCTS 228 = 228 (moves 13/18,
+    n.s.); frontier MCTS 174 vs 171 (p=0.66). Iteration 5 vs 4: nothing moves
+    (graded A\* −1, frontier =, p=1). Versus the frozen supervised B2 planner
+    (§15): graded 227 vs 199, frontier 153 vs 125 — both p<1e-4, as at
+    iteration 3. M1 gate vs the base-vocab per-size pair: +9.5 solve / +15.6
+    optimality pts (job log).
+    Verdict. (a) **Gate clauses**: "final net beats the supervised backward
+    baseline beyond seed noise" — yes, by a wide margin (and the seed bar is
+    now known to be generous, §18); "monotone-ish bench improvement" — yes for
+    frontier A\* (133→144→139→158→153→153, two plateaus), flat for everything
+    else. **M4 PASS, with the caveat that the climb is three iterations long.**
+    (b) **What the loop learned** is a ranking under which the first-solution
+    A\* reaches, in 26–30 expansions, what the iteration-0 nets needed
+    500-expansion MCTS for (graded: A\* 223→227–228 = MCTS 228; frontier: A\*
+    133→153–158 toward MCTS's 171–178). Search was distilled into the nets —
+    the AlphaZero mechanism — but the 1200-expansion reach of the B2
+    language on this frontier (≈171–178 solves, the MCTS row) did not move,
+    and realized moves on shared solves never improved beyond noise in any
+    pairing (the A\* regret even drifts 1.95→2.23 as the planner solves harder
+    instances first-shot; MCTS regret 1.55→1.46→1.55). On the project's
+    headline metric, moves-to-terminal, the 24×24 B2 loop is flat. (c) The
+    fidelity gauge (0.51→0.46) stays uninformative in B2 (§14b). (d) Why it
+    saturates: the graded exam sits at its B2 solve ceiling (228 of ≥229,
+    §3), the frontier's remaining ≈40 instances are beyond the language's
+    1200-expansion reach, and a 60-board iteration adds ≈6k records on the
+    same 24×24 distribution — consistent with the 24-only nets' far-size
+    audit drifting down (§17c). The lever that moved the frontier again is
+    the **mixed-size curriculum** (first iteration, §20): g24r4 frontier 170
+    and g32r4 frontier 235 — which is where the loop continues. Cost of the
+    5-iteration series: ≈2.9 nh incl. reruns (0.5–0.75 nh per iteration; the
+    frontier MCTS bench is 40% of it).
+    Sources: `results/selfplay/g24r4_b2_iter{0..5}/`, `spr.trend`, `spr.gate
+    compare`, `runs/spr/spr-b2-it5-4706184.out`.
