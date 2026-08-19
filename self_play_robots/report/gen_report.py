@@ -36,7 +36,7 @@ _CACHE: dict = {}
 MILESTONE_KEYS = ["M0", "M1", "M2", "M3", "M4", "M5", "M6"]
 # where a status-strip chip jumps to (milestone/side-study key -> anchor)
 STRIP_LINKS = {"M0": "#m0", "M1": "#res-m1", "M2": "#res-m2", "M3": "#res-loops",
-               "M4": "#res-loops", "M5": "#res-transfer", "M6": "#milestones",
+               "M4": "#res-loops", "M5": "#res-mix", "M6": "#milestones",
                "ceiling": "#ceiling", "forward_mcts": "#res-fwd",
                "transfer": "#res-transfer"}
 
@@ -2005,6 +2005,525 @@ def sub_transfer() -> str:
     return "\n".join(out)
 
 
+# ---- M5: the mixed-size B2 curriculum --------------------------------------
+
+MIX_CFGS = ["g24r4", "g32r4", "g24r8"]
+MIX_CFG_HUMAN = {"g24r4": "24&times;24, 4 robots &mdash; the loop's home size",
+                 "g32r4": "32&times;32, 4 robots",
+                 "g24r8": "24&times;24, 8 robots &mdash; hard mode"}
+# Iteration-0 rows = the nets the curriculum was seeded from (the g24r4 B2
+# loop's iteration-4 pair), benched before any mixed-size self-play. Only
+# g24r4 has that pair's own benches; at g32r4/g24r8 the newest transfer
+# benches on disk are the iteration-3 nets', so those stand in and are
+# labelled as a different (earlier) net pair. (label, graded, frontier)
+MIX_SEED = {
+    "g24r4": ("iteration-4 nets of the g24r4 B2 loop &mdash; the seed of this "
+              "curriculum, on its own exam",
+              RESULTS / "selfplay" / "g24r4_b2_iter4" / "bench_g24r4_astar.json",
+              RESULTS / "selfplay" / "g24r4_b2_iter4" / "bench_g24r4_frontier_astar.json"),
+    "g32r4": ("<strong>iteration-3</strong> nets, zero-shot &mdash; no iteration-4 "
+              "transfer bench exists at this size",
+              RESULTS / "selfplay" / "g24r4_b2_iter3" / "transfer" / "b2it3_g32r4_bench_solved_astar.json",
+              RESULTS / "selfplay" / "g24r4_b2_iter3" / "transfer" / "b2it3_g32r4_bench_unsolved_astar.json"),
+    "g24r8": ("<strong>iteration-3</strong> nets, zero-shot &mdash; no iteration-4 "
+              "transfer bench exists at this size",
+              RESULTS / "selfplay" / "g24r4_b2_iter3" / "transfer" / "b2it3_g24r8_bench_solved_astar.json",
+              None),
+}
+MIX_HEADERS = ["iteration", "instances", "certified", "records",
+               "graded A* solved / rate", "moves", "regret", "% optimal",
+               "exp", "s/inst",
+               "frontier A* solved / rate", "moves", "exp",
+               "paired vs previous mixed iteration", "sources"]
+
+
+def mix_dirs():
+    """[(k, dir)] for results/selfplay/mix_b2mix_iter<k>/ (the M5 curriculum)."""
+    root = RESULTS / "selfplay"
+    out = []
+    if not root.is_dir():
+        return out
+    for p in sorted(root.iterdir()):
+        m = _re.match(r"^mix_b2mix_iter(\d+)$", p.name)
+        if p.is_dir() and m:
+            out.append((int(m.group(1)), p))
+    out.sort()
+    return out
+
+
+def front_cells(d, a):
+    """solved/n · rate, mean moves, mean expansions — a frontier set has no d*."""
+    if not a:
+        return ['<td class="pend" colspan="3">pending</td>']
+    n, solved = a.get("n"), a.get("solved")
+    sr = (f"{solved}/{n} &middot; {100 * a['solve_rate']:.1f}%"
+          if None not in (n, solved) and a.get("solve_rate") is not None else None)
+    return [td_txt(sr) if sr else '<td class="pend">pending</td>',
+            td(a.get("mean_moves"), ".2f", cls="hlnum"),
+            td(a.get("mean_expansions"), ".1f")]
+
+
+def gate_txt(pr, label):
+    """One paired-gate line (spr.gate compare payload), or None."""
+    if not ok(pr):
+        return None
+    return (f"{esc(label)}: solves +{pr.get('a_only')}/&minus;{pr.get('b_only')} "
+            f"(McNemar p={_pf(pr.get('mcnemar_p'))}); moves "
+            f"{pr.get('moves_wins_a')}/{pr.get('moves_wins_b')} "
+            f"(sign p={_pf(pr.get('sign_p_moves'))}) on "
+            f"{pr.get('both_solved')} both-solved")
+
+
+def nets_txt(p):
+    """{'policy': ..., 'value': ...} of a nets.txt, or {}."""
+    p = Path(p)
+    if not p.is_file():
+        STATS["missing"].append(disp(p))
+        return {}
+    try:
+        txt = p.read_text()
+    except Exception as e:                      # noqa: BLE001
+        STATS["error"].append(f"{disp(p)}: {e}")
+        return {}
+    STATS["read"].append(disp(p))
+    out = {}
+    for line in txt.splitlines():
+        if "=" in line:
+            k, v = line.split("=", 1)
+            out[k.strip()] = v.strip()
+    return out
+
+
+def short_ckpt(p, keep=3) -> str:
+    parts = Path(str(p)).parts
+    return "/".join(parts[-keep:]) if len(parts) > keep else str(p)
+
+
+def sub_mix() -> str:
+    out = ['<h3 id="res-mix">M5 &mdash; the mixed-size B2 curriculum '
+           '(24&times;24 + 32&times;32 + 24&times;24&times;8 robots)</h3>',
+           "<p class='note'>One size-free pair, trained every iteration on the "
+           "union of three per-config replay buffers and benched on all three "
+           "pinned exams (<code>jobs/selfplay_mix_iter.slurm</code>, DESIGN.md "
+           "&sect;4c: generation per config from board ids 9000, "
+           "<code>--batch-ref-n 24</code>, arena A* under the B2 convention, "
+           "gate paired against the previous mixed iteration). The curriculum "
+           "is seeded from the g24r4 B2 loop's iteration-4 pair, so its "
+           "iteration-0 row is that pair's own bench &mdash; the question the "
+           "table answers is whether mixing sizes buys anything the 24&times;24 "
+           "loop did not already have (FINDINGS &sect;16b: the 24&times;24-only "
+           "loop pays a small regret price at 32&times;32 and 8 robots). "
+           "MCTS rows are not run in-loop (frontier MCTS costs 1&ndash;2 h per "
+           "exam); A* is the in-loop instrument here.</p>"]
+    dirs = mix_dirs()
+    if not dirs:
+        out.append(pend_note("no results/selfplay/mix_b2mix_iter&lt;k&gt;/ "
+                             "directory yet &mdash; the reference rows below "
+                             "are the bar the curriculum has to clear"))
+    for cfg in MIX_CFGS:
+        out.append(f"<h4>{esc(cfg)} &mdash; {MIX_CFG_HUMAN[cfg]}</h4>")
+        rows_ = []
+        # the frozen per-size supervised B2 opponent at this size
+        grel = f"scaling/results/{cfg}/comparison_b2.json"
+        frel = f"scaling/results/{cfg}/comparison_ungraded_b2.json"
+        gd = load_sv(grel)
+        _, gs = backward_system(gd)
+        fd = load_sv(frel)
+        _, fs = backward_system(fd)
+        rows_.append(row([
+            td_txt("recorded per-size supervised B2 pair"
+                   "<br><span class='note'>the frozen opponent (PROBLEM.md "
+                   "&sect;7), same exams, same budget</span>"),
+            DASH, DASH, DASH,
+            *agg_cells(gd, (gs or {}).get("aggregate") or {}),
+            *front_cells(fd, (fs or {}).get("aggregate") or {}),
+            DASH,
+            td_txt(src(disp(SV / grel)) + "<br>" + src(disp(SV / frel))),
+        ], "ctl"))
+        # iteration 0 = the seed nets
+        lab, gp, fp = MIX_SEED.get(cfg, (None, None, None))
+        if lab:
+            gdd, gaa = agg_of(gp) if gp else (None, {})
+            fdd, faa = agg_of(fp) if fp else (None, {})
+            srcs = [src(disp(p)) for p in (gp, fp) if p and Path(p).is_file()]
+            rows_.append(row([
+                td_txt(f"<strong>0</strong> <span class='note'>({lab})</span>"),
+                DASH, DASH, DASH,
+                *agg_cells(gdd, gaa),
+                *(front_cells(fdd, faa) if fp else [DASH, DASH, DASH]),
+                DASH,
+                td_txt(" ".join(srcs) if srcs else "&mdash;"),
+            ], "ctl"))
+        ks = [k for k, _ in dirs]
+        for k, d_ in dirs:
+            man = load(d_ / f"generation_{cfg}.manifest.json")
+            man = man if ok(man) else {}
+            gpath = d_ / f"bench_{cfg}_astar.json"
+            fpath = d_ / f"bench_{cfg}_frontier_astar.json"
+            gdd, gaa = agg_of(gpath)
+            fdd, faa = agg_of(fpath)
+            inst, sol = man.get("instances"), man.get("solved")
+            cert = (f"{sol} ({100 * sol / inst:.1f}%)"
+                    if None not in (inst, sol) and inst else None)
+            bits = []
+            if man.get("board_ids"):
+                bits.append(f"boards {esc(man['board_ids'])}")
+            s_ = man.get("search") or {}
+            if s_:
+                bits.append(f"MCTS {s_.get('expansions')} exp / stop "
+                            f"{s_.get('stop_after')}, vocab {s_.get('vocab')}")
+            if man.get("mean_expansions") is not None:
+                bits.append(f"{man['mean_expansions']:.1f} exp / "
+                            f"{man.get('mean_seconds', 0):.1f} s per instance")
+            if man.get("slurm_job_id"):
+                bits.append(f"job {esc(man['slurm_job_id'])}")
+            nets = nets_txt(d_ / "nets.txt")
+            if nets.get("policy"):
+                bits.append("nets " + esc(short_ckpt(nets["policy"], 1)) + " / "
+                            + esc(short_ckpt(nets.get("value", ""), 1)))
+            if k > 1:
+                lines = [gate_txt(load(d_ / f"gate_{cfg}_astar_vs_prev.json"), "graded A*"),
+                         gate_txt(load(d_ / f"gate_{cfg}_frontier_astar_vs_prev.json"),
+                                  "frontier A*")]
+                lines = [x for x in lines if x]
+                pv = "<br>".join(lines) if lines else None
+            else:
+                pv = ("&mdash; <span class='note'>(first mixed iteration; the "
+                      "reference rows above are its baseline)</span>")
+            srcs = [src(disp(p)) for p in
+                    (d_ / f"generation_{cfg}.manifest.json", gpath, fpath)
+                    if p.is_file()]
+            rows_.append(row([
+                td_txt(f"<strong>{k}</strong>"
+                       + (f"<br><span class='note'>{'; '.join(bits)}</span>"
+                          if bits else "")),
+                td(inst, "d") if inst is not None else '<td class="pend">pending</td>',
+                td_txt(cert) if cert else '<td class="pend">pending</td>',
+                td(man.get("records"), "d") if man.get("records") is not None
+                else '<td class="pend">pending</td>',
+                *agg_cells(gdd, gaa),
+                *front_cells(fdd, faa),
+                td_txt(pv) if pv else '<td class="pend">pending</td>',
+                td_txt(" ".join(srcs) if srcs else "&mdash;"),
+            ], "hl" if k == max(ks) else ""))
+        out.append(table(MIX_HEADERS, rows_,
+                         note=AGG_NOTE + " The frontier columns come from "
+                              "<code>bench_&lt;cfg&gt;_frontier_astar.json</code> "
+                              "(<code>bench.unsolved.jsonl</code>: no d* exists "
+                              "there, so no regret column); generation columns "
+                              "from <code>generation_&lt;cfg&gt;.manifest.json</code>; "
+                              "the paired column from "
+                              "<code>gate_&lt;cfg&gt;_{astar,frontier_astar}_vs_prev.json</code> "
+                              "(A = this iteration, B = the previous mixed "
+                              "iteration), which the job writes from iteration 2 "
+                              "on. Iteration-0 and supervised rows are read from "
+                              "the files named in the last column.",
+                         cls="wide"))
+    return "\n".join(out)
+
+
+# ---- M5: far-size zero-shot exact audits -----------------------------------
+
+AUDIT_DIR = RESULTS / "audit"
+AUDIT_CFGS = ["g32r4", "g40r4", "g48r4", "g56r4", "g64r4"]
+AUDIT_PAIR_LABEL = {
+    "b2it0_m1mixed": "M1 mixed size-free pair &mdash; loop iteration 0 "
+                     "(supervised corpora only, never self-played)",
+    "b2it4": "B2 loop iteration-4 nets &mdash; four self-play iterations at "
+             "24&times;24 in the B2 vocabulary",
+}
+# The labeler's own recorded numbers on the same corpora. Two instruments:
+# "value" = nn_labeler.audit of the production value net (directly comparable
+# to this audit's value columns); "descent" = the descent-audit's argmin
+# agreement (a different instrument — see the note under the table).
+LABELER_REF = {
+    "g32r4": ("nn_labeler/results/audit_prod_v1_s11_full.json", "value", "g32r4"),
+    "g40r4": ("nn_labeler/results/audit_coarse_g40r4.json", "value", "g40r4"),
+    "g48r4": ("nn_labeler/results/audit_coarse_g48r4.json", "value", "g48r4"),
+    "g56r4": ("nn_labeler/results/coarsegate_g56r4.json", "descent", None),
+    "g64r4": ("nn_labeler/results/coarsegate_g64r4.json", "descent", None),
+}
+AUDIT_METRICS = [
+    ("value", "top1_optimal", "value top1-optimal", "pct"),
+    ("value", "regret", "value regret (moves)", "num"),
+    ("policy", "top1_optimal", "policy top1-optimal", "pct"),
+    ("policy", "regret@1", "policy regret@1 (moves)", "num"),
+    ("policy", "recall@5", "policy recall@5", "pct"),
+    ("pair", "top1_optimal", "pair top1-optimal", "pct"),
+    ("pair", "regret", "pair regret (moves)", "num"),
+]
+AUDIT_HEADERS = ["config", "groups", "value top1", "value regret",
+                 "policy top1", "policy r@1", "policy r@5", "policy recall@5",
+                 "pair top1", "pair regret",
+                 "pair beats value (w/l)", "pair beats policy (w/l)"]
+
+
+def labeler_ref(cfg):
+    """The labeler's recorded row for one config, or None."""
+    spec = LABELER_REF.get(cfg)
+    if not spec:
+        return None
+    rel, kind, key = spec
+    d = load_sv(rel)
+    if not ok(d):
+        return None
+    if kind == "value":
+        c = ((d.get("configs") or {}).get(key)) or {}
+        if not c:
+            return None
+        return {"kind": "value", "top1": c.get("top1_optimal"),
+                "regret": c.get("regret"), "n": c.get("n_groups"),
+                "file": disp(SV / rel),
+                "what": "labeler value net <code>prod_v1_s11</code> on the same "
+                        "decision corpus, argmin vs the exact optimum "
+                        "(<code>nn_labeler.audit</code>) &mdash; directly "
+                        "comparable to the value columns"}
+    dec = d.get("decisions") or {}
+    if dec.get("argmin_agreement") is None:
+        return None
+    return {"kind": "descent", "top1": dec.get("argmin_agreement"),
+            "regret": None, "n": dec.get("n_groups_scored"),
+            "jaccard": dec.get("optimal_set_jaccard"), "file": disp(SV / rel),
+            "what": "<strong>a different instrument</strong>: the descent audit's "
+                    "<code>decisions.argmin_agreement</code> &mdash; how often the "
+                    "labeler's greedy descent picks the exact engine's argmin over "
+                    "the <em>matched</em> candidates of its own corpus, not a "
+                    "value-net top-1 over this corpus' groups"}
+
+
+def _audit_key(tag):
+    m = _re.match(r"^b2it(\d+)", tag)
+    if m:
+        return (0, int(m.group(1)), tag)
+    m = _re.match(r"^mix_?it(\d+)", tag)
+    if m:
+        return (1, int(m.group(1)), tag)
+    return (2, 0, tag)
+
+
+def audit_reports():
+    """[(tag, report, path)] of results/audit/*.json, in iteration order."""
+    out = []
+    if not AUDIT_DIR.is_dir():
+        return out
+    for f in sorted(AUDIT_DIR.glob("*.json")):
+        d = load(f)
+        if not ok(d) or not isinstance(d.get("configs"), dict):
+            continue
+        out.append((f.stem, d, f))
+    out.sort(key=lambda t: _audit_key(t[0]))
+    return out
+
+
+def _audit_metric(cfg_block, block, key):
+    b = (cfg_block or {}).get(block) or {}
+    return b.get(key)
+
+
+def audit_rows(rep):
+    """One row per config of one audit report, each followed by the labeler row."""
+    rows_ = []
+    cfgs = [c for c in AUDIT_CFGS if c in (rep.get("configs") or {})]
+    for c in (rep.get("configs") or {}):
+        if c not in cfgs:
+            cfgs.append(c)
+    for cfg in (cfgs or AUDIT_CFGS):
+        c = (rep.get("configs") or {}).get(cfg)
+        if not c:
+            rows_.append(row([td_txt(f"<strong>{esc(cfg)}</strong>"),
+                              f'<td class="pend" colspan="11">pending &mdash; '
+                              f'not in this report</td>']))
+        elif not c.get("n_groups"):
+            rows_.append(row([td_txt(f"<strong>{esc(cfg)}</strong>"),
+                              td(c.get("n_groups"), "d"),
+                              '<td class="pend" colspan="10">no decision groups '
+                              'in this split of the corpus</td>']))
+        else:
+            v, p, pr = c.get("value") or {}, c.get("policy") or {}, c.get("pair") or {}
+            pd_ = c.get("paired") or {}
+            npol = c.get("n_policy_groups")
+            grp = f"{c.get('n_groups')}"
+            if npol is not None and npol != c.get("n_groups"):
+                grp += f" <span class='note'>({npol} scored for policy)</span>"
+            pv = pd_.get("pair_vs_value") or []
+            pp = pd_.get("pair_vs_policy") or []
+            rows_.append(row([
+                td_txt(f"<strong>{esc(cfg)}</strong>"),
+                td_txt(grp),
+                td_pct(v.get("top1_optimal")), td(v.get("regret"), ".3f"),
+                td_pct(p.get("top1_optimal")), td(p.get("regret@1"), ".3f"),
+                td(p.get("regret@5"), ".3f"), td_pct(p.get("recall@5")),
+                td_pct(pr.get("top1_optimal")),
+                td(pr.get("regret"), ".3f", cls="hlnum"),
+                td_txt(f"{pv[0]}/{pv[1]}" if len(pv) == 2 else "&mdash;"),
+                td_txt(f"{pp[0]}/{pp[1]}" if len(pp) == 2 else "&mdash;"),
+            ]))
+        lr = labeler_ref(cfg)
+        if lr:
+            rows_.append(row([
+                td_txt("&#8627; labeler reference <span class='note'>"
+                       + ("(same instrument)" if lr["kind"] == "value"
+                          else "(<strong>different instrument</strong>)")
+                       + "<br>" + src(lr["file"]) + "</span>"),
+                td_txt(esc(lr["n"]) if lr["n"] is not None else "&mdash;"),
+                td_pct(lr["top1"]),
+                td(lr["regret"], ".3f") if lr["regret"] is not None else DASH,
+                DASH, DASH, DASH, DASH, DASH, DASH, DASH, DASH,
+            ], "ctl"))
+    return rows_
+
+
+def audit_depth_table(rep) -> str:
+    rows_ = []
+    for cfg, c in (rep.get("configs") or {}).items():
+        for d_, b in sorted((c.get("by_depth") or {}).items(),
+                            key=lambda kv: int(kv[0])):
+            rows_.append(row([td_txt(esc(cfg)), td_txt(esc(d_)),
+                              td(b.get("n"), "d"),
+                              td_pct(b.get("value_top1")),
+                              td_pct(b.get("pair_top1"))]))
+    if not rows_:
+        return ""
+    return ("<details><summary>per-decision-depth breakdown "
+            "(<code>by_depth</code>)</summary>"
+            + table(["config", "depth", "groups", "value top1", "pair top1"],
+                    rows_,
+                    note="<code>by_depth[d]</code> of the same report: "
+                         "<code>n</code> groups at that decision depth, "
+                         "<code>value_top1</code> over all of them, "
+                         "<code>pair_top1</code> over the ones the policy could "
+                         "score. Depth 0 is the first decision from the goal — "
+                         "the hardest one and the one the labeler's fidelity "
+                         "curve also reports.")
+            + "</details>")
+
+
+def sub_audit() -> str:
+    out = ['<h3 id="res-audit">M5 &mdash; far-size zero-shot exact audits '
+           '(32 &rarr; 64)</h3>',
+           "<p class='note'>PROBLEM.md &sect;8/M5 asks for &ldquo;net trained "
+           "via self-play at &le;32 benched zero-shot at 40&ndash;64 against "
+           "exact ground truth&rdquo;. No pinned exam and no d* bench exists "
+           "above 32&times;32, so the instrument is decision-level "
+           "(<code>spr.audit</code>, DESIGN.md &sect;4c): every net pair is "
+           "asked to rank the exact-labeled candidate sets of the labeler's own "
+           "fidelity corpora &mdash; the g32r4 <em>test</em> split of "
+           "<code>scaling/data/g32r4/backward.jsonl</code> and "
+           "<code>scaling/data/g&lt;n&gt;r4/backward_audit.rust.jsonl</code> at "
+           "40/48/56/64. <em>value</em> = argmin of the value estimate; "
+           "<em>policy</em> = its top-k; <em>pair</em> = the planner's actual "
+           "greedy decision (value argmin over the policy's top-5 — one arena "
+           "expansion). Regret is in moves above the group's exact optimum, so "
+           "lower is better and 0.000 means the decision was optimal.</p>"]
+    reps = audit_reports()
+    if not reps:
+        out.append(pend_note("nothing under results/audit/ yet &mdash; "
+                             "<code>jobs/audit_far.slurm</code> writes "
+                             "<code>results/audit/&lt;TAG&gt;.json</code>"))
+        return "\n".join(out)
+    for tag, rep, f in reps:
+        meta = []
+        if rep.get("split"):
+            meta.append(f"split <code>{esc(rep['split'])}</code>")
+        meta.append("by-reference helper matching "
+                    + ("on" if rep.get("byref") else "off"))
+        for k in ("policy", "value"):
+            if rep.get(k):
+                meta.append(f"{k} <code>{esc(short_ckpt(rep[k]))}</code>")
+        out.append(f'<h4>{esc(tag)} &mdash; '
+                   f'{AUDIT_PAIR_LABEL.get(tag, "net pair " + esc(tag))}</h4>')
+        out.append(f"<p class='note'>{' &middot; '.join(meta)} &middot; "
+                   f"{src(disp(f))}</p>")
+        out.append(table(AUDIT_HEADERS, audit_rows(rep),
+                         note="<em>groups</em> = <code>n_groups</code> exact "
+                              "decision groups (&ge;2 candidates) in the split, "
+                              "<code>n_policy_groups</code> in brackets when the "
+                              "policy could not be scored on all of them (a "
+                              "candidate's helper slot has no match in the "
+                              "policy's encoding); <em>value</em> = "
+                              "<code>value.top1_optimal</code> / "
+                              "<code>value.regret</code>; <em>policy</em> = "
+                              "<code>policy.top1_optimal</code>, "
+                              "<code>regret@1</code>, <code>regret@5</code>, "
+                              "<code>recall@5</code> (an optimal candidate is "
+                              "inside the top-5 &mdash; the arena's k=5 filter "
+                              "never loses the optimum); <em>pair</em> = "
+                              "<code>pair.top1_optimal</code> / "
+                              "<code>pair.regret</code>; the last two columns are "
+                              "<code>paired.pair_vs_value</code> / "
+                              "<code>paired.pair_vs_policy</code> (groups where "
+                              "the pair's regret is strictly lower / strictly "
+                              "higher than that side alone). Labeler rows: "
+                              "recorded numbers from "
+                              "<code>nn_labeler/results/</code> &mdash; at 32/40/48 "
+                              "the labeler's own value-net audit (same "
+                              "instrument as the value columns); at 56/64 no "
+                              "such audit exists, so the row shows the "
+                              "descent-audit's <code>argmin_agreement</code>, "
+                              "<strong>a different instrument</strong> (greedy "
+                              "descent vs the exact engine over matched "
+                              "candidates) &mdash; read it as a scale marker, not "
+                              "as a like-for-like row.",
+                         cls="wide"))
+        out.append(audit_depth_table(rep))
+    # cross-pair comparison
+    cfgs = []
+    for _, rep, _ in reps:
+        for c in (rep.get("configs") or {}):
+            if c not in cfgs:
+                cfgs.append(c)
+    cfgs = [c for c in AUDIT_CFGS if c in cfgs] + [c for c in cfgs if c not in AUDIT_CFGS]
+    rows_ = []
+    for cfg in cfgs:
+        lr = labeler_ref(cfg)
+        ns = " &middot; ".join(
+            f"{tag}: {((rep.get('configs') or {}).get(cfg) or {}).get('n_groups', '&mdash;')} groups"
+            for tag, rep, _ in reps)
+        rows_.append(row([f'<td class="grp" colspan="{2 + len(reps) + 1}">'
+                          f'<strong>{esc(cfg)}</strong> &middot; {ns}</td>']))
+        for block, key, label, kind in AUDIT_METRICS:
+            cells = [td_txt(label)]
+            vals = []
+            for tag, rep, _ in reps:
+                v = _audit_metric((rep.get("configs") or {}).get(cfg), block, key)
+                vals.append(v)
+                cells.append(td_pct(v) if kind == "pct" else td(v, ".3f"))
+            if len(vals) >= 2 and None not in (vals[0], vals[-1]):
+                dv = vals[-1] - vals[0]
+                better = (dv > 0) if kind == "pct" else (dv < 0)
+                arrow = "&uarr;" if dv > 0 else ("&darr;" if dv < 0 else "&rarr;")
+                txt = (f"{100 * dv:+.1f} pts" if kind == "pct" else f"{dv:+.3f}")
+                cells.append(td_txt(f"<span class='tag {'front' if not better and dv else ''}'>"
+                                    f"{arrow} {txt}</span>"))
+            else:
+                cells.append('<td class="pend">pending</td>')
+            if lr and block == "value" and (
+                    (lr["kind"] == "value" and key in ("top1_optimal", "regret"))
+                    or (lr["kind"] == "descent" and key == "top1_optimal")):
+                v = lr["top1"] if key == "top1_optimal" else lr["regret"]
+                cell = td_pct(v) if key == "top1_optimal" else td(v, ".3f")
+                if lr["kind"] == "descent" and v is not None:
+                    cell = td_txt(f"{100 * v:.1f}% &Dagger;")
+                cells.append(cell)
+            else:
+                cells.append(DASH)
+            rows_.append(row(cells))
+    out.append("<h4>The same numbers, one metric per row</h4>")
+    out.append(table(["metric", *[esc(t) for t, _, _ in reps],
+                      "last &minus; first", "labeler reference"], rows_,
+                     note="The comparison view of the tables above: every metric "
+                          "of every net pair on the same corpus, so the "
+                          "curriculum's effect at a size it never trained on is "
+                          "one row. <em>last &minus; first</em> is the newest "
+                          "pair minus the oldest (percentage points for the "
+                          "rates, moves for the regrets; an arrow is direction "
+                          "only &mdash; for regret rows down is better). "
+                          "&Dagger; = the descent-audit argmin agreement, a "
+                          "different instrument (see the note above).",
+                     cls="wide"))
+    return "\n".join(out)
+
+
 # ---- forward arm -----------------------------------------------------------
 
 def sub_forward() -> str:
@@ -2104,6 +2623,9 @@ def loop_iter_files(cfg, dir_):
         "frontier": _pick(dir_, [f"bench_{cfg}_frontier_astar.json",
                                  f"*{cfg}_bench_unsolved_astar.json",
                                  f"{cfg}_frontier_astar.json"]),
+        "frontier_mcts": _pick(dir_, [f"bench_{cfg}_frontier_mcts.json",
+                                      f"*{cfg}_bench_unsolved_mcts.json",
+                                      f"{cfg}_frontier_mcts.json"]),
         "vs_prev": dir_ / "gate_vs_prev.json",
         "vs_sup": dir_ / "gate_vs_supervised.json",
         "nets": dir_ / "nets.txt",
@@ -2135,7 +2657,9 @@ def sub_loops() -> str:
     hdr = ["iteration", "instances", "certified", "records", "gauge (argmin)",
            "A* solved", "A* moves", "A* regret", "A* exp",
            "MCTS solved", "MCTS moves", "MCTS regret", "MCTS exp",
-           "frontier A* solved", "paired vs previous iteration", "vs supervised", "sources"]
+           "frontier A* solved", "frontier A* moves", "frontier MCTS solved",
+           "frontier MCTS moves", "paired vs previous iteration", "vs supervised",
+           "sources"]
     for key, iters in sorted(loops.items()):
         cfg = key.split("_")[0]
         b2 = key.endswith("_b2")
@@ -2155,7 +2679,8 @@ def sub_loops() -> str:
                 td(aa.get("mean_regret"), ".2f"), td(aa.get("mean_expansions"), ".1f"),
                 td(ma.get("solved"), "d"), td(ma.get("mean_moves"), ".2f"),
                 td(ma.get("mean_regret"), ".2f"), td(ma.get("mean_expansions"), ".1f"),
-                td(fa.get("solved"), "d"),
+                td(fa.get("solved"), "d"), td(fa.get("mean_moves"), ".2f"),
+                DASH, DASH,
                 DASH, DASH,
                 td_txt(" ".join(src(disp(p)) for p in f0.values() if p.is_file())),
             ], "ctl"))
@@ -2169,6 +2694,7 @@ def sub_loops() -> str:
             _, aa = agg_of(F["astar"]) if F["astar"] else (None, {})
             _, ma = agg_of(F["mcts"]) if F["mcts"] else (None, {})
             _, fa = agg_of(F["frontier"]) if F["frontier"] else (None, {})
+            _, fm = agg_of(F["frontier_mcts"]) if F["frontier_mcts"] else (None, {})
             vp = load(F["vs_prev"]) if F["vs_prev"].is_file() else None
             vp = vp if ok(vp) else None
             vs = load(F["vs_sup"]) if F["vs_sup"].is_file() else None
@@ -2215,7 +2741,8 @@ def sub_loops() -> str:
             if man.get("slurm_job_id"):
                 man_bits.append(f"job {esc(man['slurm_job_id'])}")
             srcs = [src(disp(p)) for p in (F["manifest"], F["gauge"], F["astar"], F["mcts"],
-                                             F["frontier"], F["vs_prev"], F["vs_sup"])
+                                             F["frontier"], F["frontier_mcts"],
+                                             F["vs_prev"], F["vs_sup"])
                     if p and Path(p).is_file()]
             rows_.append(row([
                 td_txt(f"<strong>{k}</strong>" + (" <span class='note'>(M1 nets, zero-shot in B2)</span>" if k == 0 and b2 else "")
@@ -2228,7 +2755,8 @@ def sub_loops() -> str:
                 td(aa.get("mean_regret"), ".2f"), td(aa.get("mean_expansions"), ".1f"),
                 td(ma.get("solved"), "d"), td(ma.get("mean_moves"), ".2f"),
                 td(ma.get("mean_regret"), ".2f"), td(ma.get("mean_expansions"), ".1f"),
-                td(fa.get("solved"), "d"),
+                td(fa.get("solved"), "d"), td(fa.get("mean_moves"), ".2f"),
+                td(fm.get("solved"), "d"), td(fm.get("mean_moves"), ".2f"),
                 td_txt(pv) if pv else '<td class="pend">pending</td>',
                 td_txt(sv) if sv else (DASH if k == 0 else '<td class="pend">pending</td>'),
                 td_txt(" ".join(srcs) if srcs else "&mdash;"),
@@ -2245,10 +2773,14 @@ def sub_loops() -> str:
                               "columns = <code>aggregate</code> of the graded-exam bench "
                               "payloads (<code>bench_&lt;cfg&gt;_astar.json</code> / "
                               "<code>_mcts.json</code>, or the iteration-0 file names); "
-                              "<em>frontier A* solved</em> = the frontier bench payload "
-                              "(<code>bench_&lt;cfg&gt;_frontier_astar.json</code>, "
-                              "<code>transfer/&lt;cfg&gt;_frontier_astar.json</code> or "
-                              "<code>*_bench_unsolved_astar.json</code>); paired columns = "
+                              "<em>frontier</em> columns = the frontier bench payloads "
+                              "(<code>bench_&lt;cfg&gt;_frontier_{astar,mcts}.json</code>, "
+                              "<code>transfer/&lt;cfg&gt;_frontier_&lt;search&gt;.json</code> or "
+                              "<code>*_bench_unsolved_&lt;search&gt;.json</code>) on "
+                              "<code>bench.unsolved.jsonl</code>, which has no d* — solve "
+                              "count and mean realized moves only, and the two searches "
+                              "solve different instance subsets, so their moves are not "
+                              "comparable to each other; paired columns = "
                               "<code>gate_vs_prev.json</code> (A = this iteration, B = the "
                               "previous nets) and <code>gate_vs_supervised.json</code> "
                               "(<code>spr.gate m1</code> against the per-size supervised pair).",
@@ -2266,8 +2798,10 @@ CHART_POINTS = [
     ("B2 vocab (loop)", "B2 A* it0", RESULTS / "selfplay" / "g24r4_b2_iter0" / "m1mixed_b2_g24r4_bench_solved_astar.json"),
     ("B2 vocab (loop)", "B2 MCTS it0", RESULTS / "selfplay" / "g24r4_b2_iter0" / "m1mixed_b2_g24r4_bench_solved_mcts.json"),
 ]
-CHART_SERIES = ["supervised per-size", "size-free, base vocab", "B2 vocab (loop)"]
-CHART_CLASS = {"supervised per-size": "c1", "size-free, base vocab": "c2", "B2 vocab (loop)": "c3"}
+CHART_SERIES = ["supervised per-size", "size-free, base vocab", "B2 vocab (loop)",
+                "B2 mixed-size curriculum"]
+CHART_CLASS = {"supervised per-size": "c1", "size-free, base vocab": "c2",
+               "B2 vocab (loop)": "c3", "B2 mixed-size curriculum": "c4"}
 
 
 def chart_points():
@@ -2278,6 +2812,9 @@ def chart_points():
         for search, lab in (("astar", "A*"), ("mcts", "MCTS")):
             f = d_ / f"bench_g24r4_{search}.json"
             pts.append(("B2 vocab (loop)", f"B2 {lab} it{k}", f))
+    for k, d_ in mix_dirs():
+        pts.append(("B2 mixed-size curriculum", f"mix A* it{k}",
+                    d_ / "bench_g24r4_astar.json"))
     out = []
     for series, label, f in pts:
         d, a = agg_of(f) if Path(f).is_file() else (None, {})
@@ -2342,9 +2879,10 @@ def svg_regret_vs_solve() -> str:
                      f'text-anchor="end">{esc(label)}</text>')
         else:
             s.append(f'<text x="{X(xv) + 8:.1f}" y="{Y(yv) + dy:.1f}" class="ptl">{esc(label)}</text>')
-    # legend
-    lx, ly = L + 8, H - B - 14 - 16 * len(CHART_SERIES)
-    for j, series in enumerate(CHART_SERIES):
+    # legend (only the series that actually have a point on the plot)
+    shown = [x for x in CHART_SERIES if any(p[0] == x for p in have)]
+    lx, ly = L + 8, H - B - 14 - 16 * len(shown)
+    for j, series in enumerate(shown):
         yy = ly + 16 * j
         s.append(f'<circle cx="{lx}" cy="{yy}" r="5" class="pt {CHART_CLASS[series]}"/>')
         s.append(f'<text x="{lx + 10}" y="{yy + 4}" class="axl">{esc(series)}</text>')
@@ -2370,7 +2908,9 @@ def sub_chart() -> str:
                    "language's vertical line, and its regret is bounded below by the "
                    "horizontal one only if it solves the same instance set. Later B2 "
                    "iterations are picked up automatically from "
-                   "<code>results/selfplay/g24r4_b2_iter&lt;k&gt;/bench_g24r4_{astar,mcts}.json</code>."
+                   "<code>results/selfplay/g24r4_b2_iter&lt;k&gt;/bench_g24r4_{astar,mcts}.json</code>, "
+                   "and the M5 mixed-size curriculum's g24r4 rows from "
+                   "<code>results/selfplay/mix_b2mix_iter&lt;k&gt;/bench_g24r4_astar.json</code>."
                    "</figcaption></figure>")
     rows_ = [row([td_txt(esc(series)), td_txt(esc(label)),
                   td_pct100(xv) if xv is not None else '<td class="pend">pending</td>',
@@ -2394,8 +2934,11 @@ def sec_results() -> str:
            "<p class='note'>Jump to: <a href='#res-m1'>M1</a> &middot; "
            "<a href='#res-m2'>M2</a> &middot; <a href='#res-transfer'>transfer / headroom</a> "
            "&middot; <a href='#res-fwd'>forward arm</a> &middot; <a href='#res-loops'>loop "
-           "iterations</a> &middot; <a href='#res-chart'>regret vs solve chart</a>.</p>"]
-    for fn in (sub_m1, sub_m2, sub_transfer, sub_forward, sub_loops, sub_chart):
+           "iterations</a> &middot; <a href='#res-mix'>M5 mixed-size curriculum</a> "
+           "&middot; <a href='#res-audit'>M5 far-size audits</a> &middot; "
+           "<a href='#res-chart'>regret vs solve chart</a>.</p>"]
+    for fn in (sub_m1, sub_m2, sub_transfer, sub_forward, sub_loops, sub_mix,
+               sub_audit, sub_chart):
         try:
             out.append(fn())
         except Exception as e:          # one broken subsection must not kill the tab
@@ -2721,6 +3264,7 @@ summary { cursor: pointer; color: var(--acc); font-size: .9rem; }
 .fig .pt.c1 { fill: var(--mut); }
 .fig .pt.c2 { fill: var(--s1); }
 .fig .pt.c3 { fill: var(--s2); }
+.fig .pt.c4 { fill: var(--s3); }
 .fig .ptl { fill: var(--ink); font: 11px system-ui, sans-serif; }
 .fig .refl { stroke: var(--mut); stroke-width: 1.2; stroke-dasharray: 5 4; fill: none; }
 .fig .refl.ref2 { stroke: var(--s3); }
