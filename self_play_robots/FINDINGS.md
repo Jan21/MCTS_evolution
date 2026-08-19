@@ -647,7 +647,7 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     (specialization, cf. §16b); and the iteration-0 frontier-MCTS reference
     shows the loop's frontier gains are A\*'s, not MCTS's (2026-08-19, jobs
     4704311/4704312 [audits, 0.2 nh], 4704317 [iteration-0 frontier MCTS,
-    0.1 nh], 4707188 [labeler reference 56/64, pending]).** Instrument
+    0.1 nh], 4707188 [labeler reference 56/64, 0.05 nh]).** Instrument
     `spr.audit` (new): on the exact-labeled decision corpora (g32r4 test split
     of `scaling/data/g32r4/backward.jsonl`; 40/48/56/64 =
     `backward_audit.rust.jsonl`, the labeler's own fidelity-curve sets,
@@ -656,17 +656,22 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     and the planner's greedy decision (value argmin over the policy's top-5 =
     what one arena expansion decides). "it0" = the M1 mixed pair (§7), "it4" =
     the B2 loop's iteration-4 nets (§16); labeler = prod_v1_s11 value
-    (`nn_labeler/results/audit_prod_v1_s11_full.json`, `audit_coarse_g{40,48}r4.json`).
+    (`nn_labeler/results/audit_prod_v1_s11_full.json`, `audit_coarse_g{40,48}r4.json`,
+    and for 56/64 `results/audit/labeler_prod_v1_s11_g56g64.json`, run now with the
+    same instrument; the labeler's group counts are a few % higher because
+    `spr.audit` drops 1-candidate groups).
     | exam (exact groups) | labeler value top1 / regret | it0: value · policy top1 / r@1 / recall@5 · pair top1 / regret | it4: value · policy · pair |
     |---|---|---|---|
     | g32r4 (1292) | 0.853 / 0.56 | **0.863** / 0.48 · 0.687 / 1.33 / 0.985 · 0.852 / 0.55 | 0.837 / 0.64 · 0.671 / 1.33 / 0.974 · 0.828 / 0.66 |
     | g40r4 (2100) | 0.852 / 0.59 | **0.863** / 0.52 · 0.691 / 1.36 / 0.982 · 0.851 / 0.55 | 0.847 / 0.58 · 0.665 / 1.57 / 0.975 · 0.830 / 0.62 |
     | g48r4 (2082) | 0.842 / 0.63 | **0.854** / 0.53 · 0.677 / 1.33 / 0.988 · 0.848 / 0.56 | 0.846 / 0.62 · 0.643 / 1.57 / 0.980 · 0.836 / 0.68 |
-    | g56r4 (2084) | (job 4707188) | 0.842 / 0.62 · 0.658 / 1.49 / 0.982 · 0.831 / 0.65 | 0.839 / 0.64 · 0.620 / 1.71 / 0.971 · 0.820 / 0.73 |
-    | g64r4 (2049) | (job 4707188) | 0.838 / 0.57 · 0.644 / 1.60 / 0.980 · 0.829 / 0.59 | 0.837 / 0.65 · 0.616 / 1.81 / 0.973 · 0.822 / 0.71 |
-    Reading. (a) The M1 value net beats the labeler that initialized it by
-    ≈1 point at 32/40/48 (its extra 24×24 exact data helps 2–3× beyond its
-    training size) and degrades only 0.863→0.838 from 32 to 64 — the
+    | g56r4 (2084) | 0.829 / 0.71 | 0.842 / 0.62 · 0.658 / 1.49 / 0.982 · 0.831 / 0.65 | 0.839 / 0.64 · 0.620 / 1.71 / 0.971 · 0.820 / 0.73 |
+    | g64r4 (2049) | 0.814 / 0.67 | 0.838 / 0.57 · 0.644 / 1.60 / 0.980 · 0.829 / 0.59 | 0.837 / 0.65 · 0.616 / 1.81 / 0.973 · 0.822 / 0.71 |
+    Reading. (a) The M1 value net beats the labeler that initialized it at
+    every size — +1.0/+1.1/+1.2 points at 32/40/48 and +1.3/+2.4 at 56/64
+    (its extra 24×24 exact data helps 2–3× beyond its training size; even
+    the B2-loop nets are above the labeler at 56/64) — and degrades only
+    0.863→0.838 from 32 to 64 against the labeler's 0.853→0.814: the
     size-free bet (§6.2/§9) holds far past the curriculum. (b) The policy's
     top-1 is a weak oracle (0.64–0.69) but its top-5 contains an optimum in
     97–99% of decisions, so the arena's k=5 filter costs ≈0.05 regret — the
