@@ -1,11 +1,11 @@
 {
- "updated": "2026-08-19T06:26:33",
+ "updated": "2026-08-19T08:08:58",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
    "title": "arena parity",
    "status": "pass",
-   "note": "PASS: g16r4 arm bit-exact (0/450 row diffs); g24r4 arm aggregate-exact (205/232, 38.5% opt) with 34/232 float-drift rows vs the origin-machine reference (thread-count flip demonstrated); forward arm (spr.fwd) 0/450 row diffs vs comparison_forward.json. FINDINGS \u00a72.",
+   "note": "PASS: g16r4 arm bit-exact (0/450 row diffs); g24r4 arm aggregate-exact (205/232, 38.5% opt) with 34/232 float-drift rows vs the origin-machine reference (thread-count flip demonstrated); forward arm (spr.fwd) 0/450 row diffs vs comparison_forward.json. FINDINGS §2.",
    "sources": [
     "results/m0/g16r4_b1s21_b2flags.json",
     "results/m0/g24r4_exact_prefix.json",
@@ -20,7 +20,7 @@
   "M1": {
    "title": "size-free rebuild matches supervised",
    "status": "pass",
-   "note": "PASS at both sizes for all four size-free pairs; mixed pair beats the per-size supervised pair at g24r4 (215/232, regret 2.43, 54.4% opt vs 205/232, 4.20, 38.5%) and ties at g16r4; zero-shot cross-size transfer both directions; collapsed cold value = warm value (policy dominates the arena A*). FINDINGS \u00a77.",
+   "note": "PASS at both sizes for all four size-free pairs; mixed pair beats the per-size supervised pair at g24r4 (215/232, regret 2.43, 54.4% opt vs 205/232, 4.20, 38.5%) and ties at g16r4; zero-shot cross-size transfer both directions; collapsed cold value = warm value (policy dominates the arena A*). FINDINGS §7.",
    "sources": [
     "results/m1/"
    ],
@@ -50,7 +50,7 @@
     4680957,
     4680466
    ],
-   "note": "PASS both families, both sizes. Size-free MCTS: g16r4 401/450, 7.76 mv, regret 1.54, 57.4% opt; g24r4 215/232, 9.35, 1.78, 57.2% -- at the base-language ceiling (\u00a73). FINDINGS \u00a75, \u00a78."
+   "note": "PASS both families, both sizes. Size-free MCTS: g16r4 401/450, 7.76 mv, regret 1.54, 57.4% opt; g24r4 215/232, 9.35, 1.78, 57.2% -- at the base-language ceiling (§3). FINDINGS §5, §8."
   },
   "M3": {
    "title": "one self-play iteration helps",
@@ -64,26 +64,41 @@
     4689627,
     4689628
    ],
-   "note": "B2 loop g24r4: iteration 3 vs 0 frontier 158 vs 133 (p=5e-6), graded at B2 ceiling with regret 1.87/1.50 and -32% expansions; base loop flat (saturated). FINDINGS \u00a710-\u00a715."
+   "note": "B2 loop g24r4: iteration 3 vs 0 frontier 158 vs 133 (p=5e-6), graded at B2 ceiling with regret 1.87/1.50 and -32% expansions; base loop flat (saturated). FINDINGS §10-§15."
   },
   "M4": {
    "title": "the loop climbs",
-   "status": "on track (4 iterations)",
+   "status": "on track (5th iteration queued)",
    "sources": [
-    "results/selfplay/g24r4_b2_iter3/"
+    "results/selfplay/g24r4_b2_iter3/",
+    "results/selfplay/g24r4_b2_iter4/"
    ],
    "jobs": [
     4689627,
-    4689628
+    4689628,
+    4698741,
+    4703275
    ],
-   "note": "FINDINGS \u00a715-\u00a716: frontier 133->144->139->158->153; graded A* 223->228 at 53->26 exp; MCTS regret 1.55->1.46; iteration 5 running"
+   "note": "FINDINGS §15-§16: frontier A* 133->144->139->158->153, frontier MCTS 169->172->171->178; graded A* 223->228 at 53->26 exp; MCTS regret 1.55->1.46; iteration 5 = job 4703275 (qgpu_preempt); iteration-0 frontier MCTS reference = job 4703279"
   },
   "M5": {
    "title": "scale + zero-shot transfer",
-   "status": "partial: zero-shot transfer of the loop's nets shown (g32r4 frontier +14 p=0.02; g24r8 at ceiling with 2.2 exp); mixed-size self-play curriculum next",
-   "sources": [],
-   "jobs": [],
-   "note": "FINDINGS \u00a79, \u00a716"
+   "status": "running: mixed-size B2 curriculum (g24r4+g32r4+g24r8, jobs 4703276-78 chained, qgpu_preempt) + far-size exact audits at 32/40/48/56/64 (spr.audit, jobs 4703158/4703159)",
+   "sources": [
+    "results/selfplay/g24r4_b2_iter{0,3}/transfer/",
+    "results/audit/",
+    "results/selfplay/mix_b2mix_iter*/"
+   ],
+   "jobs": [
+    4698737,
+    4698743,
+    4703158,
+    4703159,
+    4703276,
+    4703277,
+    4703278
+   ],
+   "note": "FINDINGS §9, §16"
   },
   "M6": {
    "title": "beyond the oracle",
@@ -107,11 +122,11 @@
    "jobs": [
     4679720
    ],
-   "note": "base language moves-ceiling: g16r4 90.7% solve, best-plan regret +1.42 (61.8% reach d*); g24r4 93.1%, +1.72 (57.4%); B2 language +0.90/+1.17. Forward planner regret 0.07 -> subgoal space cannot approach it; subgoal loop's target = the 2.5-move gap supervised->ceiling. FINDINGS \u00a73."
+   "note": "base language moves-ceiling: g16r4 90.7% solve, best-plan regret +1.42 (61.8% reach d*); g24r4 93.1%, +1.72 (57.4%); B2 language +0.90/+1.17. Forward planner regret 0.07 -> subgoal space cannot approach it; subgoal loop's target = the 2.5-move gap supervised->ceiling. FINDINGS §3."
   },
   "forward_mcts": {
    "title": "primitive-move MCTS arm at g16r4 (owner: both action spaces)",
-   "status": "F-M0 pass; F-M2 done (MCTS \u2248 A* only at 17x expansions)",
+   "status": "F-M0 pass; F-M2 done (MCTS ≈ A* only at 17x expansions)",
    "sources": [
     "results/fwd_m0/",
     "results/fwd_m2/"
@@ -133,7 +148,7 @@
     "results/ceiling/g32r4_base.json",
     "results/ceiling/g24r8_base.json"
    ],
-   "note": "mixed size-free pair zero-shot: g32r4 156/175 (=ceiling) regret 1.84/1.63 vs supervised 147, 2.37; g24r8 147/161 vs 144; frontier +9/+14/+17 solves. FINDINGS \u00a79."
+   "note": "mixed size-free pair zero-shot: g32r4 156/175 (=ceiling) regret 1.84/1.63 vs supervised 147, 2.37; g24r8 147/161 vs 144; frontier +9/+14/+17 solves. FINDINGS §9."
   }
  },
  "decisions": {
@@ -151,5 +166,18 @@
   "spent": 10.0,
   "projected_next": 2.5,
   "note": "spent: smoke 0.02 + M0 0.09 + fwd-M0 0.02 (+ ceiling pending); next: M1 ~1.5-2, M2 ~1"
+ },
+ "controls": {
+  "m1_second_seed": {
+   "title": "M1 mixed size-free pair, seed 37 (audit-requested control)",
+   "status": "queued",
+   "jobs": [
+    4703280,
+    4703281
+   ],
+   "sources": [
+    "results/m1/mixed_*_s37_*.json"
+   ]
+  }
  }
 }
