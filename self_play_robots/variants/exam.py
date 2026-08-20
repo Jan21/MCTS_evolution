@@ -47,14 +47,14 @@ def main(argv=None):
     boards_dir = EXAM_DIR / f"boards_{cfg.name}"
     boards_dir.mkdir(parents=True, exist_ok=True)
     out = EXAM_DIR / f"{cfg.name}_unseen.jsonl"
-    if out.exists():
-        print(f"[exam] {out} exists -- pinned, not regenerating")
-        return
     ids = list(range(ID0, ID0 + a.boards))
-    for i in ids:
-        if not (boards_dir / f"env_{i}.pkl").exists():
+    for i in ids:                      # boards are deterministic (seed): always
+        if not (boards_dir / f"env_{i}.pkl").exists():   # restorable on a fresh clone
             leanboard.write_board(boards_dir, i, cfg.grid, walls=cfg.walls,
                                   robots=cfg.robots, seed=a.seed)
+    if out.exists():
+        print(f"[exam] {out} exists -- pinned, not regenerating instances")
+        return
     rows = []
     for i in ids:
         env, s0 = leanboard.from_env(i, env_dir=boards_dir)
