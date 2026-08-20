@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-19T23:06:26",
+ "updated": "2026-08-20T08:38:42",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -170,6 +170,17 @@
     4703467
    ],
    "note": "jobs/fwd_iter.slurm generalized to CFG (commit 962ffb3); smoke: eval-distribution instances 106 s/attempt 67% solved, walk instances too shallow -> RAND_MIX=0.5; batch 64 (128/256 OOM at 24x24)"
+  },
+  "variants_lab": {
+   "title": "self-play design-variants lab (owner 2026-08-20: many approaches, matched comparisons, unseen-board generalization exam)",
+   "status": "started: persistent Fable agent owns self_play_robots/variants/ (framework, docs, own FINDINGS), results/variants/, and a Variants tab in the report; research pass then first wave of 5-8 variants; cap 50 nh",
+   "sources": [
+    "variants/DESIGN.md",
+    "variants/FINDINGS.md",
+    "results/variants/"
+   ],
+   "jobs": [],
+   "note": "no exact labels in the loop (certification only; exact = diagnostic/control arms); unseen exam = fresh lean boards ids>=20000 with backward+forward supervised baselines benched on the same boards"
   }
  },
  "decisions": {
