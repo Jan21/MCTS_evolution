@@ -39,3 +39,28 @@ is duplicated there.
    report's Variants tab ("pending" until then). Verdict entries follow as
    arms complete; any WIN is replicated at a second seed before being
    claimed.
+
+3. **Wave-1 interim: unseen-bench bug found and fixed; baselines + control
+   landed (2026-08-20).** (a) BUG: the runner's unseen bench ran without
+   `--boards lean` (a text patch had silently not matched), so lean exam pkls
+   went through `GridEnv.from_env`, whose reconstructed reachability matrix
+   lacks entries for arbitrary endpoints -> KeyError in `_initial_plan`,
+   all 25 chunks rc=1 (job 4719425's unseen leg; log
+   `runs/spr/var_v00_control_unseen.46ba792d0401/chunk.000.log`). Fixed with
+   an assert-verified patch (commit in tree); bench-only fix-up jobs
+   4722745-4722751 resubmitted (runner is idempotent: gen/train/graded/
+   frontier skip). Lesson recorded: verify patch application, not just
+   patch-script exit. (b) Unseen-exam BASELINES (job 4719424,
+   `results/variants/baselines/`): frozen seed nets 175/200, 14.49 mv,
+   172 exp; supervised per-size backward pair 134/200, 14.78 mv, 30 exp.
+   The seed nets' +41-solve margin on fresh boards says the self-play line's
+   generalization edge over the supervised planner is large before any
+   variant runs; the variants' bar is 175/200. (c) CONTROL (job 4719425):
+   generation 320 instances / 289 solved / 3,359 certified records (1,900 s;
+   5 OOM-dropped + 1 timeout, within the loop's norm); graded A* 228/232
+   (regret 2.39, 33.8 exp) = the loop's ceiling level; frontier A* 160/218
+   -- one standard iteration from the mix_b2mix_iter2 nets at g24r4-only,
+   NOTE: above the 24-only B2 loop's best (158, main FINDINGS §19) --
+   the mixed-curriculum warm start itself is worth frontier solves.
+   Sources: `results/variants/{baselines,v00_control}/`, jobs
+   4719424/4719425.
