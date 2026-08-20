@@ -199,6 +199,9 @@ def main(argv=None):
     p.add_argument("--torch-seed", type=int, default=None)
     p.add_argument("--limit-records", type=int, default=None)
     p.add_argument("--num-workers", type=int, default=0)
+    p.add_argument("--variant", default=None,
+                   help="variants-lab id; applies the variant's train hook "
+                        "before corpora are loaded")
     p.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
     p.add_argument("--byref", action="store_true", help="policy: keep by-reference records")
     p.add_argument("--grad-clip", type=float, default=0.0,
@@ -230,6 +233,9 @@ def main(argv=None):
     from nn_labeler.model import SizeFreeValueNet, collate_groups
     from spr.nets import SizeFreePolicyNet, PolicyGroupDataset, collate_policy
 
+    if a.variant:
+        from variants import apply_phase
+        apply_phase(a.variant, "train")
     if a.torch_seed is not None:
         pl.seed_everything(a.torch_seed, workers=True)
     seed = a.torch_seed if a.torch_seed is not None else 0

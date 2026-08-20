@@ -45,6 +45,8 @@ class Arm:
     notes: str = ""
     driver: str = "compare"     # "compare" = eval.compare (per-size nets);
                                 # "spr" = spr.bench (size-free nets / spr searches)
+    env_dir: str | None = None  # board-dir override (unseen-board exams: fresh
+                                # lean boards outside the config's env dir)
 
 
 ARMS = {a.name: a for a in [
@@ -136,6 +138,8 @@ def bench(arm: Arm, out: Path, width=8, threads=2, chunk_lines=8,
             cp.write_text("\n".join(lines[i:i + chunk_lines]) + "\n")
         chunks.append(cp)
     env = config_env(arm.config)
+    if arm.env_dir:
+        env["RR_ENV_DIR"] = str(Path(arm.env_dir).resolve())
     env["OMP_NUM_THREADS"] = str(threads)
     if device == "cpu":
         env["CUDA_VISIBLE_DEVICES"] = ""
@@ -191,7 +195,8 @@ def bench(arm: Arm, out: Path, width=8, threads=2, chunk_lines=8,
         raise SystemExit("[arena] merge failed")
     rc = subprocess.call([sys.executable, "-m", "eval.replay_validate",
                           "--compare", str(tmp), "--env-dir",
-                          str(env_dir_of(arm.config))],
+                          str(Path(arm.env_dir).resolve() if arm.env_dir
+                              else env_dir_of(arm.config))],
                          cwd=SV, env=env,
                          stdout=open(run / "replay_validate.log", "w"),
                          stderr=subprocess.STDOUT)
@@ -287,6 +292,7 @@ def main(argv=None):
     b.add_argument("--chunk-lines", type=int, default=8)
     b.add_argument("--limit", type=int, default=None, help="smoke: first N instances")
     b.add_argument("--device", default="cpu", help="cpu (arena protocol) or cuda")
+    b.add_argument("--env-dir", default=None, help="board-dir override (unseen exams)")
     q = sub.add_parser("parity")
     q.add_argument("--arm", required=True, choices=sorted(ARMS))
     q.add_argument("--new", default=None)
@@ -304,7 +310,8 @@ def main(argv=None):
                                  "--policy --value")
             arm = Arm(a.arm, a.config, a.instances, str(Path(a.policy).resolve()),
                       str(Path(a.value).resolve()), tuple(a.flags.split()),
-                      ref=None, expansions=a.expansions, k=a.k, driver=a.driver)
+                      ref=None, expansions=a.expansions, k=a.k, driver=a.driver,
+                      env_dir=a.env_dir)
         out = Path(a.out) if a.out else RESULTS / "m0" / f"{arm.name}.json"
         bench(arm, out, width=a.width, threads=a.threads,
               chunk_lines=a.chunk_lines, limit=a.limit, device=a.device)

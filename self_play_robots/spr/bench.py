@@ -63,6 +63,8 @@ def main(argv=None):
     p.add_argument("--arch", choices=["sizefree", "persize"], default="sizefree",
                    help="net family: spr.nets size-free ckpts, or the per-size "
                         "PolicyTF/LoopedValueNet ckpts (train/*.py)")
+    p.add_argument("--variant", default=None,
+                   help="variants-lab id; applies the variant's bench hook")
     p.add_argument("--out", required=True)
     p.add_argument("--md", default="/dev/null")
     a = p.parse_args(argv)
@@ -92,6 +94,9 @@ def main(argv=None):
     byref = a.vocab == "b2"
     load_env = leanboard.from_env if a.boards == "lean" else GridEnv.from_env
 
+    if a.variant:
+        from variants import apply_phase
+        apply_phase(a.variant, "bench")
     instances, sha, meta = load_instances(a.instances)
     placeholder = bool(instances) and all(i.get("d_star") in (0, None) for i in instances)
 

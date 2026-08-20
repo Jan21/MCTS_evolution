@@ -3086,6 +3086,151 @@ def sec_glossary() -> str:
 
 # --------------------------------------------------------------- page shell ---
 
+
+# ------------------------------------------------------------- variants lab --
+
+def _variants_meta():
+    """Registry metadata via the variants package (no torch at import time)."""
+    import sys as _sys
+    sp = str(SPR)
+    if sp not in _sys.path:
+        _sys.path.insert(0, sp)
+    try:
+        import variants as V
+        return {vid: V.get(vid) for vid in V.ids()}
+    except Exception as e:
+        STATS["error"].append(f"variants registry: {type(e).__name__}: {e}")
+        return {}
+
+
+def _var_agg(payload):
+    for _name, _kind, agg, _n in systems_of(payload):
+        return agg
+    return {}
+
+
+def _var_verdict(vid, gates):
+    """(chip class, label) from the gate files vs control."""
+    if vid == "v00_control":
+        return "run", "control"
+    have = [g for g in gates.values() if ok(g)]
+    if not have:
+        return "pend", "pending"
+    win = loss = False
+    for g in have:
+        sa, sb = g.get("solved_a"), g.get("solved_b")
+        mp, sp_ = g.get("mcnemar_p"), g.get("sign_p_moves")
+        wa, wb = g.get("moves_wins_a", 0), g.get("moves_wins_b", 0)
+        if sa is not None and sb is not None and mp is not None and mp < 0.05:
+            win, loss = win or sa > sb, loss or sa < sb
+        if sp_ is not None and sp_ < 0.05 and sa is not None and sb is not None and sa >= sb:
+            win, loss = win or wa > wb, loss or wa < wb
+    if win and not loss:
+        return "good", "win"
+    if loss and not win:
+        return "bad", "loss"
+    if win and loss:
+        return "run", "mixed"
+    return "pend", "flat (n.s.)" if len(have) == 3 else "flat so far"
+
+
+def sec_variants() -> str:
+    meta = _variants_meta()
+    vd = RESULTS / "variants"
+    out = ['<section id="variants"><h2>Variants lab</h2>']
+    out.append(
+        '<p>Owner directive (2026-08-20): try <em>structurally different</em> '
+        'self-play designs under one matched protocol and compare them &mdash; '
+        'no hyper-parameter tweaking. Every arm runs ONE iteration at g24r4 in '
+        'the B2 vocabulary from the <strong>same frozen warm-start nets</strong> '
+        '(mix_b2mix_iter2), the same board-id budget and generation budget '
+        '(30 boards &times; 8 instances, 300 expansions, stop 80), the same '
+        'retrain recipe unless the variant IS a training change, and is benched '
+        'with the arena A* (1200 expansions, k=5, replay-certified) on the '
+        'pinned graded exam, the pinned frontier exam, and an <strong>unseen '
+        'exam</strong> of 200 instances on 50 fresh boards (ids 20000+, pinned '
+        'the day the lab opened, never trained on by anything). Verdicts are '
+        'paired tests (<code>spr.gate compare</code>) vs the control arm. '
+        'Full protocol: <code>variants/DESIGN.md</code>; results log: '
+        '<code>variants/FINDINGS.md</code>.</p>')
+
+    # baselines on the unseen exam
+    rows = []
+    base_specs = [
+        ("frozen seed nets (mix_b2mix_iter2, B2 anytime)", vd / "baselines" / "seed_nets_unseen.json"),
+        ("supervised per-size backward pair (base vocab, prefix-check)", vd / "baselines" / "supervised_persize_unseen.json"),
+    ]
+    for label, path in base_specs:
+        agg = _var_agg(load(path))
+        rows.append(row([td_txt(esc(label)),
+                         td(f"{agg['solved']}/{agg['n']}" if agg.get("n") else None),
+                         td(agg.get("mean_moves")),
+                         td(agg.get("mean_expansions"), ".1f"),
+                         td(agg.get("mean_seconds"), ".1f")]))
+    out.append("<h3>Unseen-exam baselines</h3>")
+    out.append(table(["arm", "solved", "mean moves (solved)", "mean expansions", "s/inst"],
+                     rows,
+                     note="The generalization bar every variant must clear: fresh boards no net "
+                          "ever saw. No exact labels exist here (frontier-style scoring: solve "
+                          "rate + paired moves). The forward MoveNet baseline needs a lean-board "
+                          "path in spr.fwd (wave 2)."))
+
+    # per-variant cards
+    exams = [("graded", "pinned graded (232)"), ("frontier", "pinned frontier (218)"),
+             ("unseen", "unseen boards (200)")]
+    for vid, v in meta.items():
+        res = vd / vid
+        gates = {t: load(res / f"gate_{t}_vs_control.json") for t, _ in exams}
+        cls, verdict = _var_verdict(vid, gates)
+        if v.status in ("parked", "stub"):
+            cls, verdict = "pend", v.status
+        out.append(f'<h3 id="var-{esc(vid)}"><code>{esc(vid)}</code> &mdash; {esc(v.title)} '
+                   f'<span class="chip {cls}">{esc(verdict)}</span> '
+                   f'<span class="chip">{esc(v.axis)}</span></h3>')
+        out.append(f'<p><strong>What this experiment means:</strong> {esc(v.hypothesis)} '
+                   f'<br><strong>Mechanism:</strong> {esc(v.mechanism)} '
+                   f'<br><strong>How it would fail:</strong> {esc(v.expected_failure)}</p>')
+        if v.status == "stub":
+            out.append('<p class="pendbox">Design stub &mdash; not implemented yet; '
+                       'see the module docstring for the sketch and blockers.</p>')
+            continue
+        if v.status == "parked":
+            out.append('<p class="pendbox">Parked (incremental knob arm; owner 2026-08-20: '
+                       'no hyper-parameter tweaking). Kept as a documented negative-space '
+                       'entry; not scheduled.</p>')
+            continue
+        man = load(res / "generation.manifest.json")
+        if ok(man):
+            out.append(f'<p class="note">Generation: {man.get("instances", "?")} instances, '
+                       f'{man.get("solved", "?")} solved, {man.get("records", "?")} certified '
+                       f'records, {man.get("seconds", 0):.0f}s '
+                       f'(job {esc(man.get("slurm_job_id"))}).</p>')
+        rows = []
+        for t, label in exams:
+            agg = _var_agg(load(res / f"bench_{t}_astar.json"))
+            ctl = _var_agg(load(vd / "v00_control" / f"bench_{t}_astar.json")) \
+                if vid != "v00_control" else {}
+            g = gates.get(t)
+            gtxt = "&mdash;"
+            if ok(g):
+                gtxt = (f"solves p={g.get('mcnemar_p'):.3g}; moves "
+                        f"{g.get('moves_wins_a', '?')}/{g.get('moves_wins_b', '?')} "
+                        f"p={g.get('sign_p_moves'):.3g}")
+            rows.append(row([
+                td_txt(esc(label)),
+                td(f"{agg['solved']}/{agg['n']}" if agg.get("n") else None),
+                td(agg.get("mean_moves")),
+                td(agg.get("mean_regret")) if t == "graded" else DASH,
+                td(agg.get("mean_expansions"), ".1f"),
+                td(f"{ctl['solved']}/{ctl['n']}" if ctl.get("n") else None)
+                if vid != "v00_control" else DASH,
+                td(ctl.get("mean_moves")) if vid != "v00_control" else DASH,
+                td_txt(gtxt)]))
+        out.append(table(["exam", "solved", "moves", "regret", "exp",
+                          "control solved", "control moves", "paired vs control"], rows))
+    out.append("</section>")
+    return "\n".join(out)
+
 PANELS = [
     ("Overview", "overview", sec_overview),
     ("The loop", "loop", sec_loop),
@@ -3093,6 +3238,7 @@ PANELS = [
     ("M0 arena parity", "m0", sec_m0),
     ("Ceiling study", "ceiling", sec_ceiling),
     ("Milestone results", "results", sec_results),
+    ("Variants lab", "variants", sec_variants),
     ("Milestones", "milestones", sec_milestones),
     ("Glossary", "glossary", sec_glossary),
 ]

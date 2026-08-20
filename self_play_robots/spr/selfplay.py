@@ -74,6 +74,9 @@ def _init_worker(cfg_name, boards_dir, policy_path, value_path, device, opts):
     _W["ev"] = Evaluator(_W["policy"], _W["value"], device, byref=(opts.get("vocab") == "b2"))
     _W["opts"] = opts
     _W["device"] = device
+    if opts.get("variant"):
+        from variants import apply_phase
+        apply_phase(opts["variant"], "selfplay", ctx=_W)   # _W: __main__ vs spr.selfplay duality
     signal.signal(signal.SIGALRM, _alarm)
 
 
@@ -288,6 +291,9 @@ def main(argv=None):
     p.add_argument("--root-noise", type=float, default=0.25)
     p.add_argument("--no-prefix-check", action="store_true")
     p.add_argument("--emit", choices=["path", "all"], default="path")
+    p.add_argument("--variant", default=None,
+                   help="variants-lab id; applies the variant's selfplay hook "
+                        "inside every worker")
     p.add_argument("--complete-siblings", action="store_true",
                    help="greedy value-descent completion + certification for "
                         "top-k siblings the tree never certified")
@@ -336,7 +342,7 @@ def main(argv=None):
                 prefix_check=(not a.no_prefix_check) and a.vocab == "base", emit=a.emit,
                 complete_siblings=a.complete_siblings, root_all=a.root_all,
                 timeout=a.timeout, min_expansions=a.min_expansions, vocab=a.vocab,
-                iter=a.iter, threads=a.threads,
+                iter=a.iter, threads=a.threads, variant=a.variant,
                 label_model=f"{Path(a.policy).name}|{Path(a.value).name}")
     tasks = [(i, a.per_board, a.seed) for i in ids]
     out = Path(a.out)
