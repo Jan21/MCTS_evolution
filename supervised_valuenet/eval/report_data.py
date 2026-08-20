@@ -147,8 +147,16 @@ RUNGS = [
                        "comparison_ungraded_b2retrained_cap20000.json",
                    "bwd_retrained_frontier_deficient":
                        "comparison_ungraded_b2retrained.json"},
+        # this rung's forward arm has since been given a fair second chance
+        # -- 9 arms, winner picked on validation alone (FINDINGS 77b) -- and
+        # the note says so, because the row below is still the control of
+        # record and a reader must not think the opponent was left untuned.
         "fwd_note": ("stability-controlled retrain (the stock recipe "
-                     "collapsed to near-random; see training fragility)"),
+                     "collapsed to near-random; see training fragility) — "
+                     "since given a fair second chance: 9 retrainings, "
+                     "3 seeds × 3 learning rates, best-by-validation; it "
+                     "beats this row but still loses the rung (“Is it "
+                     "fair?”)"),
     },
     {
         "key": "g24r4", "label": "24×24 board, 4 robots", "short": "24×24 · 4r",
@@ -704,6 +712,12 @@ def collect():
     for _rung in SEED_HEADLINE_RUNGS:
         D["seed_headline_" + _rung] = load_json(
             f"analysis/artifacts/seed_headline_{_rung}.json")
+    # the forward planner's fair second chance at 16x16 / 8 robots: 9 arms
+    # (3 seeds x 3 learning rates), one promoted by validation top-1 alone
+    # and benched with the control's protocol
+    # (analysis/forward_rescue_g16r8.py; FINDINGS 77b)
+    D["forward_rescue_g16r8"] = load_json(
+        "analysis/artifacts/forward_rescue_g16r8.json")
     # failure gallery for the hardest measured pool (analysis/failure_examples.py)
     D["failure_examples"] = load_json("analysis/artifacts/failure_examples.json")
 

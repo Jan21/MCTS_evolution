@@ -1,0 +1,6017 @@
+{
+  "protocol": {
+    "expansions": 1200,
+    "k": 5,
+    "instances_file": "scaling/data/g16r8/bench.unsolved.jsonl",
+    "instances_sha256": "9cc04a3b8b4f72186f97d1835e8c6f65cd5daeff3de14bce4834ad77f22a05f9",
+    "n_instances": 184,
+    "instances_meta": null,
+    "checkpoints": {
+      "/scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt": "2026-08-17T23:36:05"
+    },
+    "device": "cpu",
+    "d_star_placeholder": true,
+    "count_slides": false,
+    "dump_moves": true,
+    "byref": false,
+    "byref_pool": null,
+    "date": "2026-08-20T20:21:23",
+    "results_file": "scaling/results/g16r8/comparison_ungraded_forward_rescue.json",
+    "command": "merged from 46 shard runs: PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.000.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.000.json.tmp.290071 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.001.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.001.json.tmp.290072 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.002.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.002.json.tmp.290073 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.003.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.003.json.tmp.290074 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.004.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.004.json.tmp.290075 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.005.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.005.json.tmp.290076 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.006.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.006.json.tmp.290077 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.007.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.007.json.tmp.290078 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.008.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.008.json.tmp.296822 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.009.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.009.json.tmp.306145 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.010.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.010.json.tmp.313418 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.011.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.011.json.tmp.316919 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.012.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.012.json.tmp.318104 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.013.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.013.json.tmp.319271 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.014.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.014.json.tmp.321634 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.015.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.015.json.tmp.322778 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.016.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.016.json.tmp.328280 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.017.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.017.json.tmp.330591 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.018.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.018.json.tmp.339899 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.019.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.019.json.tmp.340328 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.020.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.020.json.tmp.344620 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.021.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.021.json.tmp.346981 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.022.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.022.json.tmp.349318 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.023.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.023.json.tmp.349335 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.024.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.024.json.tmp.349358 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.025.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.025.json.tmp.353997 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.026.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.026.json.tmp.362113 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.027.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.027.json.tmp.365641 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.028.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.028.json.tmp.365729 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.029.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.029.json.tmp.368088 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.030.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.030.json.tmp.372917 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.031.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.031.json.tmp.374072 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.032.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.032.json.tmp.382684 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.033.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.033.json.tmp.387307 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.034.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.034.json.tmp.390882 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.035.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.035.json.tmp.393209 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.036.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.036.json.tmp.394363 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.037.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.037.json.tmp.395559 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.038.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.038.json.tmp.401572 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.039.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.039.json.tmp.408367 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.040.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.040.json.tmp.410905 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.041.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.041.json.tmp.417302 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.042.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.042.json.tmp.418480 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.043.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.043.json.tmp.419692 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.044.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.044.json.tmp.420846 --md /dev/null | PYTHONPATH=. python -m eval.compare --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.045.jsonl --expansions 1200 --k 5 --skip-backward --forward-ckpts /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt --device cpu --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/fwdgrid/g16r8.frontier.831c68624203/chunk.045.json.tmp.421999 --md /dev/null",
+    "expansion_definition": "one popped search node whose children are generated (= 1 policy pass + 1 batched value pass over <= k children, in both systems)"
+  },
+  "systems": {
+    "backward subgoal planner": {
+      "kind": "pending"
+    },
+    "forward move planner (/scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g16r8/forward-rescue/s37-lr1e-4/lightning_logs/version_0/checkpoints/epoch=7-step=53448.ckpt)": {
+      "kind": "forward",
+      "aggregate": {
+        "n": 184,
+        "solved": 101,
+        "solve_rate": 0.5489130434782609,
+        "d_star_placeholder": true,
+        "mean_regret": null,
+        "pct_optimal": null,
+        "mean_moves": 8.811881188118813,
+        "mean_expansions": 745.3641304347826,
+        "mean_seconds": 288.59296358626085,
+        "accounting": {
+          "nn_calls": 1491.7282608695652
+        }
+      },
+      "rows": [
+        {
+          "env_id": 900,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 456.05914639201364,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 900,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 451.899409398,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 900,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 175,
+          "seconds": 67.70605452702148,
+          "moves_seq": [
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Magenta",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 351
+          }
+        },
+        {
+          "env_id": 901,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 466.76468269200996,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 903,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 498,
+          "seconds": 212.43594278302044,
+          "moves_seq": [
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Purple",
+              "down"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 997
+          }
+        },
+        {
+          "env_id": 904,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 157,
+          "seconds": 66.79423353401944,
+          "moves_seq": [
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 315
+          }
+        },
+        {
+          "env_id": 904,
+          "d_star": null,
+          "solved": true,
+          "moves": 7,
+          "regret": null,
+          "expansions": 64,
+          "seconds": 26.999167911009863,
+          "moves_seq": [
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 129
+          }
+        },
+        {
+          "env_id": 905,
+          "d_star": null,
+          "solved": true,
+          "moves": 7,
+          "regret": null,
+          "expansions": 22,
+          "seconds": 9.568760494992603,
+          "moves_seq": [
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 45
+          }
+        },
+        {
+          "env_id": 906,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 471.8539922719938,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 906,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 217,
+          "seconds": 85.76648636898608,
+          "moves_seq": [
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 435
+          }
+        },
+        {
+          "env_id": 907,
+          "d_star": null,
+          "solved": true,
+          "moves": 7,
+          "regret": null,
+          "expansions": 39,
+          "seconds": 15.765277946018614,
+          "moves_seq": [
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Purple",
+              "down"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Purple",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 79
+          }
+        },
+        {
+          "env_id": 907,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 466.29699580799206,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 907,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 531.510670890013,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 908,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 480.59410063401447,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 910,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 254,
+          "seconds": 104.49661495001055,
+          "moves_seq": [
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Purple",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Purple",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 509
+          }
+        },
+        {
+          "env_id": 910,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 400,
+          "seconds": 164.88943137900787,
+          "moves_seq": [
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 801
+          }
+        },
+        {
+          "env_id": 912,
+          "d_star": null,
+          "solved": true,
+          "moves": 7,
+          "regret": null,
+          "expansions": 116,
+          "seconds": 45.75191005499801,
+          "moves_seq": [
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 233
+          }
+        },
+        {
+          "env_id": 913,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 458.8213020169933,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 913,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 111,
+          "seconds": 42.76760631799698,
+          "moves_seq": [
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 223
+          }
+        },
+        {
+          "env_id": 914,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 621,
+          "seconds": 238.62212149699917,
+          "moves_seq": [
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Cyan",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1243
+          }
+        },
+        {
+          "env_id": 914,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 463.4091807559889,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 916,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 452.94101329598925,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 917,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 462.5266601649928,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 918,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 481.5605175590026,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 919,
+          "d_star": null,
+          "solved": true,
+          "moves": 7,
+          "regret": null,
+          "expansions": 205,
+          "seconds": 83.54841209799633,
+          "moves_seq": [
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Orange",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 411
+          }
+        },
+        {
+          "env_id": 922,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 486.4684655229794,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 926,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 469.8003125479736,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 927,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 452.41522582399193,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 927,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 434.2654780310113,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 927,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 853,
+          "seconds": 307.4171814750007,
+          "moves_seq": [
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Purple",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1707
+          }
+        },
+        {
+          "env_id": 929,
+          "d_star": null,
+          "solved": true,
+          "moves": 7,
+          "regret": null,
+          "expansions": 96,
+          "seconds": 34.743876294989605,
+          "moves_seq": [
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Magenta",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 193
+          }
+        },
+        {
+          "env_id": 929,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 433.7874443199835,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 930,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 66,
+          "seconds": 25.781920475012157,
+          "moves_seq": [
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Purple",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 133
+          }
+        },
+        {
+          "env_id": 931,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 122,
+          "seconds": 47.48847254700377,
+          "moves_seq": [
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Purple",
+              "down"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 245
+          }
+        },
+        {
+          "env_id": 931,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 466.97024992501247,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 934,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 461.6830168130109,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 935,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 289,
+          "seconds": 107.34902447098284,
+          "moves_seq": [
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Purple",
+              "down"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 579
+          }
+        },
+        {
+          "env_id": 936,
+          "d_star": null,
+          "solved": true,
+          "moves": 7,
+          "regret": null,
+          "expansions": 294,
+          "seconds": 108.4672223200032,
+          "moves_seq": [
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 589
+          }
+        },
+        {
+          "env_id": 937,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 440.29883948198403,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 939,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 902,
+          "seconds": 323.38129770499654,
+          "moves_seq": [
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1805
+          }
+        },
+        {
+          "env_id": 939,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 672,
+          "seconds": 265.5939286770008,
+          "moves_seq": [
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Purple",
+              "down"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Cyan",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1345
+          }
+        },
+        {
+          "env_id": 940,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 478.3464882520202,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 941,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 485.8700803979882,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 941,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 127,
+          "seconds": 51.919369903975166,
+          "moves_seq": [
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Orange",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 255
+          }
+        },
+        {
+          "env_id": 941,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 596,
+          "seconds": 264.87486862699734,
+          "moves_seq": [
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Blue",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1193
+          }
+        },
+        {
+          "env_id": 942,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 1136,
+          "seconds": 500.316406027996,
+          "moves_seq": [
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 2273
+          }
+        },
+        {
+          "env_id": 942,
+          "d_star": null,
+          "solved": true,
+          "moves": 11,
+          "regret": null,
+          "expansions": 761,
+          "seconds": 328.6019304409856,
+          "moves_seq": [
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Cyan",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1523
+          }
+        },
+        {
+          "env_id": 943,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 529.1193687359919,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 943,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 545.6078800859977,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 945,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 557.1555949089816,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 949,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 81,
+          "seconds": 36.47607657802291,
+          "moves_seq": [
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 163
+          }
+        },
+        {
+          "env_id": 949,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 362,
+          "seconds": 163.88119220998487,
+          "moves_seq": [
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Cyan",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 725
+          }
+        },
+        {
+          "env_id": 950,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 473.7257644709898,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 951,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 460.88865684199845,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 952,
+          "d_star": null,
+          "solved": true,
+          "moves": 7,
+          "regret": null,
+          "expansions": 361,
+          "seconds": 136.4692513399932,
+          "moves_seq": [
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Cyan",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 723
+          }
+        },
+        {
+          "env_id": 952,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 448.14826834300766,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 953,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 465.9723385570105,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 954,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 466.1277244260127,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 954,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 479,
+          "seconds": 187.65197056200122,
+          "moves_seq": [
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 959
+          }
+        },
+        {
+          "env_id": 955,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 483.45703191298526,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 955,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 428.07007294901996,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 956,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 426.2429365850112,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 956,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 430.55116942399764,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 957,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 142,
+          "seconds": 50.02552219500649,
+          "moves_seq": [
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 285
+          }
+        },
+        {
+          "env_id": 957,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 68,
+          "seconds": 27.43554497201694,
+          "moves_seq": [
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Orange",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 137
+          }
+        },
+        {
+          "env_id": 958,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 485.51584223500686,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 959,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 157,
+          "seconds": 63.49129567301134,
+          "moves_seq": [
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 315
+          }
+        },
+        {
+          "env_id": 960,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 44,
+          "seconds": 17.6974518619827,
+          "moves_seq": [
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Magenta",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 89
+          }
+        },
+        {
+          "env_id": 960,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 490.92993572502746,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 961,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 132,
+          "seconds": 52.831263211002806,
+          "moves_seq": [
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Orange",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 265
+          }
+        },
+        {
+          "env_id": 961,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 622,
+          "seconds": 250.1020065759949,
+          "moves_seq": [
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Magenta",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1245
+          }
+        },
+        {
+          "env_id": 962,
+          "d_star": null,
+          "solved": true,
+          "moves": 7,
+          "regret": null,
+          "expansions": 158,
+          "seconds": 62.82284687799984,
+          "moves_seq": [
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Magenta",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 317
+          }
+        },
+        {
+          "env_id": 962,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 473.0580324130133,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 963,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 475.849552788015,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 964,
+          "d_star": null,
+          "solved": true,
+          "moves": 11,
+          "regret": null,
+          "expansions": 790,
+          "seconds": 318.6318663529819,
+          "moves_seq": [
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Magenta",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1581
+          }
+        },
+        {
+          "env_id": 964,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 97,
+          "seconds": 39.537662824004656,
+          "moves_seq": [
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Orange",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 195
+          }
+        },
+        {
+          "env_id": 965,
+          "d_star": null,
+          "solved": true,
+          "moves": 7,
+          "regret": null,
+          "expansions": 57,
+          "seconds": 20.662152665987378,
+          "moves_seq": [
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 115
+          }
+        },
+        {
+          "env_id": 965,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 420.7033113609941,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 965,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 441.63599110700306,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 966,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 1151,
+          "seconds": 424.5184467059735,
+          "moves_seq": [
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Orange",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 2303
+          }
+        },
+        {
+          "env_id": 968,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 469.413082020008,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 968,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 1131,
+          "seconds": 484.4729451620078,
+          "moves_seq": [
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Orange",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 2263
+          }
+        },
+        {
+          "env_id": 968,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 150,
+          "seconds": 64.00660548399901,
+          "moves_seq": [
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 301
+          }
+        },
+        {
+          "env_id": 970,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 458,
+          "seconds": 188.6153556430072,
+          "moves_seq": [
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Cyan",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 917
+          }
+        },
+        {
+          "env_id": 971,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 565,
+          "seconds": 250.4777667230228,
+          "moves_seq": [
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Green",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1131
+          }
+        },
+        {
+          "env_id": 972,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 618,
+          "seconds": 275.6707511610002,
+          "moves_seq": [
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1237
+          }
+        },
+        {
+          "env_id": 973,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 593,
+          "seconds": 272.2144472610089,
+          "moves_seq": [
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1187
+          }
+        },
+        {
+          "env_id": 974,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 560.6056586479826,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 975,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 294,
+          "seconds": 126.07579634900321,
+          "moves_seq": [
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 589
+          }
+        },
+        {
+          "env_id": 975,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 225,
+          "seconds": 98.3188649599906,
+          "moves_seq": [
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Purple",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 451
+          }
+        },
+        {
+          "env_id": 976,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 501,
+          "seconds": 223.24809282299248,
+          "moves_seq": [
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Cyan",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1003
+          }
+        },
+        {
+          "env_id": 976,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 379,
+          "seconds": 168.73609718802618,
+          "moves_seq": [
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Yellow",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 759
+          }
+        },
+        {
+          "env_id": 977,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 496.41064598498633,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 977,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 481.1233762879856,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 977,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 443.28520975398715,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 978,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 155,
+          "seconds": 57.17375092799193,
+          "moves_seq": [
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 311
+          }
+        },
+        {
+          "env_id": 979,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 533.6249350910075,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 979,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 261,
+          "seconds": 115.8280644910119,
+          "moves_seq": [
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Purple",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 523
+          }
+        },
+        {
+          "env_id": 981,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 524.8925925530202,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 983,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 516.3921937409905,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 983,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 231,
+          "seconds": 97.83145411702571,
+          "moves_seq": [
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Cyan",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 463
+          }
+        },
+        {
+          "env_id": 985,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 498.0662354929955,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 986,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 326,
+          "seconds": 138.64005569499568,
+          "moves_seq": [
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 653
+          }
+        },
+        {
+          "env_id": 986,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 609,
+          "seconds": 252.14084473100957,
+          "moves_seq": [
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Orange",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1219
+          }
+        },
+        {
+          "env_id": 987,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 501.74728219400276,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 987,
+          "d_star": null,
+          "solved": true,
+          "moves": 11,
+          "regret": null,
+          "expansions": 632,
+          "seconds": 253.9325803089887,
+          "moves_seq": [
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1265
+          }
+        },
+        {
+          "env_id": 987,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 484.4693275949976,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 989,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 665,
+          "seconds": 276.48013372099376,
+          "moves_seq": [
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1331
+          }
+        },
+        {
+          "env_id": 991,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 533.9879459220101,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 991,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 236,
+          "seconds": 104.49148303599213,
+          "moves_seq": [
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 473
+          }
+        },
+        {
+          "env_id": 992,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 523.9605682429974,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 993,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 110,
+          "seconds": 48.279533762979554,
+          "moves_seq": [
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 221
+          }
+        },
+        {
+          "env_id": 994,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 79,
+          "seconds": 35.354626262007514,
+          "moves_seq": [
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 159
+          }
+        },
+        {
+          "env_id": 994,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 1107,
+          "seconds": 478.8772188629955,
+          "moves_seq": [
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 2215
+          }
+        },
+        {
+          "env_id": 995,
+          "d_star": null,
+          "solved": true,
+          "moves": 7,
+          "regret": null,
+          "expansions": 50,
+          "seconds": 21.898238730005687,
+          "moves_seq": [
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 101
+          }
+        },
+        {
+          "env_id": 995,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 523.398845120013,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 995,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 495.9311007419892,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 996,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 503.49003494600765,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 996,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 483.5425015350047,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 999,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 461.6265413069923,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1000,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 377,
+          "seconds": 157.03229134497815,
+          "moves_seq": [
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 755
+          }
+        },
+        {
+          "env_id": 1000,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 914,
+          "seconds": 378.2833713339933,
+          "moves_seq": [
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Purple",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1829
+          }
+        },
+        {
+          "env_id": 1000,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 473,
+          "seconds": 191.03786153299734,
+          "moves_seq": [
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 947
+          }
+        },
+        {
+          "env_id": 1001,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 475.93617513999925,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1001,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 67,
+          "seconds": 26.71473435498774,
+          "moves_seq": [
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Cyan",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 135
+          }
+        },
+        {
+          "env_id": 1002,
+          "d_star": null,
+          "solved": true,
+          "moves": 11,
+          "regret": null,
+          "expansions": 678,
+          "seconds": 270.667336065002,
+          "moves_seq": [
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Orange",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1357
+          }
+        },
+        {
+          "env_id": 1002,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 145,
+          "seconds": 56.40104958700249,
+          "moves_seq": [
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 291
+          }
+        },
+        {
+          "env_id": 1002,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 460.1275540479983,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1003,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 468.4311431449896,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1003,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 367,
+          "seconds": 131.98068056697957,
+          "moves_seq": [
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 735
+          }
+        },
+        {
+          "env_id": 1005,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 203,
+          "seconds": 73.78426348700305,
+          "moves_seq": [
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Magenta",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 407
+          }
+        },
+        {
+          "env_id": 1005,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 437.58305240099435,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1006,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 497.85292584000854,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1006,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 553,
+          "seconds": 236.04279213401605,
+          "moves_seq": [
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Orange",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1107
+          }
+        },
+        {
+          "env_id": 1006,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 481.685470041004,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1008,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 333,
+          "seconds": 134.72971047699684,
+          "moves_seq": [
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 667
+          }
+        },
+        {
+          "env_id": 1009,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 490.253569196997,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1009,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 344,
+          "seconds": 141.0023537010129,
+          "moves_seq": [
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 689
+          }
+        },
+        {
+          "env_id": 1009,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 420.7150535300025,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1010,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 400,
+          "seconds": 133.59183640000992,
+          "moves_seq": [
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Purple",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 801
+          }
+        },
+        {
+          "env_id": 1010,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 738,
+          "seconds": 295.540877026011,
+          "moves_seq": [
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1477
+          }
+        },
+        {
+          "env_id": 1011,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 451.89859615598107,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1012,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 437.94262368101045,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1013,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 305,
+          "seconds": 112.79332176598837,
+          "moves_seq": [
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 611
+          }
+        },
+        {
+          "env_id": 1014,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 635,
+          "seconds": 240.97941405200982,
+          "moves_seq": [
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1271
+          }
+        },
+        {
+          "env_id": 1015,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 506,
+          "seconds": 192.79069078399334,
+          "moves_seq": [
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Purple",
+              "down"
+            ],
+            [
+              "Purple",
+              "left"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Purple",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1013
+          }
+        },
+        {
+          "env_id": 1017,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 150,
+          "seconds": 55.62125237399596,
+          "moves_seq": [
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Cyan",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 301
+          }
+        },
+        {
+          "env_id": 1018,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 416.0165448029875,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1019,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 133,
+          "seconds": 57.1329231520067,
+          "moves_seq": [
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Cyan",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 267
+          }
+        },
+        {
+          "env_id": 1020,
+          "d_star": null,
+          "solved": true,
+          "moves": 7,
+          "regret": null,
+          "expansions": 37,
+          "seconds": 15.988751719007269,
+          "moves_seq": [
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 75
+          }
+        },
+        {
+          "env_id": 1023,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 472,
+          "seconds": 202.37938316399232,
+          "moves_seq": [
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 945
+          }
+        },
+        {
+          "env_id": 1023,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 240,
+          "seconds": 103.29756142999395,
+          "moves_seq": [
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 481
+          }
+        },
+        {
+          "env_id": 1023,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 341,
+          "seconds": 143.9974121589912,
+          "moves_seq": [
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 683
+          }
+        },
+        {
+          "env_id": 1025,
+          "d_star": null,
+          "solved": true,
+          "moves": 11,
+          "regret": null,
+          "expansions": 968,
+          "seconds": 386.080509685009,
+          "moves_seq": [
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Purple",
+              "up"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "right"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1937
+          }
+        },
+        {
+          "env_id": 1025,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 503,
+          "seconds": 198.95329057998606,
+          "moves_seq": [
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Orange",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1007
+          }
+        },
+        {
+          "env_id": 1027,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 728,
+          "seconds": 271.73359051701846,
+          "moves_seq": [
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1457
+          }
+        },
+        {
+          "env_id": 1028,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 475.70359858099255,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1029,
+          "d_star": null,
+          "solved": true,
+          "moves": 7,
+          "regret": null,
+          "expansions": 94,
+          "seconds": 35.69969035399845,
+          "moves_seq": [
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Green",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 189
+          }
+        },
+        {
+          "env_id": 1029,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 212,
+          "seconds": 77.44311581598595,
+          "moves_seq": [
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 425
+          }
+        },
+        {
+          "env_id": 1030,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 78,
+          "seconds": 29.677178872021614,
+          "moves_seq": [
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 157
+          }
+        },
+        {
+          "env_id": 1031,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 171,
+          "seconds": 64.36988961001043,
+          "moves_seq": [
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Orange",
+              "down"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Magenta",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 343
+          }
+        },
+        {
+          "env_id": 1031,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 233,
+          "seconds": 82.97461195397773,
+          "moves_seq": [
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Cyan",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 467
+          }
+        },
+        {
+          "env_id": 1032,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 407.8055061190098,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1033,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 202,
+          "seconds": 73.2398126089829,
+          "moves_seq": [
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Orange",
+              "right"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Orange",
+              "up"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 405
+          }
+        },
+        {
+          "env_id": 1034,
+          "d_star": null,
+          "solved": true,
+          "moves": 8,
+          "regret": null,
+          "expansions": 248,
+          "seconds": 95.20258697698591,
+          "moves_seq": [
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Cyan",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 497
+          }
+        },
+        {
+          "env_id": 1035,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 422.39700144098606,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1035,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 720,
+          "seconds": 204.89730790499016,
+          "moves_seq": [
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Magenta",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1441
+          }
+        },
+        {
+          "env_id": 1036,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 326.7412989260047,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1037,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 435.2124107980053,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1038,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 247,
+          "seconds": 71.48353790401598,
+          "moves_seq": [
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Magenta",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 495
+          }
+        },
+        {
+          "env_id": 1039,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 350.1304119740089,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1040,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 325.2018509710033,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1040,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 460.6163071960036,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1042,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 373.8895469130075,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1042,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 762,
+          "seconds": 218.2966977910255,
+          "moves_seq": [
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 1525
+          }
+        },
+        {
+          "env_id": 1043,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 58,
+          "seconds": 16.120290393999312,
+          "moves_seq": [
+            [
+              "Cyan",
+              "left"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Cyan",
+              "up"
+            ],
+            [
+              "Cyan",
+              "right"
+            ],
+            [
+              "Cyan",
+              "down"
+            ],
+            [
+              "Cyan",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 117
+          }
+        },
+        {
+          "env_id": 1044,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 399.0902564539865,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1044,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 253,
+          "seconds": 72.42134400899522,
+          "moves_seq": [
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Magenta",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 507
+          }
+        },
+        {
+          "env_id": 1045,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 331.94598126600613,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1045,
+          "d_star": null,
+          "solved": true,
+          "moves": 9,
+          "regret": null,
+          "expansions": 360,
+          "seconds": 97.32544895299361,
+          "moves_seq": [
+            [
+              "Magenta",
+              "left"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Magenta",
+              "down"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 721
+          }
+        },
+        {
+          "env_id": 1045,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 413.91083474399056,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1046,
+          "d_star": null,
+          "solved": true,
+          "moves": 10,
+          "regret": null,
+          "expansions": 430,
+          "seconds": 129.3593655420118,
+          "moves_seq": [
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Orange",
+              "left"
+            ],
+            [
+              "Purple",
+              "down"
+            ],
+            [
+              "Purple",
+              "right"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Magenta",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_calls": 861
+          }
+        },
+        {
+          "env_id": 1047,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 352.2075298310083,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        },
+        {
+          "env_id": 1049,
+          "d_star": null,
+          "solved": false,
+          "moves": null,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 301.82431871799054,
+          "accounting": {
+            "nn_calls": 2401
+          }
+        }
+      ]
+    }
+  }
+}

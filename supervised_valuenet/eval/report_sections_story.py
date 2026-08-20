@@ -537,10 +537,12 @@ def sec_verdict(D):
   a single training draw were repeated under three fresh seeds and now report
   the median of three with its band (16×16 · 8 robots scatters — one seed in
   three lands in a degenerate value network; 32×32 · 4 robots does not, with
-  all three seeds at or above the published run). Everywhere else both arms
-  are single-seed, and the forward arm is single-seed at every scaling rung,
-  so no small difference on this page should be read as real; the headline
-  margins are 8–48 points. See the fairness tab.</p>
+  all three seeds at or above the published run). The move-by-move arm got its
+  own fair second chance at 16×16 · 8 robots — nine retrainings, three seeds
+  by three learning rates, the winner picked on validation alone — and it
+  improves there without changing the rung's verdict. Everywhere else both
+  arms are single-seed, so no small difference on this page should be read
+  as real; the headline margins are 8–48 points. See the fairness tab.</p>
   <p>The subgoal planner's remaining handicaps are honest and measured:
   longer solutions where no optimum exists, and a gap between what its
   extended plan language permits and what its current networks reach —

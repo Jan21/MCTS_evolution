@@ -2877,3 +2877,43 @@ record what was done about the first three items.)_
    Sources: `scaling/results/g24r4/comparison_corrupt_{d1000,d860,d822}.json`,
    `nn_labeler/results/corrupt_g24r4.manifest.json`,
    `runs/nnlab/corrupt_*_469302{0,1,2}.out`, §80's design + pre-registration.
+
+86. **The forward planner's fair second chance: best-of-9 by validation is
+   real but small — it takes the gradable set perfectly (266/266) yet gains
+   only 8 frontier puzzles, far below the pre-registered kill line, and the
+   backward margin at 16×16·8r stands at +11.3 pts (p=1.7e-09)
+   (2026-08-20, jobs 4670585/86 + 4718158 on qgpu_preempt, ~7 nh).**
+   Design per §77b: 3 seeds × lr {5e-5, 1e-4, 2e-4} with the control's
+   recipe, selection by `val_policy_top1` only (never test). Nine-arm val
+   table: s37/1e-4 **0.8806** (selected), s21/1e-4 0.8742, s53/5e-5
+   0.8708, s37/5e-5 0.8688, s53/1e-4 0.8656, s21/5e-5 0.8641, control of
+   record 0.8628, then the lr 2e-4 arms break (0.776, 0.767, 0.078 — the
+   third collapsed outright). Six of nine beat the control, so the
+   original control was slightly unlucky but representative.
+   Bench (control protocol, replay-certified, sha-paired McNemar):
+   | arm | graded /266 | frontier /184 | pooled /450 |
+   |---|---|---|---|
+   | forward control | 261 | 93 | 354 |
+   | forward rescued | **266** | 101 | 367 (vs control p=0.035) |
+   | backward median seed (§80) | 259 | 157 | 418 |
+   | backward production | 262 | 163 | 425 |
+   Reading. (a) Rescued vs control: graded +5 (p=0.06), frontier +8
+   (p=0.18), pooled +13 (p=0.035) — tuning helps the forward planner
+   where its teacher was healthy, barely at all beyond it. (b) The
+   gradable crown at this rung passes to forward outright (266/266 —
+   no backward arm exceeds 262): stated plainly in the report. (c) The
+   pre-registered rule (§77b: rescued frontier ≥~150 kills the pooled
+   margin, ~120 keeps it with a caveat) resolves cleanly: 101 is below
+   both markers; backward median beats rescued forward by +11.3 pooled
+   (p=1.7e-09) and +30.4 frontier (p=2.3e-12). Only the bad-basin
+   backward seed ties it (361 vs 367, p=0.55). (d) The "weak opponent"
+   objection (§75 #1) is now answered with measurement: the opponent was
+   given 9 draws and its own selection rule, improved, and the scale
+   claim survived. Forward self-play remains the residual (and is the
+   successor project's territory, §82).
+   Sources: `analysis/forward_rescue_g16r8.py` →
+   `analysis/artifacts/forward_rescue_g16r8.json`;
+   `scaling/results/g16r8/comparison{,_ungraded}_forward_rescue.json`;
+   `scaling/runs/g16r8/forward-rescue/*/BEST.json`, `SELECTED.json`;
+   `runs/fwdgrid/`. Report: fairness tab "A fair second chance for the
+   forward planner"; 1686 checks + 56 assertions.

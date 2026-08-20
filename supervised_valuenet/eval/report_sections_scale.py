@@ -612,6 +612,55 @@ def _seed_replicate_bullet(D):
     tab.</li>""")
 
 
+def _forward_rescue_bullet(D):
+    """The status bullet for the forward planner's fair rescue (FINDINGS 77b).
+
+    Numbers come from the same artifact the fairness tab renders, so this
+    bullet cannot drift from the table; before the artifact lands it falls
+    back to the in-flight wording.
+    """
+    fr = D.get("forward_rescue_g16r8") or {}
+    if not (fr.get("sets") or {}).get("pooled"):
+        return ("""    <li><b>Running — a fair rescue for the forward
+    planner</b> at 16×16·8r (3 seeds × 3 learning rates, winner
+    chosen by its own validation score, never by test; ~8 node-hours).
+    Objection answered: “you beat a weak opponent — forward got one run
+    and one learning-rate fix.”</li>""")
+    src = "analysis/artifacts/forward_rescue_g16r8.json"
+
+    def n(path, desc, fmt="{}"):
+        cur = fr
+        for key in path.split("."):
+            cur = (cur or {}).get(key) if isinstance(cur, dict) else None
+        return ck(fmt.format(cur), src, "still open: fwdrescue " + desc,
+                  raw=cur)
+
+    return ("""    <li><b>Done — a fair second chance for the forward
+    planner</b> at 16×16·8r. Objection answered: “you beat a
+    weak opponent — forward got one run and one learning-rate fix.” It
+    was retrained """ + n("selection.n_arms", "n arms") + """ times (3 seeds
+    × 3 learning rates), the winner picked by its own validation score
+    with no benchmark result consulted, then benchmarked with the control's
+    protocol (~8 node-hours). The rescue works: it beats the control it
+    replaces by """
+            + n("sets.pooled.vs_control.diff_solved", "pooled gain", "{:+d}")
+            + """ puzzles in 450 and now solves every gradable puzzle at this
+    rung, """ + n("sets.graded.solved_rescued", "graded solved") + """ of
+    """ + n("sets.graded.n", "graded n") + """. Beyond the oracle it reaches
+    """ + n("prereg.rescued_frontier", "frontier solved") + """ of """
+            + n("sets.frontier.n", "frontier n")
+            + """ against the subgoal planner's median-of-three """
+            + n("sets.frontier.backward_median3", "frontier median", "{:g}")
+            + """ — short of the """
+            + n("prereg.kill_at_or_above", "kill threshold")
+            + """ fixed in advance as the level that would erase this rung's
+    margin — so the margin stands, at """
+            + n("prereg.pooled_margin_median_points", "pooled margin",
+                "{:+.1f}")
+            + """ points over the whole pool. Table and reading: the
+    “Is it fair?” tab.</li>""")
+
+
 def sec_open(D):
     return kicker_h2(
         "still open", "What is running and what is next") + """
@@ -620,16 +669,13 @@ def sec_open(D):
   data, scaling, reproducibility, related work, a devil's advocate, and so
   on) judged the work honest and essentially complete, and ranked the gaps
   a hostile referee would attack. The three that can be closed cheaply were
-  taken on at once — <b>two have landed</b>, one is still running; the
+  taken on at once — <b>all three have landed</b>; the
   rest are listed as future work. Memos:
   <code>analysis/review_2026-08-16/</code>; log: FINDINGS 75–77;
   paper plan: <code>PAPER_PLAN.md</code>.</p>
   <ul>
 """ + _seed_replicate_bullet(D) + """
-    <li><b>Running — a fair rescue for the forward planner</b> at 16×16·8r
-    (3 seeds × 3 learning rates, winner chosen by its own validation score,
-    never by test; ~8 node-hours). Objection answered: “you beat a weak
-    opponent — forward got one run and one learning-rate fix.”</li>
+""" + _forward_rescue_bullet(D) + """
     <li><b>Done — the re-use (by-reference) step, wired at last.</b>
     The step type the plan-language ceiling relies on was never connected
     to the learned planner (proposal path, helper featurization, and a

@@ -9,7 +9,7 @@ missing file renders as an in-progress note rather than crashing.
 """
 
 from eval.report_util import (esc, ck, fnum, scroll, progress_tag,
-                              kicker_h2, chip)
+                              kicker_h2, chip, fact)
 
 SRC = "eval/results/stats_tests.json"
 
@@ -439,9 +439,11 @@ def _seed_block(D):
             "varied (production recipe: proposal net cold, value net "
             "warm-started). A margin is defensible against seed noise "
             "when it is large next to this spread. The forward arm "
-            "remains single-seed at scale — at base it is the best of "
-            "four independent trainings — and that asymmetry stands as a "
-            "limitation.</p>" + table + mode_html)
+            "remains single-seed at every scaling rung but one — at base "
+            "it is the best of four independent trainings, and at "
+            "16×16 · 8 robots it is now the best of nine (two blocks "
+            "below) — and that asymmetry stands as a limitation.</p>"
+            + table + mode_html)
 
 
 # ---------------------------------------------------------------------------
@@ -765,6 +767,305 @@ def _seed_headline_block(D):
 
 
 # ---------------------------------------------------------------------------
+# 1d-ter. A fair second chance for the forward planner (FINDINGS 77b)
+# ---------------------------------------------------------------------------
+
+FR_SRC = "analysis/artifacts/forward_rescue_g16r8.json"
+FR_SETS = ("graded", "frontier", "pooled")
+FR_SET_LABEL = {"graded": "gradable set",
+                "frontier": "beyond the oracle",
+                "pooled": "whole pool"}
+
+
+def _fr_get(fr, path):
+    """Dotted-path lookup into the rescue artifact (None if any step misses)."""
+    cur = fr
+    for key in path.split("."):
+        if not isinstance(cur, dict):
+            return None
+        cur = cur.get(key)
+    return cur
+
+
+def _frn(fr, path, fmt="{}", desc=None):
+    """A check-tagged number out of the rescue artifact."""
+    v = _fr_get(fr, path)
+    if v is None:
+        return '<span class="muted">—</span>'
+    return ck(fmt.format(v), FR_SRC, "fwdrescue " + (desc or path), raw=v)
+
+
+def _frp(fr, path, desc=None):
+    """A check-tagged McNemar p out of the rescue artifact."""
+    v = _fr_get(fr, path)
+    if v is None:
+        return '<span class="muted">—</span>'
+    return ck(_fp(v), FR_SRC, "fwdrescue " + (desc or path) + " p", raw=v)
+
+
+def _fr_val_table(fr):
+    """The nine training runs and their validation scores, seed x learning rate."""
+    sel = fr["selection"]
+    by_cell = {(a["seed"], a["lr_tag"]): a for a in sel["arms"]}
+    seeds = sel["seeds"]
+    lr_tags = []
+    for a in sel["arms"]:
+        if a["lr_tag"] not in lr_tags:
+            lr_tags.append(a["lr_tag"])
+    rows = []
+    for tag in lr_tags:
+        cells = []
+        for s in seeds:
+            a = by_cell[(s, tag)]
+            mark = (" " + chip("selected")) if a["selected"] else ""
+            cells.append(
+                '<td class="num">'
+                + ck(f'{a["val_policy_top1"] * 100:.2f}%', FR_SRC,
+                     f'fwdrescue val {a["cell"]}', raw=a["val_policy_top1"])
+                + mark + "</td>")
+        rows.append(f'<tr><td><b>{esc(tag)}</b></td>' + "".join(cells)
+                    + "</tr>")
+    heads = "".join(f'<th class="num">seed {esc(s)}</th>' for s in seeds)
+    return scroll(
+        "<table><thead><tr><th>learning rate</th>" + heads
+        + "</tr></thead><tbody>" + "".join(rows) + "</tbody></table>")
+
+
+def _fr_result_table(fr):
+    """Rescued forward, its control and the subgoal arms, on all three sets."""
+    sets = fr["sets"]
+    cols = [k for k in FR_SETS if k in sets]
+
+    def row(label, note, get, desc, hl=False):
+        cells = "".join('<td class="num">' + get(k) + "</td>" for k in cols)
+        cls = ' class="hl"' if hl else ""
+        note_html = f'<div class="cellnote">{note}</div>' if note else ""
+        return (f"<tr{cls}><td><b>{esc(label)}</b>{note_html}</td>"
+                + cells + "</tr>")
+
+    body = [
+        row("Move-by-move — the control of record",
+            "the published row: one training run, one emergency "
+            "learning-rate fix",
+            lambda k: _frn(fr, f"sets.{k}.solved_control",
+                           desc=f"{k} control solved"), "control"),
+        row("Move-by-move — after the fair second chance",
+            "best of nine trainings, picked on validation alone",
+            lambda k: _frn(fr, f"sets.{k}.solved_rescued",
+                           desc=f"{k} rescued solved"), "rescued", hl=True),
+        row("Subgoals — median of three fresh seeds",
+            "what this rung reports (seeds 21/37/53)",
+            lambda k: _frn(fr, f"sets.{k}.backward_median3", "{:g}",
+                           desc=f"{k} backward median-of-3"), "median"),
+        row("Subgoals — seed of record",
+            "the published subgoal row",
+            lambda k: _frn(fr, f"sets.{k}.solved_backward.production",
+                           desc=f"{k} backward production solved"), "prod"),
+    ]
+    heads = "".join(
+        f'<th class="num">{esc(FR_SET_LABEL[k])}<br>'
+        f'<span class="small">{sets[k]["n"]} puzzles</span></th>'
+        for k in cols)
+    return scroll(
+        "<table><thead><tr><th>system</th>" + heads
+        + "</tr></thead><tbody>" + "".join(body) + "</tbody></table>")
+
+
+def _forward_rescue_block(D):
+    """The move-by-move planner's fair second chance at 16x16 / 8 robots.
+
+    Nine retrainings (3 seeds x 3 learning rates), one promoted by the
+    training pipeline's own validation score and benched with the control's
+    protocol.  The block states the design, the nine validation scores, the
+    benchmark result against both the control it replaces and the subgoal
+    arms, and then the verdict against the rule fixed BEFORE the nine runs
+    started (FINDINGS 77b).
+    """
+    head = ("<h3>A fair second chance for the forward planner "
+            "(16×16 · 8 robots)</h3>")
+    fr = D.get("forward_rescue_g16r8") or {}
+    if not (fr.get("sets") or {}).get("pooled"):
+        return head + progress_tag(
+            "the move-by-move planner is being retrained nine times at this "
+            "rung (three seeds × three learning rates, winner chosen on "
+            "validation alone); the table renders here when "
+            "analysis/artifacts/forward_rescue_g16r8.json lands")
+
+    sel = fr["selection"]
+    rc = fr.get("replay_certified") or {}
+    fact("forward rescue: the benchmarked checkpoint is exactly the "
+         "arm the validation rule selected",
+         bool(sel.get("benched_is_selected_arm")))
+    fact("forward rescue: every solved rescue plan replayed cleanly "
+         "(0 replay failures on both sets)",
+         bool(rc) and all(v.get("failed") == 0 for v in rc.values()))
+
+    design = (
+        "<p>The sharpest objection to everything above is that the "
+        "move-by-move planner was beaten while under-trained. At "
+        "16×16 · 8 robots that objection has real force: the stock "
+        "training recipe collapsed there, and the published control is a "
+        "single emergency retrain at a lower learning rate. So that "
+        "planner was given a fair second chance at exactly that rung — "
+        + _frn(fr, "selection.n_arms", desc="n arms")
+        + " fresh trainings, three random seeds crossed with three "
+        "learning rates, the control's recipe otherwise unchanged (eight "
+        "passes over the same data, batches of 128) — and one of the nine "
+        "was promoted to the benchmark.</p>"
+        "<p><b>The winner was chosen without looking at a single benchmark "
+        "result.</b> The promotion used the training pipeline's own "
+        "validation score — how often the network's top-ranked next move is "
+        "the right one, measured on held-out boards 700–899, which do not "
+        "overlap the benchmark boards 900–1049 — and nothing else. The "
+        "chosen network was then run through the control's protocol "
+        "verbatim: the same pinned puzzles, the same 1,200-step budget, the "
+        "same top-5 shortlist, and every solved plan replayed move by move "
+        "through the physics ("
+        + _frn(fr, "replay_certified.graded.passed",
+               desc="replay graded passed")
+        + " and "
+        + _frn(fr, "replay_certified.frontier.passed",
+               desc="replay frontier passed")
+        + " plans, "
+        + _frn(fr, "replay_certified.graded.failed",
+               desc="replay graded failed")
+        + " failures).</p>")
+
+    val_read = (
+        "<p>"
+        + _frn(fr, "selection.n_arms_above_control",
+               desc="arms above control")
+        + " of the nine beat the published control's own validation score of "
+        + _frn(fr, "selection.control_of_record.val_policy_top1", "{:.2%}",
+               desc="control of record val")
+        + ", so the rescue really did produce a better-trained opponent, "
+        "not a re-run of the same one. The largest learning rate is where "
+        "training breaks: all three of its runs score worst, and one of "
+        "them collapses to "
+        + _frn(fr, "selection.val_min", "{:.2%}", desc="worst arm val")
+        + " — the same failure that forced the emergency fix in the first "
+        "place. The winner is seed "
+        + _frn(fr, "selection.winner.seed", desc="winner seed")
+        + " at learning rate "
+        + ck(esc(sel["winner"]["lr_tag"]), FR_SRC, "fwdrescue winner lr",
+             raw=sel["winner"]["lr"])
+        + ", at "
+        + _frn(fr, "selection.winner.val_policy_top1", "{:.2%}",
+               desc="winner val")
+        + ".</p>")
+
+    def vs_ctrl(k):
+        return (_frn(fr, f"sets.{k}.vs_control.diff_solved", "{:+d}",
+                     desc=f"{k} rescued minus control")
+                + " puzzles (p&nbsp;=&nbsp;"
+                + _frp(fr, f"sets.{k}.vs_control.mcnemar_p",
+                       desc=f"{k} rescued-vs-control")
+                + ")")
+
+    result_read = (
+        "<p><b>The second chance helped — modestly, and mostly where the "
+        "puzzles are easy.</b> Against the control it replaces, the rescued "
+        "planner gains " + vs_ctrl("graded") + " on the gradable set, "
+        + vs_ctrl("frontier") + " beyond the oracle, and "
+        + vs_ctrl("pooled") + " over the whole pool, the only one of the "
+        "three that clears the 0.05 line. The honest headline of that "
+        "column is on the gradable set, and it goes against this report's "
+        "usual direction: the rescued move-by-move planner now solves "
+        + _frn(fr, "sets.graded.solved_rescued", desc="graded rescued (read)")
+        + " of "
+        + ck(str(fr["sets"]["graded"]["n"]), FR_SRC,
+             "fwdrescue graded n (read)", raw=fr["sets"]["graded"]["n"])
+        + " — every puzzle an exact solver could grade — which is more than "
+        "any subgoal arm manages there ("
+        + _frn(fr, "sets.graded.solved_backward.production",
+               desc="graded backward production (read)")
+        + " for the published pair). At 8 robots, on gradable puzzles, the "
+        "properly trained move-by-move planner is the better system.</p>")
+
+    def vs_bwd(k, arm, desc):
+        return (_frn(fr, f"sets.{k}.vs_backward.{arm}.diff_points", "{:+.1f}",
+                     desc=f"{k} {desc} minus rescued, points")
+                + " points, p&nbsp;=&nbsp;"
+                + _frp(fr, f"sets.{k}.vs_backward.{arm}.mcnemar_p",
+                       desc=f"{k} {desc}-vs-rescued"))
+
+    frontier_read = (
+        "<p><b>Beyond the oracle, nothing changes.</b> On the harder half "
+        "the rescued planner solves "
+        + _frn(fr, "sets.frontier.solved_rescued", desc="frontier rescued")
+        + " of "
+        + ck(str(fr["sets"]["frontier"]["n"]), FR_SRC,
+             "fwdrescue frontier n", raw=fr["sets"]["frontier"]["n"])
+        + " where the subgoal planner's median seed solves "
+        + _frn(fr, "sets.frontier.backward_median3", "{:g}",
+               desc="frontier backward median (read)")
+        + " (" + vs_bwd("frontier", "seed53", "median seed")
+        + ") and the published subgoal pair "
+        + _frn(fr, "sets.frontier.solved_backward.production",
+               desc="frontier backward production (read)")
+        + " (" + vs_bwd("frontier", "production", "seed of record")
+        + "). Over the whole 450 the rescued planner reaches "
+        + _frn(fr, "sets.pooled.solved_rescued", desc="pooled rescued (read)")
+        + " against the subgoal median of "
+        + _frn(fr, "sets.pooled.backward_median3", "{:g}",
+               desc="pooled backward median (read)")
+        + " (" + vs_bwd("pooled", "seed53", "median seed")
+        + ") and the published "
+        + _frn(fr, "sets.pooled.solved_backward.production",
+               desc="pooled backward production (read)")
+        + " (" + vs_bwd("pooled", "production", "seed of record")
+        + "). The one subgoal arm it does match over the pool is the "
+        "bad-basin seed above — "
+        + _frn(fr, "sets.pooled.solved_backward.seed21",
+               desc="pooled backward seed21 (read)")
+        + " against "
+        + _frn(fr, "sets.pooled.solved_rescued",
+               desc="pooled rescued (seed21 read)")
+        + ", p&nbsp;=&nbsp;"
+        + _frp(fr, "sets.pooled.vs_backward.seed21.mcnemar_p",
+               desc="pooled seed21-vs-rescued")
+        + ", a tie — which is the same statement made above from the other "
+        "side.</p>")
+
+    verdict = (
+        "<p><b>The verdict, against a rule fixed before the nine runs "
+        "started.</b> The pre-registered reading was: a rescued planner "
+        "reaching about "
+        + _frn(fr, "prereg.kill_at_or_above", desc="prereg kill threshold")
+        + " of "
+        + ck(str(fr["sets"]["frontier"]["n"]), FR_SRC,
+             "fwdrescue frontier n (prereg)",
+             raw=fr["sets"]["frontier"]["n"])
+        + " beyond the oracle would erase this rung's margin outright; "
+        "about "
+        + _frn(fr, "prereg.keep_with_caveat_near", desc="prereg caveat marker")
+        + " would leave the margin standing but with a “best of nine” "
+        "caveat attached. It reached "
+        + _frn(fr, "prereg.rescued_frontier", desc="prereg measured frontier")
+        + " — below even the lower marker, and only "
+        + _frn(fr, "sets.frontier.vs_control.diff_solved", "{:+d}",
+               desc="frontier rescued minus control (verdict)")
+        + " puzzles above the control it replaced. <b>The margin stands: "
+        + _frn(fr, "prereg.pooled_margin_median_points", "{:+.1f}",
+               desc="pooled margin over rescued")
+        + " points over the whole pool</b> for the subgoal planner's "
+        "median-of-three against the best of the nine.</p>"
+        "<p>What the rescue changes is the caveat, not the conclusion. At "
+        "this rung the comparison now leans against the subgoal planner in "
+        "two ways at once — the move-by-move arm is the best of nine "
+        "trainings, the subgoal arm the median of three — and the subgoal "
+        "planner still wins the pool by "
+        + _frn(fr, "prereg.pooled_margin_median_points", "{:+.1f}",
+               desc="pooled margin over rescued (caveat)")
+        + " points, on the strength of the harder half alone. The gradable "
+        "half now belongs to the move-by-move planner, and the table above "
+        "says so.</p>")
+
+    return (head + design + _fr_val_table(fr) + val_read
+            + _fr_result_table(fr) + result_read + frontier_read + verdict)
+
+
+# ---------------------------------------------------------------------------
 # 1e. The no-network control (FINDINGS 48)
 # ---------------------------------------------------------------------------
 
@@ -1011,6 +1312,7 @@ def sec_significance(D):
             + _corpus_block(cells, D)
             + _seed_block(D)
             + _seed_headline_block(D)
+            + _forward_rescue_block(D)
             + _heuristic_block(cells)
             + _nonsig_block(cells)
             + _twobytwo_block(cells)
