@@ -49,7 +49,7 @@
 
 <h1>NN Labeler: replacing the exact solver for data labeling across grid sizes</h1>
 <p class="sub">Ricochet Robots planner study &middot; process report &middot; started 2026-07-31 &middot;
-current through FINDINGS &sect;81 (2026-08-17; causality arms in flight) &middot; local document,
+current through FINDINGS &sect;85 (2026-08-19; causality arms answered) &middot; local document,
 updated as milestones land. Every number traces to a named file in the repo.</p>
 
 <h2>1. The problem</h2>
@@ -881,7 +881,7 @@ board ranges, which boards 2000&ndash;3049 never match; it gained a <code>--spli
 remains the narrative of how they were obtained.</p></div>
 
 <h3>9e. After the campaign: the causality arms and the 80/96 planner question</h3>
-<div class="card pending"><span class="tag">launched 2026-08-17 — jobs 4678370&ndash;73; FINDINGS &sect;80&ndash;81</span>
+<div class="card done"><span class="tag">ANSWERED 2026-08-19 — jobs 4693020&ndash;22 (after two reservation-boundary false starts); FINDINGS &sect;80&ndash;81, &sect;85</span>
 <p>Four decision briefs (archived under <code>analysis/followup_2026-08-17/</code>) converged on the
 external review's first objection to &sect;9a: across the three dose-response cells, label fidelity
 co-varied with corpus size and robot count, so no cell isolates fidelity as the <em>causal</em>
@@ -897,6 +897,19 @@ Alongside: the g32r4 twin's seed-21 replicate (job 4678373) &mdash; the &sect;9a
 most noise-vulnerable claim. Pre-registered reading (&sect;80c): 82.2% collapses &rArr; fidelity is
 causal and the threshold claim is licensed; 82.2% holds &rArr; the g24r8 collapse was a robot-count
 effect. Results fill the causality section of <code>suite.html</code> automatically.</p>
+<p><strong>The answer (&sect;85): the second branch fired — no collapse.</strong> The dose-response on the
+corruption axis is flat: size control 87.9% solve, 86% arm 87.9%, and the 82.2% arm <strong>92.2%
+solve / 50.9% optimal / 2.35 regret</strong> — nominally the best arm in the whole g24r4 table (one
+seed; top of the wobble band; claim "harmless", not "helpful"). Near-tie argmin corruption at the
+collapse dose does no harm at 4 robots, and random group-subsampling to twin size does none either
+(87.9 vs 88.4/88.4). So &sect;9a's dose-response is an <em>association, not a mechanism</em>: the g24r8
+collapse — real, and now 2-seed (twin seed 21: 73.3/44.1/2.84 graded, 31.5% frontier, vs seed 11's
+68.3/40.9/3.39 and 28.4%) — is driven by what the corruption held fixed or didn't reproduce: robot
+count / task hardness (&sect;44/&sect;56's bistable regime), the twin pipeline's non-random loss of hard
+instances (certify-or-drop; the corruption subsample was random), or its larger error sizes (gap
+p90 4 vs 2). The argmin-agreement gauge survives as a validated early-warning instrument — it
+flagged the one bad cell — but the paper's claim retreats from "fidelity threshold" to "fidelity
+as calibrated predictor; mechanism localized to the 8-robot cell's structure".</p>
 <p>The other open thread closed with zero compute: downstream validation at 80/96 was rejected on
 architectural grounds (&sect;81, feasibility brief <code>01_8096_planner_feasibility.md</code>) &mdash;
 both planner nets carry a learned n&sup2;-sized positional table (<code>looped_pc.py:146</code>,

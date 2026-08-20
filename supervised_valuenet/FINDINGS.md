@@ -2740,7 +2740,10 @@ record what was done about the first three items.)_
    §72c scoped them — certified labels whose warranty is the flat 17–64
    curve.
 
-80. **Seed replicates of the 16×16·8-robot headline pair: bimodal again —
+84. *(renumbered 2026-08-20 from a duplicate "80" — the Track-1 session
+   and the labeler session both took 80 concurrently; §80 is the
+   causality-package launch, this entry is the g16r8 seed study.)*
+   **Seed replicates of the 16×16·8-robot headline pair: bimodal again —
    2 of 3 fresh seeds reproduce the headline, 1 falls into the bad value
    basin and the pooled margin over forward shrinks to +1.6 pts (p=0.49);
    per the pre-registered rule (§77a) the rung's headline is now the
@@ -2825,3 +2828,52 @@ record what was done about the first three items.)_
    `runs/seedhl/rr-seedhl-g32r4-s*.out`. Report: fairness tab "Seed
    replicates of the headline pair" (both rungs); headline rows footnoted;
    1612 checks.
+
+85. **The causality arms answer — and the answer is NO: argmin fidelity is
+   not the mechanism (2026-08-19, jobs 4693020/21/22 COMPLETED 3h41–3h47
+   each, ~1.4 nh total; pre-registered reading §80c applied).** All three
+   g24r4 corruption arms trained and benched clean, every solve
+   replay-certified, n=232 each:
+   | arm | fidelity | solve | opt | regret |
+   |---|---|---|---|---|
+   | size control d1000 | 100% | 87.9 | 41.7 | 3.74 |
+   | corrupt d860 | 86.0% | 87.9 | 41.2 | 4.19 |
+   | corrupt d822 | 82.2% | **92.2** | **50.9** | **2.35** |
+   | (exact seeds) | 100% | 88.4 / 88.4 | 38.5 / 40.0 | 4.22 / 4.52 |
+   | (twin seeds, 91% real) | 91.0% | 91.4 / 87.9 | 45.8 / 39.2 | 3.05 / 4.23 |
+   (a) **The pre-registered negative branch fires:** corrupting best-move
+   agreement to the collapse cell's exact dose — near-tie argmin redirects,
+   with boards, instances, robot count and corpus size held fixed — caused
+   NO harm. The dose-response on this axis is flat 100→86→82.2; d822 is
+   nominally the BEST arm in the whole g24r4 table (single seed; the
+   nominal win sits at the top of the observed wobble band — do not
+   overclaim it, but "harmless" is solid).
+   (b) **Size control ≈ exact** (87.9 vs 88.4/88.4): random whole-group
+   subsampling to twin size is harmless on its own.
+   (c) **Therefore the §74 dose-response is an association, not a
+   mechanism.** What actually co-varies with the g24r8 collapse and is NOT
+   reproduced by this corruption: (i) robot count / task hardness (8-robot
+   value training is the documented bistable regime, §44/§56; the twin
+   policy's best epoch was 0/30 there, §73); (ii) the twin's NON-random
+   record loss — certify-or-drop removes hard instances preferentially,
+   while this experiment's subsample was random; (iii) larger error
+   magnitudes (g24r8 twin gap p90=4 vs 2 in every 4-robot cell and ≤3
+   injected here). The paper's claim must retreat from "fidelity
+   threshold" to: argmin agreement is a cheap, validated PREDICTOR of
+   label-set damage (it flagged the one collapsing cell), but near-tie
+   argmin errors per se are not what breaks planners — at 4 robots, 82%
+   agreement trains a planner indistinguishable from (nominally better
+   than) exact-taught.
+   (d) **The g24r8 collapse itself is real and now 2-seed** (§80 update:
+   twin seed 21 = 73.3/44.1/2.84 graded, 31.5% frontier vs seed 11's
+   68.3/40.9/3.39 and 28.4%; exact 89.4/50.7/2.49 and 53.3%) — two twin
+   seeds 16–21 pts below exact. Collapse: confirmed. Cause: robot-count /
+   error-structure linked, not argmin-fidelity linked.
+   (e) Ops, for the record: the arms died twice before running — jobs that
+   are the first placed on a node the second the daily 10:00–18:00 cooling
+   reservation lifts are killed in <15 s with empty logs (looks exactly
+   like a bad node; acn52 and the initial acn18-style read were innocent).
+   Same scripts at 21:00 on warm nodes ran perfectly.
+   Sources: `scaling/results/g24r4/comparison_corrupt_{d1000,d860,d822}.json`,
+   `nn_labeler/results/corrupt_g24r4.manifest.json`,
+   `runs/nnlab/corrupt_*_469302{0,1,2}.out`, §80's design + pre-registration.

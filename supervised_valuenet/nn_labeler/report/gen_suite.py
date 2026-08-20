@@ -215,6 +215,16 @@ def sec_glance():
           "certified label sets where no solver can ever grade them: "
           + ", ".join(beyond_bits) + " — every one physics-verified, zero timeouts",
           '<a href="#s5">&sect;4</a>')
+    d822g = solve("scaling/results/g24r4/comparison_corrupt_d822.json")
+    d1000g = solve("scaling/results/g24r4/comparison_corrupt_d1000.json")
+    exg = solve("scaling/results/g24r4/comparison.json")
+    if None not in (d822g, d1000g, exg):
+        r("Corrupting labels to the collapse dose did NOT collapse the planner",
+          f"82%-agreement arm solves {p1(d822g)}% vs size-control {p1(d1000g)}% "
+          f"and exact-taught {p1(exg)}% — agreement predicts damage but is not "
+          "its mechanism; the 8-robot collapse tracks robot count / error "
+          "structure",
+          '<a href="#s7">&sect;6</a>')
     r("The hoped-for compute saving did NOT materialize",
       "a labeler distilled from capped data reproduced the cap's damage — "
       "the negative result, reported as such",
@@ -227,25 +237,46 @@ def sec_glance():
         depline = (f" — proven in the hardest way, with the solver removed "
                    f"from the entire pipeline ({p1(dep)}% vs {p1(ex)}% solve "
                    "on the same exam)")
-    corrupt_done = (SV / "scaling/results/g24r4/comparison_corrupt_d822.json").exists()
-    caveat = ("The remaining open question — is label faithfulness itself "
-              "the <em>cause</em>, rather than something that merely moves "
-              "with it? — is exactly what the running "
-              "<a href='#s7'>causality experiment</a> was launched to "
-              "settle." if not corrupt_done else
-              "The <a href='#s7'>causality experiment</a> below tests "
-              "whether faithfulness itself is the cause.")
+    d822 = solve("scaling/results/g24r4/comparison_corrupt_d822.json")
+    d1000 = solve("scaling/results/g24r4/comparison_corrupt_d1000.json")
+    corrupt_done = None not in (d822, d1000, ex)
+    if corrupt_done:
+        caveat = (f"And one twist the campaign owed itself: the <a href='#s7'>"
+                  f"causality experiment</a> asked whether label faithfulness "
+                  f"itself is the <em>cause</em> of the collapse — and the "
+                  f"answer is no. Labels corrupted to the collapse dose (82% "
+                  f"agreement, everything else fixed) trained a planner that "
+                  f"solves {p1(d822)}% — no worse than exact-taught. The "
+                  f"agreement gauge stays as a validated predictor; the "
+                  f"mechanism of the 8-robot collapse lies in robot count or "
+                  f"error structure, not agreement per se.")
+        condition = ("The one broken cell is the 8-robot configuration — and "
+                     "the follow-up causality experiment showed its collapse "
+                     "is NOT caused by best-move agreement alone (see the "
+                     "twist below). The practical gauge survives: measure "
+                     "agreement on a checkable sample first — it flagged the "
+                     "one bad cell — but read it as a warning light, not the "
+                     "mechanism.")
+    else:
+        caveat = ("The remaining open question — is label faithfulness itself "
+                  "the <em>cause</em>, rather than something that merely moves "
+                  "with it? — is exactly what the running "
+                  "<a href='#s7'>causality experiment</a> was launched to "
+                  "settle.")
+        condition = ("The condition is label faithfulness — everything held "
+                     "at ~91% agreement and above, quality slipped at ~89%, "
+                     "and collapsed at ~82%. The network sits inside the safe "
+                     "zone at every 4-robot configuration tested, and outside "
+                     "it at the one 8-robot configuration — so the method "
+                     "ships with its own go/no-go gauge: measure agreement on "
+                     "a checkable sample first, and only label where it "
+                     "clears the bar.")
     verdict = f"""
 <div class="verdict big">
 <p><strong>Did it work? Yes, with one sharply-drawn condition.</strong>
 The exact solver can be retired as the label writer: planners taught by the
 network are indistinguishable from planners taught by the solver{depline}.
-The condition is label faithfulness — everything held at ~91% agreement and
-above, quality slipped at ~89%, and collapsed at ~82%. The network sits
-inside the safe zone at every 4-robot configuration tested, and outside it
-at the one 8-robot configuration — so the method ships with its own
-go/no-go gauge: measure agreement on a checkable sample first, and only
-label where it clears the bar.</p>
+{condition}</p>
 <p><strong>What this buys.</strong> Training data beyond the solver's
 physical 64&times;64 limit — the first certified label sets at 80&times;80
 and 96&times;96 already exist — and data generation at roughly a fortieth
@@ -1112,7 +1143,7 @@ def sec_b2():
 def sec_inflight():
     man = load("nn_labeler/results/corrupt_g24r4.manifest.json")
     out = ['<section id="s7">',
-           "<h2>6 &middot; The causality experiment (in flight / latest)</h2>",
+           "<h2>6 &middot; The causality experiment</h2>",
            "<p><strong>Why it exists.</strong> The headline dose-response is "
            "real but confounded: across the three cells, label fidelity "
            "moved together with corpus size and robot count, so no cell "
@@ -1137,6 +1168,30 @@ def sec_inflight():
            "monotone-curve check.</li></ul>"
            "<p>Either headline outcome is publishable — that is what makes "
            "this the right experiment to run.</p>"]
+    d822 = solve("scaling/results/g24r4/comparison_corrupt_d822.json")
+    d1000 = solve("scaling/results/g24r4/comparison_corrupt_d1000.json")
+    d860 = solve("scaling/results/g24r4/comparison_corrupt_d860.json")
+    ex = solve("scaling/results/g24r4/comparison.json")
+    if None not in (d822, d1000, d860, ex):
+        o822, o1000 = optpct("scaling/results/g24r4/comparison_corrupt_d822.json"), optpct("scaling/results/g24r4/comparison_corrupt_d1000.json")
+        out.append(
+            "<p class='verdict'>" + chip("good", "answered") +
+            f" <strong>The second branch fired: no collapse.</strong> The "
+            f"dose-response on this axis is flat — size control {p1(d1000)}%, "
+            f"86% arm {p1(d860)}%, and the 82.2% arm {p1(d822)}% solve "
+            f"(nominally the best arm in the whole configuration, "
+            f"{o822:.1f}% optimal vs the size control's {o1000:.1f}%; one "
+            f"seed, top of the wobble band — read it as 'harmless', not "
+            f"'helpful'). Corrupting best-move agreement to the collapse "
+            f"cell's dose, with everything else held fixed, does no harm at "
+            f"4 robots. So the 8-robot collapse — which is real, and now "
+            f"replicated across two seeds — is caused by something this "
+            f"experiment held fixed or didn't reproduce: robot count / task "
+            f"hardness, the twin pipeline's non-random loss of hard "
+            f"instances, or its larger error sizes. The agreement gauge "
+            f"remains a validated early-warning instrument (it flagged the "
+            f"one bad cell); it is not the mechanism. Full reading: FINDINGS "
+            f"85.</p>")
     rows_ = []
     if man and "arms" in man:
         arm_desc = {"d1000": "size control (labels untouched)",
