@@ -850,3 +850,31 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     planner's regret 0.04–0.10 is 20–50× below the subgoal language ceiling.
     Sources: `results/fwd_selfplay/g24r4_iter{1,2}/` (benches, gates,
     manifests), `runs/spr/spr-fwd-g24-it{1,2}-470344{6,7}*.out`.
+
+22. **M5, mixed-size curriculum iterations 2–3: the curriculum's gains hold
+    but do not compound — after iteration 1's jump every exam is flat within
+    noise, and the 3-iteration loop ends with all six exams at or near their
+    reachable ceilings (2026-08-20/21, jobs 4704315 ≈ 0.85 nh, 4704316
+    ≈ 0.75 nh; protocol as §20).** Trend (A\* graded | frontier per config):
+    | iter | g24r4 | g32r4 | g24r8 |
+    |---|---|---|---|
+    | 1 | 226, rg 2.04 \| **170**/218 | **173**/175, rg 2.61 \| **235**/275 | 159/161, rg 2.35 \| **269**/289 |
+    | 2 | 227, rg 2.19 \| 165 | 170, rg **2.15** \| 224 | 159, rg 2.28 \| 265 |
+    | 3 | **230**, rg 2.20 \| 165 | 172, rg 2.23 \| 225 | 159, rg 2.35 \| 268 |
+    Every iteration-3-vs-2 gate is n.s. (McNemar p≥0.25, all move sign tests
+    p≥0.56). Iteration 2's g32r4 frontier dip (235→224, p=0.03 vs iter 1)
+    does not recover at iteration 3 (225): iteration 1's 235 stands as the
+    series peak there, within-noise of 225 on a paired basis across the pair
+    of later iterations. Readings: (a) the curriculum's value was the
+    distribution switch (§20), delivered almost entirely in one iteration —
+    the same one-big-step-then-flat shape as the 24-only loop (§19) but at a
+    much higher level; (b) g24r4 graded 230/232 is the best graded solve
+    count of the entire project (at 24 expansions; the B2 ceiling probe says
+    ≥229 of 232 reachable — the loop is 1–2 solves from exhausting the
+    graded exam); (c) the moves-vs-solves trade stays: regret never improves
+    while solves rise. Where the remaining headroom is: frontier moves (the
+    MCTS rows and the variants lab's v06/v09 moves-positive arms), not
+    solves. The curriculum loop stops here; its iteration-1 nets (the
+    frontier-solves peak) and iteration-3 nets (graded peak) are both kept.
+    Sources: `results/selfplay/mix_b2mix_iter{2,3}/` (benches, gates,
+    manifests), `runs/spr/spr-mix-it{2,3}-470431{5,6}.out`, §20 table.
