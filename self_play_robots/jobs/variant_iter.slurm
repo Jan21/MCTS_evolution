@@ -84,21 +84,21 @@ printf 'policy=%s\nvalue=%s\n' "$BP" "$BV" > "$RES/nets.txt"
 echo "SPR VAR nets policy=$BP value=$BV"
 # ---- C bench: graded / frontier / unseen (arena A*, B2 convention) ---------------
 BVFLAG=""; case ",$HOOKS," in *,bench,*) BVFLAG="--variant $VID";; esac
-bench_one() {  # bench_one <tag> <instances> <extra-arena-args...>
-  local tag="$1" inst="$2"; shift 2
+bench_one() {  # bench_one <tag> <instances> <extra-bench-flags> [extra-arena-args...]
+  local tag="$1" inst="$2" xtra="$3"; shift 3
   local out="$RES/bench_${tag}_astar.json"
   [ -s "$out" ] && { echo "SPR VAR SKIP bench $tag"; return 0; }
   local t0=$SECONDS
   python -m spr.arena bench --arm "var_${VID}_${tag}" --config g24r4 --instances "$inst" \
       --policy "$BP" --value "$BV" --driver spr \
-      --flags "--search arena_astar --vocab b2 --anytime $BVFLAG $BENCH_FLAGS" \
+      --flags "--search arena_astar --vocab b2 --anytime $xtra $BVFLAG $BENCH_FLAGS" \
       --width 8 --threads 2 --device cuda "$@" --out "$out" \
       || { echo "SPR VAR FAILED bench $tag"; return 1; }
   echo "SPR VAR bench $tag took $((SECONDS-t0))s"
 }
-bench_one graded  scaling/data/g24r4/bench.solved.jsonl   || exit 1
-bench_one frontier scaling/data/g24r4/bench.unsolved.jsonl || true
-bench_one unseen  "$EXAM" --env-dir "$EXAMB" || true
+bench_one graded  scaling/data/g24r4/bench.solved.jsonl   ""             || exit 1
+bench_one frontier scaling/data/g24r4/bench.unsolved.jsonl ""            || true
+bench_one unseen  "$EXAM" "--boards lean" --env-dir "$EXAMB"             || true
 # ---- D gates vs control -----------------------------------------------------------
 CTRL="$REPO/self_play_robots/results/variants/v00_control"
 if [ "$VID" != v00_control ]; then
