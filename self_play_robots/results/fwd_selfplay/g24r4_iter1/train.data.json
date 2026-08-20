@@ -1,0 +1,44 @@
+{
+ "config": "g24r4",
+ "grid": 24,
+ "robots": 4,
+ "corpora": [
+  {
+   "kind": "selfplay",
+   "path": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/selfplay/g24r4_iter1/records.jsonl",
+   "records": 5591
+  },
+  {
+   "kind": "anchor",
+   "path": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/data/g24r4/forward.jsonl",
+   "records": 34319
+  }
+ ],
+ "init": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt",
+ "lr": 0.0001,
+ "epochs": 6,
+ "batch_size": 64,
+ "policy_weight": 1.0,
+ "torch_seed": 22,
+ "trainer": "val",
+ "val_boards": [
+  5000,
+  5010,
+  5020,
+  5030,
+  5040,
+  5050,
+  5060,
+  5070,
+  5080,
+  5090,
+  5100,
+  5110
+ ],
+ "n_train": 31761,
+ "n_val": 8149,
+ "anchor_dropped_test_boards": 5681,
+ "device": "cuda",
+ "started": "2026-08-19T21:26:10",
+ "slurm_job_id": "4703446"
+}

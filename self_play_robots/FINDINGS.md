@@ -814,3 +814,39 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     Sources: `results/selfplay/mix_b2mix_iter1/` (benches, generation
     manifests, nets.txt), `runs/spr/spr-mix-it1-4704314.out`, `spr.gate
     compare` pairs above.
+
+21. **F-M3/F-M4, forward (primitive-move) loop at 24×24, two iterations: the
+    self-play MoveNet closes the supervised planner's moves gap where MCTS
+    had one (iteration 2 MCTS: 224/232, regret 0.36 vs iteration 1's 0.46;
+    A\* regret 0.096→0.041, 96.3% optimal, moves better than iteration 1
+    p=0.04) — but solve rate is pinned at the supervised level (219–227 vs
+    220) and the moves-vs-supervised sign test still favours the frozen
+    baseline on MCTS rows (2026-08-20, jobs 4703446 + 4703467 ≈ 1.9 nh;
+    `jobs/fwd_iter.slurm` generalized to CFG, commit 962ffb3).** Setup: 120
+    fresh 24×24 boards/iteration (ids 5000+), PUCT MCTS generation (800
+    expansions, stop 200, root noise, 50% eval-distribution instances),
+    ~6k replay-certified move records/iteration + 40k exact anchor records,
+    MoveNet warm from the supervised g24r4 ckpt (batch 64; 128+ OOMs);
+    benches on the pinned graded exam, 1200/k5, replay-certified.
+    | row | solved | mean moves | regret | % opt | exp |
+    |---|---|---|---|---|---|
+    | supervised A\* (frozen row, §F-M0) | 220/232 | 7.60 | 0.068 | 94.1 | 191 |
+    | it1 A\* | 219/232 | 7.598 | 0.096 | 92.2 | 190 |
+    | it1 MCTS best-at-budget | **227/232** | 8.09 | 0.463 | 85.5 | 307 |
+    | it2 A\* | 219/232 | 7.539 | **0.041** | **96.3** | 187 |
+    | it2 MCTS | 224/232 | 7.95 | 0.362 | 87.9 | 310 |
+    Gates. it2-A\* vs it1-A\*: same solves, moves 8/1 wins, sign p=0.039 (the
+    one significant moves gain of the whole project); it2-A\* vs supervised:
+    219 vs 220 (p=1), moves 6/2 (n.s.) — parity on solves, slightly better
+    optimality (96.3 vs 94.1%). MCTS rows solve +4..+7 over the supervised A\*
+    (p=0.065/0.34) but pay 0.3–0.4 regret on shared solves (sign p≤0.0015
+    against) — same shape as F-M2 (§6): exploration buys solves, costs moves,
+    at 1.6× expansions. Reading: in the primitive-move space the supervised
+    planner was already ≈1 point off the exact optimum, so the loop's room
+    was optimality, and two iterations bought half of it (0.068→0.041 regret
+    among solved; 94.1→96.3% optimal). F-M4's "beats the supervised baseline
+    beyond seed noise" is NOT met on solves (parity) — met on optimality only.
+    The honest comparison with the subgoal arm stands as in §3: the forward
+    planner's regret 0.04–0.10 is 20–50× below the subgoal language ceiling.
+    Sources: `results/fwd_selfplay/g24r4_iter{1,2}/` (benches, gates,
+    manifests), `runs/spr/spr-fwd-g24-it{1,2}-470344{6,7}*.out`.
