@@ -40,7 +40,7 @@ from spr.arena import _stamp, config_env, env_dir_of
 from spr.fwd import RUNS
 
 
-def bench(name, ckpt, instances, out, search="astar", flags=(), expansions=1200,
+def bench(name, ckpt, instances, out, search="astar", env_dir=None, flags=(), expansions=1200,
           k=5, width=8, threads=2, chunk_lines=8, limit=None, device="cpu",
           config="g16r4", run_root=None, log=print) -> Path:
     inst = Path(instances)
@@ -74,6 +74,8 @@ def bench(name, ckpt, instances, out, search="astar", flags=(), expansions=1200,
         chunks.append(cp)
 
     env = config_env(config)
+    if env_dir:                       # unseen-board exams: fresh lean boards
+        env["RR_ENV_DIR"] = str(Path(env_dir).resolve())
     env["OMP_NUM_THREADS"] = str(threads)
     if device == "cpu":
         env["CUDA_VISIBLE_DEVICES"] = ""
@@ -121,7 +123,8 @@ def bench(name, ckpt, instances, out, search="astar", flags=(), expansions=1200,
         raise SystemExit("[fwd-arena] merge failed")
     rc = subprocess.call([sys.executable, "-m", "eval.replay_validate",
                           "--compare", str(tmp), "--instances", str(inst),
-                          "--env-dir", str(env_dir_of(config))],
+                          "--env-dir", str(Path(env_dir).resolve() if env_dir
+                                            else env_dir_of(config))],
                          cwd=SV, env=env,
                          stdout=open(run / "replay_validate.log", "w"),
                          stderr=subprocess.STDOUT)
@@ -170,6 +173,7 @@ def main(argv=None):
     b.add_argument("--device", default="cpu")
     b.add_argument("--config", default="g16r4")
     b.add_argument("--run-root", default=None)
+    b.add_argument("--env-dir", default=None, help="board-dir override (unseen exams)")
     b.add_argument("--out", required=True)
     b.add_argument("--parity-ref", default=None, help="recorded comparison JSON")
     b.add_argument("--parity-system", default=None, help="substring picking its system")
@@ -182,6 +186,7 @@ def main(argv=None):
         n = a.limit or sum(1 for l in inst.read_text().splitlines() if l.strip())
         chunk_lines = max(1, -(-n // max(1, 8 * a.width)))
     out = bench(a.name, a.ckpt, a.instances, a.out, search=a.search,
+                env_dir=a.env_dir,
                 flags=tuple(a.flags.split()), expansions=a.expansions, k=a.k,
                 width=a.width, threads=a.threads, chunk_lines=chunk_lines,
                 limit=a.limit, device=a.device, config=a.config, run_root=a.run_root)

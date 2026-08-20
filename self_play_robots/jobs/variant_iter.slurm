@@ -27,7 +27,8 @@ COLD=${COLD:-0}
 SEEDNETS="$REPO/self_play_robots/results/selfplay/mix_b2mix_iter2/nets.txt"
 P0=$(grep '^policy=' "$SEEDNETS" | cut -d= -f2-); V0=$(grep '^value=' "$SEEDNETS" | cut -d= -f2-)
 [ -s "$P0" ] && [ -s "$V0" ] || { echo "SPR VAR FAILED: seed nets missing"; exit 1; }
-IT="$REPO/runs/spr/variants/$VID"; RES="$REPO/self_play_robots/results/variants/$VID"
+SFX=""; [ "$SEED" != 7 ] && SFX="_s${SEED}"   # replicates: own dirs, own results
+IT="$REPO/runs/spr/variants/${VID}${SFX}"; RES="$REPO/self_play_robots/results/variants/${VID}${SFX}"
 mkdir -p "$IT" "$RES"
 EXAM="$REPO/self_play_robots/results/variants/exam/g24r4_unseen.jsonl"
 EXAMB="$REPO/self_play_robots/results/variants/exam/boards_g24r4"
@@ -100,7 +101,7 @@ bench_one graded  scaling/data/g24r4/bench.solved.jsonl   ""             || exit
 bench_one frontier scaling/data/g24r4/bench.unsolved.jsonl ""            || true
 bench_one unseen  "$EXAM" "--boards lean" --env-dir "$EXAMB"             || true
 # ---- D gates vs control -----------------------------------------------------------
-CTRL="$REPO/self_play_robots/results/variants/v00_control"
+CTRL="$REPO/self_play_robots/results/variants/v00_control${SFX}"
 if [ "$VID" != v00_control ]; then
   for t in graded frontier unseen; do
     [ -s "$RES/bench_${t}_astar.json" ] && [ -s "$CTRL/bench_${t}_astar.json" ] || continue

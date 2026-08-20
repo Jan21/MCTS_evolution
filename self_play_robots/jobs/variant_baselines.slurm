@@ -40,4 +40,13 @@ if [ -n "$BPP" ] && [ -n "$BVV" ]; then
 else
   echo "SPR VARBASE WARN: supervised per-size ckpts not found under scaling/runs/g24r4"
 fi
+# forward MoveNet baseline (walls_for needs only grid_data -> lean pkls work)
+FWD="$REPO/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt"
+FOUT="$RES/forward_movenet_unseen.json"
+if [ -s "$FWD" ] && [ ! -s "$FOUT" ]; then
+  python -m spr.fwd.arena bench --name varbase_fwd_unseen --ckpt "$FWD" \
+      --instances "$EXAM" --search astar --config g24r4 --env-dir "$EXAMB" \
+      --width 8 --threads 2 --device cuda --out "$FOUT" \
+    || echo "SPR VARBASE FAILED forward"
+fi
 echo "SPR VARBASE DONE $(date +%F' '%T)"

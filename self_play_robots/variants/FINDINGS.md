@@ -64,3 +64,46 @@ is duplicated there.
    the mixed-curriculum warm start itself is worth frontier solves.
    Sources: `results/variants/{baselines,v00_control}/`, jobs
    4719424/4719425.
+
+4. **Wave-1 verdicts (2026-08-20; jobs 4719425-4719431 + unseen fix-ups
+   4722745-4722751; ~2.6 nh actual).** Matched protocol throughout; paired
+   gates vs v00_control (its rows: graded 228/232 rg 2.39 exp 34, frontier
+   160/218, unseen 172/200 mv 14.06). Verdict table (solves p = McNemar,
+   moves p = sign test on shared solves):
+   | arm | graded | frontier | unseen | verdict |
+   |---|---|---|---|---|
+   | v01_visit_policy | 202 (p=2e-7 against), rg 5.23 | 118 (p=1e-9 against) | 142 (p=7e-8 against), moves p=1e-10 against | **LOSS, decisive** |
+   | v04_deep_emit | 230, rg 2.29 (n.s.) | **171 vs 160, p=0.013**; moves 36/21 p=0.063 | 175 vs 172 (n.s.) | **WIN (frontier) -- replicating at seed 8** |
+   | v06_gumbel_root | 229; **moves 19/6 p=0.015, rg 2.05 vs 2.39** | 169 vs 160, p=0.049 | 172 = 172 | **WIN (graded moves) -- replicating** |
+   | v08_cold_start | 200 (p=6e-8 against) | 96 (p=6e-15 against) | 132 (p=2e-11 against) | expected loss (control arm; see below) |
+   | v09_strict_value | 228; moves 19/8 p=0.052, rg 2.06 | 168 vs 160, p=0.057 | 173 (n.s.) | **borderline-positive -- replicating** |
+   | v12_frontier_curriculum | 230 (n.s.) | 161 (n.s.); moves 37/22 p=0.067 | 176 (best absolute, n.s.) | FLAT at one iteration |
+   Readings. (a) **v01 kills the AlphaZero-textbook target in this domain**:
+   visit-count policy targets at 300-expansion budgets are catastrophically
+   worse than the stack's certified-cost softmax (which is itself a
+   completed-Q-style target, DESIGN.md §4) -- regret doubles, every exam
+   collapses. The counterfactual matters: it says the control's target
+   design is load-bearing, not incidental. (b) **v04 and v06 are the real
+   positive signals**, on DIFFERENT axes: emit-all buys frontier solves
+   (+11, 2.2x records at 3.8x gen wall-time -- sibling completion on every
+   expanded node is the cost), Gumbel root buys graded MOVES (19/6 wins,
+   regret 2.05) at identical solves -- the first moves gain any B2-loop arm
+   has shown on the graded exam. v09 shows the same shape as v06 one notch
+   weaker (both p~0.05). All three go to seed-8 replication before any WIN
+   is claimed (jobs 4726033-4726036), and their stack is submitted as
+   v13_combo (4726037). (c) **v08 (cold start) is the no-human-in-the-loop
+   headline**: from RANDOM initialization, one iteration of 3.8k certified
+   self-play records -- zero supervised or exact labels anywhere -- reaches
+   200/232 graded and **132/200 unseen, statistically indistinguishable
+   from the fully-supervised per-size pair's 134/200** on the same fresh
+   boards. The supervised prior is worth ~40 unseen solves to the warm
+   arms, but a label-free-from-zero planner already matches the supervised
+   baseline it was meant to need. (d) v12 is flat at one iteration: the
+   probe made generation 29% record-poorer (257/416 solved) without
+   moving any exam yet; its natural reading is that curriculum needs
+   MULTIPLE iterations to compound -- a wave-3 candidate (3-iteration v12
+   chain), not a kill. (e) Nothing beats the frozen seed nets' unseen bar
+   (175/200) after ONE g24r4-only iteration -- consistent with the main
+   line's §19 saturation; the unseen exam's discriminating power will show
+   on multi-iteration arms. Sources: `results/variants/<vid>/bench_*.json`
+   + `gate_*_vs_control.json`, report tab "Variants lab".
