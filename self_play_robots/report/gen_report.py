@@ -3113,6 +3113,10 @@ def _var_verdict(vid, gates):
     """(chip class, label) from the gate files vs control."""
     if vid == "v00_control":
         return "run", "control"
+    if vid == "v08_cold_start":
+        # a control arm: the GAP is the measurement, not a defeat
+        have = [g for g in gates.values() if ok(g)]
+        return ("run", "control (prior-worth)") if have else ("pend", "pending")
     have = [g for g in gates.values() if ok(g)]
     if not have:
         return "pend", "pending"
@@ -3126,7 +3130,8 @@ def _var_verdict(vid, gates):
         if sp_ is not None and sp_ < 0.05 and sa is not None and sb is not None and sa >= sb:
             win, loss = win or wa > wb, loss or wa < wb
     if win and not loss:
-        return "good", "win"
+        rep = RESULTS / "variants" / f"{vid}_s8" / "gate_graded_vs_control.json"
+        return ("good", "win") if ok(load(rep)) else ("good", "win (1 seed)")
     if loss and not win:
         return "bad", "loss"
     if win and loss:
