@@ -30,9 +30,12 @@ is duplicated there.
    (`apply_phase(..., ctx=_W)`).
    Sources: `variants/*.py`, `jobs/variant_*.slurm`.
 
-2. **Wave 1 submitted (2026-08-20).** 7 arms × ~2.5 h (5 h walltime each) + 1
-   baselines job (3 h walltime) ≈ projected 2.3 nh actual / 4.8 nh walltime
-   ceiling (program cap 50 nh). Job ids in the manifest below (filled at
-   submission). Per-arm results land in `results/variants/<vid>/` as
-   bench/gate/manifest JSONs and render in the report's Variants tab
-   ("pending" until then). Verdict entries follow as arms complete.
+2. **Wave 1 submitted (2026-08-20 09:23).** Jobs (qgpu, 1 GPU each):
+   baselines 4719424 (3 h), v00_control 4719425 (5 h), then after v00:
+   v01 4719426, v04 4719427, v06 4719428, v08 4719429, v09 4719430,
+   v12 4719431 (5 h each). Projected ≈2.3 nh actual (≈4.8 nh walltime
+   ceiling; program cap 50 nh). Per-arm results land in
+   `results/variants/<vid>/` (bench/gate/manifest JSONs) and render in the
+   report's Variants tab ("pending" until then). Verdict entries follow as
+   arms complete; any WIN is replicated at a second seed before being
+   claimed.
