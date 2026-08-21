@@ -181,3 +181,7 @@ is duplicated there.
    (emit-all + strict-value targets), fresh ids 9500+, gates vs mix_iter3's
    own benches -- does the lab transfer out of the lab? Projected: v14 2x0.35
    + v07 0.5 + chain 0.9 + adopt 0.75 ~ 3.2 nh this wave.
+   Conclusion (plain): the follow-up round tests the two-winner combination,
+   the first crack at mixing single robot moves into the planner's language,
+   a three-round curriculum, and whether the lab's recipe helps the main
+   training line -- all inside the approved budget.
