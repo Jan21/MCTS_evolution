@@ -3207,7 +3207,12 @@ def sec_variants() -> str:
                           "loop line solves the most by far (175-177 vs 134 vs 101), beats the "
                           "backward pair on both-solved moves (38/16, p=0.004), and still loses "
                           "both-solved moves to the forward planner 3/43 (9.95 vs 7.78) -- the "
-                          "subgoal language ceiling (main FINDINGS 3) measured on unseen boards."))
+                          "subgoal language ceiling (main FINDINGS 3) measured on unseen boards. "
+                          "Caveat: the forward baseline is the original network; a carefully "
+                          "re-tuned forward planner would likely solve a few more puzzles and "
+                          "could narrow these gap measurements slightly -- at the size where "
+                          "re-tuning was tried (smaller boards, 8 robots), it gained 8 hard "
+                          "puzzles of 184 (main FINDINGS 24)."))
 
     # per-variant cards
     exams = [("graded", "pinned graded (232)"), ("frontier", "pinned frontier (218)"),

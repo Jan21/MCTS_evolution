@@ -169,6 +169,12 @@ is duplicated there.
    also using fewer moves than it -- the first half of the project's goal is
    met. Only the move-by-move planner still beats us on solution length,
    which is exactly the limitation the action-space experiment attacks.
+   (Forward-baseline caveat, added 2026-08-21: the unseen forward row uses
+   the ORIGINAL g24r4 MoveNet; the parallel supervised session showed a
+   validated re-tune gains the forward planner +8 frontier puzzles of 184 at
+   g16r8 -- supervised_valuenet/FINDINGS 86, main FINDINGS 24. No rescued
+   g24r4 forward exists, so the row stands, but moves-gap measurements vs
+   forward should be read as vs-the-original-network.)
 
 6. **Wave 3 submitted (2026-08-21; coordinator-approved ~10-12 nh).**
    (1) v14_stack = v04+v09 without the non-replicating v06 (jobs 4731104
