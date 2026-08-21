@@ -173,7 +173,7 @@ def bench_main(argv=None):
         rows.append(row)
         if (i + 1) % 25 == 0:
             print(f"  [v07] {i + 1}/{len(instances)} "
-                  f"(slide wins so far: {sum(1 for r in rows if (r.get('search') or {}).get('winner', '').startswith('slide'))})",
+                  f"(slide wins so far: {sum(1 for r in rows if ((r.get('search') or {}).get('winner') or '').startswith('slide'))})",
                   flush=True)
 
     name = (f"v07 root-slides hybrid [B2] (b0={a.b0} top_m={a.top_m} sub={a.sub}) "
@@ -197,7 +197,7 @@ def bench_main(argv=None):
     tmp.write_text(json.dumps(payload))
     os.replace(tmp, out)
     agg = payload["systems"][name]["aggregate"]
-    sw = sum(1 for r in rows if (r.get("search") or {}).get("winner", "").startswith("slide") and r["solved"])
+    sw = sum(1 for r in rows if ((r.get("search") or {}).get("winner") or "").startswith("slide") and r["solved"])
     print(f"[v07] solved {agg['solved']}/{agg['n']} mv {agg['mean_moves']:.2f} "
           f"exp {agg['mean_expansions']:.0f} | slide-winners {sw}")
     print(f"V07 BENCH DONE {out}")
