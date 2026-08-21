@@ -30,6 +30,10 @@ SV = REPO / "supervised_valuenet"               # the supervised stack
 RESULTS = SPR / "results"
 OUT = HERE / "selfplay.html"
 
+sys.path.insert(0, str(HERE))                   # report/compare.py: the
+from compare import Entry as CmpEntry           # noqa: E402  apples-to-apples
+from compare import compare as cmp_compare      # noqa: E402  comparison engine
+
 STATS = {"read": [], "missing": [], "error": []}
 _CACHE: dict = {}
 
@@ -428,6 +432,60 @@ def protocol_bits(payload) -> str:
     if p.get("date"):
         bits.append(esc(p["date"]))
     return " &middot; ".join(bits)
+
+
+def _pw_cell(pw):
+    """Render one pairwise-delta cell from compare.py's pairwise dict."""
+    if not pw:
+        return DASH
+    if pw["delta"] is None:
+        return '<td class="pend">no shared solves</td>'
+    good = pw["delta"] < 0 and pw["sign_p"] < 0.05
+    return td_txt(f"{pw['delta']:+.2f} mv &middot; {pw['wins']}/{pw['losses']} "
+                  f"&middot; p={pw['sign_p']:.2g} "
+                  f"<span class=\"note\">(n={pw['both_n']})</span>",
+                  cls="hlnum" if good else "")
+
+
+def h2h_table(entries, ref_labels, note_extra=""):
+    """One apples-to-apples table: common-subset moves + paired deltas.
+
+    `entries` are compare.CmpEntry objects (label + payload + system filter);
+    `ref_labels` name which entries the delta columns compare against.
+    """
+    r = cmp_compare(entries, ref_labels=ref_labels)
+    if r.get("error"):
+        return (f'<p class="note"><span class="chip pend">not renderable</span> '
+                f"head-to-head skipped: {esc(r['error'])}</p>")
+    n_ok = sum(1 for e in r["entries"] if e["ok"])
+    headers = (["system", "solved",
+                f"moves, on the {r['common_n']} puzzles all {n_ok} systems solved"]
+               + [f"&Delta; moves vs {esc(rl)} <span class=\"note\">(both-solved; "
+                  f"&minus; = fewer = better)</span>" for rl in ref_labels]
+               + ["mean expansions (budget)"])
+    rows_ = []
+    for e in r["entries"]:
+        if not e["ok"]:
+            rows_.append(row([td_txt(esc(e["label"])),
+                              f'<td class="pend" colspan="{len(headers) - 1}">'
+                              "pending (job not finished)</td>"]))
+            continue
+        cells = [td_txt(esc(e["label"])),
+                 td_txt(f"{e['solved']}/{e['n']}"),
+                 td(e["moves_common"], ".2f", cls="hlnum")]
+        for rl in ref_labels:
+            cells.append(td_txt("<em>reference</em>") if e["label"] == rl
+                         else _pw_cell(e["pairwise"].get(rl)))
+        cells.append(td(e["mean_exp"], ".0f"))
+        rows_.append(row(cells))
+    note = ("Why these columns: a system&rsquo;s own &ldquo;mean moves&rdquo; averages over "
+            "the puzzles <em>it</em> solved, so raw means from two systems are NOT comparable "
+            "&mdash; the one that solves more hard puzzles looks worse. The "
+            "<strong>common-subset moves</strong> column scores every system on the exact same "
+            "puzzles, and each <strong>&Delta;</strong> column is paired on the puzzles both "
+            "systems solved (win/loss counts; p = fluke chance, exact sign test). "
+            + note_extra)
+    return table(headers, rows_, note=note, cls="wide")
 
 
 BASE_HEADERS = ["config", "set", "system", "solve rate", "mean realized moves",
@@ -974,6 +1032,67 @@ def sec_baselines() -> str:
                      f"n={esc(p.get('n_instances'))}). Expansion definition: "
                      f"{esc(p.get('expansion_definition'))}.</p>")
     out.append(seed_spread_line())
+
+    # ---- head-to-head: ONE comparable table per exam (owner 2026-08-21) ----
+    out.append("<h3>Head-to-head on the shared exam &mdash; forward vs backward "
+               "vs this project, same puzzles, same columns</h3>")
+    out.append("<p class='note'>The inventory table further down keeps each "
+               "system&rsquo;s own aggregates (useful as provenance, but its moves "
+               "columns are computed over different solve sets and must not be "
+               "compared across rows). The tables here fix that: all systems on one "
+               "exam are scored on the <em>same</em> puzzles. &ldquo;This "
+               "project&rdquo; rows: the mixed-size self-play curriculum&rsquo;s "
+               "final nets (<code>mix_b2mix_iter3</code>, B2 anytime) at 24/32/8r; "
+               "at 16&times;16 the M1 size-free pair (no self-play loop ran "
+               "there).</p>")
+    h2h_specs = [
+        ("g16r4", "16&times;16, 4 robots &mdash; legacy 450-puzzle exam", [
+            CmpEntry("backward supervised",
+                     load_sv("eval/results/final450_backward_prefix.json"),
+                     prefer_kind="backward"),
+            CmpEntry("forward supervised",
+                     load_sv("eval/results/comparison_forward.json"),
+                     prefer_kind="forward", name_contains="candidate_scored"),
+            CmpEntry("size-free pair (this project, M1)",
+                     load(RESULTS / "m1" / "mixed_value_warm_s21_g16r4.json")),
+        ]),
+        ("g24r4", "24&times;24, 4 robots &mdash; pinned graded exam", [
+            CmpEntry("backward supervised",
+                     load_sv("scaling/results/g24r4/comparison.json"),
+                     prefer_kind="backward"),
+            CmpEntry("forward supervised",
+                     load_sv("scaling/results/g24r4/comparison.json"),
+                     prefer_kind="forward"),
+            CmpEntry("self-play line (mix iter3)",
+                     load(RESULTS / "selfplay" / "mix_b2mix_iter3" /
+                          "bench_g24r4_astar.json")),
+        ]),
+        ("g24r8", "24&times;24, 8 robots &mdash; pinned graded exam", [
+            CmpEntry("backward supervised",
+                     load_sv("scaling/results/g24r8/comparison.json"),
+                     prefer_kind="backward"),
+            CmpEntry("forward supervised",
+                     load_sv("scaling/results/g24r8/comparison.json"),
+                     prefer_kind="forward"),
+            CmpEntry("self-play line (mix iter3)",
+                     load(RESULTS / "selfplay" / "mix_b2mix_iter3" /
+                          "bench_g24r8_astar.json")),
+        ]),
+        ("g32r4", "32&times;32, 4 robots &mdash; pinned graded exam", [
+            CmpEntry("backward supervised",
+                     load_sv("scaling/results/g32r4/comparison.json"),
+                     prefer_kind="backward"),
+            CmpEntry("forward supervised",
+                     load_sv("scaling/results/g32r4/comparison.json"),
+                     prefer_kind="forward"),
+            CmpEntry("self-play line (mix iter3)",
+                     load(RESULTS / "selfplay" / "mix_b2mix_iter3" /
+                          "bench_g32r4_astar.json")),
+        ]),
+    ]
+    for cfg, human, ents in h2h_specs:
+        out.append(f"<h4><code>{esc(cfg)}</code> &mdash; {human}</h4>")
+        out.append(h2h_table(ents, ("backward supervised", "forward supervised")))
 
     rows_ = []
     for cfg, rels in OPPONENT_FILES.items():
@@ -3172,6 +3291,12 @@ def sec_variants() -> str:
         '<li><strong>moves</strong> &mdash; actual robot moves in the final, replayed '
         'solution; the headline metric. <strong>regret</strong> = extra moves beyond '
         'the known optimum (standard exam only).</li>'
+        '<li><strong>why moves columns say &ldquo;on puzzles both/all solved&rdquo;'
+        '</strong> &mdash; a system&rsquo;s own average covers only the puzzles '
+        '<em>it</em> solved, so two systems&rsquo; raw averages are not comparable '
+        '(solving more hard puzzles makes the average look worse). Every moves '
+        'comparison on this page is therefore restricted to the same shared set of '
+        'puzzles, stated in the column header.</li>'
         '<li><strong>B2</strong> &mdash; the extended subgoal vocabulary the loop '
         'plans in; <strong>warm start</strong> &mdash; initializing training from the '
         'previous networks instead of from scratch.</li>'
@@ -3184,35 +3309,36 @@ def sec_variants() -> str:
         'did nothing.</li>'
         '</ul></details>')
 
-    # baselines on the unseen exam
-    rows = []
-    base_specs = [
-        ("frozen seed nets (mix_b2mix_iter2, B2 anytime)", vd / "baselines" / "seed_nets_unseen.json"),
-        ("supervised per-size backward pair (base vocab, prefix-check)", vd / "baselines" / "supervised_persize_unseen.json"),
-        ("supervised forward MoveNet (A*, primitive moves)", vd / "baselines" / "forward_movenet_unseen.json"),
-    ]
-    for label, path in base_specs:
-        agg = _var_agg(load(path))
-        rows.append(row([td_txt(esc(label)),
-                         td(f"{agg['solved']}/{agg['n']}" if agg.get("n") else None),
-                         td(agg.get("mean_moves")),
-                         td(agg.get("mean_expansions"), ".1f"),
-                         td(agg.get("mean_seconds"), ".1f")]))
-    out.append("<h3>Unseen-exam baselines</h3>")
-    out.append(table(["arm", "solved", "mean moves (solved)", "mean expansions", "s/inst"],
-                     rows,
-                     note="The generalization bar every variant must clear: fresh boards no net "
-                          "ever saw. No exact labels exist here (frontier-style scoring: solve "
-                          "rate + paired moves). Three-way reading (variants/FINDINGS.md 5): the "
-                          "loop line solves the most by far (175-177 vs 134 vs 101), beats the "
-                          "backward pair on both-solved moves (38/16, p=0.004), and still loses "
-                          "both-solved moves to the forward planner 3/43 (9.95 vs 7.78) -- the "
-                          "subgoal language ceiling (main FINDINGS 3) measured on unseen boards. "
-                          "Caveat: the forward baseline is the original network; a carefully "
-                          "re-tuned forward planner would likely solve a few more puzzles and "
-                          "could narrow these gap measurements slightly -- at the size where "
-                          "re-tuning was tried (smaller boards, 8 robots), it gained 8 hard "
-                          "puzzles of 184 (main FINDINGS 24)."))
+    # the unseen-exam headline: every system on the same 200 fresh puzzles
+    out.append("<h3>The unseen-exam headline &mdash; every system, same 200 fresh "
+               "puzzles, same columns</h3>")
+    out.append(h2h_table(
+        [CmpEntry("forward baseline (MoveNet A*)",
+                  load(vd / "baselines" / "forward_movenet_unseen.json")),
+         CmpEntry("backward baseline (supervised per-size)",
+                  load(vd / "baselines" / "supervised_persize_unseen.json")),
+         CmpEntry("seed nets (mix_b2mix_iter2)",
+                  load(vd / "baselines" / "seed_nets_unseen.json")),
+         CmpEntry("v00 control (one standard iteration)",
+                  load(vd / "v00_control" / "bench_unseen_astar.json")),
+         CmpEntry("v09 strict-moves value",
+                  load(vd / "v09_strict_value" / "bench_unseen_astar.json")),
+         CmpEntry("v14 stack (emit-all + strict value)",
+                  load(vd / "v14_stack" / "bench_unseen_astar.json")),
+         CmpEntry("v07 hybrid (subgoals + a first slide)",
+                  load(vd / "v07_hybrid_actions" / "bench_unseen_hybrid.json"))],
+        ("backward baseline (supervised per-size)",
+         "forward baseline (MoveNet A*)"),
+        note_extra="This is the generalization bar of the whole project: fresh "
+                   "boards no network ever saw, no exact labels anywhere. The "
+                   "project goal reads directly off the two &Delta; columns: beat "
+                   "the backward baseline (done, with fewer moves AND more solves) "
+                   "and close the moves gap to the forward baseline (v07 cuts it "
+                   "roughly in half). Caveat: the forward baseline is the original "
+                   "network; a carefully re-tuned forward planner would likely "
+                   "solve a few more puzzles and could narrow these gaps slightly "
+                   "&mdash; at the size where re-tuning was tried (smaller boards, "
+                   "8 robots) it gained 8 hard puzzles of 184 (main FINDINGS 24)."))
 
     # per-variant cards
     exams = [("graded", "pinned graded (232)"), ("frontier", "pinned frontier (218)"),
@@ -3253,46 +3379,60 @@ def sec_variants() -> str:
                        f'(job {esc(man.get("slurm_job_id"))}).</p>')
         rows = []
         res8 = vd / f"{vid}_s8"
-        for t, label in exams:
-            agg = _var_agg(load(res / f"bench_{t}_astar.json"))
-            ctl = _var_agg(load(vd / "v00_control" / f"bench_{t}_astar.json")) \
-                if vid != "v00_control" else {}
-            g = gates.get(t)
+
+        def _arm_cells(arm_path, ctl_path, label_html, agg, g, cls=""):
+            """One table row: shared-puzzle moves + paired delta vs control."""
+            ctl_agg = _var_agg(load(ctl_path)) if ctl_path else {}
+            pw, both_txt = None, DASH
+            if ctl_path:
+                r2 = cmp_compare([CmpEntry("arm", load(arm_path)),
+                                  CmpEntry("ctl", load(ctl_path))],
+                                 ref_labels=("ctl",))
+                if not r2.get("error") and r2["entries"][0]["ok"] \
+                        and r2["entries"][1]["ok"]:
+                    pw = r2["entries"][0]["pairwise"].get("ctl")
+            if pw and pw["delta"] is not None:
+                both_txt = td_txt(f"{pw['mean_self']:.2f} vs {pw['mean_ref']:.2f} "
+                                  f"<span class=\"note\">(n={pw['both_n']})</span>")
             gtxt = "&mdash;"
             if ok(g):
-                gtxt = (f"solves p={g.get('mcnemar_p'):.3g}; moves "
-                        f"{g.get('moves_wins_a', '?')}/{g.get('moves_wins_b', '?')} "
-                        f"p={g.get('sign_p_moves'):.3g}")
-            rows.append(row([
-                td_txt(esc(label)),
+                gtxt = f"p={g.get('mcnemar_p'):.3g}"
+            return row([
+                td_txt(label_html),
                 td(f"{agg['solved']}/{agg['n']}" if agg.get("n") else None),
-                td(agg.get("mean_moves")),
-                td(agg.get("mean_regret")) if t == "graded" else DASH,
+                td(f"{ctl_agg['solved']}/{ctl_agg['n']}" if ctl_agg.get("n") else None)
+                if ctl_path else DASH,
+                both_txt,
+                _pw_cell(pw) if ctl_path else DASH,
+                td(agg.get("mean_regret")) if agg.get("mean_regret") is not None
+                else DASH,
                 td(agg.get("mean_expansions"), ".1f"),
-                td(f"{ctl['solved']}/{ctl['n']}" if ctl.get("n") else None)
-                if vid != "v00_control" else DASH,
-                td(ctl.get("mean_moves")) if vid != "v00_control" else DASH,
-                td_txt(gtxt)]))
+                td_txt(gtxt)], cls=cls)
+
+        for t, label in exams:
+            arm_p = res / f"bench_{t}_astar.json"
+            ctl_p = (vd / "v00_control" / f"bench_{t}_astar.json") \
+                if vid != "v00_control" else None
+            rows.append(_arm_cells(arm_p, ctl_p, esc(label),
+                                   _var_agg(load(arm_p)), gates.get(t)))
             if res8.is_dir():
-                a8 = _var_agg(load(res8 / f"bench_{t}_astar.json"))
-                g8 = load(res8 / f"gate_{t}_vs_control.json")
-                g8t = "&mdash;"
-                if ok(g8):
-                    g8t = (f"solves p={g8.get('mcnemar_p'):.3g}; moves "
-                           f"{g8.get('moves_wins_a','?')}/{g8.get('moves_wins_b','?')} "
-                           f"p={g8.get('sign_p_moves'):.3g}")
-                c8 = _var_agg(load(vd / "v00_control_s8" / f"bench_{t}_astar.json"))
-                rows.append(row([
-                    td_txt(f"&nbsp;&nbsp;&#8627; {esc(label)} <em>(seed-8 replicate)</em>"),
-                    td(f"{a8['solved']}/{a8['n']}" if a8.get("n") else None),
-                    td(a8.get("mean_moves")),
-                    td(a8.get("mean_regret")) if t == "graded" else DASH,
-                    td(a8.get("mean_expansions"), ".1f"),
-                    td(f"{c8['solved']}/{c8['n']}" if c8.get("n") else None),
-                    td(c8.get("mean_moves")),
-                    td_txt(g8t)], cls="dim"))
-        out.append(table(["exam", "solved", "moves", "regret", "exp",
-                          "control solved", "control moves", "paired vs control"], rows))
+                a8_p = res8 / f"bench_{t}_astar.json"
+                c8_p = vd / "v00_control_s8" / f"bench_{t}_astar.json"
+                rows.append(_arm_cells(
+                    a8_p, c8_p,
+                    f"&nbsp;&nbsp;&#8627; {esc(label)} <em>(seed-8 replicate)</em>",
+                    _var_agg(load(a8_p)), load(res8 / f"gate_{t}_vs_control.json"),
+                    cls="dim"))
+        out.append(table(
+            ["exam", "solved", "control solved",
+             "moves, on puzzles BOTH solved (arm vs control)",
+             "&Delta; moves (win/loss, p)", "regret (graded only)", "exp",
+             "solves vs control (p)"], rows,
+            note="Moves are only ever compared on the puzzles the arm AND the "
+                 "control both solved (raw per-arm means cover different puzzle "
+                 "sets and are not comparable); &minus;&Delta; = the arm needs "
+                 "fewer moves. Solve counts are compared over the whole exam "
+                 "(p = fluke chance, exact McNemar)."))
     out.append("</section>")
     return "\n".join(out)
 
