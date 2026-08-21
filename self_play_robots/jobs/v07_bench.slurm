@@ -27,18 +27,18 @@ echo "SPR V07 start $(date +%F' '%T) job=$SLURM_JOB_ID nets=$P|$V"
 nvidia-smi -L
 B0=${B0:-600}; TOPM=${TOPM:-6}; SUB=${SUB:-100}
 # ---- hybrid arm (own driver; single process, GPU) -------------------------------
-hyb() {  # hyb <tag> <instances> <boards> <envdir-or-->
+hyb() {  # hyb <tag> <instances> <boards> <envdir-or-- (- = g24r4 config dir)>
   local out="$RES/bench_$1_hybrid.json"
   [ -s "$out" ] && { echo "SKIP hybrid $1"; return 0; }
   local t0=$SECONDS
-  local envv=""
-  [ "$4" != - ] && export RR_ENV_DIR="$4" RR_GRID=24 RR_ROBOTS=4 RR_WALLS=108
+  local ed="$4"
+  [ "$ed" = - ] && ed=$(python -c "from scaling.configs import get; print(get('g24r4').env_dir_abs)")
+  # GridEnv/leanboard read RR_* at import/call time -- always pin the g24r4 config
+  RR_ENV_DIR="$ed" RR_GRID=24 RR_ROBOTS=4 RR_WALLS=108 \
   python -m variants.v07_hybrid_actions --instances "$2" --policy "$P" --value "$V" \
       --b0 "$B0" --top-m "$TOPM" --sub "$SUB" --boards "$3" --device cuda --out "$out" \
-      || { echo "SPR V07 FAILED hybrid $1"; unset RR_ENV_DIR RR_GRID RR_ROBOTS RR_WALLS; return 1; }
-  [ "$4" != - ] && unset RR_ENV_DIR RR_GRID RR_ROBOTS RR_WALLS
+      || { echo "SPR V07 FAILED hybrid $1"; return 1; }
   # replay-certify the composed move dumps
-  local ed="$4"; [ "$ed" = - ] && ed=$(python -c "from scaling.configs import get; print(get('g24r4').env_dir_abs)")
   python -m eval.replay_validate --compare "$out" --env-dir "$ed" \
       > "$RES/replay_$1_hybrid.log" 2>&1 || { echo "SPR V07 REPLAY FAILED $1"; return 1; }
   echo "SPR V07 hybrid $1 took $((SECONDS-t0))s (replay OK)"
