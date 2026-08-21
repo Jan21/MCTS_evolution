@@ -41,6 +41,8 @@ is duplicated there.
    report's Variants tab ("pending" until then). Verdict entries follow as
    arms complete; any WIN is replicated at a second seed before being
    claimed.
+   Conclusion (plain): seven experiments queued at roughly two nights of one
+   graphics card's time, every one dry-run-tested first.
 
 3. **Wave-1 interim: unseen-bench bug found and fixed; baselines + control
    landed (2026-08-20).** (a) BUG: the runner's unseen bench ran without
@@ -111,6 +113,9 @@ is duplicated there.
    line's §19 saturation; the unseen exam's discriminating power will show
    on multi-iteration arms. Sources: `results/variants/<vid>/bench_*.json`
    + `gate_*_vs_control.json`, report tab "Variants lab".
+   Conclusion (plain): two changes look like real wins, one is a decisive
+   loss, the blank-slate planner ties the supervised baseline on new boards,
+   and every apparent win goes to a second-seed retest before being believed.
 
 5. **Wave-2: replications, the combo arm, and the three-way unseen table
    (2026-08-20/21; jobs 4726033-4726038, ~1.8 nh; program total ~6.5 nh).**
