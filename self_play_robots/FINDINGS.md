@@ -878,3 +878,31 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     frontier-solves peak) and iteration-3 nets (graded peak) are both kept.
     Sources: `results/selfplay/mix_b2mix_iter{2,3}/` (benches, gates,
     manifests), `runs/spr/spr-mix-it{2,3}-470431{5,6}.out`, §20 table.
+
+23. **Variants lab, waves 1–2 (cross-reference; full log in
+    `variants/FINDINGS.md` entries 1–5, tables in the report's Variants tab;
+    jobs 4719424–31, 4722745–51, 4726033–38 ≈ 6.5 nh): two replicated design
+    wins, one honest non-replication, and the project's headline first half
+    met on unseen boards by a fully label-free line (2026-08-20/21).**
+    (a) **v09 strict-value — the lab's best arm, 2-seed win**: training the
+    value net on realized STRICT moves (the benchmark metric) instead of
+    abstract plan cost improves every exam in both seeds — frontier Fisher
+    p=0.0015, best graded regret of the program (1.98), best unseen row ever
+    (177/200). (b) **v04 emit-all — 2-seed win** on frontier solves (Fisher
+    3.4e-5); new recommended generation default. (c) v06 Gumbel-root's
+    seed-7 graded-moves win did NOT replicate (19/6 → 14/16) — downgraded.
+    (d) v01 visit-count policy targets lose decisively: the certified-cost
+    softmax target is load-bearing. (e) v08 cold start: from RANDOM init,
+    one label-free iteration matches the fully-supervised per-size pair on
+    unseen boards (132 vs 134/200) — the supervised prior is worth ≈40
+    unseen solves but is not needed to reach supervised-level competence.
+    (f) **Unseen-board exam** (200 fresh instances, ids 20000+, all systems
+    at 1200/k5): loop line 175–177/200 vs backward supervised 134 vs forward
+    101; both-solved moves vs backward 38/16 (12.57 vs 14.78, p=0.004) —
+    PROBLEM.md §7's success statement's first half ("≥ backward solves,
+    fewer moves") holds OUT OF DISTRIBUTION with no human labels in the
+    loop; the second half (moves vs forward: 3/43 against, p=5e-10) is the
+    §3 language ceiling measured out-of-distribution and is wave 3's target
+    (hybrid action space). Wave 3 approved ≈10–12 nh: v04+v09 stack, v07
+    hybrid subgoal+slide space, v12 chained, adoption run into the M5
+    curriculum recipe.
