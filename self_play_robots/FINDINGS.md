@@ -906,3 +906,22 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     (hybrid action space). Wave 3 approved ≈10–12 nh: v04+v09 stack, v07
     hybrid subgoal+slide space, v12 chained, adoption run into the M5
     curriculum recipe.
+
+24. **Cross-reference — the parallel supervised campaign closed its three
+    review objections (supervised_valuenet/FINDINGS §83–§86, 2026-08-20/21,
+    ~7 nh, other session): 3-seed replication of both headline rungs (32×32
+    rock-solid, +50 median; 16×16/8r bimodal, honest median +14), a 9-way
+    tuned "fair second chance" forward planner, and a by-reference A/B
+    (+3/450 n.s. — the ceiling is a language property).** What matters for
+    THIS project: the rescued forward planner (selection by validation only)
+    takes the g16r8 gradable crown outright (266/266) but gains only 8
+    frontier puzzles — the backward scale margin stands (+11.3 pts,
+    p=1.7e-09). Implication for our headline: our frozen forward baselines
+    (arena rows, and the variants lab's unseen-exam forward row, which uses
+    the original g24r4 MoveNet) survive the "weak opponent" objection at the
+    rung where it was tested, but any future moves-vs-forward claim at other
+    rungs should note the forward planner improves ~5 graded/+8 frontier
+    under a 9-draw tune — the v07 hybrid's Δ1.16 both-solved moves gap
+    should be read against a potentially ~slightly-stronger forward
+    opponent. kSubS baseline, forward self-play and a second domain remain
+    the successor project's documented future work (their PAPER_PLAN.md).
