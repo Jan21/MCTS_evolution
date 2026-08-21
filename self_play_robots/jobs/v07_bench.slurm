@@ -47,15 +47,16 @@ hyb unseen "$EXAM" lean "$EXAMB" || exit 1
 hyb graded "$GRADED" pkl - || exit 1
 # ---- control arm: SAME nets, standard arena MCTS best-at-budget ------------------
 ctl() {  # ctl <tag> <instances> <extraflags> [arena args]
-  local out="$RES/bench_$1_stdmcts.json"; local xtra="$3"; shift 3
-  [ -s "$out" ] && { echo "SKIP ctl $1"; return 0; }
+  local tag="$1" inst="$2" xtra="$3"; shift 3
+  local out="$RES/bench_${tag}_stdmcts.json"
+  [ -s "$out" ] && { echo "SKIP ctl $tag"; return 0; }
   local t0=$SECONDS
-  python -m spr.arena bench --arm "v07ctl_$1" --config g24r4 --instances "$2" \
+  python -m spr.arena bench --arm "v07ctl_${tag}" --config g24r4 --instances "$inst" \
       --policy "$P" --value "$V" --driver spr \
       --flags "--search mcts --best-at-budget --vocab b2 --anytime $xtra" \
       --width 8 --threads 2 --device cuda "$@" --out "$out" \
-      || { echo "SPR V07 FAILED ctl $1"; return 1; }
-  echo "SPR V07 ctl $1 took $((SECONDS-t0))s"
+      || { echo "SPR V07 FAILED ctl $tag"; return 1; }
+  echo "SPR V07 ctl $tag took $((SECONDS-t0))s"
 }
 ctl unseen "$EXAM" "--boards lean" --env-dir "$EXAMB" || exit 1
 ctl graded "$GRADED" "" || exit 1
