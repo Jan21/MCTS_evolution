@@ -49,7 +49,7 @@
 
 <h1>NN Labeler: replacing the exact solver for data labeling across grid sizes</h1>
 <p class="sub">Ricochet Robots planner study &middot; process report &middot; started 2026-07-31 &middot;
-current through FINDINGS &sect;85 (2026-08-19; causality arms answered) &middot; local document,
+current through FINDINGS &sect;87 (2026-08-21; follow-up campaign complete) &middot; local document,
 updated as milestones land. Every number traces to a named file in the repo.</p>
 
 <h2>1. The problem</h2>
@@ -893,8 +893,12 @@ error morphology; injected gap mean 1.42 vs the twin's 1.20). Three arms share o
 differ only in argmin agreement: 100% / 86.0% / 82.2% (the g24r8 collapse cell's dose, now at 4
 robots). Same recipe and pinned bench as every g24r4 arm (<code>jobs/corruption_arm.slurm</code>).
 Alongside: the g32r4 twin's seed-21 replicate (job 4678373) &mdash; the &sect;9a optimality slip
-(45.9 vs 51.7 % optimal) is smaller than the measured same-arm seed spread, so it is the study's
-most noise-vulnerable claim. Pre-registered reading (&sect;80c): 82.2% collapses &rArr; fidelity is
+(45.9 vs 51.7 % optimal) is smaller than the measured same-arm seed spread, so it was the study's
+most noise-vulnerable claim. <strong>Landed 2026-08-21 (&sect;87):</strong> seed 21 gives 84.6 solve /
+47.3 opt / 3.26 regret — solve equivalence identical to the tenth, and the optimality slip
+REPLICATES (both twin seeds 4.4&ndash;5.8 pts under exact, twin-side spread 1.4 pts). Consistent
+with &sect;85: argmin corruption did not produce a slip, so the twin's slip traces to the pipeline's
+other properties, not agreement per se. Pre-registered reading (&sect;80c): 82.2% collapses &rArr; fidelity is
 causal and the threshold claim is licensed; 82.2% holds &rArr; the g24r8 collapse was a robot-count
 effect. Results fill the causality section of <code>suite.html</code> automatically.</p>
 <p><strong>The answer (&sect;85): the second branch fired — no collapse.</strong> The dose-response on the

@@ -2917,3 +2917,23 @@ record what was done about the first three items.)_
    `scaling/runs/g16r8/forward-rescue/*/BEST.json`, `SELECTED.json`;
    `runs/fwdgrid/`. Report: fairness tab "A fair second chance for the
    forward planner"; 1686 checks + 56 assertions.
+
+87. **The g32r4 twin seed replicate lands: solve-rate equivalence identical,
+   the optimality slip REPLICATES (2026-08-21, job 4719740 chain
+   4678373→4693023→4719740, ~4.1 nh total for both twin-seed cells).**
+   Twin seed 21 at g32r4: **84.6 solve / 47.3 opt / 3.26 regret** graded,
+   **45.8%** frontier — vs twin seed 11's 84.6 / 45.9 / 3.56 and 48.0, and
+   exact's 84.0 / 51.7 / 2.37 and 46.2. Reading: (a) solve-rate
+   equivalence at 89% label fidelity is now 2-seed and exact to the tenth
+   (84.6 = 84.6); (b) the §74 optimality deficit is not seed noise — both
+   twin draws sit 4.4–5.8 pts under exact with only 1.4 pts of twin-side
+   spread. Remaining caveat: the exact arm is single-seed at this config
+   (its measured spread at g24r4 was 1.5 pts opt). Consistent with §85's
+   mechanism story: near-tie argmin corruption did NOT produce an
+   optimality slip (d822 opt went UP), so the twin's slip presumably comes
+   from the twin pipeline's other properties (non-random certify-drop /
+   larger errors), not from argmin disagreement per se. With this cell the
+   follow-up campaign is COMPLETE: every launched experiment has landed
+   and every planned row on suite.html is filled.
+   Sources: `scaling/results/g32r4/comparison{,_ungraded}_nntwin-seed21.json`,
+   `runs/nnlab/twin_retrain_47{19740,04316}.out`.

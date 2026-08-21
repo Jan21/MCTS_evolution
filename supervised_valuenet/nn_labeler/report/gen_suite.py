@@ -825,13 +825,24 @@ def sec_downstream():
     ex, tw = solve("scaling/results/g32r4/comparison.json"), solve("scaling/results/g32r4/comparison_nntwin.json")
     exo, two = optpct("scaling/results/g32r4/comparison.json"), optpct("scaling/results/g32r4/comparison_nntwin.json")
     dep = solve("scaling/results/g32r4/comparison_nndeploy.json")
+    tw21 = solve("scaling/results/g32r4/comparison_nntwin-seed21.json")
+    two21 = optpct("scaling/results/g32r4/comparison_nntwin-seed21.json")
     if None not in (ex, tw, exo, two):
         v = (chip("good", "solve rate holds") + chip("warn", "optimality slips") +
              f" At 89% fidelity solve rate is equivalent ({p1(tw)}% vs {p1(ex)}%) "
              f"but optimality slips ({two:.1f}% vs {exo:.1f}% of solutions "
-             "perfectly optimal). Caveat: this gap is smaller than the seed "
-             "spread measured at 24&times;24 — the seed-21 replicate row "
-             "below tests it.")
+             "perfectly optimal).")
+        if None not in (tw21, two21):
+            v += (f" The seed-21 replicate settles the noise question: solve "
+                  f"{p1(tw21)}% (identical to seed 11) and optimality "
+                  f"{two21:.1f}% — both twin seeds sit under exact with only "
+                  f"{abs(two - two21):.1f} pts of twin-side spread, so the "
+                  "slip is real, not seed luck (exact arm still single-seed "
+                  "here).")
+        else:
+            v += (" Caveat: this gap is smaller than the seed spread "
+                  "measured at 24&times;24 — the seed-21 replicate row "
+                  "below tests it.")
         if dep is not None:
             v += (f" The <strong>deployment arm</strong> — NN-made boards, puzzles "
                   f"and labels, no exact solver anywhere — solves {p1(dep)}%, "
