@@ -196,3 +196,25 @@ is duplicated there.
    the first crack at mixing single robot moves into the planner's language,
    a three-round curriculum, and whether the lab's recipe helps the main
    training line -- all inside the approved budget.
+
+7. **v14_stack (v04+v09): the winners compose -- WIN on the unseen exam at
+   both seeds; adopted as the lab recipe (2026-08-21, jobs 4731104/4731105,
+   0.85 nh).** Seed 7: unseen 179/200 vs control 172 (p=0.039; the best
+   unseen row of the program, one above v07's subgoal-only... see entry 8),
+   graded 228 with moves 25/12 (p=0.047) and regret 2.02; frontier 158
+   (flat). Seed 8: unseen 177 vs 170 (p=0.065) WITH unseen moves 32/15
+   (p=0.019); frontier 168 vs 155 (p=0.019); graded flat. Combined unseen
+   Fisher p~0.016 with same-direction rows at both seeds; record volume
+   ~7.1-7.9k per iteration (emit-all).
+   Reading: the two adopted changes stack where it matters most -- the
+   generalization exam -- and seed 8 adds the first UNSEEN moves win of the
+   program. The one thing the stack does not reproduce is v04's big
+   single-seed frontier jump at seed 7 (158 vs v04's 171/176): with strict
+   targets in the mix the extra data buys unseen breadth rather than
+   frontier reach. Distinct mechanisms, distinct exams -- worth carrying
+   BOTH recipes: v14 for generalization-facing loops, v04-only when the
+   frontier is the target.
+   Conclusion (plain): combining the two proven changes works and is now the
+   default recipe; it wins on exactly the exam the project cares about
+   (never-seen boards), at both seeds.
+   Sources: `results/variants/v14_stack{,_s8}/`, gates vs same-seed controls.
