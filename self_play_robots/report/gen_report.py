@@ -3164,6 +3164,7 @@ def sec_variants() -> str:
     base_specs = [
         ("frozen seed nets (mix_b2mix_iter2, B2 anytime)", vd / "baselines" / "seed_nets_unseen.json"),
         ("supervised per-size backward pair (base vocab, prefix-check)", vd / "baselines" / "supervised_persize_unseen.json"),
+        ("supervised forward MoveNet (A*, primitive moves)", vd / "baselines" / "forward_movenet_unseen.json"),
     ]
     for label, path in base_specs:
         agg = _var_agg(load(path))
@@ -3177,8 +3178,11 @@ def sec_variants() -> str:
                      rows,
                      note="The generalization bar every variant must clear: fresh boards no net "
                           "ever saw. No exact labels exist here (frontier-style scoring: solve "
-                          "rate + paired moves). The forward MoveNet baseline needs a lean-board "
-                          "path in spr.fwd (wave 2)."))
+                          "rate + paired moves). Three-way reading (variants/FINDINGS.md 5): the "
+                          "loop line solves the most by far (175-177 vs 134 vs 101), beats the "
+                          "backward pair on both-solved moves (38/16, p=0.004), and still loses "
+                          "both-solved moves to the forward planner 3/43 (9.95 vs 7.78) -- the "
+                          "subgoal language ceiling (main FINDINGS 3) measured on unseen boards."))
 
     # per-variant cards
     exams = [("graded", "pinned graded (232)"), ("frontier", "pinned frontier (218)"),
@@ -3187,6 +3191,11 @@ def sec_variants() -> str:
         res = vd / vid
         gates = {t: load(res / f"gate_{t}_vs_control.json") for t, _ in exams}
         cls, verdict = _var_verdict(vid, gates)
+        note = ""
+        vj = load(res / "VERDICT.json")
+        if ok(vj):                       # curated verdict (replication-aware)
+            cls, verdict = vj.get("chip", cls), vj.get("label", verdict)
+            note = vj.get("note", "")
         if v.status in ("parked", "stub"):
             cls, verdict = "pend", v.status
         out.append(f'<h3 id="var-{esc(vid)}"><code>{esc(vid)}</code> &mdash; {esc(v.title)} '
@@ -3195,6 +3204,8 @@ def sec_variants() -> str:
         out.append(f'<p><strong>What this experiment means:</strong> {esc(v.hypothesis)} '
                    f'<br><strong>Mechanism:</strong> {esc(v.mechanism)} '
                    f'<br><strong>How it would fail:</strong> {esc(v.expected_failure)}</p>')
+        if note:
+            out.append(f'<p class="note"><strong>Verdict note:</strong> {esc(note)}</p>')
         if v.status == "stub":
             out.append('<p class="pendbox">Design stub &mdash; not implemented yet; '
                        'see the module docstring for the sketch and blockers.</p>')
@@ -3211,6 +3222,7 @@ def sec_variants() -> str:
                        f'records, {man.get("seconds", 0):.0f}s '
                        f'(job {esc(man.get("slurm_job_id"))}).</p>')
         rows = []
+        res8 = vd / f"{vid}_s8"
         for t, label in exams:
             agg = _var_agg(load(res / f"bench_{t}_astar.json"))
             ctl = _var_agg(load(vd / "v00_control" / f"bench_{t}_astar.json")) \
@@ -3231,6 +3243,24 @@ def sec_variants() -> str:
                 if vid != "v00_control" else DASH,
                 td(ctl.get("mean_moves")) if vid != "v00_control" else DASH,
                 td_txt(gtxt)]))
+            if res8.is_dir():
+                a8 = _var_agg(load(res8 / f"bench_{t}_astar.json"))
+                g8 = load(res8 / f"gate_{t}_vs_control.json")
+                g8t = "&mdash;"
+                if ok(g8):
+                    g8t = (f"solves p={g8.get('mcnemar_p'):.3g}; moves "
+                           f"{g8.get('moves_wins_a','?')}/{g8.get('moves_wins_b','?')} "
+                           f"p={g8.get('sign_p_moves'):.3g}")
+                c8 = _var_agg(load(vd / "v00_control_s8" / f"bench_{t}_astar.json"))
+                rows.append(row([
+                    td_txt(f"&nbsp;&nbsp;&#8627; {esc(label)} <em>(seed-8 replicate)</em>"),
+                    td(f"{a8['solved']}/{a8['n']}" if a8.get("n") else None),
+                    td(a8.get("mean_moves")),
+                    td(a8.get("mean_regret")) if t == "graded" else DASH,
+                    td(a8.get("mean_expansions"), ".1f"),
+                    td(f"{c8['solved']}/{c8['n']}" if c8.get("n") else None),
+                    td(c8.get("mean_moves")),
+                    td_txt(g8t)], cls="dim"))
         out.append(table(["exam", "solved", "moves", "regret", "exp",
                           "control solved", "control moves", "paired vs control"], rows))
     out.append("</section>")

@@ -1,0 +1,7022 @@
+{
+ "protocol": {
+  "expansions": 1200,
+  "k": 5,
+  "instances_file": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/self_play_robots/results/variants/exam/g24r4_unseen.jsonl",
+  "instances_sha256": "1385462b45db9c58b43c9a1bbde30d1d9823c720a3f72f93740f0975a8a623b5",
+  "n_instances": 200,
+  "instances_meta": null,
+  "checkpoints": {
+   "/scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt": "2026-07-13T21:11:59"
+  },
+  "device": "cuda",
+  "d_star_placeholder": true,
+  "dump_moves": true,
+  "date": "2026-08-21T00:19:02",
+  "results_file": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/self_play_robots/results/variants/baselines/forward_movenet_unseen.json.tmp",
+  "search": "astar",
+  "arm": "forward",
+  "search_options": {
+   "mcts_c": 1.5,
+   "mcts_backup": "min",
+   "best_at_budget": false,
+   "stop_after": null,
+   "root_noise": 0.0,
+   "max_depth": 64
+  },
+  "seed": 0,
+  "command": "merged from 50 shard runs: python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.000.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.000.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.001.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.001.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.002.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.002.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.003.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.003.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.004.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.004.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.005.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.005.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.006.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.006.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.007.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.007.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.008.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.008.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.009.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.009.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.010.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.010.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.011.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.011.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.012.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.012.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.013.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.013.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.014.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.014.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.015.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.015.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.016.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.016.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.017.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.017.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.018.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.018.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.019.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.019.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.020.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.020.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.021.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.021.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.022.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.022.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.023.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.023.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.024.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.024.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.025.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.025.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.026.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.026.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.027.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.027.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.028.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.028.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.029.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.029.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.030.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.030.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.031.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.031.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.032.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.032.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.033.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.033.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.034.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.034.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.035.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.035.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.036.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.036.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.037.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.037.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.038.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.038.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.039.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.039.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.040.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.040.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.041.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.041.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.042.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.042.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.043.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.043.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.044.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.044.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.045.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.045.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.046.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.046.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.047.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.047.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.048.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.048.json.tmp.608283 --md /dev/null | python -m spr.fwd.bench --instances /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.049.jsonl --ckpt /scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt --search astar --expansions 1200 --k 5 --threads 2 --device cuda --dump-moves --out /scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f/chunk.049.json.tmp.608283 --md /dev/null",
+  "expansion_definition": "one expanded search node whose children are generated (= 1 policy pass + 1 batched value pass over <= k children), identical to eval/compare.py's forward unit; greedy arms have no policy+value pair per step, so their `expansions` counts STEPS and accounting.nn_calls carries the true NN cost"
+ },
+ "systems": {
+  "spr.fwd astar forward move planner (/scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt)": {
+   "kind": "forward",
+   "aggregate": {
+    "n": 200,
+    "solved": 101,
+    "solve_rate": 0.505,
+    "d_star_placeholder": true,
+    "mean_regret": null,
+    "pct_optimal": null,
+    "mean_moves": 7.782178217821782,
+    "mean_expansions": 688.455,
+    "mean_seconds": 156.50516456305496,
+    "accounting": {
+     "nn_calls": 1377.91,
+     "nn_policy_calls": 0.0,
+     "nn_value_calls": 0.0,
+     "physics_calls_verify": 0.0,
+     "expansions_from_calls": 688.455,
+     "expansions_own": 688.455
+    }
+   },
+   "rows": [
+    {
+     "env_id": 20000,
+     "d_star": null,
+     "solved": true,
+     "moves": 4,
+     "regret": null,
+     "expansions": 4,
+     "seconds": 1.2204508709983202,
+     "realized_strict": 4,
+     "moves_seq": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 9,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 4,
+      "expansions_own": 4
+     }
+    },
+    {
+     "env_id": 20000,
+     "d_star": null,
+     "solved": true,
+     "moves": 8,
+     "regret": null,
+     "expansions": 28,
+     "seconds": 6.818934487000661,
+     "realized_strict": 8,
+     "moves_seq": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 57,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 28,
+      "expansions_own": 28
+     }
+    },
+    {
+     "env_id": 20000,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.43092666899975,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20000,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.4938825190002,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20001,
+     "d_star": null,
+     "solved": true,
+     "moves": 12,
+     "regret": null,
+     "expansions": 275,
+     "seconds": 66.38111147299787,
+     "realized_strict": 12,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 551,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 275,
+      "expansions_own": 275
+     }
+    },
+    {
+     "env_id": 20001,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.7031514320006,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20001,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.82129881999936,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20001,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.2764021510011,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20002,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.60734164300084,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20002,
+     "d_star": null,
+     "solved": true,
+     "moves": 9,
+     "regret": null,
+     "expansions": 231,
+     "seconds": 53.941623050999624,
+     "realized_strict": 9,
+     "moves_seq": [
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 463,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 231,
+      "expansions_own": 231
+     }
+    },
+    {
+     "env_id": 20002,
+     "d_star": null,
+     "solved": true,
+     "moves": 12,
+     "regret": null,
+     "expansions": 673,
+     "seconds": 161.7390046239998,
+     "realized_strict": 12,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 1347,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 673,
+      "expansions_own": 673
+     }
+    },
+    {
+     "env_id": 20002,
+     "d_star": null,
+     "solved": true,
+     "moves": 7,
+     "regret": null,
+     "expansions": 16,
+     "seconds": 3.9280364490005013,
+     "realized_strict": 7,
+     "moves_seq": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 33,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 16,
+      "expansions_own": 16
+     }
+    },
+    {
+     "env_id": 20003,
+     "d_star": null,
+     "solved": true,
+     "moves": 8,
+     "regret": null,
+     "expansions": 40,
+     "seconds": 9.911201363000146,
+     "realized_strict": 8,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 81,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 40,
+      "expansions_own": 40
+     }
+    },
+    {
+     "env_id": 20003,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.43433452700265,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20003,
+     "d_star": null,
+     "solved": true,
+     "moves": 10,
+     "regret": null,
+     "expansions": 60,
+     "seconds": 14.50576135799929,
+     "realized_strict": 10,
+     "moves_seq": [
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 121,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 60,
+      "expansions_own": 60
+     }
+    },
+    {
+     "env_id": 20003,
+     "d_star": null,
+     "solved": true,
+     "moves": 3,
+     "regret": null,
+     "expansions": 3,
+     "seconds": 0.8136050339999201,
+     "realized_strict": 3,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 7,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 3,
+      "expansions_own": 3
+     }
+    },
+    {
+     "env_id": 20004,
+     "d_star": null,
+     "solved": true,
+     "moves": 5,
+     "regret": null,
+     "expansions": 6,
+     "seconds": 1.7650532349980494,
+     "realized_strict": 5,
+     "moves_seq": [
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 13,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 6,
+      "expansions_own": 6
+     }
+    },
+    {
+     "env_id": 20004,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.43246237300264,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20004,
+     "d_star": null,
+     "solved": true,
+     "moves": 7,
+     "regret": null,
+     "expansions": 70,
+     "seconds": 16.900515949997498,
+     "realized_strict": 7,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 141,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 70,
+      "expansions_own": 70
+     }
+    },
+    {
+     "env_id": 20004,
+     "d_star": null,
+     "solved": true,
+     "moves": 10,
+     "regret": null,
+     "expansions": 32,
+     "seconds": 7.652912911002204,
+     "realized_strict": 10,
+     "moves_seq": [
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 65,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 32,
+      "expansions_own": 32
+     }
+    },
+    {
+     "env_id": 20005,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.65412312099943,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20005,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.7666552720002,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20005,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.4420229770003,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20005,
+     "d_star": null,
+     "solved": true,
+     "moves": 8,
+     "regret": null,
+     "expansions": 44,
+     "seconds": 10.670158701999753,
+     "realized_strict": 8,
+     "moves_seq": [
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 89,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 44,
+      "expansions_own": 44
+     }
+    },
+    {
+     "env_id": 20006,
+     "d_star": null,
+     "solved": true,
+     "moves": 8,
+     "regret": null,
+     "expansions": 37,
+     "seconds": 9.205731384998217,
+     "realized_strict": 8,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 75,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 37,
+      "expansions_own": 37
+     }
+    },
+    {
+     "env_id": 20006,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.432319689,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20006,
+     "d_star": null,
+     "solved": true,
+     "moves": 14,
+     "regret": null,
+     "expansions": 1032,
+     "seconds": 245.2860222470008,
+     "realized_strict": 14,
+     "moves_seq": [
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 2065,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1032,
+      "expansions_own": 1032
+     }
+    },
+    {
+     "env_id": 20006,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.21757475699997,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20007,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.63805620199855,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20007,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.5924065379986,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20007,
+     "d_star": null,
+     "solved": true,
+     "moves": 6,
+     "regret": null,
+     "expansions": 8,
+     "seconds": 2.0008275250002043,
+     "realized_strict": 6,
+     "moves_seq": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 17,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 8,
+      "expansions_own": 8
+     }
+    },
+    {
+     "env_id": 20007,
+     "d_star": null,
+     "solved": true,
+     "moves": 6,
+     "regret": null,
+     "expansions": 38,
+     "seconds": 8.761430878999818,
+     "realized_strict": 6,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 77,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 38,
+      "expansions_own": 38
+     }
+    },
+    {
+     "env_id": 20008,
+     "d_star": null,
+     "solved": true,
+     "moves": 9,
+     "regret": null,
+     "expansions": 155,
+     "seconds": 37.45071528399785,
+     "realized_strict": 9,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 311,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 155,
+      "expansions_own": 155
+     }
+    },
+    {
+     "env_id": 20008,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.8483717309973,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20008,
+     "d_star": null,
+     "solved": true,
+     "moves": 7,
+     "regret": null,
+     "expansions": 64,
+     "seconds": 15.498771661001228,
+     "realized_strict": 7,
+     "moves_seq": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 129,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 64,
+      "expansions_own": 64
+     }
+    },
+    {
+     "env_id": 20008,
+     "d_star": null,
+     "solved": true,
+     "moves": 8,
+     "regret": null,
+     "expansions": 34,
+     "seconds": 8.2675740650011,
+     "realized_strict": 8,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 69,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 34,
+      "expansions_own": 34
+     }
+    },
+    {
+     "env_id": 20009,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.1335745889992,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20009,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.30263405499863,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20009,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 284.9631815190005,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20009,
+     "d_star": null,
+     "solved": true,
+     "moves": 11,
+     "regret": null,
+     "expansions": 292,
+     "seconds": 70.34914684500109,
+     "realized_strict": 11,
+     "moves_seq": [
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 585,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 292,
+      "expansions_own": 292
+     }
+    },
+    {
+     "env_id": 20010,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.6374646059994,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20010,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 284.21323811899856,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20010,
+     "d_star": null,
+     "solved": true,
+     "moves": 8,
+     "regret": null,
+     "expansions": 93,
+     "seconds": 22.139202892001776,
+     "realized_strict": 8,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 187,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 93,
+      "expansions_own": 93
+     }
+    },
+    {
+     "env_id": 20010,
+     "d_star": null,
+     "solved": true,
+     "moves": 6,
+     "regret": null,
+     "expansions": 25,
+     "seconds": 6.129076369998074,
+     "realized_strict": 6,
+     "moves_seq": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 51,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 25,
+      "expansions_own": 25
+     }
+    },
+    {
+     "env_id": 20011,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.2834735239994,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20011,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 284.1605150309988,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20011,
+     "d_star": null,
+     "solved": true,
+     "moves": 3,
+     "regret": null,
+     "expansions": 3,
+     "seconds": 0.8141342449998774,
+     "realized_strict": 3,
+     "moves_seq": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 7,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 3,
+      "expansions_own": 3
+     }
+    },
+    {
+     "env_id": 20011,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 287.036168816001,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20012,
+     "d_star": null,
+     "solved": true,
+     "moves": 10,
+     "regret": null,
+     "expansions": 621,
+     "seconds": 149.01847039999848,
+     "realized_strict": 10,
+     "moves_seq": [
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 1243,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 621,
+      "expansions_own": 621
+     }
+    },
+    {
+     "env_id": 20012,
+     "d_star": null,
+     "solved": true,
+     "moves": 10,
+     "regret": null,
+     "expansions": 485,
+     "seconds": 115.801593649001,
+     "realized_strict": 10,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 971,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 485,
+      "expansions_own": 485
+     }
+    },
+    {
+     "env_id": 20012,
+     "d_star": null,
+     "solved": true,
+     "moves": 10,
+     "regret": null,
+     "expansions": 230,
+     "seconds": 54.62138922500162,
+     "realized_strict": 10,
+     "moves_seq": [
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 461,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 230,
+      "expansions_own": 230
+     }
+    },
+    {
+     "env_id": 20012,
+     "d_star": null,
+     "solved": true,
+     "moves": 9,
+     "regret": null,
+     "expansions": 175,
+     "seconds": 41.42302412599747,
+     "realized_strict": 9,
+     "moves_seq": [
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 351,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 175,
+      "expansions_own": 175
+     }
+    },
+    {
+     "env_id": 20013,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.8329018680015,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20013,
+     "d_star": null,
+     "solved": true,
+     "moves": 8,
+     "regret": null,
+     "expansions": 24,
+     "seconds": 5.8666754129990295,
+     "realized_strict": 8,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 49,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 24,
+      "expansions_own": 24
+     }
+    },
+    {
+     "env_id": 20013,
+     "d_star": null,
+     "solved": true,
+     "moves": 11,
+     "regret": null,
+     "expansions": 293,
+     "seconds": 70.56229921100021,
+     "realized_strict": 11,
+     "moves_seq": [
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 587,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 293,
+      "expansions_own": 293
+     }
+    },
+    {
+     "env_id": 20013,
+     "d_star": null,
+     "solved": true,
+     "moves": 7,
+     "regret": null,
+     "expansions": 23,
+     "seconds": 5.62130216100195,
+     "realized_strict": 7,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 47,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 23,
+      "expansions_own": 23
+     }
+    },
+    {
+     "env_id": 20014,
+     "d_star": null,
+     "solved": true,
+     "moves": 9,
+     "regret": null,
+     "expansions": 99,
+     "seconds": 24.18595379799808,
+     "realized_strict": 9,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 199,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 99,
+      "expansions_own": 99
+     }
+    },
+    {
+     "env_id": 20014,
+     "d_star": null,
+     "solved": true,
+     "moves": 8,
+     "regret": null,
+     "expansions": 446,
+     "seconds": 105.02100806599992,
+     "realized_strict": 8,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 893,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 446,
+      "expansions_own": 446
+     }
+    },
+    {
+     "env_id": 20014,
+     "d_star": null,
+     "solved": true,
+     "moves": 13,
+     "regret": null,
+     "expansions": 484,
+     "seconds": 115.72560578499906,
+     "realized_strict": 13,
+     "moves_seq": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 969,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 484,
+      "expansions_own": 484
+     }
+    },
+    {
+     "env_id": 20014,
+     "d_star": null,
+     "solved": true,
+     "moves": 4,
+     "regret": null,
+     "expansions": 4,
+     "seconds": 1.077594415000931,
+     "realized_strict": 4,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 9,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 4,
+      "expansions_own": 4
+     }
+    },
+    {
+     "env_id": 20015,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.27266979900014,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20015,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.9046776649993,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20015,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.78773124000145,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20015,
+     "d_star": null,
+     "solved": true,
+     "moves": 6,
+     "regret": null,
+     "expansions": 9,
+     "seconds": 2.2447431960026734,
+     "realized_strict": 6,
+     "moves_seq": [
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 19,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 9,
+      "expansions_own": 9
+     }
+    },
+    {
+     "env_id": 20016,
+     "d_star": null,
+     "solved": true,
+     "moves": 4,
+     "regret": null,
+     "expansions": 4,
+     "seconds": 1.3690615999985312,
+     "realized_strict": 4,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 9,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 4,
+      "expansions_own": 4
+     }
+    },
+    {
+     "env_id": 20016,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.6749151669974,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20016,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.33006614499755,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20016,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.6597711329996,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20017,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.66553538000153,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20017,
+     "d_star": null,
+     "solved": true,
+     "moves": 13,
+     "regret": null,
+     "expansions": 415,
+     "seconds": 98.32802311100022,
+     "realized_strict": 13,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 831,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 415,
+      "expansions_own": 415
+     }
+    },
+    {
+     "env_id": 20017,
+     "d_star": null,
+     "solved": true,
+     "moves": 6,
+     "regret": null,
+     "expansions": 6,
+     "seconds": 1.5370275850000326,
+     "realized_strict": 6,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 13,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 6,
+      "expansions_own": 6
+     }
+    },
+    {
+     "env_id": 20017,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 287.85736182000255,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20018,
+     "d_star": null,
+     "solved": true,
+     "moves": 10,
+     "regret": null,
+     "expansions": 290,
+     "seconds": 69.31831289799811,
+     "realized_strict": 10,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 581,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 290,
+      "expansions_own": 290
+     }
+    },
+    {
+     "env_id": 20018,
+     "d_star": null,
+     "solved": true,
+     "moves": 11,
+     "regret": null,
+     "expansions": 392,
+     "seconds": 93.73721815099998,
+     "realized_strict": 11,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 785,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 392,
+      "expansions_own": 392
+     }
+    },
+    {
+     "env_id": 20018,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.3883173989998,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20018,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.482598888997,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20019,
+     "d_star": null,
+     "solved": true,
+     "moves": 11,
+     "regret": null,
+     "expansions": 246,
+     "seconds": 58.80556192199947,
+     "realized_strict": 11,
+     "moves_seq": [
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 493,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 246,
+      "expansions_own": 246
+     }
+    },
+    {
+     "env_id": 20019,
+     "d_star": null,
+     "solved": true,
+     "moves": 10,
+     "regret": null,
+     "expansions": 342,
+     "seconds": 82.37988580199817,
+     "realized_strict": 10,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 685,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 342,
+      "expansions_own": 342
+     }
+    },
+    {
+     "env_id": 20019,
+     "d_star": null,
+     "solved": true,
+     "moves": 8,
+     "regret": null,
+     "expansions": 206,
+     "seconds": 48.847924041001534,
+     "realized_strict": 8,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 413,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 206,
+      "expansions_own": 206
+     }
+    },
+    {
+     "env_id": 20019,
+     "d_star": null,
+     "solved": true,
+     "moves": 11,
+     "regret": null,
+     "expansions": 232,
+     "seconds": 55.89147955000226,
+     "realized_strict": 11,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 465,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 232,
+      "expansions_own": 232
+     }
+    },
+    {
+     "env_id": 20020,
+     "d_star": null,
+     "solved": true,
+     "moves": 6,
+     "regret": null,
+     "expansions": 25,
+     "seconds": 6.398722404999717,
+     "realized_strict": 6,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 51,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 25,
+      "expansions_own": 25
+     }
+    },
+    {
+     "env_id": 20020,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 287.2145431019999,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20020,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 287.17179833499904,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20020,
+     "d_star": null,
+     "solved": true,
+     "moves": 9,
+     "regret": null,
+     "expansions": 108,
+     "seconds": 26.055904589997226,
+     "realized_strict": 9,
+     "moves_seq": [
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 217,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 108,
+      "expansions_own": 108
+     }
+    },
+    {
+     "env_id": 20021,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 287.4598105519981,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20021,
+     "d_star": null,
+     "solved": true,
+     "moves": 6,
+     "regret": null,
+     "expansions": 34,
+     "seconds": 8.265765488002216,
+     "realized_strict": 6,
+     "moves_seq": [
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 69,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 34,
+      "expansions_own": 34
+     }
+    },
+    {
+     "env_id": 20021,
+     "d_star": null,
+     "solved": true,
+     "moves": 7,
+     "regret": null,
+     "expansions": 160,
+     "seconds": 38.58904453899959,
+     "realized_strict": 7,
+     "moves_seq": [
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 321,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 160,
+      "expansions_own": 160
+     }
+    },
+    {
+     "env_id": 20021,
+     "d_star": null,
+     "solved": true,
+     "moves": 11,
+     "regret": null,
+     "expansions": 926,
+     "seconds": 219.03265232800186,
+     "realized_strict": 11,
+     "moves_seq": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 1853,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 926,
+      "expansions_own": 926
+     }
+    },
+    {
+     "env_id": 20022,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.2404438429985,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20022,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 284.1853568439983,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20022,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.5812381879987,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20022,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.46567124300054,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20023,
+     "d_star": null,
+     "solved": true,
+     "moves": 12,
+     "regret": null,
+     "expansions": 645,
+     "seconds": 155.5299558730003,
+     "realized_strict": 12,
+     "moves_seq": [
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 1291,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 645,
+      "expansions_own": 645
+     }
+    },
+    {
+     "env_id": 20023,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 283.8097376989972,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20023,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 287.28361376599787,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20023,
+     "d_star": null,
+     "solved": true,
+     "moves": 9,
+     "regret": null,
+     "expansions": 51,
+     "seconds": 12.377647942001204,
+     "realized_strict": 9,
+     "moves_seq": [
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 103,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 51,
+      "expansions_own": 51
+     }
+    },
+    {
+     "env_id": 20024,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.3315630899997,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20024,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.4863906049977,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20024,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 287.67895571400004,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20024,
+     "d_star": null,
+     "solved": true,
+     "moves": 5,
+     "regret": null,
+     "expansions": 5,
+     "seconds": 1.3161255190025258,
+     "realized_strict": 5,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 11,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 5,
+      "expansions_own": 5
+     }
+    },
+    {
+     "env_id": 20025,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.22960687799787,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20025,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.4308839000005,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20025,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 287.0363374230001,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20025,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.9515434129971,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20026,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 287.0396862899979,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20026,
+     "d_star": null,
+     "solved": true,
+     "moves": 12,
+     "regret": null,
+     "expansions": 778,
+     "seconds": 185.0815589440026,
+     "realized_strict": 12,
+     "moves_seq": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 1557,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 778,
+      "expansions_own": 778
+     }
+    },
+    {
+     "env_id": 20026,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 287.127222602001,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20026,
+     "d_star": null,
+     "solved": true,
+     "moves": 13,
+     "regret": null,
+     "expansions": 451,
+     "seconds": 108.42172242699962,
+     "realized_strict": 13,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 903,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 451,
+      "expansions_own": 451
+     }
+    },
+    {
+     "env_id": 20027,
+     "d_star": null,
+     "solved": true,
+     "moves": 1,
+     "regret": null,
+     "expansions": 1,
+     "seconds": 0.6229133380002168,
+     "realized_strict": 1,
+     "moves_seq": [
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 3,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1,
+      "expansions_own": 1
+     }
+    },
+    {
+     "env_id": 20027,
+     "d_star": null,
+     "solved": true,
+     "moves": 6,
+     "regret": null,
+     "expansions": 19,
+     "seconds": 4.456866888998775,
+     "realized_strict": 6,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 39,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 19,
+      "expansions_own": 19
+     }
+    },
+    {
+     "env_id": 20027,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 287.75613179500215,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20027,
+     "d_star": null,
+     "solved": true,
+     "moves": 6,
+     "regret": null,
+     "expansions": 22,
+     "seconds": 5.38610518600035,
+     "realized_strict": 6,
+     "moves_seq": [
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 45,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 22,
+      "expansions_own": 22
+     }
+    },
+    {
+     "env_id": 20028,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.5546808850013,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20028,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.32744611999806,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20028,
+     "d_star": null,
+     "solved": true,
+     "moves": 4,
+     "regret": null,
+     "expansions": 16,
+     "seconds": 3.9478839629991853,
+     "realized_strict": 4,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 33,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 16,
+      "expansions_own": 16
+     }
+    },
+    {
+     "env_id": 20028,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.31946409100055,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20029,
+     "d_star": null,
+     "solved": true,
+     "moves": 6,
+     "regret": null,
+     "expansions": 7,
+     "seconds": 2.072802024002158,
+     "realized_strict": 6,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 15,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 7,
+      "expansions_own": 7
+     }
+    },
+    {
+     "env_id": 20029,
+     "d_star": null,
+     "solved": true,
+     "moves": 5,
+     "regret": null,
+     "expansions": 5,
+     "seconds": 1.3120859619994008,
+     "realized_strict": 5,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 11,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 5,
+      "expansions_own": 5
+     }
+    },
+    {
+     "env_id": 20029,
+     "d_star": null,
+     "solved": true,
+     "moves": 6,
+     "regret": null,
+     "expansions": 84,
+     "seconds": 20.331477825999173,
+     "realized_strict": 6,
+     "moves_seq": [
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 169,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 84,
+      "expansions_own": 84
+     }
+    },
+    {
+     "env_id": 20029,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.22377895200043,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20030,
+     "d_star": null,
+     "solved": true,
+     "moves": 5,
+     "regret": null,
+     "expansions": 5,
+     "seconds": 1.5963990679993003,
+     "realized_strict": 5,
+     "moves_seq": [
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 11,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 5,
+      "expansions_own": 5
+     }
+    },
+    {
+     "env_id": 20030,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 287.12644715200076,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20030,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.779911343001,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20030,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.5017041829997,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20031,
+     "d_star": null,
+     "solved": true,
+     "moves": 10,
+     "regret": null,
+     "expansions": 998,
+     "seconds": 239.57126419500128,
+     "realized_strict": 10,
+     "moves_seq": [
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 1997,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 998,
+      "expansions_own": 998
+     }
+    },
+    {
+     "env_id": 20031,
+     "d_star": null,
+     "solved": true,
+     "moves": 8,
+     "regret": null,
+     "expansions": 100,
+     "seconds": 24.1279492499998,
+     "realized_strict": 8,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 201,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 100,
+      "expansions_own": 100
+     }
+    },
+    {
+     "env_id": 20031,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.6331136970002,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20031,
+     "d_star": null,
+     "solved": true,
+     "moves": 6,
+     "regret": null,
+     "expansions": 6,
+     "seconds": 1.5561664199994993,
+     "realized_strict": 6,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 13,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 6,
+      "expansions_own": 6
+     }
+    },
+    {
+     "env_id": 20032,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.7846514200028,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20032,
+     "d_star": null,
+     "solved": true,
+     "moves": 7,
+     "regret": null,
+     "expansions": 9,
+     "seconds": 2.256651936000708,
+     "realized_strict": 7,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 19,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 9,
+      "expansions_own": 9
+     }
+    },
+    {
+     "env_id": 20032,
+     "d_star": null,
+     "solved": true,
+     "moves": 3,
+     "regret": null,
+     "expansions": 3,
+     "seconds": 0.6565503840029123,
+     "realized_strict": 3,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 7,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 3,
+      "expansions_own": 3
+     }
+    },
+    {
+     "env_id": 20032,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 284.80651125000077,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20033,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.440935335002,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20033,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.4509557400015,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20033,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.0752265299998,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20033,
+     "d_star": null,
+     "solved": true,
+     "moves": 7,
+     "regret": null,
+     "expansions": 7,
+     "seconds": 1.769560601998819,
+     "realized_strict": 7,
+     "moves_seq": [
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 15,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 7,
+      "expansions_own": 7
+     }
+    },
+    {
+     "env_id": 20034,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.0409565609989,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20034,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.4791269699999,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20034,
+     "d_star": null,
+     "solved": true,
+     "moves": 10,
+     "regret": null,
+     "expansions": 174,
+     "seconds": 41.13011321799786,
+     "realized_strict": 10,
+     "moves_seq": [
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 349,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 174,
+      "expansions_own": 174
+     }
+    },
+    {
+     "env_id": 20034,
+     "d_star": null,
+     "solved": true,
+     "moves": 12,
+     "regret": null,
+     "expansions": 1159,
+     "seconds": 278.2512597399982,
+     "realized_strict": 12,
+     "moves_seq": [
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 2319,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1159,
+      "expansions_own": 1159
+     }
+    },
+    {
+     "env_id": 20035,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.31955453699993,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20035,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.51699246099815,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20035,
+     "d_star": null,
+     "solved": true,
+     "moves": 7,
+     "regret": null,
+     "expansions": 128,
+     "seconds": 30.910135155998432,
+     "realized_strict": 7,
+     "moves_seq": [
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 257,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 128,
+      "expansions_own": 128
+     }
+    },
+    {
+     "env_id": 20035,
+     "d_star": null,
+     "solved": true,
+     "moves": 11,
+     "regret": null,
+     "expansions": 1028,
+     "seconds": 245.04653686800157,
+     "realized_strict": 11,
+     "moves_seq": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 2057,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1028,
+      "expansions_own": 1028
+     }
+    },
+    {
+     "env_id": 20036,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.7941423359989,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20036,
+     "d_star": null,
+     "solved": true,
+     "moves": 8,
+     "regret": null,
+     "expansions": 10,
+     "seconds": 2.1850965630001156,
+     "realized_strict": 8,
+     "moves_seq": [
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 21,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 10,
+      "expansions_own": 10
+     }
+    },
+    {
+     "env_id": 20036,
+     "d_star": null,
+     "solved": true,
+     "moves": 8,
+     "regret": null,
+     "expansions": 143,
+     "seconds": 34.17435584199848,
+     "realized_strict": 8,
+     "moves_seq": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 287,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 143,
+      "expansions_own": 143
+     }
+    },
+    {
+     "env_id": 20036,
+     "d_star": null,
+     "solved": true,
+     "moves": 8,
+     "regret": null,
+     "expansions": 32,
+     "seconds": 7.7906406430010975,
+     "realized_strict": 8,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 65,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 32,
+      "expansions_own": 32
+     }
+    },
+    {
+     "env_id": 20037,
+     "d_star": null,
+     "solved": true,
+     "moves": 11,
+     "regret": null,
+     "expansions": 1089,
+     "seconds": 261.0574520910013,
+     "realized_strict": 11,
+     "moves_seq": [
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 2179,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1089,
+      "expansions_own": 1089
+     }
+    },
+    {
+     "env_id": 20037,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.5129756669994,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20037,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.644355466,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20037,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 284.9748588910006,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20038,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.623500417998,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20038,
+     "d_star": null,
+     "solved": true,
+     "moves": 7,
+     "regret": null,
+     "expansions": 60,
+     "seconds": 14.508035705999646,
+     "realized_strict": 7,
+     "moves_seq": [
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 121,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 60,
+      "expansions_own": 60
+     }
+    },
+    {
+     "env_id": 20038,
+     "d_star": null,
+     "solved": true,
+     "moves": 2,
+     "regret": null,
+     "expansions": 2,
+     "seconds": 0.5737480850002612,
+     "realized_strict": 2,
+     "moves_seq": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 5,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 2,
+      "expansions_own": 2
+     }
+    },
+    {
+     "env_id": 20038,
+     "d_star": null,
+     "solved": true,
+     "moves": 6,
+     "regret": null,
+     "expansions": 6,
+     "seconds": 1.543059383999207,
+     "realized_strict": 6,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 13,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 6,
+      "expansions_own": 6
+     }
+    },
+    {
+     "env_id": 20039,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.80438369499825,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20039,
+     "d_star": null,
+     "solved": true,
+     "moves": 4,
+     "regret": null,
+     "expansions": 4,
+     "seconds": 1.0467026660007832,
+     "realized_strict": 4,
+     "moves_seq": [
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 9,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 4,
+      "expansions_own": 4
+     }
+    },
+    {
+     "env_id": 20039,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.4382689019985,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20039,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.1358792009996,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20040,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 287.61991408999893,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20040,
+     "d_star": null,
+     "solved": true,
+     "moves": 2,
+     "regret": null,
+     "expansions": 2,
+     "seconds": 0.5635439219986438,
+     "realized_strict": 2,
+     "moves_seq": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 5,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 2,
+      "expansions_own": 2
+     }
+    },
+    {
+     "env_id": 20040,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.60551519900037,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20040,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 282.1807420219993,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20041,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.41683919299976,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20041,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 285.4729961330013,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20041,
+     "d_star": null,
+     "solved": true,
+     "moves": 9,
+     "regret": null,
+     "expansions": 604,
+     "seconds": 145.53101440400133,
+     "realized_strict": 9,
+     "moves_seq": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 1209,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 604,
+      "expansions_own": 604
+     }
+    },
+    {
+     "env_id": 20041,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 210.48227745400072,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20042,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.3952049159998,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20042,
+     "d_star": null,
+     "solved": true,
+     "moves": 2,
+     "regret": null,
+     "expansions": 2,
+     "seconds": 0.5777189580003323,
+     "realized_strict": 2,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 5,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 2,
+      "expansions_own": 2
+     }
+    },
+    {
+     "env_id": 20042,
+     "d_star": null,
+     "solved": true,
+     "moves": 10,
+     "regret": null,
+     "expansions": 34,
+     "seconds": 8.27037929600192,
+     "realized_strict": 10,
+     "moves_seq": [
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 69,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 34,
+      "expansions_own": 34
+     }
+    },
+    {
+     "env_id": 20042,
+     "d_star": null,
+     "solved": true,
+     "moves": 9,
+     "regret": null,
+     "expansions": 54,
+     "seconds": 12.830518202001258,
+     "realized_strict": 9,
+     "moves_seq": [
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 109,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 54,
+      "expansions_own": 54
+     }
+    },
+    {
+     "env_id": 20043,
+     "d_star": null,
+     "solved": true,
+     "moves": 10,
+     "regret": null,
+     "expansions": 171,
+     "seconds": 40.225848362999386,
+     "realized_strict": 10,
+     "moves_seq": [
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 343,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 171,
+      "expansions_own": 171
+     }
+    },
+    {
+     "env_id": 20043,
+     "d_star": null,
+     "solved": true,
+     "moves": 10,
+     "regret": null,
+     "expansions": 246,
+     "seconds": 58.78985592400204,
+     "realized_strict": 10,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 493,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 246,
+      "expansions_own": 246
+     }
+    },
+    {
+     "env_id": 20043,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 287.9544213369991,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20043,
+     "d_star": null,
+     "solved": true,
+     "moves": 4,
+     "regret": null,
+     "expansions": 4,
+     "seconds": 0.9191166809978313,
+     "realized_strict": 4,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 9,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 4,
+      "expansions_own": 4
+     }
+    },
+    {
+     "env_id": 20044,
+     "d_star": null,
+     "solved": true,
+     "moves": 8,
+     "regret": null,
+     "expansions": 10,
+     "seconds": 2.5550941290021,
+     "realized_strict": 8,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 21,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 10,
+      "expansions_own": 10
+     }
+    },
+    {
+     "env_id": 20044,
+     "d_star": null,
+     "solved": true,
+     "moves": 8,
+     "regret": null,
+     "expansions": 428,
+     "seconds": 102.22848500000327,
+     "realized_strict": 8,
+     "moves_seq": [
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 857,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 428,
+      "expansions_own": 428
+     }
+    },
+    {
+     "env_id": 20044,
+     "d_star": null,
+     "solved": true,
+     "moves": 7,
+     "regret": null,
+     "expansions": 7,
+     "seconds": 1.7748536849976517,
+     "realized_strict": 7,
+     "moves_seq": [
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 15,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 7,
+      "expansions_own": 7
+     }
+    },
+    {
+     "env_id": 20044,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 286.3394266899995,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20045,
+     "d_star": null,
+     "solved": true,
+     "moves": 9,
+     "regret": null,
+     "expansions": 179,
+     "seconds": 43.497171557999536,
+     "realized_strict": 9,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 359,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 179,
+      "expansions_own": 179
+     }
+    },
+    {
+     "env_id": 20045,
+     "d_star": null,
+     "solved": true,
+     "moves": 5,
+     "regret": null,
+     "expansions": 5,
+     "seconds": 1.3031816429975152,
+     "realized_strict": 5,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 11,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 5,
+      "expansions_own": 5
+     }
+    },
+    {
+     "env_id": 20045,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 288.1135874069987,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20045,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 203.69814731500082,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20046,
+     "d_star": null,
+     "solved": true,
+     "moves": 6,
+     "regret": null,
+     "expansions": 7,
+     "seconds": 2.0683333540000604,
+     "realized_strict": 6,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 15,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 7,
+      "expansions_own": 7
+     }
+    },
+    {
+     "env_id": 20046,
+     "d_star": null,
+     "solved": true,
+     "moves": 7,
+     "regret": null,
+     "expansions": 11,
+     "seconds": 2.7416136829997413,
+     "realized_strict": 7,
+     "moves_seq": [
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 23,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 11,
+      "expansions_own": 11
+     }
+    },
+    {
+     "env_id": 20046,
+     "d_star": null,
+     "solved": true,
+     "moves": 6,
+     "regret": null,
+     "expansions": 24,
+     "seconds": 5.862436346000322,
+     "realized_strict": 6,
+     "moves_seq": [
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 49,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 24,
+      "expansions_own": 24
+     }
+    },
+    {
+     "env_id": 20046,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 287.3282130550033,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20047,
+     "d_star": null,
+     "solved": true,
+     "moves": 8,
+     "regret": null,
+     "expansions": 92,
+     "seconds": 21.688098147002165,
+     "realized_strict": 8,
+     "moves_seq": [
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 185,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 92,
+      "expansions_own": 92
+     }
+    },
+    {
+     "env_id": 20047,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 181.34797889400215,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20047,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 85.6008641260014,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20047,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 72.73552615100198,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20048,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 193.46131533000153,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20048,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 87.95638418800081,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20048,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 72.74393416900057,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20048,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 41.67966513200008,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20049,
+     "d_star": null,
+     "solved": true,
+     "moves": 9,
+     "regret": null,
+     "expansions": 31,
+     "seconds": 7.8579279460027465,
+     "realized_strict": 9,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 63,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 31,
+      "expansions_own": 31
+     }
+    },
+    {
+     "env_id": 20049,
+     "d_star": null,
+     "solved": false,
+     "moves": null,
+     "regret": null,
+     "expansions": 1200,
+     "seconds": 175.58762086500064,
+     "realized_strict": null,
+     "accounting": {
+      "nn_calls": 2401,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 1200,
+      "expansions_own": 1200
+     }
+    },
+    {
+     "env_id": 20049,
+     "d_star": null,
+     "solved": true,
+     "moves": 6,
+     "regret": null,
+     "expansions": 25,
+     "seconds": 2.285622606999823,
+     "realized_strict": 6,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 51,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 25,
+      "expansions_own": 25
+     }
+    },
+    {
+     "env_id": 20049,
+     "d_star": null,
+     "solved": true,
+     "moves": 9,
+     "regret": null,
+     "expansions": 366,
+     "seconds": 33.086970755997754,
+     "realized_strict": 9,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "accounting": {
+      "nn_calls": 733,
+      "nn_policy_calls": 0,
+      "nn_value_calls": 0,
+      "physics_calls_verify": 0,
+      "expansions_from_calls": 366,
+      "expansions_own": 366
+     }
+    }
+   ]
+  }
+ },
+ "spr": {
+  "arm": "varbase_fwd_unseen",
+  "kind": "forward",
+  "config": "g24r4",
+  "search": "astar",
+  "flags": [],
+  "expansions": 1200,
+  "k": 5,
+  "ckpt": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/scaling/runs/g24r4/forward/lightning_logs/version_0/checkpoints/epoch=7-step=76360.ckpt",
+  "instances": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/self_play_robots/results/variants/exam/g24r4_unseen.jsonl",
+  "run_dir": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/fwd/varbase_fwd_unseen.d37a859f817f",
+  "slurm_job_id": "4726038",
+  "wall_seconds": 4155.3,
+  "replay_certified": true,
+  "width": 8,
+  "omp_threads": 2,
+  "device": "cuda",
+  "date": "2026-08-21T00:19:03"
+ }
+}

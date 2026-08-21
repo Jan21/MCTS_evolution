@@ -107,3 +107,49 @@ is duplicated there.
    line's §19 saturation; the unseen exam's discriminating power will show
    on multi-iteration arms. Sources: `results/variants/<vid>/bench_*.json`
    + `gate_*_vs_control.json`, report tab "Variants lab".
+
+5. **Wave-2: replications, the combo arm, and the three-way unseen table
+   (2026-08-20/21; jobs 4726033-4726038, ~1.8 nh; program total ~6.5 nh).**
+   Seed-8 control: graded 224/232 rg 2.10, frontier 155/218, unseen 170/200
+   (seed noise on this protocol is ~4-5 solves per exam -- the two control
+   runs bound it).
+   (a) **v04_deep_emit REPLICATES: confirmed WIN on frontier solves.**
+   Seed 8: frontier 176 vs 155 (p=0.0002; seed 7: 171 vs 160, p=0.013;
+   Fisher combined p=3.4e-5); graded and unseen flat-positive both seeds.
+   Emit-all is now the lab's recommended default for generation.
+   (b) **v06_gumbel_root does NOT replicate.** The seed-7 graded-moves win
+   (19/6, p=0.015) reverses at seed 8 (14/16, p=0.86); frontier stays
+   suggestive only (163 vs 155, p=0.13; Fisher p=0.04). Verdict downgraded
+   to "not replicated" -- the honest reading is that Gumbel-root's gain at
+   this budget is within seed noise for a one-iteration arm.
+   (c) **v09_strict_value: WIN on 2-seed evidence, the lab's best arm.**
+   Seed 8: frontier 169 vs 155 (p=0.0026; Fisher with seed 7's 0.057:
+   p=0.0015), graded 230/232 with the best regret of the entire program
+   (1.98; control 2.10/2.39), unseen 177/200 = best absolute row of any
+   net ever on this exam. Same direction on every exam at both seeds.
+   Training the value net on the benchmark metric (realized strict moves)
+   is the design change that works.
+   (d) **v13_combo: the deltas interfere on solves, compose on moves.**
+   Frontier solves 160 = control exactly (v04's +11 gain vanishes under
+   Gumbel-shaped trees -- its expected_failure realized), but frontier
+   both-solved MOVES 37/15 (p=0.003, best frontier moves 19.47) and graded
+   moves 28/15 (p=0.066). Stacking search+data changes is not additive;
+   v04+v09 without v06 is the natural wave-3 combination.
+   (e) **Three-way unseen-board table (the owner's goal, quantified).**
+   Forward MoveNet baseline (job 4726038): 101/200, 7.78 mv, 688 exp.
+   | arm | solved | both-solved moves vs loop |
+   |---|---|---|
+   | best loop arm (v09_s8) | **177/200**, 14.32 mv | -- |
+   | frozen seed nets | 175/200, 14.49 mv | -- |
+   | supervised backward per-size | 134/200, 14.78 mv | loop wins 38/16, p=0.004 (12.57 vs 14.78) |
+   | supervised forward MoveNet | 101/200, 7.78 mv | forward wins 43/3, p=5e-10 (7.78 vs 9.95) |
+   The owner's success criterion is MET on its first half on unseen boards:
+   the label-free loop line solves 43 more than the backward-supervised
+   baseline (p~1e-9) and realizes FEWER moves than it on shared solves
+   (p=0.004). The second half (moves vs forward) stands exactly where main
+   FINDINGS 3 predicted: the subgoal language ceiling, not training, is the
+   binding constraint (forward solves half as much yet wins both-solved
+   moves 43/3) -- the action-space axis (v07) is the only route.
+   Sources: `results/variants/{v00_control_s8,v04_deep_emit_s8,
+   v06_gumbel_root_s8,v09_strict_value_s8,v13_combo,baselines}/`,
+   `VERDICT.json` files, report tab.
