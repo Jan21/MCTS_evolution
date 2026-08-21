@@ -52,8 +52,86 @@ class Variant:
     bench_flags: str = ""
     # hook channel: names of callables in the variant module, applied in-process
     hooks: tuple = ()              # subset of ("selfplay", "train", "bench")
-    status: str = "wave1"          # wave1 | wave2 | stub
+    status: str = "wave1"          # wave1 | wave2 | stub | parked | wave3
+    # MANDATORY plain-English card fields (owner 2026-08-21): a non-expert must
+    # understand the card. Filled per variant; PLAIN in this module backfills
+    # the pre-existing arms. Result/conclusion live in results/variants/<vid>/
+    # VERDICT.json ("result", "conclusion") because they depend on outcomes.
+    plain_what: str = ""
+    plain_why: str = ""
 
+
+# plain-English backfill for arms written before the card structure was mandated
+PLAIN = {
+ "v00_control": (
+  "We ran the self-play loop one more time with nothing changed. This is the "
+  "yardstick: every experiment below is compared against these numbers.",
+  "Any change worth keeping must beat 'just keep doing what we were doing'."),
+ "v01_visit_policy": (
+  "We changed WHICH choices the policy network is taught to prefer. Before: "
+  "'prefer candidates that led to short solutions'. After: 'prefer candidates "
+  "the search spent the most time exploring' -- the classic AlphaZero recipe.",
+  "The search's attention might carry information that solution costs alone miss."),
+ "v02_td_blend": (
+  "We softened the value network's training target by blending in its own "
+  "earlier prediction, instead of trusting the searched outcome completely.",
+  "Outcomes of a single search are noisy; averaging with the network's prior "
+  "guess can cancel some of that noise."),
+ "v03_hard_mining": (
+  "We kept only the practice puzzles the search had to work hard on, throwing "
+  "away the easy ones.",
+  "Training time spent on puzzles the planner already aces is wasted."),
+ "v04_deep_emit": (
+  "The search examines many positions per puzzle, but we only trained on the "
+  "ones along the final solution path. We changed that to train on EVERY "
+  "position the search examined and certified.",
+  "Same compute per puzzle, roughly twice the training data."),
+ "v05_mean_backup": (
+  "When the search summarizes how good a branch is, we averaged over its "
+  "outcomes instead of taking the best case.",
+  "Best-case summaries can be hostage to one lucky find; averages explore "
+  "more evenly."),
+ "v06_gumbel_root": (
+  "We changed how the search explores its FIRST decision: instead of a random "
+  "sprinkle of exploration noise, a principled lottery (the 'Gumbel' method) "
+  "that provably improves the policy even with a tiny search budget.",
+  "Published results show the biggest gains at exactly our small budgets."),
+ "v07_hybrid_actions": (
+  "Our planner thinks in 'subgoals' (mini-objectives like 'park a robot "
+  "there'). We let it, before planning, try ONE ordinary robot move first and "
+  "then plan subgoals from the new position -- mixing two kinds of moves that "
+  "were previously separate worlds.",
+  "The math (main FINDINGS 3) says pure subgoal planning can NEVER match "
+  "move-by-move play on solution length; changing the action space is the "
+  "only door out."),
+ "v08_cold_start": (
+  "We threw away the head start from the supervised networks (which were "
+  "trained on human-configured exact solvers) and trained from a blank slate, "
+  "purely on the loop's own certified self-play data.",
+  "Measures how much the supervised head start is actually worth -- and "
+  "whether a fully label-free planner is viable at all."),
+ "v09_strict_value": (
+  "Until now the value network learned to predict an abstract 'plan cost'. We "
+  "changed it to predict the actual number of moves the robots end up making "
+  "-- the number the whole project is graded on.",
+  "You get what you train for: ranking plans by the real metric should cut "
+  "wasted moves."),
+ "v12_frontier_curriculum": (
+  "Instead of practicing on random puzzles, the loop first screens each "
+  "puzzle with a quick attempt and only practices on the ones it FAILS -- "
+  "like a student drilling only the exercises they get wrong.",
+  "The loop had stalled because most random puzzles are already easy for it; "
+  "hard ones carry the remaining signal."),
+ "v13_combo": (
+  "We combined the three changes that each looked good alone (train on all "
+  "examined positions + Gumbel exploration + real-moves target).",
+  "If they work through different mechanisms, their gains should add up."),
+ "v14_stack": (
+  "We combined the two changes that survived re-testing (train on all "
+  "examined positions + real-moves target), leaving out the one that did not "
+  "(Gumbel exploration).",
+  "Drops the component that interfered in the three-way combination (v13)."),
+}
 
 _ORDER = sorted(p.stem for p in VARIANTS_DIR.glob("v[0-9][0-9]_*.py"))
 
@@ -66,6 +144,10 @@ def get(vid: str) -> Variant:
     mod = importlib.import_module(f"variants.{vid}")
     v = mod.VARIANT
     assert v.vid == vid, f"{vid}: VARIANT.vid mismatch ({v.vid})"
+    if not v.plain_what and vid in PLAIN:
+        v.plain_what, v.plain_why = PLAIN[vid]
+    assert v.plain_what and v.plain_why, \
+        f"{vid}: plain_what/plain_why are mandatory (owner 2026-08-21)"
     return v
 
 

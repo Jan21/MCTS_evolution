@@ -3158,6 +3158,31 @@ def sec_variants() -> str:
         'paired tests (<code>spr.gate compare</code>) vs the control arm. '
         'Full protocol: <code>variants/DESIGN.md</code>; results log: '
         '<code>variants/FINDINGS.md</code>.</p>')
+    out.append(
+        '<details open><summary><strong>Plain-English glossary</strong> (terms used '
+        'on every card)</summary><ul class="note">'
+        '<li><strong>standard (graded) exam</strong> &mdash; 232 puzzles where the '
+        'true shortest solution is known, so we can measure wasted moves.</li>'
+        '<li><strong>frontier exam</strong> &mdash; 218 harder puzzles no solver has '
+        'fully cracked; only solve counts and move counts can be compared.</li>'
+        '<li><strong>unseen exam</strong> &mdash; 200 puzzles on 50 boards no network '
+        'ever trained on; measures generalization, the project goal.</li>'
+        '<li><strong>expansions</strong> &mdash; the unit of search effort; every arm '
+        'gets the same budget (1200 per puzzle) so comparisons are fair.</li>'
+        '<li><strong>moves</strong> &mdash; actual robot moves in the final, replayed '
+        'solution; the headline metric. <strong>regret</strong> = extra moves beyond '
+        'the known optimum (standard exam only).</li>'
+        '<li><strong>B2</strong> &mdash; the extended subgoal vocabulary the loop '
+        'plans in; <strong>warm start</strong> &mdash; initializing training from the '
+        'previous networks instead of from scratch.</li>'
+        '<li><strong>seed</strong> &mdash; the run&rsquo;s random-number '
+        'initialization; a result that holds across two seeds is unlikely to be a '
+        'fluke.</li>'
+        '<li><strong>&ldquo;fluke chance&rdquo;</strong> &mdash; the p-value of the '
+        'paired statistical test (McNemar for solve counts, sign test for move '
+        'counts): the probability of seeing a difference this large if the change '
+        'did nothing.</li>'
+        '</ul></details>')
 
     # baselines on the unseen exam
     rows = []
@@ -3201,20 +3226,20 @@ def sec_variants() -> str:
         out.append(f'<h3 id="var-{esc(vid)}"><code>{esc(vid)}</code> &mdash; {esc(v.title)} '
                    f'<span class="chip {cls}">{esc(verdict)}</span> '
                    f'<span class="chip">{esc(v.axis)}</span></h3>')
-        out.append(f'<p><strong>What this experiment means:</strong> {esc(v.hypothesis)} '
-                   f'<br><strong>Mechanism:</strong> {esc(v.mechanism)} '
-                   f'<br><strong>How it would fail:</strong> {esc(v.expected_failure)}</p>')
+        result_txt = (vj or {}).get("result") or "Still running &mdash; no results on disk yet."
+        concl_txt = (vj or {}).get("conclusion") or "Still running &mdash; conclusion pending."
+        out.append(f'<p><strong>What we tested:</strong> {esc(v.plain_what)}<br>'
+                   f'<strong>Why it might help:</strong> {esc(v.plain_why)}<br>'
+                   f'<strong>Result:</strong> {esc(result_txt)}<br>'
+                   f'<strong>Conclusion:</strong> {esc(concl_txt)}</p>')
+        out.append(f'<details><summary class="note">Technical detail (hypothesis / '
+                   f'mechanism / expected failure mode)</summary>'
+                   f'<p class="note">{esc(v.hypothesis)}<br>{esc(v.mechanism)}<br>'
+                   f'{esc(v.expected_failure)}</p></details>')
         if note:
             out.append(f'<p class="note"><strong>Verdict note:</strong> {esc(note)}</p>')
-        if v.status == "stub":
-            out.append('<p class="pendbox">Design stub &mdash; not implemented yet; '
-                       'see the module docstring for the sketch and blockers.</p>')
-            continue
-        if v.status == "parked":
-            out.append('<p class="pendbox">Parked (incremental knob arm; owner 2026-08-20: '
-                       'no hyper-parameter tweaking). Kept as a documented negative-space '
-                       'entry; not scheduled.</p>')
-            continue
+        if v.status in ("stub", "parked"):
+            continue                      # the four-part card already says it all
         man = load(res / "generation.manifest.json")
         if ok(man):
             out.append(f'<p class="note">Generation: {man.get("instances", "?")} instances, '

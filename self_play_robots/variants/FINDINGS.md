@@ -29,6 +29,8 @@ is duplicated there.
    empty module — worker state is now passed to hooks explicitly
    (`apply_phase(..., ctx=_W)`).
    Sources: `variants/*.py`, `jobs/variant_*.slurm`.
+   Conclusion (plain): the testing framework exists, is documented, and every
+   piece of it passed a cheap dry run before any GPU money was spent.
 
 2. **Wave 1 submitted (2026-08-20 09:23).** Jobs (qgpu, 1 GPU each):
    baselines 4719424 (3 h), v00_control 4719425 (5 h), then after v00:
@@ -64,6 +66,8 @@ is duplicated there.
    the mixed-curriculum warm start itself is worth frontier solves.
    Sources: `results/variants/{baselines,v00_control}/`, jobs
    4719424/4719425.
+   Conclusion (plain): one bug found and fixed before it cost anything real;
+   the baseline numbers every experiment must beat are now on disk.
 
 4. **Wave-1 verdicts (2026-08-20; jobs 4719425-4719431 + unseen fix-ups
    4722745-4722751; ~2.6 nh actual).** Matched protocol throughout; paired
@@ -153,6 +157,13 @@ is duplicated there.
    Sources: `results/variants/{v00_control_s8,v04_deep_emit_s8,
    v06_gumbel_root_s8,v09_strict_value_s8,v13_combo,baselines}/`,
    `VERDICT.json` files, report tab.
+   Conclusion (plain): after re-testing, TWO changes are adopted (train on
+   everything examined; predict real move counts), one is rejected (the
+   lottery exploration did not repeat), and on brand-new boards the
+   label-free loop now solves far more than the supervised planner while
+   also using fewer moves than it -- the first half of the project's goal is
+   met. Only the move-by-move planner still beats us on solution length,
+   which is exactly the limitation the action-space experiment attacks.
 
 6. **Wave 3 submitted (2026-08-21; coordinator-approved ~10-12 nh).**
    (1) v14_stack = v04+v09 without the non-replicating v06 (jobs 4731104

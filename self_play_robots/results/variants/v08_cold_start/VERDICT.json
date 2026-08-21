@@ -1,5 +1,7 @@
 {
  "chip": "run",
  "label": "control (prior-worth)",
- "note": "From random init, one label-free iteration matches the supervised per-size pair on unseen boards (132 vs 134/200)."
+ "note": "From random init, one label-free iteration matches the supervised per-size pair on unseen boards (132 vs 134/200).",
+ "result": "Much worse than the warm-started loop everywhere (about 40 fewer unseen solves) -- but on brand-new boards it matched the fully supervised planner (132 vs 134 of 200) despite using zero human or solver labels, ever.",
+ "conclusion": "Control, not a candidate. The supervised head start is currently worth ~40 unseen solves; that a blank-slate, label-free planner already ties the supervised baseline is a headline result for the self-play thesis."
 }

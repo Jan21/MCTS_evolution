@@ -126,6 +126,19 @@ the action-space axis).
 Parked (documented, not scheduled): v02_td_blend, v03_hard_mining,
 v05_mean_backup (incremental). Stub: v07_hybrid_actions (wave 2).
 
+## 5b. Mandatory card structure (owner 2026-08-21)
+
+Every variant — future ones included — carries plain-English card text a
+non-expert can follow: `plain_what` / `plain_why` on the `Variant` (the
+registry REFUSES variants without them), and `result` / `conclusion` sentences
+in `results/variants/<vid>/VERDICT.json` (a definite conclusion even when
+pending, flat, parked or killed). The HTML card renders exactly four parts —
+What we tested / Why it might help / Result / Conclusion — with the technical
+hypothesis/mechanism folded into a details block, and the tab opens with a
+glossary translating expansions, frontier/graded/unseen, regret, B2, warm
+start, seed and the "fluke chance" phrasing of p-values. FINDINGS entries end
+with a `Conclusion (plain):` line.
+
 ## 6. How to read the results
 
 HTML: the **Variants lab** tab of `report/selfplay.html` (per-arm cards:
