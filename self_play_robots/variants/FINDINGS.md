@@ -153,3 +153,20 @@ is duplicated there.
    Sources: `results/variants/{v00_control_s8,v04_deep_emit_s8,
    v06_gumbel_root_s8,v09_strict_value_s8,v13_combo,baselines}/`,
    `VERDICT.json` files, report tab.
+
+6. **Wave 3 submitted (2026-08-21; coordinator-approved ~10-12 nh).**
+   (1) v14_stack = v04+v09 without the non-replicating v06 (jobs 4731104
+   seed 7, 4731105 seed 8; the natural composition v13's interference points
+   to). (2) v07 root-slides hybrid IMPLEMENTED (bench-only first instantiation:
+   portfolio search, standard mcts(600) on the original state + mcts(100) on
+   the top-6 slide states ranked by initial-plan cost, slide totals pay +1
+   strict move, composed dumps replay-validated; nets = v09_strict_value_s8;
+   control = same nets under standard arena MCTS; job 4731112, unseen +
+   graded). The claim it attacks: both-solved moves vs the forward baseline,
+   3/43 against today. (3) v12 chained x3 iterations (jobs/variant_chain.slurm,
+   job 4731113): the compounding test its one-shot flat result asked for.
+   (4) adopt_mainline (jobs/variant_adopt.slurm, job 4731114): one mixed-size
+   curriculum iteration seeded from mix_b2mix_iter3's nets with the lab recipe
+   (emit-all + strict-value targets), fresh ids 9500+, gates vs mix_iter3's
+   own benches -- does the lab transfer out of the lab? Projected: v14 2x0.35
+   + v07 0.5 + chain 0.9 + adopt 0.75 ~ 3.2 nh this wave.
