@@ -319,7 +319,7 @@ is duplicated there.
     not different-rng, is the honest replicate -- plus the frontier leg with
     the wave-3 nets. (5) v14 3-iteration chain 4763993. (2) v15
     slide-aware training (post-slide instance distribution, hooks smoke-
-    tested) jobs 4763996/4763998 both seeds via the standard runner; its
+    tested) jobs 4763995/4763996 both seeds via the standard runner; its
     hybrid-search evaluation lands in the flagship. (6) flagship gated on
     these. Projected ~4.3 nh this wave so far.
     Conclusion (plain): the cheap de-risking runs go first, training bets
