@@ -272,3 +272,41 @@ is duplicated there.
     supervised baseline's; the move-by-move planner is nearly perfect on the
     ones it solves but misses a quarter of the puzzles entirely.
     Sources: sidecar + `runs/spr/spr-var-dstar-4735236.out`.
+
+11. **adopt_mainline: the lab recipe does NOT measurably improve one
+    mixed-size main-line iteration on the main line's own exams (2026-08-22/23,
+    jobs 4731114 [walltime at 8 h] + 4747761 [resume, g24r8 leg trimmed to 12
+    boards], 1.8 nh).** One curriculum iteration from mix_b2mix_iter3's nets
+    with emit-all + strict-value targets (25.7k records -- 7.3k/7.9k/10.4k per
+    config, ~2.4x the standard iteration's volume), benched on all six pinned
+    exams, gated vs mix-it3's own benches:
+    graded regret improves at g24r4/g32r4 (2.06/1.97 vs 2.20/2.23) and every
+    solve count sits within +-1 except the g24r4 frontier's -8 (157 vs 165,
+    p=0.12) -- nothing clears noise in either direction. Two honest caveats:
+    (a) the comparison is one-iteration-vs-its-seed, the weakest possible
+    transfer test (the lab measured v14's win over TWO one-shot controls on
+    the UNSEEN exam, which this run never benched -- flagged for a 20-min
+    bench-only follow-up); (b) emit-all's extraction cost explodes on 8-robot
+    trees (~91 s/instance, 6x path-only), forcing the r8 trim -- at the main
+    line's scale the recipe's data advantage costs real walltime.
+    Conclusion (plain): in the big mixed training loop, one round with the
+    lab's recipe looked the same as the ordinary round on the loop's usual
+    exams -- slightly fewer wasted moves, no change in puzzles solved. The
+    recipe's proven win is on never-seen boards, which this run did not
+    measure; that cheap measurement is queued next. Verdict for adoption
+    decisions: adopt for generalization-facing loops, not (yet) as a
+    frontier-solver upgrade.
+    Sources: `results/variants/adopt_mainline/`, gates vs
+    `results/selfplay/mix_b2mix_iter3/`.
+
+12. **Wave-3 cost ledger and program state (2026-08-23).** Wave 3 actual:
+    30.8 GPU-hours = **3.85 nh** (v14 0.83, v07 0.64 incl. two wiring reruns,
+    v12x3 0.57, adopt 1.78, d* 0.02). Program to date ~**10.4 nh of the
+    50-nh cap**. Standing verdicts: ADOPTED v09 (strict targets), v04
+    (emit-all; caveat: r8 extraction cost), v14 (their stack; the
+    generalization recipe), v07 root-slides (inference); KILLED v01, v12;
+    NOT REPLICATED v06; CONTROLS v00/v08 (the cold-start tie with the
+    supervised baseline on unseen boards stands as the label-free headline).
+    Conclusion (plain): about a fifth of the budget spent; four adopted
+    changes, two clean kills, and every claim two-seeded or same-budget
+    controlled.
