@@ -22,6 +22,9 @@ cd "$REPO/self_play_robots"
 export PYTHONPATH="$REPO/supervised_valuenet:$REPO/self_play_robots" PYTHONUNBUFFERED=1 OMP_NUM_THREADS=2
 CFGS=${CFGS:-"g24r4 g32r4 g24r8"}
 BOARDS=30; PER_BOARD=8; EXP=300; STOP=80; NOISE=0.25; EP_P=6; EP_V=6; LR=1e-4
+BOARDS_R8=${BOARDS_R8:-12}   # emit-all extraction is ~6x slower on 8-robot trees
+                             # (~91 s/inst); 12 boards ~ 3.7 h and still yields ~10k
+                             # records vs mix-it3's 5.8k path-only leg
 SEEDNETS="$REPO/self_play_robots/results/selfplay/mix_b2mix_iter3/nets.txt"
 P0=$(grep '^policy=' "$SEEDNETS" | cut -d= -f2-); V0=$(grep '^value=' "$SEEDNETS" | cut -d= -f2-)
 IT="$REPO/runs/spr/variants/adopt_mainline"; RES="$REPO/self_play_robots/results/variants/adopt_mainline"
@@ -34,10 +37,12 @@ mark()  { touch "$IT/DONE.$1"; echo "SPR ADOPT PHASE DONE $1 $(date +%T)"; }
 DATA=""; SPLITS=""
 for CFG in $CFGS; do
   W=6; case "$CFG" in g32*) W=4;; esac
+  NB=$BOARDS; [ "$CFG" = g24r8 ] && NB=$BOARDS_R8
+  IDB=$((ID0 + NB - 1))
   if ! phase gen_$CFG; then
     mkdir -p "$IT/$CFG"
     python -m spr.selfplay --config "$CFG" --policy "$P0" --value "$V0" \
-        --boards-dir "$REPO/runs/spr/boards/adopt_${CFG}" --board-ids "$ID0-$ID1" --vocab b2 \
+        --boards-dir "$REPO/runs/spr/boards/adopt_${CFG}" --board-ids "$ID0-$IDB" --vocab b2 \
         --per-board "$PER_BOARD" --seed 950 --iter 4 --expansions "$EXP" --stop-after "$STOP" \
         --root-noise "$NOISE" --complete-siblings --root-all --emit all --workers "$W" --threads 2 \
         --device cuda --timeout 900 --out "$IT/$CFG/records.jsonl" || { echo "SPR ADOPT FAILED gen $CFG"; exit 1; }
