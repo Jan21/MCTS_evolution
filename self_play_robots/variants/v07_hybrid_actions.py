@@ -69,6 +69,11 @@ def bench_main(argv=None):
     p.add_argument("--b0", type=int, default=B0)
     p.add_argument("--top-m", type=int, default=TOP_M)
     p.add_argument("--sub", type=int, default=SUB)
+    p.add_argument("--prefix-depth", type=int, choices=[1, 2], default=1,
+                   help="2: also consider two-slide prefixes (from the best "
+                        "--d2-from one-slide states); prefixes pay their length "
+                        "in strict moves")
+    p.add_argument("--d2-from", type=int, default=4)
     p.add_argument("--k", type=int, default=5)
     p.add_argument("--boards", choices=["pkl", "lean"], default="pkl")
     p.add_argument("--device", default="cpu")
@@ -129,29 +134,54 @@ def bench_main(argv=None):
         best = None                      # (total_strict, moves, tag)
         if r0.strict is not None:
             best = (r0.strict, list(r0.moves or []), "subgoal", r0.plan)
-        # 2. rank slides by moved-state initial-plan cost
-        cands = []
-        for slot, di, newpos in legal_moves(positions, wr, wd, n):
-            st2 = mk_state(tuple(tuple(q) for q in newpos))
+        # 2. rank slide PREFIXES by moved-state initial-plan cost (+ prefix length)
+        def plan_cost_of(st2):
             try:
                 pl0 = forced_fixes(env, st2, solver, _initial_plan(env, st2))
-                cands.append((float(pl0.cost()), slot, di, st2))
+                return float(pl0.cost())
             except Exception:
+                return None
+        cands = []                      # (rank_cost, prefix_moves, state)
+        d1 = []
+        for slot, di, newpos in legal_moves(positions, wr, wd, n):
+            pos2 = tuple(tuple(q) for q in newpos)
+            st2 = mk_state(pos2)
+            c0 = plan_cost_of(st2)
+            if c0 is None:
                 continue
+            d1.append((c0, pos2, [(slot, di)], st2))
+            cands.append((c0 + 1, [(slot, di)], st2))
+        if a.prefix_depth >= 2:
+            d1.sort(key=lambda c: c[0])
+            seen = {positions}
+            for c0, pos2, pre, _st2 in d1[:a.d2_from]:
+                for slot, di, newpos in legal_moves(pos2, wr, wd, n):
+                    pos3 = tuple(tuple(q) for q in newpos)
+                    if pos3 in seen:
+                        continue
+                    seen.add(pos3)
+                    st3 = mk_state(pos3)
+                    c1 = plan_cost_of(st3)
+                    if c1 is None:
+                        continue
+                    cands.append((c1 + 2, pre + [(slot, di)], st3))
         cands.sort(key=lambda c: c[0])
-        # 3. sub-searches on the top-M slide states
-        for cost0, slot, di, st2 in cands[:a.top_m]:
+        # 3. sub-searches on the top-M prefix states
+        for cost0, pre, st2 in cands[:a.top_m]:
             budget = min(a.sub, max(0, a.expansions - spent))
             if budget <= 0:
                 break
-            if best is not None and cost0 + 1 >= best[0]:
-                continue                 # cannot beat the incumbent even abstractly? keep honest: abstract vs strict units differ; only skip on hopeless margins
+            if best is not None and cost0 >= best[0] + 3:
+                continue                 # hopeless margin only (abstract vs strict units differ)
             r2 = mcts(env, st2, solver, ev, cur, n, a.k, budget, None, True, 1.5,
                       "min", acct, True, parks=True, rng=random.Random(1000 + i))
             spent += r2.expansions
-            if r2.strict is not None and (best is None or 1 + r2.strict < best[0]):
-                mv = [[COLOR_ORDER[slot], DIRECTIONS[di]]] + list(r2.moves or [])
-                best = (1 + r2.strict, mv, f"slide:{COLOR_ORDER[slot]}:{DIRECTIONS[di]}", r2.plan)
+            plen = len(pre)
+            if r2.strict is not None and (best is None or plen + r2.strict < best[0]):
+                mv = [[COLOR_ORDER[sl], DIRECTIONS[dd]] for sl, dd in pre] + list(r2.moves or [])
+                tag = "slide2" if plen == 2 else "slide"
+                tag += ":" + "+".join(f"{COLOR_ORDER[sl]}:{DIRECTIONS[dd]}" for sl, dd in pre)
+                best = (plen + r2.strict, mv, tag, r2.plan)
         dt = time.perf_counter() - t0
         acct["nn_policy_calls"] = ev.acct["nn_policy_calls"]
         acct["nn_value_calls"] = ev.acct["nn_value_calls"]
@@ -167,7 +197,8 @@ def bench_main(argv=None):
                "plans_rejected": r0.rejected, "children_pruned": r0.pruned,
                "accounting": acct,
                "search": {"winner": None if best is None else best[2],
-                          "b0": a.b0, "top_m": a.top_m, "sub": a.sub}}
+                          "b0": a.b0, "top_m": a.top_m, "sub": a.sub,
+                          "prefix_depth": a.prefix_depth}}
         if best is not None:
             row["moves"] = best[1]
         rows.append(row)
@@ -176,8 +207,8 @@ def bench_main(argv=None):
                   f"(slide wins so far: {sum(1 for r in rows if ((r.get('search') or {}).get('winner') or '').startswith('slide'))})",
                   flush=True)
 
-    name = (f"v07 root-slides hybrid [B2] (b0={a.b0} top_m={a.top_m} sub={a.sub}) "
-            f"policy={Path(a.policy).name}")
+    name = (f"v07 root-slides hybrid d{a.prefix_depth} [B2] "
+            f"(b0={a.b0} top_m={a.top_m} sub={a.sub}) policy={Path(a.policy).name}")
     payload = {"protocol": {"expansions": a.expansions, "k": a.k,
                             "instances_file": str(a.instances), "instances_sha256": sha,
                             "n_instances": len(instances), "instances_meta": meta,
