@@ -925,3 +925,27 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     should be read against a potentially ~slightly-stronger forward
     opponent. kSubS baseline, forward self-play and a second domain remain
     the successor project's documented future work (their PAPER_PLAN.md).
+
+25. **Variants lab, wave 3 (cross-reference; full log `variants/FINDINGS.md`
+    entries 8–10; jobs 4731104/05, 4731113, 4731286, 4733005, 4741426,
+    4735236 ≈ 3 nh): the hybrid action space breaks the subgoal-language
+    ceiling and survives its same-budget control; the unseen exam is now
+    grounded in exact optima (2026-08-21/22).** (a) **v07 hybrid
+    (slide-first portfolio search)**: graded 231/232 with regret **1.01 —
+    below the pure-B2 language's proven best-plan floor of 1.17 (§3)** — and
+    vs the SAME nets at matched budget under standard MCTS (230/232, regret
+    1.42): moves 30/0 (p=1.9e-9) graded, 31/1 (p=1.5e-8) unseen (186 vs 182
+    solves). First arm to buy realized moves below the language ceiling;
+    every slide plan replay-certified. Both-solved gap to the forward
+    planner: 0.87 moves graded (was ≈2.2 for the A\* line). (b) **v14
+    (emit-all + strict-value)** adopted as the loop recipe (2-seed unseen
+    win, §23). (c) **v12 frontier curriculum killed** after a fair
+    3-iteration chain (flat, all p>0.8). (d) **Perfect-play grounding of the
+    unseen exam**: exact optima for 137/200 instances (mean d\* 8.71; 63
+    defeat the exact solver's caps). Extra moves vs perfect on those 137:
+    forward +0.12 (but 101/200 solves), v07 hybrid **+1.67** (135/137
+    solved, 56% perfectly), same-nets standard search +1.94, A\* line
+    +2.9–3.3, supervised backward +4.84. (e) Pending: the adoption run
+    (lab recipe into the M5 curriculum line, resumed after a walltime
+    timeout) and the wave-4 plan (slide-aware TRAINING — the nets have
+    never seen slide-first data; v07 is inference-only so far).
