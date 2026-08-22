@@ -218,3 +218,57 @@ is duplicated there.
    default recipe; it wins on exactly the exam the project cares about
    (never-seen boards), at both seeds.
    Sources: `results/variants/v14_stack{,_s8}/`, gates vs same-seed controls.
+
+8. **v07 root-slides hybrid: WIN on both exams against its same-budget
+   control -- the first break of the subgoal language ceiling (2026-08-21/22,
+   jobs 4731286 [unseen leg], 4733005 [graded leg], 4741426 [controls],
+   ~1.2 nh incl. two wiring reruns).** Same nets (v09_strict_value_s8), same
+   1200-expansion budget; control = standard arena MCTS best-at-budget.
+   | exam | hybrid | std-MCTS control | paired |
+   |---|---|---|---|
+   | unseen (200) | **186**, 13.40 mv, 808 exp | 182, 14.13 mv, 689 exp | solves n.s.; **moves 31/1, p=1.5e-8** |
+   | graded (232) | **231**, 8.69 mv, regret **1.01**, 66.2% opt | 230, 9.08 mv, 1.42, 59.6% | **moves 30/0, p=1.9e-9** |
+   The graded regret 1.01 is BELOW the pure-B2 language's exhaustive
+   best-plan floor (1.17, main FINDINGS 3) -- an action-space effect by
+   construction, not a search/training artifact; 30 graded and 36 unseen
+   instances were won by slide-first plans, all replay-certified. Vs the
+   forward planner on shared graded solves the gap shrinks to 0.87 mv
+   (8.42 vs 7.55, 5/68); on unseen from 2.17 to 1.16 mv (5/31).
+   Two wiring bugs found and fixed en route (a None-guard in a progress
+   line; ctl() reading $2 after shift 3), both committed with the lesson.
+   Conclusion (plain): letting the planner make one ordinary move before
+   subgoal planning wins everywhere against its fair control and breaks a
+   proven ceiling; the road to matching the move-by-move planner's solution
+   lengths runs through MORE of this (slide-aware training, deeper slides).
+   Sources: `results/variants/v07_hybrid_actions/`, replay logs, gates.
+
+9. **v12 chained x3: flat everywhere -- killed (2026-08-22, job 4731113,
+   0.9 nh).** Three chained iterations (2.2k/2.0k/2.1k records; probe reject
+   rate steady ~37%): unseen 172 vs control 172 (p=1), frontier 162 vs 160
+   (p=0.83), graded 229 vs 228 (p=1); moves n.s. everywhere. The one-shot
+   "needs iterations to compound" hypothesis is now tested and dead.
+   Conclusion (plain): practicing only on screened-hard puzzles did not help
+   even after three rounds; the idea is retired.
+   Sources: `results/variants/v12_frontier_curriculum_chain/`.
+
+10. **Absolute grounding: exact optima for the unseen exam (2026-08-21, job
+    4735236, 0.1 nh).** `move_planner.oracle.solve` at the pinned bench caps
+    + a 5x-cap second pass (34 rescues): **137/200 instances now carry exact
+    d\*** (mean 8.71 moves; sidecar
+    `results/variants/exam/g24r4_unseen.dstar.jsonl`, loader
+    `variants.exam_dstar.load_dstar`). Perfect-play table on the 137
+    graded-unseen puzzles ("perfect play needs 8.71 moves; X uses +Y more"):
+    | system | solved (of 137) | % optimal | extra moves vs perfect |
+    |---|---|---|---|
+    | v07 hybrid | **135** | **56%** | **+1.67** |
+    | same nets, std search | 132 | 50% | +1.94 |
+    | v14 / v09s8 / seed nets (A\*) | 131-132 | 44-47% | +2.9-3.3 |
+    | cold start (label-free from zero) | 109 | 45% | +2.89 |
+    | supervised backward | 115 | 36% | +4.84 |
+    | supervised forward | 101 | 90% | +0.12 |
+    Conclusion (plain): on brand-new puzzles where perfect play is known,
+    our best planner now solves nearly all of them using under 2 extra moves
+    on average -- half the excess of the plain search line, a third of the
+    supervised baseline's; the move-by-move planner is nearly perfect on the
+    ones it solves but misses a quarter of the puzzles entirely.
+    Sources: sidecar + `runs/spr/spr-var-dstar-4735236.out`.
