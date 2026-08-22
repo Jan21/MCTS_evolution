@@ -310,3 +310,17 @@ is duplicated there.
     Conclusion (plain): about a fifth of the budget spent; four adopted
     changes, two clean kills, and every claim two-seeded or same-budget
     controlled.
+
+13. **Wave 4 submitted (2026-08-23; coordinator order followed).** (1)
+    adopt-unseen bench 4763691 (closes entry 11). (3+4) job 4763976: depth-2
+    slide prefixes (B0=500, top-m 8, sub 80) on unseen+graded; robustness =
+    hybrid d1 + std control with the OTHER adopted nets (v14) -- the searches
+    are deterministic at bench settings (root noise off), so different-nets,
+    not different-rng, is the honest replicate -- plus the frontier leg with
+    the wave-3 nets. (5) v14 3-iteration chain 4763993. (2) v15
+    slide-aware training (post-slide instance distribution, hooks smoke-
+    tested) jobs 4763996/4763998 both seeds via the standard runner; its
+    hybrid-search evaluation lands in the flagship. (6) flagship gated on
+    these. Projected ~4.3 nh this wave so far.
+    Conclusion (plain): the cheap de-risking runs go first, training bets
+    second, and the showcase run last -- using whatever actually proved best.
