@@ -389,3 +389,34 @@ is duplicated there.
     best solver while saving about two moves per puzzle.
     Sources: `results/variants/v14_stack_chain/`,
     `results/variants/v07_hybrid_actions/bench_{graded_stdmcts_v14nets,frontier_hybrid}.json`.
+
+17. **Wave-4 closeout: the flagship row, the frontier verdict, and the ledger
+    (2026-08-23, jobs 4773274 [flagship frontier d2] + 4773578 [frontier std
+    control]).**
+    (a) **Frontier, matched control**: hybrid d1 176/218 vs std-MCTS 174 with
+    moves 44/1 (p=3e-12, mean 17.87 vs 18.79); **d2 177/218 with 47/2 vs std
+    and 10/2 vs d1 (p=0.039)** -- depth-2's edge now confirmed on all three
+    exams.
+    (b) **Flagship three-exam row** (v09_strict_value_s8 nets + depth-2
+    root-slides; provenance per entry 15):
+    | exam | flagship | plain reading |
+    |---|---|---|
+    | graded (232) | **231/232, regret 0.944, 68.4% optimal** | solves all but one; 0.94 extra moves vs perfect -- below the pure-subgoal floor (1.17) |
+    | frontier (218) | **177/218, 17.99 mv** | matches the best solver ever on the hard tail, ~1 fewer move than the std search, ~2 fewer than the A\* line |
+    | unseen (200) | **188/200; on the 137 with known optima: 134 solved, 57% optimal, +1.47 vs perfect** | best generalization row of the program |
+    Perfect-play framing: on brand-new puzzles where perfect play is known
+    (8.71 moves on average), the flagship uses +1.47; the supervised backward
+    baseline uses +4.84 and solves 20 fewer; the forward baseline is
+    near-perfect (+0.12) but solves 33 fewer (original network -- retune
+    caveat, main FINDINGS 24).
+    (c) **Wave-4 ledger**: 83.0 GPU-h = **10.38 nh** (the two 8-h walltime
+    hits and their resumes are 40% of it -- lesson: emit-all/portfolio legs
+    need per-leg jobs, not omnibus jobs). Program to date: waves 1-2 ~6.5,
+    wave 3 3.85, wave 4 10.38 = **~20.8 of the 50-nh cap**.
+    Conclusion (plain): the showcase planner -- real-moves value network plus
+    two-slides-first search -- is now measured on all three exams: nearly
+    perfect on standard puzzles (0.94 extra moves), record-equal on the hard
+    tail while saving moves, and the best never-seen-boards score of the
+    program at 1.5 extra moves over perfect play.
+    Sources: `results/variants/v07_hybrid_actions/bench_frontier_*`,
+    `gate_frontier_*`, entry-10 sidecar, sacct ledger.
