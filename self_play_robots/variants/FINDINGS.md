@@ -420,3 +420,18 @@ is duplicated there.
     program at 1.5 extra moves over perfect play.
     Sources: `results/variants/v07_hybrid_actions/bench_frontier_*`,
     `gate_frontier_*`, entry-10 sidecar, sacct ledger.
+
+18. **Wave 5 submitted (2026-08-23; per-leg jobs per the wave-4 walltime
+    lesson).** (3) Cross-size transfer of the ceiling break first (owner-
+    priority): hybrid d2 + std-MCTS control with the mature mixed nets
+    (mix_b2mix_iter3) at g32r4 graded (4773778), g24r8 graded (4773779),
+    g24r8 frontier (4773780); g32r4 frontier deferred (275 slow instances --
+    submitted only if the graded legs transfer). (2) Depth-3 probe
+    (B0=460, top-m 10, sub 70): unseen 4773788, graded 4773789. (1) v16
+    ranked-slide training (nudge = the hybrid ranking's TOP slide; hook
+    smoke-tested) seeds 7/8: 4773790/4773791. (4) closeout when these land,
+    with the consolidated verdict table and the three durable lessons stated
+    plainly for the main log to quote.
+    Conclusion (plain): the transfer question -- does the new search help on
+    boards it never ran on -- goes first because the most rides on it;
+    the depth check and the sharpened training idea run alongside.
