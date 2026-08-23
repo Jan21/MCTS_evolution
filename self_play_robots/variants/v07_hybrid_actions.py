@@ -69,10 +69,10 @@ def bench_main(argv=None):
     p.add_argument("--b0", type=int, default=B0)
     p.add_argument("--top-m", type=int, default=TOP_M)
     p.add_argument("--sub", type=int, default=SUB)
-    p.add_argument("--prefix-depth", type=int, choices=[1, 2], default=1,
-                   help="2: also consider two-slide prefixes (from the best "
-                        "--d2-from one-slide states); prefixes pay their length "
-                        "in strict moves")
+    p.add_argument("--prefix-depth", type=int, choices=[1, 2, 3], default=1,
+                   help="2/3: also consider two-/three-slide prefixes (expanded "
+                        "from the best --d2-from states of the previous depth); "
+                        "prefixes pay their length in strict moves")
     p.add_argument("--d2-from", type=int, default=4)
     p.add_argument("--k", type=int, default=5)
     p.add_argument("--boards", choices=["pkl", "lean"], default="pkl")
@@ -151,10 +151,11 @@ def bench_main(argv=None):
                 continue
             d1.append((c0, pos2, [(slot, di)], st2))
             cands.append((c0 + 1, [(slot, di)], st2))
-        if a.prefix_depth >= 2:
-            d1.sort(key=lambda c: c[0])
-            seen = {positions}
-            for c0, pos2, pre, _st2 in d1[:a.d2_from]:
+        prev = sorted(d1, key=lambda c: c[0])
+        seen = {positions}
+        for depth in range(2, a.prefix_depth + 1):
+            nxt = []
+            for c0, pos2, pre, _st2 in prev[:a.d2_from]:
                 for slot, di, newpos in legal_moves(pos2, wr, wd, n):
                     pos3 = tuple(tuple(q) for q in newpos)
                     if pos3 in seen:
@@ -164,7 +165,9 @@ def bench_main(argv=None):
                     c1 = plan_cost_of(st3)
                     if c1 is None:
                         continue
-                    cands.append((c1 + 2, pre + [(slot, di)], st3))
+                    cands.append((c1 + depth, pre + [(slot, di)], st3))
+                    nxt.append((c1, pos3, pre + [(slot, di)], st3))
+            prev = sorted(nxt, key=lambda c: c[0])
         cands.sort(key=lambda c: c[0])
         # 3. sub-searches on the top-M prefix states
         for cost0, pre, st2 in cands[:a.top_m]:
@@ -179,7 +182,7 @@ def bench_main(argv=None):
             plen = len(pre)
             if r2.strict is not None and (best is None or plen + r2.strict < best[0]):
                 mv = [[COLOR_ORDER[sl], DIRECTIONS[dd]] for sl, dd in pre] + list(r2.moves or [])
-                tag = "slide2" if plen == 2 else "slide"
+                tag = f"slide{plen}" if plen > 1 else "slide"
                 tag += ":" + "+".join(f"{COLOR_ORDER[sl]}:{DIRECTIONS[dd]}" for sl, dd in pre)
                 best = (plen + r2.strict, mv, tag, r2.plan)
         dt = time.perf_counter() - t0
