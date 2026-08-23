@@ -949,3 +949,25 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     (lab recipe into the M5 curriculum line, resumed after a walltime
     timeout) and the wave-4 plan (slide-aware TRAINING — the nets have
     never seen slide-first data; v07 is inference-only so far).
+
+26. **Variants lab, wave 4 + flagship (cross-reference; `variants/FINDINGS.md`
+    entries 13–17; ≈10.4 nh incl. two walltime hits — per-leg jobs hereafter;
+    program ≈20.8/50): the hybrid's ceiling break is depth-monotone,
+    net-independent, and holds on all three exams; the "current best
+    planner" row is frozen (2026-08-23).** Flagship = v09 strict-value nets
+    + depth-2 root-slides, all solutions replay-certified: graded
+    **231/232, regret 0.944, 68.4% optimal** (pure-subgoal floor 1.17);
+    frontier **177/218** with 47/2 shared-solve move wins vs its matched
+    same-budget control (p=4e-12), d2>d1 10/2 (p=0.039; caveat: most d2
+    gain is broader slide screening — genuine two-slide plans are a
+    minority); unseen **188/200, +1.47 moves vs perfect** on the 137
+    exactly-labeled instances (57% solved optimally). Robustness: with a
+    different net family (v14) the hybrid beats its control 33/0 graded /
+    36/0 unseen — the break is a property of the search space, not a
+    checkpoint. Negative results logged honestly: v15 slide-training flat
+    (uniform nudges ≠ search-picked slides; sharper v16 defined), the v14
+    recipe does not compound over chained iterations, and the lab recipe
+    is a fresh-loop tool (mature main-line nets already sit at its one-shot
+    level, entry 11/174-vs-177 n.s.). Wave 5 approved (~3 nh): cross-size
+    transfer of the ceiling break (g32r4/g24r8), depth-3 probe, v16
+    search-ranked slide training, program closeout.
