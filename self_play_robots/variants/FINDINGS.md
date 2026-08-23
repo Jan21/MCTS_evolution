@@ -324,3 +324,44 @@ is duplicated there.
     these. Projected ~4.3 nh this wave so far.
     Conclusion (plain): the cheap de-risking runs go first, training bets
     second, and the showcase run last -- using whatever actually proved best.
+
+14. **Wave-4 core verdicts (2026-08-23; jobs 4763691, 4763976 [walltime,
+    resumed as 4773196], 4763993 [walltime, resumed as 4773197],
+    4763995/4763996).**
+    (a) **Depth-2 slides beat depth-1 everywhere landed**: unseen 188/200
+    (d2-vs-d1 moves 11/0, p=0.001), graded 231/232 with regret **0.944**
+    (10/1, p=0.012; 68.4% optimal); vs the same-budget standard search 39/1
+    (p=7e-11) and 40/0 (p=2e-12). Honesty note: the d2 config also widens
+    the prefix pool (top-m 8 vs 6), and only 5 of its 46 unseen slide-wins
+    used both slides -- "more candidates screened" carries much of the gain;
+    genuinely-two-slide wins exist but are the minority.
+    (b) **Different-nets robustness: the hybrid win is not net-specific.**
+    With v14's nets: unseen 186 vs 184 std, moves 36/0 (p=3e-11); graded
+    hybrid regret 1.17 (its std control lands in the resume job). The
+    ceiling break is a property of the SEARCH, not of one checkpoint.
+    (c) **v15 slide training: FLAT at both seeds** (unseen 172/170 = controls;
+    frontier +7/+7 n.s.; graded regret worse). Expected-failure realized:
+    uniform nudges are not the search's ranked nudges. Not adopted; wave-5
+    successor defined (train on search-SELECTED slides).
+    (d) **adopt-unseen (entry 11 CLOSED): transfer not demonstrated** --
+    adopt 174 vs mix-it3 nets 177 (p=0.58). The mature main-line nets
+    already match the lab's best one-shot arm on unseen (177); at that
+    maturity one iteration of any recipe is flat. Recipe remains a
+    fresh-loop/generalization tool, not a mature-loop upgrade.
+    Conclusion (plain): letting the planner try two moves before planning is
+    even better and works with different networks; teaching the networks
+    about random nudges did not help; and the big loop is old enough that
+    one more round of anything changes little.
+    Sources: `results/variants/v07_hybrid_actions/bench_*_{d2,v14nets}*`,
+    `results/variants/v15_slide_training{,_s8}/`,
+    `results/variants/adopt_mainline/bench_unseen_*`, gates.
+
+15. **Flagship decision (per the wave-4 gate).** v15 added nothing and
+    depth-2 added on both landed exams, so the flagship combination is
+    **v09_strict_value_s8 nets + depth-2 root-slides hybrid** -- provenance
+    recorded here and in the row's payload. Missing frontier leg submitted
+    (job 4773274); the flagship row completes the three-exam picture of the
+    program's current best planner.
+    Conclusion (plain): the showcase run uses the two changes that actually
+    proved themselves: the real-moves value network and the two-slides-first
+    search.
