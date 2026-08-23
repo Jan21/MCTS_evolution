@@ -365,3 +365,27 @@ is duplicated there.
     Conclusion (plain): the showcase run uses the two changes that actually
     proved themselves: the real-moves value network and the two-slides-first
     search.
+
+16. **v14 chain: the recipe's win does NOT compound; robustness final leg
+    confirms the hybrid everywhere (2026-08-23, jobs 4763993 + resume
+    4773197, w4 resume 4773196).**
+    (a) Three chained v14 iterations end at unseen 174 / frontier 163 /
+    graded 228 -- all within noise of control, and NOT better than the
+    one-shot v14 (unseen 174 vs 179, p=0.44). Same shape as the main line
+    (entry 11) and the v12 chain: at this loop's maturity, gains come from
+    ONE step of a better recipe, not from stacking iterations of it.
+    (b) v14-nets graded control landed: hybrid 33/0 moves wins vs its
+    same-budget standard search (p=2e-10) -- the different-nets replicate now
+    holds on BOTH exams (36/0 unseen, 33/0 graded).
+    (c) First frontier hybrid row (d1, v09s8 nets): 176/218 at 17.98 mv --
+    the same solve count as the best A\* arm (v04s8's 176) but moves 74/9 on
+    shared solves (17.48 vs 20.07, p=8e-14): on the hard tail the hybrid
+    matches the best solver while using TWO FEWER MOVES per puzzle. Its
+    same-budget std-MCTS control and the depth-2 frontier leg are the two
+    legs still in flight.
+    Conclusion (plain): repeating the improved recipe over and over adds
+    nothing after the first round; the one-move-first search keeps winning
+    with different networks; and on the hardest puzzles it now matches the
+    best solver while saving about two moves per puzzle.
+    Sources: `results/variants/v14_stack_chain/`,
+    `results/variants/v07_hybrid_actions/bench_{graded_stdmcts_v14nets,frontier_hybrid}.json`.
