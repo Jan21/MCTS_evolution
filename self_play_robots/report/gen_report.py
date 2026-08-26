@@ -440,8 +440,17 @@ def backward_system(payload):
     return None, None
 
 
+def is_unseen(payload) -> bool:
+    """The 200-puzzle unseen exam (fresh boards, ids 20000+): not the
+    frontier set, even though it also lacks a full optimum."""
+    f = str((payload.get("protocol") or {}).get("instances_file") or "")
+    return "unseen" in f or "/exam/" in f
+
+
 def is_frontier(payload, aggregate) -> bool:
     """A frontier (beyond-oracle) set: no exact optimum exists for it."""
+    if is_unseen(payload):
+        return False
     if aggregate.get("d_star_placeholder"):
         return True
     b = bench_stats((payload.get("protocol") or {}).get("instances_file"))
@@ -462,7 +471,7 @@ def protocol_bits(payload) -> str:
     sha = p.get("instances_sha256")
     if sha:
         bits.append(f'<span title="instances_sha256 {esc(str(sha))}">exam '
-                    "fingerprint</span>")
+                    f"fingerprint {esc(str(sha)[:8])}&hellip;</span>")
     if p.get("device"):
         bits.append(esc(p["device"]))
     if p.get("date"):
@@ -477,7 +486,7 @@ def _pw_cell(pw):
     if pw["delta"] is None:
         return '<td class="pend">no shared solves</td>'
     good = pw["delta"] < 0 and pw["sign_p"] < 0.05
-    return td_txt(f"{pw['delta']:+.2f} mv &middot; {pw['wins']}/{pw['losses']} "
+    return td_txt(f"{pw['delta']:+.2f} moves &middot; {pw['wins']}/{pw['losses']} "
                   f'&middot; <span title="exact sign test, p={pw["sign_p"]:.2g}, '
                   f'on the {pw["both_n"]} puzzles both solved">'
                   f"{fluke(pw['sign_p'])}</span>",
@@ -531,7 +540,7 @@ def h2h_table(entries, ref_labels, note_extra="", dstar=None):
             cells.append(td_txt("<em>reference</em>") if e["label"] == rl
                          else _pw_cell(e["pairwise"].get(rl)))
         if perfect:
-            cells.append(td_txt(f"+{e['delta_perfect']:.2f} mv"
+            cells.append(td_txt(f"+{e['delta_perfect']:.2f} moves"
                                 if e["delta_perfect"] is not None else "&mdash;",
                                 cls="hlnum" if e["delta_perfect"] is not None
                                 and e["delta_perfect"] < 1.0 else ""))
@@ -587,8 +596,9 @@ def baseline_rows(cfg, rel, cls=""):
               else None)
         out.append(row([
             td_txt(esc(cfg)),
-            td_txt('<span class="tag front">frontier</span>' if front
-                   else '<span class="tag graded">graded</span>'),
+            td_txt('<span class="tag">unseen exam</span>' if is_unseen(d)
+                   else ('<span class="tag front">frontier</span>' if front
+                         else '<span class="tag graded">graded</span>')),
             td_txt(esc(name)),
             td_txt(sr) if sr else '<td class="pend">pending</td>',
             td(a.get("mean_moves"), ".2f", cls="hlnum"),
@@ -763,12 +773,12 @@ def svg_loop() -> str:
          ["MCTS over the chosen action", "space, fixed expansion budget"]),
         (630, 40, "3 &middot; Certify",
          ["replay each solution vs physics;", "uncertified plans are dropped"]),
-        (630, 200, "4 &middot; Replay buffer",
-         ["rolling window of certified", "episodes; provenance kept"]),
-        (325, 200, "5 &middot; Train net k+1",
-         ["warm-start from net k,", "CollapseStop on, best-epoch ckpt"]),
-        (20, 200, "6 &middot; Gate",
-         ["bench vs net k AND the frozen", "supervised baselines + gauge"]),
+        (630, 200, "4 &middot; Keep recent data",
+         ["a rolling window of verified", "solutions (origin recorded)"]),
+        (325, 200, "5 &middot; Train the next nets",
+         ["start from the last ones;", "collapse alarm; keep best pass"]),
+        (20, 200, "6 &middot; Examine",
+         ["test vs the previous nets and", "the fixed baselines"]),
     ]
     s = [f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="The self-play '
          f'iteration loop: generate, search, certify, buffer, train, gate, '
@@ -796,8 +806,8 @@ def svg_loop() -> str:
     arrow(145, 268, 145, 300, "arr dashed")       # 6 -> diagnose
     s.append('<rect x="20" y="300" width="270" height="52" rx="8" '
              'class="nbox alt"/>')
-    s.append('<text x="34" y="322" class="nt">Diagnose, do not promote</text>')
-    s.append('<text x="34" y="340" class="ns">fidelity slide? damaged data?</text>')
+    s.append('<text x="34" y="322" class="nt">Worse? Investigate first</text>')
+    s.append('<text x="34" y="340" class="ns">bad labels? damaged data?</text>')
     s.append('<text x="156" y="158" class="lbl">promote: net k+1 becomes net k</text>')
     s.append('<text x="156" y="288" class="lbl">gate not cleared</text>')
     s.append(f'<text x="{W - 8}" y="18" class="cap" text-anchor="end">'
@@ -891,7 +901,8 @@ def sec_overview() -> str:
                "<p class='cite'>PROBLEM.md &sect;2</p>")
     out.append(
         "<h3>Two action-space views (both have trained nets)</h3>"
-        + table(["view", "actions", "horizon", "branching", "status here"],
+        + table(["view", "actions", "horizon (how many decisions deep)",
+                 "branching (choices per decision)", "status here"],
                 [row([td_txt("<strong>Forward / move-level</strong>"),
                       td_txt("primitive moves (&le; 4R)"),
                       td_txt("deep: 8&ndash;30+ moves"),
@@ -907,9 +918,10 @@ def sec_overview() -> str:
                       td_txt("candidate-set size, up to ~50"),
                       td_txt("where the strongest supervised planner lives — "
                              "the recommended main line (&sect;6.1)")])],
-                note="Definitions quoted from PROBLEM.md &sect;2; the "
-                     "recommendation and its current status live in "
-                     "<a href='#decisions'>The loop &rarr; open decisions</a>."))
+                note="Definitions quoted from PROBLEM.md &sect;2. The "
+                     "recommendation and its current status live on the "
+                     "<a href='#loop'>Loop tab</a>, inside the collapsed "
+                     "engineering-plan block."))
     out.append(
         "<h3>The success statement</h3>"
         "<blockquote>&ldquo;Self-play planner X solves &ge; "
@@ -1178,8 +1190,42 @@ def seed_spread_line() -> str:
             "random start: " + sent[0] + ". "
             + ". ".join(capfirst(x) for x in sent[1:])
             + (". " if len(sent) > 1 else "")
-            + "The project brief rounds this to the 3.5-solve / 6.6-optimality "
-            "gate. Any win smaller than this bar is noise.</p>")
+            + "(Optimality points = percentage-point difference in puzzles "
+            "solved with a perfect-length answer.) The gate is set just above "
+            "the measured spread, at 3.5 solve and 6.6 optimality points. Any "
+            "win smaller than this bar is noise.</p>")
+
+
+def g16_runs_line() -> str:
+    """Disambiguate the four recorded 16x16 runs (naive-reader #2, item 1):
+    two of them differ only in the realization rule and two are different B2
+    arms -- nearby tabs quote different ones, and side by side they can read
+    as the same run disagreeing. Numbers computed from the payloads."""
+    runs = [("eval/results/final450_backward_prefix.json",
+             "the pair under the prefix-check rule (quoted here and in M0)"),
+            ("eval/results/final450_backward_anytime.json",
+             "the SAME pair under the anytime rule (quoted on the supervised "
+             "tab's ladder)"),
+            ("eval/results/final450_backward_b2.json",
+             "the original B2-vocabulary arm (supervised tab)"),
+            ("eval/results/final450_backward_b2_seed21.json",
+             "the seed-21 B2 replicate (this project's M0 parity target)")]
+    bits = []
+    for rel, what in runs:
+        _, sy = backward_system(load_sv(rel))
+        a = (sy or {}).get("aggregate") or {}
+        if a.get("solved") is None:
+            continue
+        r = a.get("mean_regret")
+        bits.append(f"{a['solved']}/{a['n']} &middot; "
+                    + (f"{r:.2f}" if r is not None else "&mdash;")
+                    + f" extra moves &mdash; {what}")
+    if len(bits) < 2:
+        return ""
+    return ("<p class='note'><strong>Reading 16&times;16 numbers across "
+            "tabs:</strong> four distinct recorded runs exist and they are "
+            "different runs, not one run disagreeing: "
+            + "; ".join(bits) + ".</p>")
 
 
 def sec_baselines() -> str:
@@ -1196,13 +1242,21 @@ def sec_baselines() -> str:
         out.append("<p class='note'>Bench protocol as recorded in "
                    + src("supervised_valuenet/scaling/results/g24r4/comparison.json")
                    + f": <strong>{esc(p.get('expansions'))} expansions</strong>, "
-                     f"<strong>k={esc(p.get('k'))}</strong>, device "
+                     f"<strong>k={esc(p.get('k'))}</strong> (keep the top "
+                     f"{esc(p.get('k'))} candidates at each step), device "
                      f"{esc(p.get('device'))}, exam "
                    + src(p.get("instances_file"))
-                   + f" (sha {esc(str(p.get('instances_sha256'))[:12])}, "
-                     f"n={esc(p.get('n_instances'))}). Expansion definition: "
-                     f"{esc(p.get('expansion_definition'))}.</p>")
+                   + f' (<span title="instances_sha256 '
+                     f'{esc(str(p.get("instances_sha256")))}">exam '
+                     f"fingerprint {esc(str(p.get('instances_sha256'))[:8])}"
+                     f"&hellip;</span>, n={esc(p.get('n_instances'))}). "
+                     "Every system MAY use up to that many expansions per "
+                     "puzzle; the search-effort column shows how many it "
+                     "actually needed &mdash; using fewer is better. "
+                     "<details><summary>Expansion definition</summary>"
+                     f"{esc(p.get('expansion_definition'))}</details></p>")
     out.append(seed_spread_line())
+    out.append(g16_runs_line())
 
     # ---- head-to-head: ONE comparable table per exam (owner 2026-08-21) ----
     out.append("<h3>Head-to-head on the shared exam &mdash; forward vs backward "
@@ -1235,10 +1289,11 @@ def sec_baselines() -> str:
             CmpEntry("forward supervised",
                      load_sv("scaling/results/g24r4/comparison.json"),
                      prefer_kind="forward"),
-            CmpEntry("self-play line (mix iter3)",
+            CmpEntry("this project's self-play planner",
                      load(RESULTS / "selfplay" / "mix_b2mix_iter3" /
-                          "bench_g24r4_astar.json")),
-            CmpEntry("current best planner (flagship: v09 nets + depth-2 hybrid)",
+                          "bench_g24r4_astar.json"),
+                     tech="mix_b2mix_iter3 nets, B2 anytime A*"),
+            CmpEntry("current best planner (flagship)",
                      load(RESULTS / "variants" / "v07_hybrid_actions" /
                           "bench_graded_hybrid_d2.json"),
                      tech="v09 strict-value nets + depth-2 slide-prefix hybrid search"),
@@ -1250,7 +1305,7 @@ def sec_baselines() -> str:
             CmpEntry("forward supervised",
                      load_sv("scaling/results/g24r8/comparison.json"),
                      prefer_kind="forward"),
-            CmpEntry("self-play line (mix iter3)",
+            CmpEntry("this project's self-play planner",
                      load(RESULTS / "selfplay" / "mix_b2mix_iter3" /
                           "bench_g24r8_astar.json"),
                      tech="mix_b2mix_iter3 nets, B2 anytime A*"),
@@ -1269,7 +1324,7 @@ def sec_baselines() -> str:
             CmpEntry("forward supervised",
                      load_sv("scaling/results/g32r4/comparison.json"),
                      prefer_kind="forward"),
-            CmpEntry("self-play line (mix iter3)",
+            CmpEntry("this project's self-play planner",
                      load(RESULTS / "selfplay" / "mix_b2mix_iter3" /
                           "bench_g32r4_astar.json"),
                      tech="mix_b2mix_iter3 nets, B2 anytime A*"),
@@ -1359,7 +1414,7 @@ def sec_baselines() -> str:
         "brief does: the forward planner is slower but near-optimal when it solves, "
         "the backward planner solves more and faster but further from optimal. "
         "<strong>Beating backward on moves while matching its solve rate "
-        "&asymp; closing toward forward's quality at backward's speed — that "
+        "comes close to forward's quality at backward's speed — that "
         "is the headline chart this project is aiming at.</strong></p>")
 
     # the exact-optimum ceiling table
@@ -1383,7 +1438,7 @@ def sec_baselines() -> str:
                               td_txt("&mdash; (no optimum exists)")], "sub"))
     out.append("<h3>The exact-optimum ceiling, per pinned bench file</h3>")
     out.append(table(["bench file (the pinned exam)", "instances",
-                      "with an exact optimum", "mean d*"], brows,
+                      "with a known optimum", "mean known optimum"], brows,
                      note="Read line by line from the JSONL itself: <code>n</code> "
                           "= lines, <code>with an exact optimum</code> = lines "
                           "whose <code>d_star</code> is neither null nor 0, "
@@ -1423,12 +1478,13 @@ def sec_baselines() -> str:
 def sec_m0() -> str:
     out = ['<section id="m0">', "<h2>M0 &mdash; arena parity</h2>",
            "<p><strong>Gate</strong> (PROBLEM.md &sect;8): "
-           f"{GATES['M0'][1]} Estimated cost {GATES['M0'][0]}.</p>",
+           f"{GATES['M0'][1]} Estimated cost {GATES['M0'][0].replace('nh', 'node-hour(s)')}.</p>",
            "<p>The harness is "
            + src("self_play_robots/spr/arena.py")
-           + " — a thin wrapper that <em>calls</em> "
+           + " — a thin wrapper that <em>calls</em> the original benchmark code "
+           "directly, "
            + src("supervised_valuenet/eval/compare.py")
-           + " (never forks it). It runs the exam in 8 parallel parts and merges "
+           + " (it keeps no copy of its own). It runs the exam in 8 parallel parts and merges "
              "them. An independent replay check verifies every solution. "
              "Then every row is compared against the recorded result. A "
              "run that fails the replay check is set aside, never "
@@ -1492,9 +1548,11 @@ def sec_m0() -> str:
     out.append("<h3>The registered test setups</h3>")
     out.append(table(["setup", "config", "instances", "eval.compare flags",
                       "expansions / k", "recorded reference", "notes"], rrows,
-                     note="Read live from the <code>ARMS</code> registry in "
+                     note="Read live from the harness&rsquo;s own list of "
+                          "test setups ("
                           + src("self_play_robots/spr/arena.py")
-                          + " — the same object the job script drives, so this "
+                          + "), so this table always matches what actually "
+                            "runs — the same list the job script drives, so this "
                             "table cannot drift from what actually runs.",
                      cls="wide"))
 
@@ -1592,7 +1650,9 @@ def sec_m0() -> str:
                           f"{(na.get('pct_optimal') or 0):.1f}% optimal on both "
                           f"sides); {len(diffs)} of {len(nrows_)} rows differ "
                           f"only by floating-point rounding across machines "
-                          f"(a thread-count change reproduces them){dtxt}")
+                          f"(re-running with a different number of CPU threads "
+                          f"reproduces exactly these rounding differences)"
+                          f"{dtxt}")
             else:
                 plainv = f"{len(diffs)} of {len(nrows_)} rows differ"
             out.append(f'<p class="verdict {vcls}">{chip("pass" if passed else "fail", "parity " + ("PASS" if passed else "FAIL"))} '
@@ -1666,8 +1726,9 @@ def sec_ceiling() -> str:
            'NO_COMPLETE_PLAN = the generator never finished a plan. '
            'INCONCLUSIVE = the search hit its cap. ERROR = the puzzle threw '
            'an error (recorded, never lost). &ldquo;Slack&rdquo; in a '
-           'heading = how far past the first answer the search kept '
-           'looking before it stopped.</p>']
+           'heading = how much further past the first answer the probe '
+           'keeps searching. More slack = a deeper probe = a tighter '
+           'proven limit.</p>']
     ss = side_study("ceiling")
     if ss:
         out.append(f'<p class="verdict">{chip(ss.get("status", "unknown"), chip_word(ss.get("status", "unknown")))} '
@@ -1702,7 +1763,7 @@ def sec_ceiling() -> str:
         if caps.get("time_cap"):
             vbits.append(f"{caps['time_cap']:g} s")
         if caps.get("max_frontier"):
-            vbits.append(f"{caps['max_frontier'] // 1000}k frontier")
+            vbits.append(f"search queue cap {caps['max_frontier'] // 1000}k")
         if capped:
             reading = (f'<span class="tag front">lower bound</span> probe hit a cap on '
                        f'{capped} instance(s), {inconclusive} inconclusive: the solve '
@@ -1716,8 +1777,9 @@ def sec_ceiling() -> str:
             td_txt(f"<strong>{esc(d.get('config'))}</strong> / "
                    f"{esc(d.get('vocab'))}<br><span class='note'><code>{esc(variant)}</code>"
                    + (f" &middot; {' &middot; '.join(vbits)}" if vbits else "") + "</span>"),
-            td_txt('<span class="tag front">frontier</span>' if front
-                   else '<span class="tag graded">graded</span>'),
+            td_txt('<span class="tag">unseen exam</span>' if is_unseen(d)
+                   else ('<span class="tag front">frontier</span>' if front
+                         else '<span class="tag graded">graded</span>')),
             td(s.get("n"), "d"),
             td_txt((f"{s.get('n_realizable')}/{s.get('n')} &middot; {100 * sr:.1f}%"
                     + (" <strong>&ge;</strong>" if capped else ""))
@@ -1758,11 +1820,11 @@ def sec_ceiling() -> str:
                           "(&ge;), which is why the frontier B2 arms must be read as "
                           "&ldquo;at least&rdquo;. Frontier sets carry no d*, so the "
                           "moves/gap/optimal columns are dashed there. "
-                          "<em>first</em> = the first realizable plan popped (the "
-                          "supervised probe's definition, i.e. what a "
-                          "cost-ordered planner would take); <em>best</em> = the "
-                          "cheapest realizable plan found before the abstract "
-                          "cost order proves nothing cheaper remains. Caps "
+                          "<em>first</em> = the first working plan the search "
+                          "meets in cheapest-first order (what a simple planner "
+                          "would take). <em>best</em> = the cheapest working "
+                          "plan found before the ordering proves nothing "
+                          "cheaper remains. Caps "
                           "(<code>caps</code> block: time cap, frontier size, slack) "
                           "are printed under the arm name.",
                      cls="wide"))
@@ -1779,15 +1841,17 @@ def sec_ceiling() -> str:
                    "per-instance gap. That number is a hard bound on the "
                    "self-play planner in the subgoal action space: <strong>no "
                    "amount of search can beat a plan the language cannot "
-                   "write.</strong></p>")
+                   "write &mdash; while it speaks only this language.</strong></p>")
     for f, d in found:
         s = d["summary"]
         cfg, voc = d.get("config"), d.get("vocab")
         voc_words = {"base": "base vocabulary", "b1": "extended vocabulary (B1)",
                      "b2": "extended vocabulary (B2)"}.get(voc, f"{voc} vocabulary")
         mslack = re.search(r"slack(\d+)", f.stem)
-        knob = (f"relaxed budget (slack {mslack.group(1)})" if mslack
-                else ("frontier exam" if "frontier" in f.stem else "strict budget"))
+        knob = (f"deeper probe (slack {mslack.group(1)}: searches more, "
+                f"proves a tighter limit)" if mslack
+                else ("frontier exam" if "frontier" in f.stem
+                      else "standard probe"))
         out.append(f'<h3><span title="{esc(f.stem)}">{cfg_label(cfg)} &mdash; '
                    f'{esc(voc_words)}, {knob}</span></h3>')
         bits = []
@@ -1830,8 +1894,10 @@ def sec_ceiling() -> str:
                 f"moves</strong> — is the room <em>search inside the existing "
                 f"language</em> has to work with. The "
                 f"{s['mean_gap_best']:.2f}-move residue is the part search can "
-                f"never recover: it needs a richer candidate generator or the "
-                f"primitive-move action space (&sect;6.1).</p>")
+                f"never recover <em>while the planner may only use "
+                f"sub-goals</em>: closing it needs a richer vocabulary or "
+                f"ordinary moves &mdash; which is what the hybrid search later "
+                f"did (see the <a href='#story'>Story tab</a>).</p>")
         cats = s.get("categories") or {}
         if cats:
             out.append(table(["category", "instances"],
@@ -1852,21 +1918,27 @@ def sec_ceiling() -> str:
                           "real move count cheaper than the plan-step estimate "
                           "— worth an eyeball before it is quoted."
                           if s.get("n_best_below_dstar") else
-                          "All bars sit above zero: the language never beats "
-                          "the known optimum here.")
+                          "All bars sit at or above zero: the language matches "
+                          "but never beats the known optimum here.")
                        + "</figcaption></figure>")
         caps = d.get("caps") or {}
         meta = [("instances", src(disp(d.get("instances", "?")))),
-                ("caps", f"<code>{esc(json.dumps(caps))}</code>"),
+                ("search caps",
+                 f'<span title="{esc(json.dumps(caps))}">'
+                 f"{esc(len(caps))} cap setting(s) (hover)</span>"),
                 ("workers", esc(d.get("workers"))),
-                ("slurm job", esc(d.get("slurm_job_id"))),
+                ("cluster job", esc(d.get("slurm_job_id"))),
                 ("wall seconds", esc(d.get("wall_seconds"))),
                 ("date", esc(d.get("date"))),
-                ("capped instances", esc(s.get("capped"))),
-                ("best plans proven bounded", esc(s.get("best_bounded")))]
-        out.append(table(["field", "value"],
-                         [row([td_txt(k), td_txt(v)]) for k, v in meta],
-                         note="Provenance block of " + src(disp(f)) + "."))
+                ("puzzles that hit a cap", esc(s.get("capped"))),
+                ("best plans proven to be the language optimum",
+                 esc(s.get("best_bounded")))]
+        meta = [kv for kv in meta if kv[1] not in (None, "None", "", None)]
+        out.append('<details><summary>run provenance (for auditors)</summary>'
+                   + table(["field", "value"],
+                           [row([td_txt(k), td_txt(v)]) for k, v in meta],
+                           note="Provenance block of " + src(disp(f)) + ".")
+                   + "</details>")
     out.append(
         "<p class='note'><strong>What this bounds.</strong> Everything above is "
         "measured with <em>no network anywhere</em> — it is a property of the "
@@ -1948,6 +2020,10 @@ def sec_milestones() -> str:
     summ = scan.get("summary", {})
     claimed = set()
     out = ['<section id="milestones">', "<h2>Milestones M0&ndash;M6</h2>",
+           '<p class="banner">This tab is the raw results ledger, kept '
+           'for auditors. Every headline number here appears, explained '
+           'in plain language, in the <a href="#story">Story</a> and '
+           '<a href="#variants">Variants</a> tabs.</p>',
            "<p>Gate text and estimated node-hours are quoted from PROBLEM.md "
            "&sect;8; status chips, sources and job ids come from "
            + src(disp(RESULTS / "status.json"))
@@ -1976,7 +2052,7 @@ def sec_milestones() -> str:
                    f'{esc(m.get("title", ""))} '
                    f'<span title="{esc(stt)}">{chip(stt, chip_word(stt))}</span></h3>')
         out.append(f'<p class="gate"><strong>Gate, quoted from the brief</strong> '
-                   f'(PROBLEM.md &sect;8, est. {cost}): &ldquo;{gate}&rdquo;'
+                   f'(PROBLEM.md &sect;8, est. {cost.replace("nh", "node-hours")}): &ldquo;{gate}&rdquo;'
                    + (f'<br><span class="note">In plain terms: '
                       f'{PLAIN_GATE[k]}</span>' if k in PLAIN_GATE else "")
                    + '</p>')
@@ -2039,9 +2115,11 @@ def sec_milestones() -> str:
     if other or errs:
         bits = []
         if other:
-            bits.append("unclassified JSON files (neither a comparison payload "
-                        "nor a summary.json): "
-                        + ", ".join(src(disp(p)) for p in other[:30]))
+            bits.append("<details><summary>"
+                        f"{len(other)} other JSON file(s) this page does not "
+                        "render (for auditors)</summary>"
+                        + ", ".join(src(disp(p)) for p in other[:30])
+                        + "</details>")
         if errs:
             bits.append("unreadable files: "
                         + ", ".join(f"{src(disp(p))} ({esc(e)})"
@@ -2677,7 +2755,8 @@ def labeler_ref(cfg, table=None):
     if not spec:
         return None
     rel, kind, key = spec
-    d = load(RESULTS / rel[4:]) if rel.startswith("res:") else load_sv(rel)
+    res_local = rel.startswith("res:")
+    d = load(RESULTS / rel[4:]) if res_local else load_sv(rel)
     if not ok(d):
         return None
     if kind == "value":
@@ -2686,7 +2765,7 @@ def labeler_ref(cfg, table=None):
             return None
         return {"kind": "value", "top1": c.get("top1_optimal"),
                 "regret": c.get("regret"), "n": c.get("n_groups"),
-                "file": disp(SV / rel),
+                "file": disp(RESULTS / rel[4:]) if res_local else disp(SV / rel),
                 "what": "labeler value net <code>prod_v1_s11</code> on the same "
                         "decision corpus, argmin vs the exact optimum "
                         "(<code>nn_labeler.audit</code>) &mdash; directly "
@@ -2810,7 +2889,7 @@ def audit_depth_table(rep) -> str:
         return ""
     return ("<details><summary>per-decision-depth breakdown "
             "(<code>by_depth</code>)</summary>"
-            + table(["config", "depth", "groups", "value top1", "pair top1"],
+            + table(["config", "depth", "decisions scored", "value top1", "pair top1"],
                     rows_,
                     note="<code>by_depth[d]</code> of the same report: "
                          "<code>n</code> groups at that decision depth, "
@@ -3022,9 +3101,13 @@ def sub_forward() -> str:
                 other = g.name[len(f.stem) + 4:-5]
                 vs_bits.append(f"vs <code>{esc(other)}</code>: solves "
                                f"+{pr.get('a_only')}/&minus;{pr.get('b_only')} "
-                               f"(McNemar p={_pf(pr.get('mcnemar_p'))}), moves "
+                               f'&middot; <span title="exact McNemar test, '
+                               f'p={_pf(pr.get("mcnemar_p"))}">'
+                               f"{fluke(pr.get('mcnemar_p'))}</span>, moves "
                                f"{pr.get('moves_wins_a')}/{pr.get('moves_wins_b')} "
-                               f"(sign p={_pf(pr.get('sign_p_moves'))})")
+                               f'&middot; <span title="exact sign test, '
+                               f'p={_pf(pr.get("sign_p_moves"))}">'
+                               f"{fluke(pr.get('sign_p_moves'))}</span>")
             rows_.append(row([td_txt(f"<code>{esc(f.stem)}</code><br><span class='note'>{esc(sysname[:90])}</span>"),
                               *agg_cells(d, a, ".3f"),
                               td_txt("<br>".join(vs_bits) if vs_bits else "&mdash;"),
@@ -3325,7 +3408,7 @@ def svg_regret_vs_solve() -> str:
     s.append(f'<line x1="{L}" y1="{H - B}" x2="{W - R}" y2="{H - B}" class="axis"/>')
     s.append(f'<line x1="{L}" y1="{T}" x2="{L}" y2="{H - B}" class="axis"/>')
     s.append(f'<text x="{(L + W - R) / 2:.0f}" y="{H - 6}" class="axl" text-anchor="middle">solve rate on bench.solved (232 graded instances) &rarr; better</text>')
-    s.append(f'<text x="{L}" y="13" class="axl">y: mean regret over solved &darr; better</text>')
+    s.append(f'<text x="{L}" y="13" class="axl">extra moves vs perfect (lower is better)</text>')
     # reference lines (short staggered labels; full detail in the tooltips)
     for ri, (lab, xr, yr, f, vocab) in enumerate(refs):
         cls = "ref1" if vocab == "base" else "ref2"
@@ -3391,6 +3474,10 @@ def sub_chart() -> str:
 
 def sec_results() -> str:
     out = ['<section id="results">', "<h2>Milestone results</h2>",
+           '<p class="banner">This tab is the raw results ledger, kept '
+           'for auditors. Every headline number here appears, explained '
+           'in plain language, in the <a href="#story">Story</a> and '
+           '<a href="#variants">Variants</a> tabs.</p>',
            "<p>Every table here is regenerated from result files under "
            + src(disp(RESULTS))
            + " at generation time — nothing is hand-typed. Where a milestone's "
@@ -4186,7 +4273,8 @@ def main() -> int:
     body_html = "\n".join(panels)
     st = status()
     upd = st.get("updated")
-    upd_txt = f"; status manifest of {esc(upd)}" if upd else ""
+    upd_txt = (f"; status manifest last updated {esc(upd)} "
+               f"(cluster local time)" if upd else "")
     n_read, n_missing = len(set(STATS["read"])), len(set(STATS["missing"]))
     page = (
         '<!doctype html><html lang="en"><head><meta charset="utf-8">\n'
