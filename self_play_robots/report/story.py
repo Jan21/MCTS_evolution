@@ -391,7 +391,7 @@ def _journey_tree() -> str:
                           <span class="why">Same start networks, same budget, a 200-puzzle unseen exam, a second seed before any claim. Cards: <a href="#variants">Variants lab tab</a>.</span>
                         <ul>
                           <li><span class="chip bad">&#10007; killed</span> <span class="what">v01 &middot; AlphaZero&rsquo;s own policy target</span>
-                              <span class="why">Visit-count training collapsed every exam (p &le; 2e-7). The certified-cost target is the load-bearing choice.</span></li>
+                              <span class="why">v01 removed the old scoring rule: candidates are scored by the certified cost of the finished plans that used them. Training collapsed on every exam (p &le; 2e-7). That scoring rule is what makes the training work.</span></li>
                           <li><span class="chip good">&#10003; adopted</span> <span class="what">v04 &middot; keep every examined decision</span>
                               <span class="why">Twice the records from the same search. A replicated win on the hard set.</span></li>
                           <li><span class="chip warn">~ not replicated</span> <span class="what">v06 &middot; Gumbel root exploration</span>
@@ -571,8 +571,8 @@ def sec_story() -> str:
     out.append(
         '<ul class="plain">'
         '<li><strong>The textbook recipe lost.</strong> AlphaZero&rsquo;s '
-        'visit-count target collapsed every exam. The certified-cost target '
-        'is load-bearing.</li>'
+        'visit-count target collapsed every exam. Scoring candidates by the '
+        'certified cost of their finished plans is what makes training work.</li>'
         '<li><strong>The base vocabulary was already full.</strong> Two '
         'rounds changed nothing, as predicted.</li>'
         '<li><strong>Slide training failed twice.</strong> The lever was the '

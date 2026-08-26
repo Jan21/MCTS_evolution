@@ -92,22 +92,23 @@ PLAIN = {
   "Best-case summaries can be hostage to one lucky find; averages explore "
   "more evenly."),
  "v06_gumbel_root": (
-  "We changed how the search explores its FIRST decision: instead of a random "
-  "sprinkle of exploration noise, a principled lottery (the 'Gumbel' method) "
-  "that provably improves the policy even with a tiny search budget.",
+  "We changed how the search explores its FIRST decision. Before: random "
+  "exploration noise. After: a principled lottery (the 'Gumbel' method). "
+  "On paper, the lottery improves the policy even with a tiny search budget.",
   "Published results show the biggest gains at exactly our small budgets."),
  "v07_hybrid_actions": (
   "Our planner thinks in 'subgoals' (mini-objectives like 'park a robot "
-  "there'). We let it, before planning, try ONE ordinary robot move first and "
-  "then plan subgoals from the new position -- mixing two kinds of moves that "
-  "were previously separate worlds.",
-  "The math (main FINDINGS 3) says pure subgoal planning can NEVER match "
-  "move-by-move play on solution length; changing the action space is the "
-  "only door out."),
+  "there'). We added one option: make an ordinary robot move first. "
+  "Then it plans subgoals from the new position. "
+  "This mixes two kinds of moves that were previously separate worlds.",
+  "We proved earlier that pure subgoal planning can never match move-by-move "
+  "play on solution length (main FINDINGS 3). "
+  "Changing the set of allowed moves is the only door out."),
  "v08_cold_start": (
-  "We threw away the head start from the supervised networks (which were "
-  "trained on human-configured exact solvers) and trained from a blank slate, "
-  "purely on the loop's own certified self-play data.",
+  "We threw away the head start from the supervised networks. "
+  "Those networks came from human-configured exact solvers. "
+  "We trained from a blank slate, purely on the loop's own certified "
+  "self-play data.",
   "Measures how much the supervised head start is actually worth -- and "
   "whether a fully label-free planner is viable at all."),
  "v09_strict_value": (
@@ -117,9 +118,9 @@ PLAIN = {
   "You get what you train for: ranking plans by the real metric should cut "
   "wasted moves."),
  "v12_frontier_curriculum": (
-  "Instead of practicing on random puzzles, the loop first screens each "
-  "puzzle with a quick attempt and only practices on the ones it FAILS -- "
-  "like a student drilling only the exercises they get wrong.",
+  "The loop first screens each puzzle with a quick attempt. "
+  "It then practices only on the puzzles it failed. "
+  "It works like a student who drills only the exercises they get wrong.",
   "The loop had stalled because most random puzzles are already easy for it; "
   "hard ones carry the remaining signal."),
  "v13_combo": (

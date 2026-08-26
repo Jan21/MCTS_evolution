@@ -2,6 +2,6 @@
  "chip": "bad",
  "label": "flat after 3 chained iterations -- killed",
  "note": "No damage, no significant gain; curriculum likely needs chained iterations to compound (wave-3 candidate).",
- "result": "Three chained training rounds on screened-hard puzzles ended statistically identical to the control on every exam (unseen 172 vs 172; frontier 162 vs 160; standard 229 vs 228; all fluke chances > 80%), while producing ~35% fewer practice examples per round.",
- "conclusion": "Killed: the difficulty-screening curriculum does not compound at this scale -- the loop's remaining weaknesses are not about which puzzles it practices on. The compute goes to the action-space line instead."
+ "result": "The loop practiced only on puzzles it first failed in a quick test. After one round: no measurable change. After three chained rounds: still no change on any exam. The screening also cut the number of practice examples by about a third.",
+ "conclusion": "Killed. Choosing harder practice puzzles did not help, even with repetition."
 }

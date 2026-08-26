@@ -89,7 +89,7 @@ is duplicated there.
    worse than the stack's certified-cost softmax (which is itself a
    completed-Q-style target, DESIGN.md §4) -- regret doubles, every exam
    collapses. The counterfactual matters: it says the control's target
-   design is load-bearing, not incidental. (b) **v04 and v06 are the real
+   design is what makes the training work; it is not incidental. (b) **v04 and v06 are the real
    positive signals**, on DIFFERENT axes: emit-all buys frontier solves
    (+11, 2.2x records at 3.8x gen wall-time -- sibling completion on every
    expanded node is the cost), Gumbel root buys graded MOVES (19/6 wins,
@@ -449,9 +449,15 @@ is duplicated there.
     The 8-robot regret cut (1.82 -> 1.24) is the largest of any size -- the
     crowded mode is where one-robot slides unlock the most, exactly the
     B2-vocabulary pattern (main FINDINGS 20b) repeating one level down.
+    Update (2026-08-26, control leg 4829779): the crowded-board hard exam is
+    now paired. The standard search solved 3 more puzzles (279 vs 276, not
+    significant). The hybrid used fewer moves on 82 of 84 differing shared
+    solutions (14.25 vs 15.30 mean, p=4e-22) -- the strongest single moves
+    result of the program. The larger-board hard exam's control leg
+    (4835373) is the program's last open measurement.
     Conclusion (plain): the one-move-first idea works on bigger boards and
-    crowded boards it never practiced on -- every size tried, the planner
-    solves as many or more puzzles with strictly fewer moves.
+    crowded boards it never practiced on. At every size tried, the planner
+    solves about as many puzzles and uses clearly fewer moves.
     Sources: `results/variants/v07_transfer/`.
 
 20. **Depth-3: graded still descends, unseen saturated (2026-08-25, jobs

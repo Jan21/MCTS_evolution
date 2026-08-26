@@ -1,7 +1,7 @@
 {
  "chip": "bad",
  "label": "loss (decisive)",
- "note": "All exams collapse at p<=2e-7; visit targets killed at this budget.",
- "result": "Everything got much worse: 202 vs 228 standard, 118 vs 160 frontier, 142 vs 172 unseen; the chance these drops are flukes is below one in a million on each exam.",
- "conclusion": "Rejected decisively. Our existing cost-based teaching signal is better than the textbook AlphaZero one here; kept as a documented negative result."
+ "note": "Standard-exam solve comparison: p = 2.16e-7. The other exams show p at or below 1e-7.",
+ "result": "v01 removed the old scoring rule. That rule scores each candidate by the certified cost of the finished plans that used it. The replacement scores candidates by how often the search visited them. Training then got much worse on every exam: 202 vs 228 standard, 118 vs 160 hard, 142 vs 172 new boards. The chance that these drops are luck is below one in a million.",
+ "conclusion": "Rejected. The old scoring rule is what makes the training work. We keep it, and we keep this result as a documented warning."
 }
