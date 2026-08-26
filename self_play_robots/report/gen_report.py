@@ -17,6 +17,7 @@ PROBLEM.md section 10).
 """
 from __future__ import annotations
 
+import glob
 import html
 import json
 import re
@@ -581,6 +582,58 @@ def side_study(key) -> dict:
     return s if isinstance(s, dict) else {}
 
 
+# ---------------------------------------------------------------------------
+# shared plain-language helpers (jargon audit REVIEW_jargon.md, systemic fixes
+# R1/R2/R3): use these in every section so slugs, p-values and status notes
+# render for a human reader. Other section owners: import/reuse, do not fork.
+# ---------------------------------------------------------------------------
+
+CFG_WORDS = {}          # slug -> "24&times;24, 4 robots"
+
+
+def cfg_label(slug: str, suffix: str = "") -> str:
+    """Plain words for a config slug, slug kept as a hover (systemic fix R2)."""
+    lab = CFG_WORDS.get(slug)
+    if lab is None:
+        m = re.fullmatch(r"g(\d+)r(\d+)", slug)
+        if m:
+            n, r = m.group(1), m.group(2)
+            lab = f"{n}&times;{n}, {r} robot" + ("s" if r != "1" else "")
+            CFG_WORDS[slug] = lab
+    if lab is None:
+        return esc(slug)
+    tail = f" {suffix}" if suffix else ""
+    return f'<span title="{esc(slug)}">{lab}{tail}</span>'
+
+
+def fluke(p) -> str:
+    """A p-value as plain language for use inside a sentence (systemic fix R3).
+    Raw p's belong in table cells or details blocks, not prose."""
+    try:
+        p = float(p)
+    except (TypeError, ValueError):
+        return ""
+    if p > 0.05:
+        return f"could be a fluke (p&nbsp;=&nbsp;{p:.2g})"
+    for bound, words in ((1e-12, "one in a trillion"), (1e-9, "one in a billion"),
+                         (1e-6, "one in a million"), (1e-3, "one in a thousand"),
+                         (0.05, "one in twenty")):
+        if p <= bound:
+            return f"fluke chance below {words}"
+    return f"fluke chance below one in twenty"
+
+
+def note_html(entry: dict) -> str:
+    """Milestone/side-study note for display (systemic fix R1): the plain_note
+    is the reading surface; the raw FINDINGS-register note collapses into a
+    details block for auditors."""
+    plain, raw = entry.get("plain_note"), entry.get("note")
+    if plain and raw:
+        return (esc(plain) + ' <details class="inl"><summary>log text</summary>'
+                f'<span class="note">{esc(raw)}</span></details>')
+    return esc(plain or raw or "")
+
+
 def jobs_txt(entry) -> str:
     js = entry.get("jobs") or []
     return ", ".join(str(j) for j in js) if js else "&mdash;"
@@ -593,7 +646,21 @@ def sources_txt(entry) -> str:
     bits = []
     for s in ss:
         p = SPR / s if not Path(s).is_absolute() else Path(s)
-        mark = "" if p.is_file() else ' <span class="miss">(not yet)</span>'
+        # sources may be dirs, globs or brace patterns -- expand before judging
+        cand = str(p)
+        found = p.exists()
+        if not found and "{" in cand:
+            import itertools
+            parts = re.split(r"\{([^}]*)\}", cand)
+            opts = [parts[0]]
+            for i in range(1, len(parts), 2):
+                alts = parts[i].split(",")
+                tail = parts[i + 1] if i + 1 < len(parts) else ""
+                opts = [o + a + tail for o in opts for a in alts]
+            found = any(Path(o).exists() or glob.glob(o + "*") for o in opts)
+        if not found:
+            found = bool(glob.glob(cand + "*") or glob.glob(cand))
+        mark = "" if found else ' <span class="miss">(not yet)</span>'
         bits.append(src(s) + mark)
     return " ".join(bits)
 
@@ -830,9 +897,13 @@ def sec_overview() -> str:
     if upd:
         meta.append(f"status manifest last updated {esc(upd)}")
     if nh:
-        meta.append(f"node-hours spent {esc(nh.get('spent'))}, projected next "
-                    f"{esc(nh.get('projected_next'))}"
-                    + (f" ({esc(nh.get('note'))})" if nh.get("note") else ""))
+        proj = nh.get("projected_next")
+        meta.append(
+            f"about {esc(nh.get('spent'))} node-hours of compute used so far"
+            + (f", roughly {esc(proj)} planned next" if proj else "")
+            + (f' <details class="inl"><summary>detail</summary>'
+               f'<span class="note">{esc(nh.get("note"))}</span></details>'
+               if nh.get("note") else ""))
     if not st:
         out.append(f'<p class="pendbox">{src(disp(RESULTS / "status.json"))} '
                    "not found or unreadable — every chip above reads "
@@ -856,7 +927,7 @@ def sec_overview() -> str:
         j = jobs_txt(m)
         bullets.append(
             f"<li>{chip(stt, stt)} <strong>{esc(k)} &mdash; "
-            f"{esc(m.get('title', ''))}</strong>: {esc(note) if note else ''}"
+            f"{esc(m.get('title', ''))}</strong>: {note_html(m)}"
             + (f' <span class="note">job(s) {j}</span>' if j != "&mdash;" else "")
             + f'<br><span class="note">sources: {sources_txt(m)}</span></li>')
     for k, v in (status().get("side_studies") or {}).items():
@@ -865,6 +936,7 @@ def sec_overview() -> str:
         bullets.append(
             f"<li>{chip(v.get('status', 'unknown'), v.get('status', 'unknown'))} "
             f"<strong>side study &mdash; {esc(v.get('title', k))}</strong>"
+            + (f": {note_html(v)}" if (v.get("plain_note") or v.get("note")) else "")
             + (f' <span class="note">job(s) {j}</span>' if j != "&mdash;" else "")
             + f'<br><span class="note">sources: {sources_txt(v)}</span></li>')
     if bullets:
@@ -3310,19 +3382,15 @@ def sec_variants() -> str:
     vd = RESULTS / "variants"
     out = ['<section id="variants"><h2>Variants lab</h2>']
     out.append(
-        '<p>Owner directive (2026-08-20): try <em>structurally different</em> '
-        'self-play designs under one matched protocol and compare them &mdash; '
-        'no hyper-parameter tweaking. Every arm runs ONE iteration at g24r4 in '
-        'the B2 vocabulary from the <strong>same frozen warm-start nets</strong> '
-        '(mix_b2mix_iter2), the same board-id budget and generation budget '
-        '(30 boards &times; 8 instances, 300 expansions, stop 80), the same '
-        'retrain recipe unless the variant IS a training change, and is benched '
-        'with the arena A* (1200 expansions, k=5, replay-certified) on the '
-        'pinned graded exam, the pinned frontier exam, and an <strong>unseen '
-        'exam</strong> of 200 instances on 50 fresh boards (ids 20000+, pinned '
-        'the day the lab opened, never trained on by anything). Verdicts are '
-        'paired tests (<code>spr.gate compare</code>) vs the control arm. '
-        'Full protocol: <code>variants/DESIGN.md</code>; results log: '
+        '<p>This tab is the experiment lab. Each experiment changes exactly one '
+        'thing in the self-play design and is measured against an unchanged '
+        'control run. Every experiment starts from the same saved networks, '
+        'gets the same practice budget, and takes the same three exams. '
+        'Every verdict is a puzzle-by-puzzle comparison against the control '
+        'run. Move counts are compared only on puzzles both runs solved, '
+        'because averages over different puzzle sets are not comparable. '
+        'A minus number in a moves column means the experiment used fewer '
+        'moves. Full protocol: <code>variants/DESIGN.md</code>. Results log: '
         '<code>variants/FINDINGS.md</code>.</p>')
     out.append(
         '<details open><summary><strong>Plain-English glossary</strong> (terms used '
@@ -3347,6 +3415,9 @@ def sec_variants() -> str:
         '<li><strong>B2</strong> &mdash; the extended subgoal vocabulary the loop '
         'plans in; <strong>warm start</strong> &mdash; initializing training from the '
         'previous networks instead of from scratch.</li>'
+        '<li><strong>experiment (also called an &ldquo;arm&rdquo;)</strong> '
+        '&mdash; one changed version of the loop in the comparison; '
+        '&ldquo;arm&rdquo; is the medical-trial term some tables use.</li>'
         '<li><strong>seed</strong> &mdash; the run&rsquo;s random-number '
         'initialization; a result that holds across two seeds is unlikely to be a '
         'fluke.</li>'
@@ -3423,20 +3494,22 @@ def sec_variants() -> str:
                    f'<strong>Why it might help:</strong> {esc(v.plain_why)}<br>'
                    f'<strong>Result:</strong> {esc(result_txt)}<br>'
                    f'<strong>Conclusion:</strong> {esc(concl_txt)}</p>')
-        out.append(f'<details><summary class="note">Technical detail (hypothesis / '
-                   f'mechanism / expected failure mode)</summary>'
-                   f'<p class="note">{esc(v.hypothesis)}<br>{esc(v.mechanism)}<br>'
-                   f'{esc(v.expected_failure)}</p></details>')
+        man = load(res / "generation.manifest.json")
+        detail = [f'<p class="note">{esc(v.hypothesis)}<br>{esc(v.mechanism)}<br>'
+                  f'{esc(v.expected_failure)}</p>']
         if note:
-            out.append(f'<p class="note"><strong>Verdict note:</strong> {esc(note)}</p>')
+            detail.append(f'<p class="note"><strong>Statistics:</strong> {esc(note)}</p>')
+        if ok(man):
+            detail.append(f'<p class="note">Generation: {man.get("instances", "?")} '
+                          f'instances, {man.get("solved", "?")} solved, '
+                          f'{man.get("records", "?")} certified records, '
+                          f'{man.get("seconds", 0):.0f}s '
+                          f'(job {esc(man.get("slurm_job_id"))}).</p>')
+        out.append('<details><summary class="note">Technical detail (hypothesis / '
+                   'mechanism / statistics / provenance)</summary>'
+                   + "".join(detail) + '</details>')
         if v.status in ("stub", "parked"):
             continue                      # the four-part card already says it all
-        man = load(res / "generation.manifest.json")
-        if ok(man):
-            out.append(f'<p class="note">Generation: {man.get("instances", "?")} instances, '
-                       f'{man.get("solved", "?")} solved, {man.get("records", "?")} certified '
-                       f'records, {man.get("seconds", 0):.0f}s '
-                       f'(job {esc(man.get("slurm_job_id"))}).</p>')
         rows = []
         res8 = vd / f"{vid}_s8"
 
@@ -3485,14 +3558,11 @@ def sec_variants() -> str:
                     cls="dim"))
         out.append(table(
             ["exam", "solved", "control solved",
-             "moves, on puzzles BOTH solved (arm vs control)",
-             "&Delta; moves (win/loss, p)", "regret (graded only)", "exp",
-             "solves vs control (p)"], rows,
-            note="Moves are only ever compared on the puzzles the arm AND the "
-                 "control both solved (raw per-arm means cover different puzzle "
-                 "sets and are not comparable); &minus;&Delta; = the arm needs "
-                 "fewer moves. Solve counts are compared over the whole exam "
-                 "(p = fluke chance, exact McNemar)."))
+             "moves, on puzzles BOTH solved (experiment vs control)",
+             "&Delta; moves (win/loss, fluke chance)", "regret (graded only)",
+             "search effort", "solves vs control (fluke chance)"], rows,
+            note="How to read this table: see the two comparison rules at the "
+                 "top of the tab."))
     out.append("</section>")
     return "\n".join(out)
 
@@ -3685,6 +3755,9 @@ summary { cursor: pointer; color: var(--acc); font-size: .9rem; }
 .fig .refl-t.ref2 { fill: var(--s3); }
 .chip.warn { background: var(--warn-bg); color: var(--warn-ink); }
 .pth { border-bottom: 1px dotted var(--mut); cursor: help; }
+details.inl { display: inline; margin: 0; }
+details.inl summary { display: inline; font-size: .78rem; }
+details.inl[open] { display: block; }
 footer { margin-top: 2.5rem; border-top: 1px solid var(--line);
          padding-top: .6rem; color: var(--mut); font-size: .82rem; }
 """

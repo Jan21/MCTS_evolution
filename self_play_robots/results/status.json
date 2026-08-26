@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-26T16:06:33",
+ "updated": "2026-08-26T22:39:43",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -15,7 +15,8 @@
     4679719,
     4680465,
     4680209
-   ]
+   ],
+   "plain_note": "The test harness reproduces the recorded results, so every later comparison stands on checked ground."
   },
   "M1": {
    "title": "size-free rebuild matches supervised",
@@ -34,7 +35,8 @@
     4680954,
     4680955,
     4680956
-   ]
+   ],
+   "plain_note": "One size-free network pair replaced the per-size planners and beat the best of them at 24x24 with far less search."
   },
   "M2": {
    "title": "search beats greed at inference",
@@ -50,7 +52,8 @@
     4680957,
     4680466
    ],
-   "note": "PASS both families, both sizes. Size-free MCTS: g16r4 401/450, 7.76 mv, regret 1.54, 57.4% opt; g24r4 215/232, 9.35, 1.78, 57.2% -- at the base-language ceiling (§3). FINDINGS §5, §8."
+   "note": "PASS both families, both sizes. Size-free MCTS: g16r4 401/450, 7.76 mv, regret 1.54, 57.4% opt; g24r4 215/232, 9.35, 1.78, 57.2% -- at the base-language ceiling (§3). FINDINGS §5, §8.",
+   "plain_note": "With the same networks, tree search beat the one-shot chooser on every exam."
   },
   "M3": {
    "title": "one self-play iteration helps",
@@ -64,7 +67,8 @@
     4689627,
     4689628
    ],
-   "note": "B2 loop g24r4: iteration 3 vs 0 frontier 158 vs 133 (p=5e-6), graded at B2 ceiling with regret 1.87/1.50 and -32% expansions; base loop flat (saturated). FINDINGS §10-§15."
+   "note": "B2 loop g24r4: iteration 3 vs 0 frontier 158 vs 133 (p=5e-6), graded at B2 ceiling with regret 1.87/1.50 and -32% expansions; base loop flat (saturated). FINDINGS §10-§15.",
+   "plain_note": "One round of self-play produced a real, statistically checked improvement in the extended vocabulary."
   },
   "M4": {
    "title": "the loop climbs",
@@ -85,7 +89,8 @@
     4704317,
     4706184
    ],
-   "note": "FINDINGS §19: frontier A* 133->144->139->158->153->153 (it5 vs it0 p=8e-4), graded A* 223->227 at 53->30 exp; MCTS graded 228 flat, regret 1.55->1.46->1.55; frontier MCTS 171->178->174 flat; beats frozen supervised B2 rows p<1e-4; moves on shared solves never improve beyond noise (search distilled into nets, not lower moves)"
+   "note": "FINDINGS §19: frontier A* 133->144->139->158->153->153 (it5 vs it0 p=8e-4), graded A* 223->227 at 53->30 exp; MCTS graded 228 flat, regret 1.55->1.46->1.55; frontier MCTS 171->178->174 flat; beats frozen supervised B2 rows p<1e-4; moves on shared solves never improve beyond noise (search distilled into nets, not lower moves)",
+   "plain_note": "Five self-play rounds beat the human-taught baseline by a wide margin. The gains were solve rate and search speed, not shorter solutions."
   },
   "M5": {
    "title": "scale + zero-shot transfer",
@@ -105,7 +110,8 @@
     4704315,
     4704316
    ],
-   "note": "FINDINGS §9, §16"
+   "note": "FINDINGS §9, §16",
+   "plain_note": "Training on all three board types at once ended the stall, and the networks transfer to board sizes they never saw."
   },
   "M6": {
    "title": "beyond the oracle (80x80+, certification only)",
@@ -114,7 +120,8 @@
     "M6_DESIGN.md",
     "M6_FINDINGS.md"
    ],
-   "jobs": []
+   "jobs": [],
+   "plain_note": "In progress: self-play on boards too big for any exact solver. Physics replay is the only ground truth there."
   }
  },
  "side_studies": {
@@ -132,7 +139,8 @@
    "jobs": [
     4679720
    ],
-   "note": "base language moves-ceiling: g16r4 90.7% solve, best-plan regret +1.42 (61.8% reach d*); g24r4 93.1%, +1.72 (57.4%); B2 language +0.90/+1.17. Forward planner regret 0.07 -> subgoal space cannot approach it; subgoal loop's target = the 2.5-move gap supervised->ceiling. FINDINGS §3."
+   "note": "base language moves-ceiling: g16r4 90.7% solve, best-plan regret +1.42 (61.8% reach d*); g24r4 93.1%, +1.72 (57.4%); B2 language +0.90/+1.17. Forward planner regret 0.07 -> subgoal space cannot approach it; subgoal loop's target = the 2.5-move gap supervised->ceiling. FINDINGS §3.",
+   "plain_note": "Exhaustive probes measured the best score any sub-goal planner could ever reach."
   },
   "forward_mcts": {
    "title": "primitive-move MCTS arm at g16r4 (owner: both action spaces)",
@@ -145,7 +153,8 @@
     4680465,
     4680466
    ],
-   "note": "spr/fwd: PUCT over slides on MoveNet Guide; F-M0 parity vs comparison_forward.json (candidate_scored 450/450), F-M2 arms (astar/greedy/mcts) on bench450, fwd_iter loop ready."
+   "note": "spr/fwd: PUCT over slides on MoveNet Guide; F-M0 parity vs comparison_forward.json (candidate_scored 450/450), F-M2 arms (astar/greedy/mcts) on bench450, fwd_iter loop ready.",
+   "plain_note": "The move-by-move planner line: near-perfect moves, high search cost."
   },
   "transfer": {
    "title": "headroom probe: mixed size-free pair zero-shot on g24r4 frontier, g32r4, g24r8 (+ceilings)",
@@ -158,7 +167,8 @@
     "results/ceiling/g32r4_base.json",
     "results/ceiling/g24r8_base.json"
    ],
-   "note": "mixed size-free pair zero-shot: g32r4 156/175 (=ceiling) regret 1.84/1.63 vs supervised 147, 2.37; g24r8 147/161 vs 144; frontier +9/+14/+17 solves. FINDINGS §9."
+   "note": "mixed size-free pair zero-shot: g32r4 156/175 (=ceiling) regret 1.84/1.63 vs supervised 147, 2.37; g24r8 147/161 vs 144; frontier +9/+14/+17 solves. FINDINGS §9.",
+   "plain_note": "The networks were tested unchanged on board sizes and robot counts they never trained on."
   },
   "forward_loop_g24r4": {
    "title": "primitive-move arm self-play loop at g24r4 (F-M3/F-M4)",
@@ -173,7 +183,8 @@
     4703446,
     4703467
    ],
-   "note": "jobs/fwd_iter.slurm generalized to CFG (commit 962ffb3); smoke: eval-distribution instances 106 s/attempt 67% solved, walk instances too shallow -> RAND_MIX=0.5; batch 64 (128/256 OOM at 24x24)"
+   "note": "jobs/fwd_iter.slurm generalized to CFG (commit 962ffb3); smoke: eval-distribution instances 106 s/attempt 67% solved, walk instances too shallow -> RAND_MIX=0.5; batch 64 (128/256 OOM at 24x24)",
+   "plain_note": "Self-play for the move-by-move planner at 24x24: better optimality, same solve rate."
   },
   "variants_lab": {
    "title": "self-play design-variants lab (owner 2026-08-20: many approaches, matched comparisons, unseen-board generalization exam)",
@@ -184,7 +195,8 @@
     "results/variants/"
    ],
    "jobs": [],
-   "note": "no exact labels in the loop (certification only; exact = diagnostic/control arms); unseen exam = fresh lean boards ids>=20000 with backward+forward supervised baselines benched on the same boards"
+   "note": "no exact labels in the loop (certification only; exact = diagnostic/control arms); unseen exam = fresh lean boards ids>=20000 with backward+forward supervised baselines benched on the same boards",
+   "plain_note": "A controlled lab tested 11 ideas one at a time. Four were adopted. The rest were closed with reasons recorded."
   },
   "paper": {
    "title": "joint paper draft (both campaigns)",
@@ -192,7 +204,8 @@
    "sources": [
     "paper/"
    ],
-   "jobs": []
+   "jobs": [],
+   "plain_note": "A paper draft and an ideas document, written from the logs and frozen."
   }
  },
  "decisions": {
@@ -207,9 +220,8 @@
   "findings_log": "self_play_robots/FINDINGS.md (owner choice)"
  },
  "node_hours": {
-  "spent": 10.0,
-  "projected_next": 2.5,
-  "note": "spent: smoke 0.02 + M0 0.09 + fwd-M0 0.02 (+ ceiling pending); next: M1 ~1.5-2, M2 ~1"
+  "spent": 50.0,
+  "note": "approximate ledger: supervised campaign ~37, self-play loops ~13 (M0-M5 ~10, variants lab counted separately at ~28 of its own 50 cap shared with lab jobs); M6 running under a 20 nh cap"
  },
  "controls": {
   "m1_second_seed": {
@@ -221,7 +233,8 @@
    ],
    "sources": [
     "results/m1/mixed_*_s37_*.json"
-   ]
+   ],
+   "plain_note": "A second training run replicated the headline result almost exactly."
   }
  }
 }
