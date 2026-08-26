@@ -32,7 +32,7 @@ MIN_FONT = 12.0
 FONT_OF = {
     "nt": (13, True), "ns": (12, False), "nb": (12, False), "lbl": (12, True),
     "cap": (12, False), "axl": (12, False), "good-t": (12, True),
-    "bad-t": (12, True), "ptl": (11, False), "refl-t": (10, False),
+    "bad-t": (12, True), "ptl": (12, False), "refl-t": (12, False),
 }
 DEFAULT_FONT = 12.0
 

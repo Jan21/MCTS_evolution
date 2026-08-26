@@ -635,20 +635,20 @@ SCAN = None
 def svg_loop() -> str:
     """The iteration-k loop of PROBLEM.md section 5, hand-drawn (no libraries)."""
     W, H = 920, 372
-    BW, BH = 250, 68
+    BW, BH = 270, 68
     boxes = [
         (20, 40, "1 &middot; Generate",
-         ["fresh lean boards + instances,", "every iteration (boards are ~free)"]),
-        (335, 40, "2 &middot; Search with net k",
-         ["MCTS over the chosen action space,", "fixed expansion budget"]),
-        (650, 40, "3 &middot; Certify",
-         ["replay every solution against physics;", "uncertified plans dropped, not guessed"]),
-        (650, 200, "4 &middot; Replay buffer",
-         ["rolling window of certified episodes,", "board/instance provenance kept"]),
-        (335, 200, "5 &middot; Train net k+1",
-         ["warm-start from net k,", "CollapseStop armed, best-epoch ckpt"]),
+         ["fresh lean boards + instances,", "every iteration (boards ~free)"]),
+        (325, 40, "2 &middot; Search with net k",
+         ["MCTS over the chosen action", "space, fixed expansion budget"]),
+        (630, 40, "3 &middot; Certify",
+         ["replay each solution vs physics;", "uncertified plans are dropped"]),
+        (630, 200, "4 &middot; Replay buffer",
+         ["rolling window of certified", "episodes; provenance kept"]),
+        (325, 200, "5 &middot; Train net k+1",
+         ["warm-start from net k,", "CollapseStop on, best-epoch ckpt"]),
         (20, 200, "6 &middot; Gate",
-         ["bench vs net k AND the frozen", "supervised baselines + fidelity gauge"]),
+         ["bench vs net k AND the frozen", "supervised baselines + gauge"]),
     ]
     s = [f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="The self-play '
          f'iteration loop: generate, search, certify, buffer, train, gate, '
@@ -667,18 +667,17 @@ def svg_loop() -> str:
         s.append(f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" class="{cls}" '
                  f'marker-end="url(#ah)"/>')
 
-    arrow(270, 74, 331, 74)                       # 1 -> 2
-    arrow(585, 74, 646, 74)                       # 2 -> 3
-    arrow(775, 108, 775, 196)                     # 3 -> 4
-    arrow(650, 234, 589, 234)                     # 4 -> 5
-    arrow(335, 234, 274, 234)                     # 5 -> 6
+    arrow(290, 74, 321, 74)                       # 1 -> 2
+    arrow(595, 74, 626, 74)                       # 2 -> 3
+    arrow(765, 108, 765, 196)                     # 3 -> 4
+    arrow(630, 234, 599, 234)                     # 4 -> 5
+    arrow(325, 234, 294, 234)                     # 5 -> 6
     arrow(145, 200, 145, 112)                     # 6 -> 1  (promote)
     arrow(145, 268, 145, 300, "arr dashed")       # 6 -> diagnose
-    s.append('<rect x="20" y="300" width="250" height="52" rx="8" '
+    s.append('<rect x="20" y="300" width="270" height="52" rx="8" '
              'class="nbox alt"/>')
     s.append('<text x="34" y="322" class="nt">Diagnose, do not promote</text>')
-    s.append('<text x="34" y="340" class="ns">fidelity slide? damaged data? '
-             '(&sect;4.1/&sect;4.3)</text>')
+    s.append('<text x="34" y="340" class="ns">fidelity slide? damaged data?</text>')
     s.append('<text x="156" y="158" class="lbl">promote: net k+1 becomes net k</text>')
     s.append('<text x="156" y="288" class="lbl">gate not cleared</text>')
     s.append(f'<text x="{W - 8}" y="18" class="cap" text-anchor="end">'
@@ -3030,24 +3029,21 @@ def svg_regret_vs_solve() -> str:
     s.append(f'<line x1="{L}" y1="{H - B}" x2="{W - R}" y2="{H - B}" class="axis"/>')
     s.append(f'<line x1="{L}" y1="{T}" x2="{L}" y2="{H - B}" class="axis"/>')
     s.append(f'<text x="{(L + W - R) / 2:.0f}" y="{H - 6}" class="axl" text-anchor="middle">solve rate on bench.solved (232 graded instances) &rarr; better</text>')
-    s.append(f'<text transform="translate(14 {(T + H - B) / 2:.0f}) rotate(-90)" class="axl" text-anchor="middle">mean regret (moves above d*, over solved) &darr; better</text>')
-    # reference lines
-    for lab, xr, yr, f, vocab in refs:
+    s.append(f'<text x="{L}" y="13" class="axl">y: mean regret over solved &darr; better</text>')
+    # reference lines (short staggered labels; full detail in the tooltips)
+    for ri, (lab, xr, yr, f, vocab) in enumerate(refs):
         cls = "ref1" if vocab == "base" else "ref2"
+        short = "base ceiling" if vocab == "base" else "B2 ceiling"
         s.append(f'<line x1="{X(xr):.1f}" y1="{T}" x2="{X(xr):.1f}" y2="{H - B}" class="refl {cls}"><title>{esc(lab)}: solve ceiling {xr:.1f}% ({esc(f)})</title></line>')
         s.append(f'<line x1="{L}" y1="{Y(yr):.1f}" x2="{W - R}" y2="{Y(yr):.1f}" class="refl {cls}"><title>{esc(lab)}: best-plan regret {yr:.2f} ({esc(f)})</title></line>')
-        s.append(f'<text x="{X(xr) - 4:.1f}" y="{T + 11}" class="refl-t {cls}" text-anchor="end">{esc(lab)} {xr:.1f}%</text>')
-        s.append(f'<text x="{L + 4}" y="{Y(yr) - 4:.1f}" class="refl-t {cls}">{esc(lab)} regret {yr:.2f}</text>')
-    # points (fixed series colours; label every point — few enough)
-    for i, (series, label, xv, yv, f) in enumerate(have):
+        s.append(f'<text x="{X(xr) - 4:.1f}" y="{T + 13 + 16 * ri}" class="refl-t {cls}" text-anchor="end">{esc(short)} {xr:.1f}%</text>')
+        s.append(f'<text x="{W - R - 4}" y="{Y(yr) - 5:.1f}" class="refl-t {cls}" text-anchor="end">{esc(short)} regret {yr:.2f}</text>')
+    # points: dots + tooltips only — per-point names live in the legend and in
+    # the data table right under the figure (labels overlapped when 20+ points
+    # landed in the same corner; owner rejected the overplot)
+    for series, label, xv, yv, f in have:
         cls = CHART_CLASS.get(series, "c1")
         s.append(f'<circle cx="{X(xv):.1f}" cy="{Y(yv):.1f}" r="6" class="pt {cls}"><title>{esc(label)}: {xv:.1f}% solved, regret {yv:.2f} ({esc(f)})</title></circle>')
-        dy = -9 if i % 2 == 0 else 16
-        if X(xv) > W - R - 110:            # keep labels inside the canvas
-            s.append(f'<text x="{X(xv) - 8:.1f}" y="{Y(yv) + dy:.1f}" class="ptl" '
-                     f'text-anchor="end">{esc(label)}</text>')
-        else:
-            s.append(f'<text x="{X(xv) + 8:.1f}" y="{Y(yv) + dy:.1f}" class="ptl">{esc(label)}</text>')
     # legend (only the series that actually have a point on the plot)
     shown = [x for x in CHART_SERIES if any(p[0] == x for p in have)]
     lx, ly = L + 8, H - B - 14 - 16 * len(shown)
@@ -3663,7 +3659,7 @@ summary { cursor: pointer; color: var(--acc); font-size: .9rem; }
 .fig .nbox { fill: var(--card); stroke: var(--acc); stroke-width: 1.4; }
 .fig .nbox.alt { stroke: var(--mut); stroke-dasharray: 5 4; }
 .fig .nt { fill: var(--ink); font: 600 13px system-ui, sans-serif; }
-.fig .ns { fill: var(--mut); font: 11px system-ui, sans-serif; }
+.fig .ns { fill: var(--mut); font: 12px system-ui, sans-serif; }
 .fig .lbl { fill: var(--acc); font: 600 11px system-ui, sans-serif; }
 .fig .cap { fill: var(--mut); font: 11px system-ui, sans-serif; }
 .fig .arr { stroke: var(--mut); stroke-width: 1.6; fill: none; }
@@ -3671,7 +3667,7 @@ summary { cursor: pointer; color: var(--acc); font-size: .9rem; }
 .fig .ahead { fill: var(--mut); }
 .fig .grid { stroke: var(--line); stroke-width: .5; }
 .fig .axis { stroke: var(--line); stroke-width: 1; }
-.fig .axl { fill: var(--mut); font: 11px system-ui, sans-serif; }
+.fig .axl { fill: var(--mut); font: 12px system-ui, sans-serif; }
 .fig .s1 { fill: var(--s1); }
 .fig .s2 { fill: var(--s2); }
 .fig .s3 { fill: var(--s3); }
@@ -3681,10 +3677,10 @@ summary { cursor: pointer; color: var(--acc); font-size: .9rem; }
 .fig .pt.c2 { fill: var(--s1); }
 .fig .pt.c3 { fill: var(--s2); }
 .fig .pt.c4 { fill: var(--s3); }
-.fig .ptl { fill: var(--ink); font: 11px system-ui, sans-serif; }
+.fig .ptl { fill: var(--ink); font: 12px system-ui, sans-serif; }
 .fig .refl { stroke: var(--mut); stroke-width: 1.2; stroke-dasharray: 5 4; fill: none; }
 .fig .refl.ref2 { stroke: var(--s3); }
-.fig .refl-t { fill: var(--mut); font: 10px system-ui, sans-serif; }
+.fig .refl-t { fill: var(--mut); font: 12px system-ui, sans-serif; }
 .fig .refl-t.ref2 { fill: var(--s3); }
 .chip.warn { background: var(--warn-bg); color: var(--warn-ink); }
 footer { margin-top: 2.5rem; border-top: 1px solid var(--line);
