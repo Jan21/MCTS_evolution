@@ -435,3 +435,41 @@ is duplicated there.
     Conclusion (plain): the transfer question -- does the new search help on
     boards it never ran on -- goes first because the most rides on it;
     the depth check and the sharpened training idea run alongside.
+
+19. **The ceiling break TRANSFERS zero-shot across sizes and robot counts
+    (2026-08-25/26, jobs 4773778/4773779/4773780 + control resubmit 4829779;
+    g32r4 frontier leg 4829780 submitted per entry 18's rule).** Hybrid d2 +
+    same-budget std-MCTS control, mature mixed nets (mix_b2mix_iter3) --
+    neither the search nor the nets ever touched slides at these sizes:
+    | exam | hybrid d2 | std control | paired |
+    |---|---|---|---|
+    | g32r4 graded (175) | **174/175, regret 1.60**, 59.2% opt | 172, 1.87 | moves **17/0, p=1.5e-5** |
+    | g24r8 graded (161) | **159/161, regret 1.24**, 61.6% opt | 159, 1.82 | moves **23/0, p=2.4e-7** |
+    | g24r8 frontier (289) | **276/289, 14.30 mv** -- program record (prior best 269) | (control resubmitted) | pending |
+    The 8-robot regret cut (1.82 -> 1.24) is the largest of any size -- the
+    crowded mode is where one-robot slides unlock the most, exactly the
+    B2-vocabulary pattern (main FINDINGS 20b) repeating one level down.
+    Conclusion (plain): the one-move-first idea works on bigger boards and
+    crowded boards it never practiced on -- every size tried, the planner
+    solves as many or more puzzles with strictly fewer moves.
+    Sources: `results/variants/v07_transfer/`.
+
+20. **Depth-3: graded still descends, unseen saturated (2026-08-25, jobs
+    4773788/4773789).** Graded: regret 0.861 (7/0 vs d2, p=0.016; 70.6%
+    optimal). Unseen: 187/200, flat vs d2 (6/2, p=0.29). The depth curve on
+    the standard exam is real but shrinking (1.01 -> 0.944 -> 0.861); unseen
+    solves stopped at ~188. No deeper probes planned -- the remaining graded
+    regret is now within one seed-bar of the metric's floor.
+    Conclusion (plain): a third allowed move still helps a little on
+    standard puzzles and not at all on new boards; we stop here.
+
+21. **v16 ranked-slide training: flat at both seeds -- the second and final
+    training-bet failure (2026-08-25, jobs 4773790/4773791).** s7 showed a
+    frontier-moves signal (38/17, p=0.0065) that s8 flatly failed to repeat
+    (28/29, p=1); solves and unseen rows n.s. everywhere, graded regret
+    slightly worse than control at both seeds. With the transfer result
+    (entry 19) the explanation is clear: the nets ALREADY generalize to
+    post-slide states -- there was no gap for slide-nudged training to close.
+    Conclusion (plain): teaching the networks the search's own nudges did
+    not help because they never needed the lesson; both attempts to improve
+    the networks FOR the new search are now honestly closed as failures.
