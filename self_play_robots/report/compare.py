@@ -52,8 +52,10 @@ def pick_system(payload, prefer_kind=None, name_contains=None):
 class Entry:
     """One column of a comparison: a label + one system's rows."""
 
-    def __init__(self, label, payload, prefer_kind=None, name_contains=None):
+    def __init__(self, label, payload, prefer_kind=None, name_contains=None,
+                 tech=None):
         self.label = label
+        self.tech = tech          # technical identity, shown as a hover only
         self.payload = payload if isinstance(payload, dict) else None
         self.sys_name, self.system = pick_system(self.payload, prefer_kind,
                                                  name_contains)

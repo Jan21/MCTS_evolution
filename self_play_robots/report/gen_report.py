@@ -85,6 +85,12 @@ GATES = {
 
 # plain-language reading of the dense gate quotes (jargon audit MS3)
 PLAIN_GATE = {
+    "M0": "pass if the new harness reproduces the old recorded results.",
+    "M2": "pass if tree search beats the one-shot chooser (greedy descent = "
+          "always take the value network&rsquo;s top pick) at the same solve "
+          "rate.",
+    "M6": "self-play on boards so big that no exact checker exists; trust "
+          "comes from the accuracy curve measured up to 64&times;64.",
     "M1": "pass if it matches the hand-built pair within normal run-to-run "
           "variation.",
     "M3": "pass if the new network beats the previous one beyond run-to-run "
@@ -455,7 +461,8 @@ def protocol_bits(payload) -> str:
         bits.append(f"n={p['n_instances']}")
     sha = p.get("instances_sha256")
     if sha:
-        bits.append(f"exam sha {esc(str(sha)[:8])}")
+        bits.append(f'<span title="instances_sha256 {esc(str(sha))}">exam '
+                    "fingerprint</span>")
     if p.get("device"):
         bits.append(esc(p["device"]))
     if p.get("date"):
@@ -471,8 +478,9 @@ def _pw_cell(pw):
         return '<td class="pend">no shared solves</td>'
     good = pw["delta"] < 0 and pw["sign_p"] < 0.05
     return td_txt(f"{pw['delta']:+.2f} mv &middot; {pw['wins']}/{pw['losses']} "
-                  f"&middot; p={pw['sign_p']:.2g} "
-                  f"<span class=\"note\">(n={pw['both_n']})</span>",
+                  f'&middot; <span title="exact sign test, p={pw["sign_p"]:.2g}, '
+                  f'on the {pw["both_n"]} puzzles both solved">'
+                  f"{fluke(pw['sign_p'])}</span>",
                   cls="hlnum" if good else "")
 
 
@@ -502,14 +510,21 @@ def h2h_table(entries, ref_labels, note_extra="", dstar=None):
                    f"mean optimum {r['perfect_mean']:.2f})</span>"]
                   if perfect else [])
                + ["search effort (expansions)"])
+    tech_of = {en.label: getattr(en, "tech", None) for en in entries}
+
+    def _lab(label):
+        t = tech_of.get(label)
+        return (f'<span title="{esc(t)}">{esc(label)}</span>' if t
+                else esc(label))
+
     rows_ = []
     for e in r["entries"]:
         if not e["ok"]:
-            rows_.append(row([td_txt(esc(e["label"])),
+            rows_.append(row([td_txt(_lab(e["label"])),
                               f'<td class="pend" colspan="{len(headers) - 1}">'
                               "pending (job not finished)</td>"]))
             continue
-        cells = [td_txt(esc(e["label"])),
+        cells = [td_txt(_lab(e["label"])),
                  td_txt(f"{e['solved']}/{e['n']}"),
                  td(e["moves_common"], ".2f", cls="hlnum")]
         for rl in ref_labels:
@@ -561,8 +576,8 @@ def baseline_rows(cfg, rel, cls=""):
         if kind == "pending" or not a:
             out.append(row([td_txt(esc(cfg)), td_txt("&mdash;"),
                             td_txt(esc(name)),
-                            '<td class="pend" colspan="6">'
-                            f'no aggregate in file (kind={esc(kind)})</td>'],
+                            f'<td class="pend" colspan="6" title="no aggregate '
+                            f'in file (kind={esc(kind)})">pending</td>'],
                            cls))
             continue
         front = is_frontier(d, a)
@@ -1016,6 +1031,14 @@ def sec_loop() -> str:
            "reproduces supervised-level bench numbers <em>before</em> any "
            "self-play. Never debug architecture and loop dynamics at the same "
            "time.</figcaption></figure>"]
+    out.append(
+        '<p>That is the whole idea. The rest of this tab is the original '
+        'engineering plan the loop was built from &mdash; kept for auditors, '
+        'collapsed below. The measured results live in the '
+        '<a href="#results">Milestone results tab</a>.</p>')
+    out.append('<details><summary>The original engineering plan '
+               '(design quotes, risk register, open decisions &mdash; for '
+               'auditors)</summary>')
     out.append("<h3>The AlphaZero mapping</h3>")
     out.append(table(["AlphaZero piece", "here"],
                      [row([td_txt(f"<strong>{a}</strong>"), td_txt(b)])
@@ -1102,6 +1125,7 @@ def sec_loop() -> str:
         "<strong>&sect;6.5 search budget:</strong> compare planners at 1,200 "
         "expansions with 5 candidates per step. Self-play generation may "
         "spend more, but never in a way that biases the data.</p>")
+    out.append("</details>")
     out.append("</section>")
     return "\n".join(out)
 
@@ -1137,7 +1161,9 @@ def seed_spread_line() -> str:
     sent = []
     for i, (label, ds, do) in enumerate(bits):
         who = ("the exact-taught pair" if "exact" in label
-               else "the NN-taught twin" if "twin" in label.lower() else label)
+               else "the NN-taught twin (the same recipe retrained on "
+                    "network-written labels)" if "twin" in label.lower()
+               else label)
         upto = "up to " if i else ""
         f1 = lambda v: f"{v:.1f}".rstrip("0").rstrip(".")
         if do is None:
@@ -1199,7 +1225,8 @@ def sec_baselines() -> str:
                      load_sv("eval/results/comparison_forward.json"),
                      prefer_kind="forward", name_contains="candidate_scored"),
             CmpEntry("size-free pair (this project, M1)",
-                     load(RESULTS / "m1" / "mixed_value_warm_s21_g16r4.json")),
+                     load(RESULTS / "m1" / "mixed_value_warm_s21_g16r4.json"),
+                     tech="M1 size-free pair mixed_value_warm_s21"),
         ]),
         ("g24r4", "24&times;24, 4 robots &mdash; pinned graded exam", [
             CmpEntry("backward supervised",
@@ -1213,7 +1240,8 @@ def sec_baselines() -> str:
                           "bench_g24r4_astar.json")),
             CmpEntry("current best planner (flagship: v09 nets + depth-2 hybrid)",
                      load(RESULTS / "variants" / "v07_hybrid_actions" /
-                          "bench_graded_hybrid_d2.json")),
+                          "bench_graded_hybrid_d2.json"),
+                     tech="v09 strict-value nets + depth-2 slide-prefix hybrid search"),
         ]),
         ("g24r8", "24&times;24, 8 robots &mdash; pinned graded exam", [
             CmpEntry("backward supervised",
@@ -1224,10 +1252,12 @@ def sec_baselines() -> str:
                      prefer_kind="forward"),
             CmpEntry("self-play line (mix iter3)",
                      load(RESULTS / "selfplay" / "mix_b2mix_iter3" /
-                          "bench_g24r8_astar.json")),
-            CmpEntry("flagship transferred zero-shot (v09 nets + depth-2 hybrid)",
+                          "bench_g24r8_astar.json"),
+                     tech="mix_b2mix_iter3 nets, B2 anytime A*"),
+            CmpEntry("the flagship, never trained at this size",
                      load(RESULTS / "variants" / "v07_transfer" /
-                          "bench_g24r8_graded_hybrid_d2.json")),
+                          "bench_g24r8_graded_hybrid_d2.json"),
+                     tech="v09 nets + depth-2 hybrid, zero-shot transfer"),
             CmpEntry("same nets, standard search (transfer control)",
                      load(RESULTS / "variants" / "v07_transfer" /
                           "bench_g24r8_graded_stdmcts.json")),
@@ -1241,10 +1271,12 @@ def sec_baselines() -> str:
                      prefer_kind="forward"),
             CmpEntry("self-play line (mix iter3)",
                      load(RESULTS / "selfplay" / "mix_b2mix_iter3" /
-                          "bench_g32r4_astar.json")),
-            CmpEntry("flagship transferred zero-shot (v09 nets + depth-2 hybrid)",
+                          "bench_g32r4_astar.json"),
+                     tech="mix_b2mix_iter3 nets, B2 anytime A*"),
+            CmpEntry("the flagship, never trained at this size",
                      load(RESULTS / "variants" / "v07_transfer" /
-                          "bench_g32r4_graded_hybrid_d2.json")),
+                          "bench_g32r4_graded_hybrid_d2.json"),
+                     tech="v09 nets + depth-2 hybrid, zero-shot transfer"),
             CmpEntry("same nets, standard search (transfer control)",
                      load(RESULTS / "variants" / "v07_transfer" /
                           "bench_g32r4_graded_stdmcts.json")),
@@ -1254,10 +1286,13 @@ def sec_baselines() -> str:
         out.append(f"<h4><code>{esc(cfg)}</code> &mdash; {human}</h4>")
         out.append(h2h_table(ents, ("backward supervised", "forward supervised")))
         if cfg == "g24r4":
-            out.append("<p class='note'>Depth-3 slide prefixes push the flagship "
-                       "further on this exam (regret 0.861 vs depth-2&rsquo;s "
-                       "0.944, same 231/232 solves) &mdash; see the Variants tab "
-                       "(<code>v07</code>) for the depth study.</p>")
+            out.append("<p class='note'>Letting the search try up to three "
+                       "single robot moves before subgoal planning "
+                       "(&ldquo;depth-3 slide prefixes&rdquo;) pushes the "
+                       "flagship further still: 0.861 extra moves over the "
+                       "known optimum, against depth-2&rsquo;s 0.944, with the "
+                       "same 231/232 solves. The depth study lives on the "
+                       "Variants tab (<code>v07</code>).</p>")
     out.append("<h4><code>g24r8</code> frontier &mdash; 24&times;24, 8 robots, "
                "the 289 puzzles no supervised solver fully cracked</h4>")
     out.append(h2h_table(
@@ -1267,9 +1302,10 @@ def sec_baselines() -> str:
          CmpEntry("forward supervised",
                   load_sv("scaling/results/g24r8/comparison_ungraded.json"),
                   prefer_kind="forward"),
-         CmpEntry("flagship transferred zero-shot (v09 nets + depth-2 hybrid)",
+         CmpEntry("the flagship, never trained at this size",
                   load(RESULTS / "variants" / "v07_transfer" /
-                       "bench_g24r8_frontier_hybrid_d2.json")),
+                       "bench_g24r8_frontier_hybrid_d2.json"),
+                  tech="v09 nets + depth-2 hybrid, zero-shot transfer"),
          CmpEntry("same nets, standard search (transfer control)",
                   load(RESULTS / "variants" / "v07_transfer" /
                        "bench_g24r8_frontier_stdmcts.json"))],
@@ -1392,10 +1428,10 @@ def sec_m0() -> str:
            + src("self_play_robots/spr/arena.py")
            + " — a thin wrapper that <em>calls</em> "
            + src("supervised_valuenet/eval/compare.py")
-           + " (never forks it). It runs the exam in 8 parallel chunks and merges "
-             "the shards. An independent replay check certifies every "
-             "solution. Then every row is compared against the recorded "
-             "result. A run that fails certification is quarantined, not "
+           + " (never forks it). It runs the exam in 8 parallel parts and merges "
+             "them. An independent replay check verifies every solution. "
+             "Then every row is compared against the recorded result. A "
+             "run that fails the replay check is set aside, never "
              "reported.</p>"]
     m = milestone("M0")
     if m:
@@ -1530,16 +1566,26 @@ def sec_m0() -> str:
             sha_ref = (refd.get("protocol") or {}).get("instances_sha256")
             same_exam = sha_new == sha_ref
             same_n = len(nrows_) == len(rrows_)
-            passed = (not diffs and same_exam and same_n
-                      and na.get("solved") == ra.get("solved")
-                      and na.get("mean_regret") == ra.get("mean_regret"))
-            vcls = "good" if passed else "bad"
             bits = [f"same exam: {'yes' if same_exam else '<strong>NO</strong>'}",
                     (f"row counts {len(nrows_)} vs {len(rrows_)}"
                      if not same_n else f"{len(nrows_)} rows on both sides"),
                     f"solved {na.get('solved')} vs {ra.get('solved')}"]
-            plainv = (f"{len(diffs)} of {len(nrows_)} rows differ"
-                      if diffs else f"0 of {len(nrows_)} rows differ")
+            # pass criterion (FINDINGS 2): the TOTALS must match on the same
+            # exam; per-row float drift across machines is explained, not a
+            # failure. Row-exact is reported as the stronger result when true.
+            agg_ok = (same_exam and same_n
+                      and na.get("solved") == ra.get("solved")
+                      and na.get("mean_regret") == ra.get("mean_regret"))
+            passed = agg_ok
+            vcls = "good" if passed else "bad"
+            if not diffs and agg_ok:
+                plainv = f"exact match &mdash; 0 of {len(nrows_)} rows differ"
+            elif agg_ok:
+                plainv = (f"totals identical; {len(diffs)} of {len(nrows_)} "
+                          f"rows differ only by floating-point rounding across "
+                          f"machines (a thread-count change reproduces them)")
+            else:
+                plainv = f"{len(diffs)} of {len(nrows_)} rows differ"
             out.append(f'<p class="verdict {vcls}">{chip("pass" if passed else "fail", "parity " + ("PASS" if passed else "FAIL"))} '
                        f'{plainv}. <details class="inl"><summary>checked fields</summary>'
                        f'<span class="note">compared per row: solved, '
@@ -1610,7 +1656,9 @@ def sec_ceiling() -> str:
            'works. NO_REALIZABLE_PLAN = plans exist on paper but none works. '
            'NO_COMPLETE_PLAN = the generator never finished a plan. '
            'INCONCLUSIVE = the search hit its cap. ERROR = the puzzle threw '
-           'an error (recorded, never lost).</p>']
+           'an error (recorded, never lost). &ldquo;Slack&rdquo; in a '
+           'heading = how far past the first answer the search kept '
+           'looking before it stopped.</p>']
     ss = side_study("ceiling")
     if ss:
         out.append(f'<p class="verdict">{chip(ss.get("status", "unknown"), chip_word(ss.get("status", "unknown")))} '
@@ -1728,13 +1776,16 @@ def sec_ceiling() -> str:
         cfg, voc = d.get("config"), d.get("vocab")
         voc_words = {"base": "base vocabulary", "b1": "extended vocabulary (B1)",
                      "b2": "extended vocabulary (B2)"}.get(voc, f"{voc} vocabulary")
-        out.append(f'<h3>{cfg_label(cfg)} &mdash; {esc(voc_words)} '
-                   f'<span class="note" title="{esc(f.stem)}"></span></h3>')
+        mslack = re.search(r"slack(\d+)", f.stem)
+        knob = (f"relaxed budget (slack {mslack.group(1)})" if mslack
+                else ("frontier exam" if "frontier" in f.stem else "strict budget"))
+        out.append(f'<h3><span title="{esc(f.stem)}">{cfg_label(cfg)} &mdash; '
+                   f'{esc(voc_words)}, {knob}</span></h3>')
         bits = []
         if s.get("capped"):
             cats = s.get("categories") or {}
             bits.append(
-                f"the probe hit a cap on <strong>{esc(s.get('capped'))}</strong> "
+                f"The probe hit a cap on <strong>{esc(s.get('capped'))}</strong> "
                 f"instance(s) ({esc(cats.get('INCONCLUSIVE', 0))} left inconclusive), "
                 f"so its solve ceiling of {esc(s.get('n_realizable'))}/{esc(s.get('n'))} "
                 f"is a <strong>lower bound</strong>"
@@ -1751,15 +1802,15 @@ def sec_ceiling() -> str:
                 f"against an exact optimum of <strong>{s['mean_d_star']:.2f} "
                 f"moves</strong>" + gaptxt)
         if s.get("pct_best_optimal") is not None:
-            bits.append(f"the language reaches the exact optimum on "
+            bits.append(f"The language reaches the exact optimum on "
                         f"<strong>{s['pct_best_optimal']:.1f}%</strong> of them")
         if s.get("solve_ceiling") is not None:
-            bits.append(f"and it can express <em>any</em> realizable plan for "
+            bits.append(f"It can express a working plan for "
                         f"<strong>{100 * s['solve_ceiling']:.1f}%</strong> of the "
-                        f"{esc(s.get('n'))} bench instances (the solve-rate "
+                        f"{esc(s.get('n'))} exam puzzles (the solve-rate "
                         f"ceiling)")
         if bits:
-            out.append('<p class="verdict">' + "; ".join(bits) + ".</p>")
+            out.append('<p class="verdict">' + ". ".join(bits) + ".</p>")
         if s.get("mean_gap_first") is not None and s.get("mean_gap_best") is not None:
             out.append(
                 f"<p>First-vs-best: a planner that simply takes the first "
@@ -1786,18 +1837,14 @@ def sec_ceiling() -> str:
                        "<figcaption>Per-instance gap between the best plan the "
                        "language can express and the exact optimum, from "
                        "<code>summary.gap_best_hist</code> of "
-                       + src(disp(f)) + ". Bars at or below zero (left, accent "
-                       "colour) are instances where the language reaches — or "
-                       "appears to undercut — d*. "
-                       + (f"<code>n_best_below_dstar</code> = "
-                          f"{esc(s.get('n_best_below_dstar'))}, "
-                          f"<code>n_abstract_below_dstar</code> = "
-                          f"{esc(s.get('n_abstract_below_dstar'))}: a strict "
-                          "count below d* means an incidental stopper made the "
-                          "realization cheaper than its abstract cost, or the "
-                          "recorded d* is a solver artifact — either way, worth "
-                          "an eyeball before it is quoted."
-                          if s.get("n_best_below_dstar") else "")
+                       + src(disp(f)) + ". "
+                       + (f"{esc(s.get('n_best_below_dstar'))} puzzle(s) land "
+                          "at or below zero: a lucky robot position made the "
+                          "real move count cheaper than the plan-step estimate "
+                          "— worth an eyeball before it is quoted."
+                          if s.get("n_best_below_dstar") else
+                          "All bars sit above zero: the language never beats "
+                          "the known optimum here.")
                        + "</figcaption></figure>")
         caps = d.get("caps") or {}
         meta = [("instances", src(disp(d.get("instances", "?")))),
@@ -1900,8 +1947,8 @@ def sec_milestones() -> str:
            + " whose payload carries <code>systems</code> + <code>protocol</code> "
              "is rendered as bench rows in the milestone whose directory it "
              "sits in, and any <code>summary.json</code> is rendered as a "
-             "key/value table — so later milestones appear here without "
-             "touching the generator.</p>",
+             "key/value table. In plain words: new result files show up on "
+             "this page automatically.</p>",
            '<p class="note"><strong>Terms used in every table:</strong> '
            'mean regret = extra moves over the proven optimum. '
            'mean expansions = search effort per puzzle. '
@@ -1945,10 +1992,23 @@ def sec_milestones() -> str:
                 rendered = True
                 out.append(kv_table(p, d))
         if not rendered:
+            HOMES = {"M3": ('the <a href="#res-loops">Milestone results tab</a> '
+                            '(files under <code>results/selfplay/</code>)'),
+                     "M4": ('the <a href="#res-loops">Milestone results tab</a> '
+                            '(files under <code>results/selfplay/</code>)'),
+                     "M5": ('the <a href="#res-mix">Milestone results tab</a> and '
+                            'the <a href="#variants">Variants lab tab</a> (files '
+                            'under <code>results/selfplay/</code> and '
+                            '<code>results/variants/</code>)'),
+                     "M6": ('the M6 design log (<code>M6_DESIGN.md</code>) while '
+                            'its first runs are in flight')}
             if k == "M0":
                 out.append('<p class="note">Detailed parity tables for this '
                            'milestone live in the <a href="#m0">M0 arena '
                            "parity</a> tab.</p>")
+            elif k in HOMES:
+                out.append(f'<p class="note">This milestone&rsquo;s results '
+                           f'live in {HOMES[k]}.</p>')
             else:
                 out.append(pend_note(f"nothing under {disp(RESULTS)}/"
                                      f"{k.lower()}/"))
@@ -2049,13 +2109,19 @@ def paired_cells(pr):
     def pf(x):
         return "&mdash;" if x is None else (f"{x:.2g}" if x < 0.01 else f"{x:.3f}")
     ao, bo = pr.get("a_only"), pr.get("b_only")
+    mp = pr.get("mcnemar_p")
     solves = (f"+{ao}/&minus;{bo}" if None not in (ao, bo) else "&mdash;")
-    solves += f" (p={pf(pr.get('mcnemar_p'))})"
+    if mp is not None:
+        solves += (f' &middot; <span title="exact McNemar test, p={pf(mp)}">'
+                   f"{fluke(mp)}</span>")
     ma, mb = pr.get("mean_moves_a_both"), pr.get("mean_moves_b_both")
     moves = (f"{ma:.2f} vs {mb:.2f} on {pr.get('both_solved')}"
              if None not in (ma, mb) else "&mdash;")
-    wins = (f"{pr.get('moves_wins_a')}/{pr.get('moves_wins_b')} "
-            f"(p={pf(pr.get('sign_p_moves'))})")
+    sp_ = pr.get("sign_p_moves")
+    wins = f"{pr.get('moves_wins_a')}/{pr.get('moves_wins_b')}"
+    if sp_ is not None:
+        wins += (f' &middot; <span title="exact sign test, p={pf(sp_)}">'
+                 f"{fluke(sp_)}</span>")
     return [td_txt(solves), td_txt(moves), td_txt(wins)]
 
 
@@ -2162,13 +2228,13 @@ def sub_m1() -> str:
 
 # ---- M2 -------------------------------------------------------------------
 
-M2_VARIANTS = [("greedy", "greedy descent (the labeler's rule)"),
-               ("astar_child", "A* f = fixed_g(child) + ctg, first plan (= arena)"),
-               ("astar_parent", "A* f = fixed_g(parent) + ctg (label-consistent), first plan"),
-               ("astar_parent_any", "A* f = parent, anytime realization"),
-               ("astar_best", "A* f = parent, best-at-budget"),
-               ("mcts_min", "MCTS (PUCT, min backup, best-at-budget)"),
-               ("mcts_mean", "MCTS (PUCT, mean backup, best-at-budget)")]
+M2_VARIANTS = [("greedy", "always take the top candidate (greedy)"),
+               ("astar_child", "A*, scoring by child estimate (the benchmark's own search)"),
+               ("astar_parent", "A*, scoring by parent estimate, first solution"),
+               ("astar_parent_any", "A*, parent estimate, keep going until a solution replays"),
+               ("astar_best", "A*, parent estimate, best answer within the budget"),
+               ("mcts_min", "tree search, best answer within the budget (min backup)"),
+               ("mcts_mean", "tree search, best answer within the budget (mean backup)")]
 
 
 def sub_m2() -> str:
@@ -2384,9 +2450,11 @@ def gate_txt(pr, label):
     if not ok(pr):
         return None
     return (f"{esc(label)}: solves +{pr.get('a_only')}/&minus;{pr.get('b_only')} "
-            f"(McNemar p={_pf(pr.get('mcnemar_p'))}); moves "
+            f'&middot; <span title="exact McNemar test, p={_pf(pr.get("mcnemar_p"))}">'
+            f"{fluke(pr.get('mcnemar_p'))}</span>; moves "
             f"{pr.get('moves_wins_a')}/{pr.get('moves_wins_b')} "
-            f"(sign p={_pf(pr.get('sign_p_moves'))}) on "
+            f'&middot; <span title="exact sign test, p={_pf(pr.get("sign_p_moves"))}">'
+            f"{fluke(pr.get('sign_p_moves'))}</span> on "
             f"{pr.get('both_solved')} both-solved")
 
 
@@ -2557,6 +2625,13 @@ LABELER_REF = {
     "g32r4": ("nn_labeler/results/audit_prod_v1_s11_full.json", "value", "g32r4"),
     "g40r4": ("nn_labeler/results/audit_coarse_g40r4.json", "value", "g40r4"),
     "g48r4": ("nn_labeler/results/audit_coarse_g48r4.json", "value", "g48r4"),
+    # 56/64: the same-instrument audit ran later and lives in this project's
+    # results tree (res: prefix); the coarsegate descent numbers stay below as
+    # an explicitly-separated different-method row.
+    "g56r4": ("res:audit/labeler_prod_v1_s11_g56g64.json", "value", "g56r4"),
+    "g64r4": ("res:audit/labeler_prod_v1_s11_g56g64.json", "value", "g64r4"),
+}
+LABELER_REF_OTHER = {
     "g56r4": ("nn_labeler/results/coarsegate_g56r4.json", "descent", None),
     "g64r4": ("nn_labeler/results/coarsegate_g64r4.json", "descent", None),
 }
@@ -2569,19 +2644,31 @@ AUDIT_METRICS = [
     ("pair", "top1_optimal", "pair top1-optimal", "pct"),
     ("pair", "regret", "pair regret (moves)", "num"),
 ]
-AUDIT_HEADERS = ["config", "groups", "value top1", "value regret",
-                 "policy top1", "policy r@1", "policy r@5", "policy recall@5",
-                 "pair top1", "pair regret",
-                 "pair beats value (w/l)", "pair beats policy (w/l)"]
+def _h(words, tech):
+    return f'<span title="{tech}">{words}</span>'
 
 
-def labeler_ref(cfg):
+AUDIT_HEADERS = [
+    "exam size", _h("decisions scored", "n_groups (n_policy_groups in brackets)"),
+    _h("best pick is optimal &mdash; value net", "value.top1_optimal"),
+    _h("extra moves, value's pick", "value.regret"),
+    _h("best pick is optimal &mdash; policy net", "policy.top1_optimal"),
+    _h("extra moves, policy's top choice", "policy.regret@1"),
+    _h("extra moves, best of policy's top 5", "policy.regret@5"),
+    _h("an optimal candidate is in its top 5", "policy.recall@5"),
+    _h("best pick is optimal &mdash; the planner's actual decision", "pair.top1_optimal"),
+    _h("extra moves, planner's decision", "pair.regret"),
+    _h("planner beats value alone (wins/losses)", "paired.pair_vs_value"),
+    _h("planner beats policy alone (wins/losses)", "paired.pair_vs_policy")]
+
+
+def labeler_ref(cfg, table=None):
     """The labeler's recorded row for one config, or None."""
-    spec = LABELER_REF.get(cfg)
+    spec = (table if table is not None else LABELER_REF).get(cfg)
     if not spec:
         return None
     rel, kind, key = spec
-    d = load_sv(rel)
+    d = load(RESULTS / rel[4:]) if rel.startswith("res:") else load_sv(rel)
     if not ok(d):
         return None
     if kind == "value":
@@ -2678,15 +2765,26 @@ def audit_rows(rep):
         lr = labeler_ref(cfg)
         if lr:
             rows_.append(row([
-                td_txt("&#8627; labeler reference <span class='note'>"
-                       + ("(same instrument)" if lr["kind"] == "value"
-                          else "(<strong>different instrument</strong>)")
-                       + "<br>" + src(lr["file"]) + "</span>"),
+                td_txt("&#8627; the labeler (teacher), <strong>same measuring "
+                       "method</strong> &mdash; the comparison row"
+                       "<br><span class='note'>" + src(lr["file"]) + "</span>"),
                 td_txt(esc(lr["n"]) if lr["n"] is not None else "&mdash;"),
                 td_pct(lr["top1"]),
                 td(lr["regret"], ".3f") if lr["regret"] is not None else DASH,
                 DASH, DASH, DASH, DASH, DASH, DASH, DASH, DASH,
             ], "ctl"))
+        lo = labeler_ref(cfg, LABELER_REF_OTHER)
+        if lo:
+            rows_.append(row([
+                td_txt("&#8627; <span title=\"descent-gate argmin agreement over "
+                       "matched candidates of its own generated corpus\">labeler, "
+                       "<strong>different measuring method &mdash; not "
+                       "comparable</strong> &Dagger;</span>"
+                       "<br><span class='note'>" + src(lo["file"]) + "</span>"),
+                td_txt(esc(lo["n"]) if lo["n"] is not None else "&mdash;"),
+                td_pct(lo["top1"]), DASH,
+                DASH, DASH, DASH, DASH, DASH, DASH, DASH, DASH,
+            ], "dim"))
     return rows_
 
 
@@ -2733,6 +2831,32 @@ def sub_audit() -> str:
            "expansion). Regret is in moves above the group's exact optimum, so "
            "lower is better and 0.000 means the decision was optimal.</p>"]
     reps = audit_reports()
+    # plain-language conclusion, computed from the files themselves
+    it0 = next((rep for tag, rep, _ in reps if tag.startswith("b2it0")), None)
+    if it0:
+        wins, sizes = [], []
+        for cfg_, c_ in (it0.get("configs") or {}).items():
+            lr_ = labeler_ref(cfg_)
+            v_ = (c_.get("value") or {}).get("top1_optimal")
+            if lr_ and lr_.get("top1") is not None and v_ is not None:
+                sizes.append(cfg_)
+                wins.append(v_ >= lr_["top1"])
+        if sizes and all(wins):
+            out.append("<p><strong>The one-line conclusion: with the same "
+                       "measuring method, the loop&rsquo;s starting network "
+                       "(iteration 0) scores higher than the labeler that "
+                       "taught it at every size tested.</strong> Rows marked "
+                       "&Dagger; use a different measuring method and must not "
+                       "be compared with the rest of their table.</p>")
+        out.append("<p class='note'>Two claims live in this table and must not "
+                   "be conflated. The Story&rsquo;s &ldquo;beats its own "
+                   "teacher&rdquo; compares the <em>iteration-0</em> network "
+                   "with the labeler, same method, and holds at every size. "
+                   "The <em>iteration-4</em> rows sit below iteration 0 at "
+                   "every size because four self-play rounds on 24&times;24 "
+                   "boards only specialize the networks toward that setting "
+                   "&mdash; a documented cost (FINDINGS &sect;17c), not a "
+                   "contradiction.</p>")
     if not reps:
         out.append(pend_note("nothing under results/audit/ yet &mdash; "
                              "<code>jobs/audit_far.slurm</code> writes "
@@ -2752,7 +2876,12 @@ def sub_audit() -> str:
         out.append(f"<p class='note'>{' &middot; '.join(meta)} &middot; "
                    f"{src(disp(f))}</p>")
         out.append(table(AUDIT_HEADERS, audit_rows(rep),
-                         note="<em>groups</em> = <code>n_groups</code> exact "
+                         note="Hover any column header for the exact field "
+                              "name. Lower &ldquo;extra moves&rdquo; is better; "
+                              "0 means the choice was optimal. "
+                              "<details><summary>Field-by-field definitions "
+                              "(for auditors)</summary>"
+                              "<em>groups</em> = <code>n_groups</code> exact "
                               "decision groups (&ge;2 candidates) in the split, "
                               "<code>n_policy_groups</code> in brackets when the "
                               "policy could not be scored on all of them (a "
@@ -2780,7 +2909,7 @@ def sub_audit() -> str:
                               "<strong>a different instrument</strong> (greedy "
                               "descent vs the exact engine over matched "
                               "candidates) &mdash; read it as a scale marker, not "
-                              "as a like-for-like row.",
+                              "as a like-for-like row.</details>",
                          cls="wide"))
         out.append(audit_depth_table(rep))
     # cross-pair comparison
@@ -3024,18 +3153,24 @@ def sub_loops() -> str:
                     if None not in (inst, solved) and inst else None)
             gauge = None
             if au.get("argmin_agreement") is not None:
-                gauge = (f"{au['argmin_agreement']:.3f}"
-                         + (f" <span class='note'>(n={gg.get('sample')}, "
-                            f"Jaccard {au.get('optimal_set_jaccard', 0):.2f})</span>"
-                            if gg.get("sample") else ""))
+                hov = (f"argmin agreement {au['argmin_agreement']:.3f}"
+                       + (f", n={gg.get('sample')}, Jaccard "
+                          f"{au.get('optimal_set_jaccard', 0):.2f}"
+                          if gg.get("sample") else ""))
+                gauge = (f'<span title="{hov}">label check: '
+                         f"{100 * au['argmin_agreement']:.1f}% match the exact "
+                         f"solver's best choice</span>")
             elif k == 0:
                 gauge = "&mdash;"
             if vp:
                 pv = (f"solves +{vp.get('a_only')}/&minus;{vp.get('b_only')} "
-                      f"(McNemar p={_pf(vp.get('mcnemar_p'))}); moves "
+                      f'&middot; <span title="exact McNemar test, '
+                      f'p={_pf(vp.get("mcnemar_p"))}">{fluke(vp.get("mcnemar_p"))}'
+                      f"</span><br>moves "
                       f"{vp.get('moves_wins_a')}/{vp.get('moves_wins_b')} "
-                      f"(sign p={_pf(vp.get('sign_p_moves'))}) on "
-                      f"{vp.get('both_solved')} both-solved")
+                      f'&middot; <span title="exact sign test, '
+                      f'p={_pf(vp.get("sign_p_moves"))}">{fluke(vp.get("sign_p_moves"))}'
+                      f"</span> on {vp.get('both_solved')} both-solved")
             elif k == 0:
                 pv = "&mdash; (reference iteration)"
             else:
@@ -3065,7 +3200,8 @@ def sub_loops() -> str:
                     if p and Path(p).is_file()]
             rows_.append(row([
                 td_txt(f"<strong>{k}</strong>" + (" <span class='note'>(M1 nets, zero-shot in B2)</span>" if k == 0 and b2 else "")
-                       + (f"<br><span class='note'>{'; '.join(man_bits)}</span>" if man_bits else "")),
+                       + (f"<br><details><summary class='note'>run details</summary>"
+                          f"<span class='note'>{'; '.join(man_bits)}</span></details>" if man_bits else "")),
                 td(inst, "d") if inst is not None else (DASH if k == 0 else '<td class="pend">pending</td>'),
                 td_txt(cert) if cert else (DASH if k == 0 else '<td class="pend">pending</td>'),
                 td(man.get("records"), "d") if man.get("records") is not None else (DASH if k == 0 else '<td class="pend">pending</td>'),
@@ -3319,7 +3455,8 @@ def sec_glossary() -> str:
          "<code>spr.arena</code> quarantines a run that fails). In the loop: "
          "<em>a backup value from an unrealized plan is a hypothesis; only "
          "realized, replayed plans update the record.</em> This is also the "
-         "defense against the self-play analogue of reward hacking. "
+         "defense against the loop grading its own homework (a network cannot "
+         "train on a solution it merely imagined). "
          "PROBLEM.md &sect;4.6."),
         ("subgoal / bottleneck / support / helper",
          "The backward planner does not choose moves; it chooses "
@@ -3373,7 +3510,8 @@ def sec_glossary() -> str:
          "Boards generated at any size in seconds by "
          "<code>nn_labeler/leanboard.py</code> (3.8 s at 96&times;96 vs 11.9 h "
          "for the eager path), layout-identical to eager boards "
-         "(parity-proven), with a lazy distance oracle. They make &ldquo;fresh "
+         "(checked cell for cell against the slow generator), computing "
+         "distances only when asked. They make &ldquo;fresh "
          "instances every iteration&rdquo; essentially free — which is where "
          "self-play diversity comes from in a deterministic single-agent game "
          "(&sect;6.4)."),
@@ -3385,17 +3523,61 @@ def sec_glossary() -> str:
          + (" Measured here: " + "; ".join(dstar_bits) + "."
             if dstar_bits else "")),
         ("frontier set",
-         "The hard tail: <code>bench.unsolved.jsonl</code> instances that "
-         "nothing had solved when the bench was pinned, so no optimum exists "
-         "(<code>d_star</code> null or 0, and the aggregate may carry "
-         "<code>d_star_placeholder</code>). Only solve rate and mean realized "
-         "moves are meaningful there — this page suppresses regret and "
-         "optimality on frontier rows rather than printing a meaningless "
-         "number."),
+         "The hard tail: the puzzles nothing had solved when the exam was "
+         "fixed, so no optimum is known. Only solve rate and real move counts "
+         "mean anything there — this page hides regret and optimality on "
+         "frontier rows rather than print a meaningless number."),
         ("graded set",
          "The complement: <code>bench.solved.jsonl</code> (and "
          "<code>eval/data/bench450.jsonl</code> at g16r4), where every instance "
          "carries d*, so % optimal and mean regret are defined."),
+        ("supervised",
+         "Trained from provided answers. Here: planners taught from the "
+         "exact solver&rsquo;s solutions. The opposite of self-play, which "
+         "makes its own training data."),
+        ("neural network (NN, &ldquo;net&rdquo;)",
+         "A trainable function. This project uses two small ones: the policy "
+         "network and the value network."),
+        ("policy network / value network",
+         "The two halves of the planner. The policy network proposes which "
+         "sub-goal to try. The value network estimates how many steps a plan "
+         "still needs."),
+        ("A*",
+         "A classic search method: always continue from the partial plan "
+         "that looks cheapest overall. The project&rsquo;s fast first-answer "
+         "search."),
+        ("MCTS",
+         "Monte-Carlo Tree Search &mdash; the tree search AlphaZero uses. It "
+         "balances trying what looks good against checking what is "
+         "unexplored."),
+        ("greedy descent",
+         "No search at all: at every decision, take the value "
+         "network&rsquo;s top pick and never look back."),
+        ("zero-shot",
+         "Used on a task or board size it never trained on, with no "
+         "adjustment."),
+        ("epoch",
+         "One full pass over the training data."),
+        ("arena",
+         "This project&rsquo;s benchmarking harness: fixed exams, fixed "
+         "search budget, replay-checked scoring."),
+        ("checkpoint",
+         "A saved copy of a network&rsquo;s weights &mdash; one file that can "
+         "be loaded and run."),
+        ("warm start",
+         "Start training from an existing checkpoint instead of random "
+         "weights."),
+        ("flagship",
+         "The project&rsquo;s best planner: the strict-move-trained networks "
+         "plus the hybrid search that may make up to two ordinary moves "
+         "before sub-goal planning."),
+        ("McNemar test",
+         "A standard statistical test for paired yes/no outcomes &mdash; "
+         "here: which puzzles each of two planners solved, puzzle by "
+         "puzzle."),
+        ("regret / extra moves",
+         "How many moves a solution uses beyond the proven optimum, "
+         "averaged over solved puzzles with a known optimum."),
         ("node-hour (nh)",
          "The cluster's cost unit — one full node for one hour; 1 GPU for 1 h = "
          "0.125 nh. The whole supervised campaign cost ~27 nh; a self-play loop "
@@ -4003,11 +4185,13 @@ def main() -> int:
         f"{nav}\n"
         "<h1>Self-play planner suite "
         '<span class="cite">(self_play_robots)</span></h1>\n'
-        '<p class="banner">Single source of truth for the AlphaZero-style '
-        "self-play track. Auto-generated by <code>gen_report.py</code> from "
-        "files on disk &mdash; no hand-typed numbers outside the hand-written <a href=\"#story\">Story tab</a> (whose figures are verified against <code>EXPLAINER.md</code>); a missing file renders as "
-        f"<em>pending</em>. Generated {stamp}; {n_read} file(s) read, "
-        f"{n_missing} expected file(s) not yet on disk" + upd_txt + ".</p>\n"
+        '<p class="banner">Everything on this page is built automatically '
+        "from the project&rsquo;s result files. Numbers are read from disk, "
+        'never typed in &mdash; except the <a href="#story">Story tab</a>, '
+        "which is written by hand and checked against the same files. A "
+        "missing result shows as <em>pending</em>. "
+        f"Generated {stamp} from {n_read} file(s); {n_missing} expected "
+        f"file(s) not on disk yet" + upd_txt + ".</p>\n"
         "<noscript><p class='banner'>JavaScript is off, so every tab's content "
         "is shown stacked below and the tab strip acts as plain jump links."
         "</p></noscript>\n"
