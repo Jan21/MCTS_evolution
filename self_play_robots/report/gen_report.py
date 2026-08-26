@@ -1091,6 +1091,10 @@ def sec_loop() -> str:
     return "\n".join(out)
 
 
+def capfirst(x: str) -> str:
+    return x[:1].upper() + x[1:] if x else x
+
+
 def seed_spread_line() -> str:
     """The measured same-arm seed spread, computed from the g24r4 files."""
     pairs = [("exact-taught pair",
@@ -1112,17 +1116,28 @@ def seed_spread_line() -> str:
         do = (abs(aa.get("pct_optimal", 0) - ab.get("pct_optimal", 0))
               if None not in (aa.get("pct_optimal"), ab.get("pct_optimal"))
               else None)
-        bits.append(f"{label}: {ds:.1f} pts solve"
-                    + (f" / {do:.1f} pts optimality" if do is not None else ""))
+        bits.append((label, ds, do))
     if not bits:
         return ""
+    sent = []
+    for i, (label, ds, do) in enumerate(bits):
+        who = ("the exact-taught pair" if "exact" in label
+               else "the NN-taught twin" if "twin" in label.lower() else label)
+        upto = "up to " if i else ""
+        f1 = lambda v: f"{v:.1f}".rstrip("0").rstrip(".")
+        if do is None:
+            sent.append(f"{who} disagrees by {upto}{f1(ds)} solved puzzles")
+        elif i == 0:
+            sent.append(f"{who} disagrees by {f1(ds)} solved puzzles and "
+                        f"{f1(do)} optimality points")
+        else:
+            sent.append(f"{who} disagrees by up to {f1(ds)} and {f1(do)}")
     return ("<p class='note'><strong>The yardstick, measured from these very "
-            "files.</strong> Two identical 24&times;24 runs differing only in "
-            "their random start disagree by "
-            + "; ".join(b.replace("NN-twin pair", "the NN-taught twin pair")
-                        .replace("exact-taught pair", "the exact-taught pair")
-                        for b in bits) +
-            ". The project brief rounds this to the 3.5-solve / 6.6-optimality "
+            "files.</strong> Two identical runs that differ only in their "
+            "random start: " + sent[0] + ". "
+            + ". ".join(capfirst(x) for x in sent[1:])
+            + (". " if len(sent) > 1 else "")
+            + "The project brief rounds this to the 3.5-solve / 6.6-optimality "
             "gate. Any win smaller than this bar is noise.</p>")
 
 
@@ -2861,7 +2876,7 @@ def sub_forward() -> str:
                               td_txt("<br>".join(vs_bits) if vs_bits else "&mdash;"),
                               td_txt(src(disp(f)))]))
         if rows_:
-            out.append(table(["arm", *AGG_HEADERS, "paired (.vs_*.json)", "source"], rows_,
+            out.append(table(["setup", *AGG_HEADERS, "paired (.vs_*.json)", "source"], rows_,
                              note="Same column rules as defined once at the top of this tab."
                                   " Paired column: every "
                                   "<code>&lt;arm&gt;.vs_&lt;other&gt;.json</code> next to the "
@@ -2932,8 +2947,8 @@ def sub_loops() -> str:
     out = ['<h3 id="res-loops">M3/M4 &mdash; the self-play loop, iteration by iteration</h3>',
            "<p class='note'>One row per <code>results/selfplay/&lt;cfg&gt;[_b2]_iter&lt;k&gt;/</code>: "
            "generation manifest (fresh instances searched, certified, records "
-           "written), fidelity gauge (argmin agreement of the self-play labels "
-           "against the exact Rust engine on sampled depth-0 decisions), the "
+           "written), fidelity gauge (on a sample of decisions: does the loop's "
+           "own label pick the same best candidate as the exact solver?), the "
            "arena benches of the retrained pair on the graded exam (A* and MCTS) "
            "and on the frontier set, and the paired gate against the previous "
            "iteration's nets. Iteration 0 = the M1 nets before any self-play "
