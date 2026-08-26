@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import html
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -3683,9 +3684,94 @@ summary { cursor: pointer; color: var(--acc); font-size: .9rem; }
 .fig .refl-t { fill: var(--mut); font: 12px system-ui, sans-serif; }
 .fig .refl-t.ref2 { fill: var(--s3); }
 .chip.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.pth { border-bottom: 1px dotted var(--mut); cursor: help; }
 footer { margin-top: 2.5rem; border-top: 1px solid var(--line);
          padding-top: .6rem; color: var(--mut); font-size: .82rem; }
 """
+
+
+# ---------------------------------------------------------------------------
+# machine-junk scrubber (owner 2026-08-26: full model paths etc. are provenance,
+# not reading material). Applied centrally to the assembled page so every
+# section -- including ones rendered from payload-embedded system names --
+# is covered by one fix. Visible text only: markup, title="..." hovers and
+# <details> blocks (the sanctioned provenance locations) are left alone.
+# ---------------------------------------------------------------------------
+
+_REPO_PREFIX = re.compile(r"/scratch/project/open-37-42/petrhyner/MCTS_evolution/")
+_ABS_PATH = re.compile(r"/scratch/project/open-37-42/[\w./=+-]+")
+_REL_CKPT = re.compile(r"[\w./=+-]*?(?:lightning_logs/[\w./=+-]*?)?[\w=+-]+\.ckpt")
+
+
+def _fmt_one_path(full: str) -> str:
+    """Short, human display for one path; the full path moves to a hover."""
+    tail = _REPO_PREFIX.sub("", full)
+    if tail.endswith(".ckpt"):
+        m = re.search(r"(?:runs/spr/)?(.+?)/lightning_logs/", tail)
+        if m:
+            disp = m.group(1)
+        else:
+            disp = re.sub(r"\.ckpt$", "", tail.rsplit("/", 1)[-1])
+        disp = re.sub(r"^(?:self_play_robots/)?assets/", "", disp)
+        e = re.fullmatch(r"epoch=(\d+)-step=\d+", disp)
+        if e:
+            disp = f"epoch {e.group(1)}"
+    else:
+        comps = tail.split("/")
+        disp = "/".join(comps[-3:]) if len(comps) > 3 else tail
+    # truncate run-dir hash suffixes (literal ellipsis; escaped below)
+    disp = re.sub(r"\.([0-9a-f]{8,})", lambda m: "." + m.group(1)[:6] + "\u2026", disp)
+    if disp == tail == full:                      # nothing shortened
+        return html.escape(full)
+    return f'<span class="pth" title="{html.escape(full)}">{html.escape(disp)}</span>'
+
+
+# one alternation, one pass: inserted markup is never re-scanned, so spans
+# can never nest inside each other's title attributes.
+_SCRUB_RX = re.compile(
+    r"/scratch/project/open-37-42/[\w./=+-]+"        # absolute paths
+    r"|[\w./=+-]{18,}\.ckpt"                         # long relative ckpt paths
+    r"|epoch=\d+-step=\d+\.ckpt"                     # bare ckpt basenames
+)
+
+
+def _scrub_one(m: "re.Match") -> str:
+    tok = m.group(0)
+    b = re.fullmatch(r"epoch=(\d+)-step=\d+\.ckpt", tok)
+    if b:
+        return (f'<span class="pth" title="{tok}">epoch {b.group(1)}</span>')
+    return _fmt_one_path(tok)
+
+
+def _scrub_text(seg: str) -> str:
+    # path fragments cut off by upstream text truncation (never node-initial):
+    # swallow to an ellipsis before the main pass
+    seg = re.sub(r"(.)\(?/scratch/project/open-37-42[\w./=+-]*$",
+                 "\\1\u2026", seg)
+    return _SCRUB_RX.sub(_scrub_one, seg)
+
+
+def shorten_paths(page: str) -> str:
+    """Scrub machine paths from visible text, leaving <details> blocks intact."""
+    out, pos = [], 0
+    for m in re.finditer(r"<details\b.*?</details>", page, re.S):
+        out.append(page[pos:m.start()])
+        out.append(None)                          # placeholder marker
+        out.append(m.group(0))
+        pos = m.end()
+    out.append(page[pos:])
+    scrubbed = []
+    for part in out:
+        if part is None:
+            continue
+        if part.startswith("<details"):
+            scrubbed.append(part)                 # sanctioned location
+            continue
+        segs = re.split(r"(<[^>]+>)", part)       # tags vs text nodes
+        segs = [s if s.startswith("<") else _scrub_text(s)
+                for s in segs if s != ""]
+        scrubbed.append("".join(segs))
+    return "".join(scrubbed)
 
 
 def main() -> int:
@@ -3734,6 +3820,7 @@ def main() -> int:
         "disk; never published.</footer>\n"
         f"<script>{JS}</script>\n"
         "</body></html>\n")
+    page = shorten_paths(page)                 # owner: no machine paths in view
     tmp = OUT.with_suffix(".html.tmp")
     tmp.write_text(page)
     tmp.replace(OUT)
