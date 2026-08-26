@@ -3595,7 +3595,7 @@ th, td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--lin
          padding: .3rem .55rem; text-align: right;
          font-variant-numeric: tabular-nums; vertical-align: top; }
 th:first-child, td:first-child { text-align: left; border-left: 1px solid var(--line); }
-thead th { position: sticky; top: 2.55rem; z-index: 3; background: var(--bg);
+thead th { background: var(--bg);
            border-top: 1px solid var(--line); font-weight: 600;
            text-align: left; }
 tbody td { text-align: right; }
@@ -3741,6 +3741,19 @@ def main() -> int:
     tmp = OUT.with_suffix(".html.tmp")
     tmp.write_text(page)
     tmp.replace(OUT)
+
+    # figure linter (report/svg_lint.py): the Story tab's figures must be
+    # overlap-free -- fail loudly so regressions cannot return silently.
+    try:
+        from svg_lint import lint_html as _svg_lint
+        _errs = _svg_lint(page, only_story=True)
+        for _e in _errs:
+            print(f"gen_report: SVGLINT {_e}")
+            STATS["error"].append(f"svglint: {_e}")
+        if not _errs:
+            print("gen_report: svg_lint story figures CLEAN")
+    except Exception as _e:                       # never kill the build
+        print(f"gen_report: WARN svg_lint failed: {_e}")
 
     scan = SCAN
     m0_files = len(scan["comparison"].get("m0", []))
