@@ -211,13 +211,13 @@ footer { margin-top: 2.5rem; border-top: 1px solid var(--line);
 <a href="#milestones" data-panel="p10">Milestones</a>
 <a href="#glossary" data-panel="p11">Glossary</a></nav>
 <h1>Self-play planner suite <span class="cite">(self_play_robots)</span></h1>
-<p class="banner">Everything on this page is built automatically from the project&rsquo;s result files. Numbers are read from disk, never typed in &mdash; except the <a href="#story">Story tab</a>, which is written by hand and checked against the same files. A missing result shows as <em>pending</em>. Generated 2026-08-26 21:18 UTC from 551 file(s); 26 expected file(s) not on disk yet; status manifest of 2026-08-26T22:39:43.</p>
+<p class="banner">Everything on this page is built automatically from the project&rsquo;s result files. Numbers are read from disk, never typed in &mdash; except the <a href="#story">Story tab</a>, which is written by hand and checked against the same files. A missing result shows as <em>pending</em>. Generated 2026-08-26 21:19 UTC from 551 file(s); 26 expected file(s) not on disk yet; status manifest of 2026-08-26T22:39:43.</p>
 <noscript><p class='banner'>JavaScript is off, so every tab's content is shown stacked below and the tab strip acts as plain jump links.</p></noscript>
 <div class="panel" id="p1">
 <section id="story" class="story">
 <h2>The story &mdash; start here</h2>
 <nav class="toc" aria-label="story chapters"><a href="#st-game">1 game</a><a href="#st-language">2 sub-goals</a><a href="#st-ceiling">3 the wall</a><a href="#st-referee">4 the referee</a><a href="#st-nets">5 networks</a><a href="#st-search">6 search</a><a href="#st-journey">7 journey</a><a href="#st-scoreboard">8 scoreboard</a><a href="#st-failed">9 failures</a><a href="#st-limits">10 limits</a></nav>
-<p class="lede">A small pair of neural networks taught itself to solve Ricochet Robots puzzles. No human answers were used. On 200 brand-new puzzles it solves 188. The human-taught planner solves 134. We also proved a hard quality limit of the planner&rsquo;s vocabulary. A small search change then broke that limit. <code>EXPLAINER.md</code> cites a source for every number here.</p>
+<p class="lede">Two hand-built planners came before this project: a <em>supervised</em> one, taught from an exact solver&rsquo;s answers, and a slower <em>move-by-move</em> one that is nearly perfect when it solves. Then a small pair of neural networks taught itself to solve Ricochet Robots puzzles. No human answers were used. On 200 brand-new puzzles it solves 188. The human-taught planner solves 134. We also measured a hard quality limit of the planner&rsquo;s vocabulary. A small search change then broke that limit. <code>EXPLAINER.md</code> cites a source for every number here.</p>
 <h3 id="st-game"><span class="no">1</span>A game where you build your own walls</h3>
 <p>Ricochet Robots is a puzzle on a square grid. A move sends one robot in one direction. It slides until a wall or another robot stops it. The goal: stop one target robot on one target cell, in few moves.</p>
 
@@ -310,9 +310,8 @@ two new journeys: mover to B, and H to S. That recursion is the search tree
 <figcaption><strong>The measured wall.</strong> No sub-goal planner can
 average less than +1.63 extra moves (base vocabulary), or +1.17 (extended:
 extra tricks, such as parking a robot aside first). Training cannot change
-this. It is a limit of the vocabulary itself. (Tightened
-probe. An earlier run measured +1.72 &mdash; see the
-<a href="#ceiling">Ceiling tab</a>.)</figcaption>
+this. It is a limit of the vocabulary itself. (An earlier, looser run
+measured +1.72 &mdash; see the <a href="#ceiling">Ceiling tab</a>.)</figcaption>
 </figure>
 <p class="key">This measurement shaped everything after it. It predicted that base-vocabulary self-play would be useless. It was. And it set the breakthrough target: go below +1.17.</p>
 <h3 id="st-referee"><span class="no">4</span>Self-play with a physics referee</h3>
@@ -352,10 +351,13 @@ probe. An earlier run measured +1.72 &mdash; see the
   <text x="380" y="166" class="lbl">next round: better networks, new boards</text>
 </svg>
 <figcaption><strong>The loop&rsquo;s contract.</strong> An illegal shortcut
-fails the replay and leaves nothing. Only too-long plans can slip in. MCTS is
-the tree search that AlphaZero uses. Warm start: training continues from the
-last weights. One mixed round: ~940 puzzles, ~12,000 records, 5&ndash;6
-GPU-hours.</figcaption>
+fails the replay and leaves nothing. Only too-long plans can slip in. In the
+diagram: MCTS is the tree search that AlphaZero uses. Noise = small random
+nudges at the search&rsquo;s first choice, so rounds explore differently.
+Warm start = training continues from the last weights. An epoch = one pass
+over the training data. A paired test compares puzzle by puzzle, on the same
+puzzles. One mixed-size round (all three board types together): ~940
+puzzles, ~12,000 records, 5&ndash;6 GPU-hours.</figcaption>
 </figure>
 <h3 id="st-nets"><span class="no">5</span>Two small networks, any board size</h3>
 <p>The planner is two networks with one shared encoder design: 2,206,176 parameters in total.</p>
@@ -387,11 +389,15 @@ GPU-hours.</figcaption>
   <line x1="214" y1="188" x2="292" y2="160" class="arr dashed" marker-end="url(#sa-mut)"/>
   <text x="450" y="252" text-anchor="middle" class="cap">740,928 parameters per network &mdash; each network trains its own copy of the block</text>
 </svg>
-<figcaption><strong>The encoder.</strong> Walls become attention masks, not
-input channels. Information moves only along legal slides. There are no
-positional embeddings, so nothing in the weights depends on board size. One
-checkpoint runs on any board. Twelve rounds let information travel twelve
-slides.</figcaption>
+<figcaption><strong>The encoder.</strong> The board enters as tokens: one
+short list of numbers per cell. Walls become attention masks &mdash; filters
+that say which cells may exchange information &mdash; not input channels, so
+information moves only along legal slides. There are no positional embeddings
+(no cell-number table baked into the weights), so nothing depends on board
+size. One saved network file runs on any board. Twelve passes of the same
+block let information travel twelve slides. The block is 740,928 of each
+network&rsquo;s parameters. With its own head on top, the value network
+totals 982,944 and the policy network 1,223,232.</figcaption>
 </figure>
 
 <figure class="fig big">
@@ -425,14 +431,15 @@ slides.</figcaption>
   <line x1="234" y1="102" x2="322" y2="62" class="arr ink" marker-end="url(#sa-ink)"/>
   <line x1="234" y1="134" x2="322" y2="174" class="arr ink" marker-end="url(#sa-ink)"/>
 </svg>
-<figcaption><strong>The two heads.</strong> The value head answers: how
-many steps will this plan still cost? Output: a 96-bin distribution
-(&ldquo;probably 6, maybe 9&rdquo;). The policy head answers: which sub-goal
-next? It points at real board cells, so it works with any candidate
-count.</figcaption>
+<figcaption><strong>The two heads.</strong> The value head reads five
+marked cells &mdash; the mover, the goal, and the candidate&rsquo;s three
+cells (B, S, H) &mdash; and answers: how many steps will this plan still
+cost? Output: a spread over 96 possible costs (&ldquo;probably 6, maybe
+9&rdquo;). The policy head answers: which sub-goal next? It points at real
+board cells, so it works with any candidate count.</figcaption>
 </figure>
 <div class="tw"><table class="t"><thead><tr><th>network</th><th>input</th><th>output</th><th>parameters</th></tr></thead><tbody><tr><td>value</td><td>board + one candidate sub-goal</td><td>cost still needed (96 bins)</td><td>982,944</td></tr><tr><td>policy</td><td>board, no candidate shown</td><td>which sub-goal to try</td><td>1,223,232</td></tr></tbody></table></div>
-<p>The networks trained only at 16&times;16 and 24&times;24. Audited up to 64&times;64, the value network still beats its own teacher at every size (<a href="#res-audit">live table</a>).</p>
+<p>The networks trained only at 16&times;16 and 24&times;24. Audited up to 64&times;64 with the same measuring tool as its teacher, the value network beats the teacher at every size (<a href="#res-audit">live table</a>).</p>
 <h3 id="st-search"><span class="no">6</span>One search step</h3>
 
 <figure class="fig big">
@@ -459,10 +466,10 @@ count.</figcaption>
   <line x1="800" y1="72" x2="828" y2="72" class="arr ink" marker-end="url(#sa-ink)"/>
 </svg>
 <figcaption><strong>One expansion</strong> = one policy call + one batched
-value call. Exams allow 1,200 per puzzle. Physics checks and replays are free
-&mdash; counted the same way as the fixed benchmark everyone is scored
-on. A failed replay
-removes the plan from the tree.</figcaption>
+value call. Exams allow 1,200 per puzzle. Physics checks do not count
+against the search budget. The budget counts network calls only &mdash; the
+same rule the benchmark uses. A failed replay removes the plan from the
+tree.</figcaption>
 </figure>
 <h3 id="st-journey"><span class="no">7</span>The journey</h3>
 <p>Green = adopted. Red = killed. Amber = did not replicate.</p>
@@ -489,10 +496,10 @@ removes the plan from the tree.</figcaption>
                               <span class="why">v01 replaced our scoring rule (score a candidate by the verified cost of the plans that used it) with AlphaZero&rsquo;s (prefer what the search visited most). Training collapsed on every exam (fluke chance below one in a million). Our rule is what makes the training work.</span></li>
                           <li><span class="chip good">&#10003; adopted</span> <span class="what">v04 &middot; keep every examined decision</span>
                               <span class="why">Twice the records from the same search. A replicated win on the hard set.</span></li>
-                          <li><span class="chip warn">~ not replicated</span> <span class="what">v06 &middot; Gumbel root exploration</span>
+                          <li><span class="chip warn">~ did not repeat</span> <span class="what">v06 &middot; a different way to randomise the search&rsquo;s first choices</span>
                               <span class="why">Won at seed 7, reversed at seed 8. The two-seed rule caught it.</span></li>
                           <li><span class="chip ctl">control</span> <span class="what">v08 &middot; cold start from random weights</span>
-                              <span class="why">One label-free round: 132 of 200 unseen. The supervised planner: 134. A tie, from nothing.</span></li>
+                              <span class="why">One round with no human or solver answers &mdash; its only labels were its own replay-checked plans: 132 of 200 unseen puzzles. The supervised planner: 134. A tie, from nothing.</span></li>
                           <li><span class="chip good">&#10003; adopted</span> <span class="what">v09 &middot; predict real move counts</span>
                               <span class="why">The value net now predicts real move counts &mdash; the number the project is graded on &mdash; not an internal plan-step count. Better everywhere, both seeds.</span></li>
                           <li><span class="chip bad">&#10007; killed</span> <span class="what">v12 &middot; train only on hard puzzles</span>
@@ -551,15 +558,15 @@ The standard search stays right of the wall (+1.42). The hybrid is the only
 planner left of it (+0.94). On the same puzzles, 40 solutions got
 shorter and none got longer.</figcaption>
 </figure>
-<p><strong>The unseen exam.</strong> 200 puzzles on fresh boards. Perfect play needs 8.71 moves where the optimum is known:</p>
-<div class="tw"><table class="t"><thead><tr><th>planner</th><th>solved of 200</th><th>solved perfectly</th><th>extra moves vs perfect*</th></tr></thead><tbody><tr class="hl"><td>flagship (self-taught + hybrid search)</td><td>188</td><td>57%</td><td class="g">+1.47</td></tr><tr><td>same networks, standard search</td><td>182</td><td>50%</td><td>+1.94</td></tr><tr><td>the frozen start networks</td><td>175</td><td>47%</td><td>+2.93</td></tr><tr><td>label-free, from random weights</td><td>132</td><td>45%</td><td>+2.89</td></tr><tr><td>supervised backward (the baseline)</td><td>134</td><td>36%</td><td>+4.84</td></tr><tr><td>supervised move-by-move</td><td>101</td><td>90%</td><td>+0.12</td></tr></tbody></table><p class="note">* over that system&rsquo;s own solved puzzles with a known optimum.</p></div>
+<p>Allowing a third ordinary move first improves the flagship&rsquo;s +0.94 to +0.86 on the standard exam &mdash; measured once, not adopted.</p><p><strong>The unseen exam.</strong> 200 puzzles on fresh boards. Perfect play needs 8.71 moves where the optimum is known:</p>
+<div class="tw"><table class="t"><thead><tr><th>planner</th><th>solved of 200</th><th>solved perfectly*</th><th>extra moves vs perfect*</th></tr></thead><tbody><tr class="hl"><td>flagship (self-taught + hybrid search)</td><td>188</td><td>57%</td><td class="g">+1.47</td></tr><tr><td>same networks, standard search</td><td>182</td><td>50%</td><td>+1.94</td></tr><tr><td>the frozen start networks</td><td>175</td><td>47%</td><td>+2.93</td></tr><tr><td>label-free, from random weights</td><td>132</td><td>45%</td><td>+2.89</td></tr><tr><td>supervised backward (the baseline)</td><td>134</td><td>36%</td><td>+4.84</td></tr><tr><td>supervised move-by-move</td><td>101</td><td>90%</td><td>+0.12</td></tr></tbody></table><p class="note">* both starred columns count only the 137 puzzles with a known optimum, restricted to the ones that system solved.</p></div>
 <p>The move-by-move planner is almost perfect when it solves. But it solves half the exam, at far higher cost. The goal &mdash; at least as many solves as the baseline, with fewer moves &mdash; is met.</p>
 <p><strong>Transfer.</strong> All development used 24&times;24 boards with 4 robots. Run unchanged elsewhere:</p>
-<div class="tw"><table class="t"><thead><tr><th>new exam</th><th>hybrid</th><th>matched control</th><th>paired move wins</th></tr></thead><tbody><tr><td>32&times;32 graded</td><td class="g">174/175, +1.60</td><td>172/175, +1.87</td><td>17 / 0</td></tr><tr><td>8 robots, graded</td><td class="g">159/161, +1.24</td><td>159/161, +1.82</td><td>23 / 0</td></tr><tr><td>8 robots, frontier</td><td class="g">276/289 &mdash; the record</td><td colspan="2">supervised arm: 161</td></tr></tbody></table></div>
+<div class="tw"><table class="t"><thead><tr><th>new exam</th><th>hybrid</th><th>matched control</th><th>move wins (shorter / longer)**</th></tr></thead><tbody><tr><td>32&times;32 graded</td><td class="g">174/175, +1.60</td><td>172/175, +1.87</td><td>17 / 0</td></tr><tr><td>8 robots, graded</td><td class="g">159/161, +1.24</td><td>159/161, +1.82</td><td>23 / 0</td></tr><tr><td>8 robots, frontier</td><td class="g">276/289 &mdash; the project&rsquo;s best result</td><td colspan="2">supervised planner: 161</td></tr></tbody></table><p class="note">** counted on the puzzles both runs solved.</p></div>
 <h3 id="st-failed"><span class="no">9</span>What failed, and why it mattered</h3>
 <ul class="plain"><li><strong>The textbook recipe lost.</strong> AlphaZero&rsquo;s visit-count target collapsed every exam. Scoring candidates by the certified cost of their finished plans is what makes training work.</li><li><strong>The base vocabulary was already full.</strong> Two rounds changed nothing, as predicted.</li><li><strong>Slide training failed twice.</strong> The search change did the work. The training change did not.</li><li><strong>One win vanished on a second seed.</strong> Every adopted result survived that test.</li></ul>
 <h3 id="st-limits"><span class="no">10</span>Limits, and what is next</h3>
-<ul class="plain"><li>Self-play training bought solve rate and speed, never shorter solutions.</li><li>The move-by-move planner still wins move quality (+0.12 vs +0.86).</li></ul>
+<ul class="plain"><li>Self-play training bought solve rate and speed, never shorter solutions.</li><li>The move-by-move planner still wins move quality (+0.12 vs +0.94).</li></ul>
 <p><strong>Next:</strong> the same loop at 80&times;80 and 96&times;96. No exact solver exists there. Physics certification is the only ground truth. The size-free networks run there unchanged.</p>
 </section>
 </div>
@@ -1058,7 +1065,7 @@ shorter and none got longer.</figcaption>
 <div class="panel" id="p11">
 <section id="glossary"><h2>Glossary</h2><p class='note'>Definitions quoted or condensed from PROBLEM.md and the inherited FINDINGS log; where a number can be read from a file instead of asserted, it is.</p><dl class="defs"><dt>playable-moves scoring</dt><dd>The only scoring the arena accepts: a solution counts as the number of <em>primitive moves actually executed</em> against the physics, after replay — not the abstract plan cost the planner thought it had. In the result JSONs this is <code>mean_realized_strict</code>, and <code>mean_moves</code> is set to it. PROBLEM.md &sect;7.</dd><dt>expansion budget</dt><dd>The fixed search budget every planner gets, so comparisons are apples-to-apples: 1200 node expansions with k=5 candidate children per expansion, as recorded in the <code>protocol</code> block of <code class="src">supervised_valuenet/scaling/results/g24r4/comparison.json</code>. Expansion definition recorded in the same file: <em>one popped search node whose children are generated (= 1 policy pass + 1 batched value pass over &lt;= k children, in both systems)</em>. Inside self-play <em>generation</em> you may spend more — but never in a way that biases what the data contains (&sect;4.3, &sect;6.5).</dd><dt>certification / replay</dt><dd>Nothing a network reports counts until it is replayed move-by-move against <code>simulate.py</code> physics (<code>eval/compare.py --dump-moves</code> + <code>eval/replay_validate.py</code>; <code>spr.arena</code> quarantines a run that fails). In the loop: <em>a backup value from an unrealized plan is a hypothesis; only realized, replayed plans update the record.</em> This is also the defense against the loop grading its own homework (a network cannot train on a solution it merely imagined). PROBLEM.md &sect;4.6.</dd><dt>subgoal / bottleneck / support / helper</dt><dd>The backward planner does not choose moves; it chooses <em>subgoals</em> — segment endpoints and helper placements — from a generated candidate set, reasoning from the goal backwards. A <em>helper</em> is any non-target robot; optimal play routinely parks helpers as blockers, which is exactly why a plan step may be &ldquo;put the blue robot <em>there</em>&rdquo; rather than a move. A <em>realization</em> step turns the subgoal plan into primitive moves and physics-verifies it. PROBLEM.md &sect;2, &sect;6.1.</dd><dt>backward vs forward planner</dt><dd>Two action-space views with separately trained nets. <em>Backward / subgoal</em>: shallow horizon (2&ndash;6 decisions), branching = candidate-set size; the strongest supervised planner and the recommended self-play main line. <em>Forward / move-level</em>: actions are primitive moves, deep horizon (8&ndash;30+), small branching; slower but near-optimal when it solves. Both appear in the <a href='#baselines'>Baselines</a> tables, read from the same comparison files.</dd><dt>base / B1 / B2 vocabulary</dt><dd>The language a plan is written in. <em>Base</em> names plan steps by absolute board cells. <em>B1</em> adds park repairs (shove a robot aside first). <em>B2</em> adds <em>by-reference</em> steps (&ldquo;park blue where red currently stands&rdquo;) — more expressive, far more expensive for the exact solver to label. A network taught from artificially limited B2 data inherited the limitation (main log, entry 68). Vocabulary separation is absolute: base and B2 datasets never mix. <strong>The self-play loop runs the extended (B2) vocabulary</strong>, with owner approval: the base vocabulary was measured as already saturated (see the <a href='#ceiling'>Ceiling tab</a>), so B2 self-play data is the training data on this page.</dd><dt>seed noise bars</dt><dd>Two runs that differ only in their random start can differ by ~3.4 solve and ~6.6 optimality points at 24&times;24 (main log, entries 67&ndash;71). The M1 gate uses those limits: <strong>3.5 solve points / 6.6 optimality points</strong>. Any claimed win must clear this bar, or compare puzzle-by-puzzle instead (the McNemar test). The measured spread for this repository's own files is computed live in the <a href='#baselines'>Baselines</a> tab.</dd><dt>fidelity gauge</dt><dd>At each decision: does the loop's own label pick the same best candidate as the exact solver would? Cheap to measure on boards up to 64&times;64. Calibrated by the supervised track: ~91% agreement &rarr; planners match exact-taught ones, ~89% keeps solve rate but loses optimality, ~82% collapses (FINDINGS 74). A slide below ~90% predicts a utility slide <em>before</em> the bench shows it — the loop's early-warning instrument. PROBLEM.md &sect;4.1.</dd><dt>lean boards</dt><dd>Boards generated at any size in seconds by <code>nn_labeler/leanboard.py</code> (3.8 s at 96&times;96 vs 11.9 h for the eager path), layout-identical to eager boards (checked cell for cell against the slow generator), computing distances only when asked. They make &ldquo;fresh instances every iteration&rdquo; essentially free — which is where self-play diversity comes from in a deterministic single-agent game (&sect;6.4).</dd><dt>d*</dt><dd>The exact move-optimal cost of an instance, from the Rust solver, stored per line in the pinned bench file. Exists only for boards up to 64&times;64 (the solver refuses larger boards), and only on the graded sets. Measured here: <code>data/bench450.jsonl</code> mean d* = 6.37 over 450 graded instances; <code>g24r4/bench.solved.jsonl</code> mean d* = 7.69 over 232 graded instances.</dd><dt>frontier set</dt><dd>The hard tail: the puzzles nothing had solved when the exam was fixed, so no optimum is known. Only solve rate and real move counts mean anything there — this page hides regret and optimality on frontier rows rather than print a meaningless number.</dd><dt>graded set</dt><dd>The complement: <code>bench.solved.jsonl</code> (and <code>eval/data/bench450.jsonl</code> at g16r4), where every instance carries d*, so % optimal and mean regret are defined.</dd><dt>supervised</dt><dd>Trained from provided answers. Here: planners taught from the exact solver&rsquo;s solutions. The opposite of self-play, which makes its own training data.</dd><dt>neural network (NN, &ldquo;net&rdquo;)</dt><dd>A trainable function. This project uses two small ones: the policy network and the value network.</dd><dt>policy network / value network</dt><dd>The two halves of the planner. The policy network proposes which sub-goal to try. The value network estimates how many steps a plan still needs.</dd><dt>A*</dt><dd>A classic search method: always continue from the partial plan that looks cheapest overall. The project&rsquo;s fast first-answer search.</dd><dt>MCTS</dt><dd>Monte-Carlo Tree Search &mdash; the tree search AlphaZero uses. It balances trying what looks good against checking what is unexplored.</dd><dt>greedy descent</dt><dd>No search at all: at every decision, take the value network&rsquo;s top pick and never look back.</dd><dt>zero-shot</dt><dd>Used on a task or board size it never trained on, with no adjustment.</dd><dt>epoch</dt><dd>One full pass over the training data.</dd><dt>arena</dt><dd>This project&rsquo;s benchmarking harness: fixed exams, fixed search budget, replay-checked scoring.</dd><dt>checkpoint</dt><dd>A saved copy of a network&rsquo;s weights &mdash; one file that can be loaded and run.</dd><dt>warm start</dt><dd>Start training from an existing checkpoint instead of random weights.</dd><dt>flagship</dt><dd>The project&rsquo;s best planner: the strict-move-trained networks plus the hybrid search that may make up to two ordinary moves before sub-goal planning.</dd><dt>McNemar test</dt><dd>A standard statistical test for paired yes/no outcomes &mdash; here: which puzzles each of two planners solved, puzzle by puzzle.</dd><dt>regret / extra moves</dt><dd>How many moves a solution uses beyond the proven optimum, averaged over solved puzzles with a known optimum.</dd><dt>node-hour (nh)</dt><dd>The cluster's cost unit — one full node for one hour; 1 GPU for 1 h = 0.125 nh. The whole supervised campaign cost ~27 nh; a self-play loop is more expensive by nature, which is why every milestone in PROBLEM.md &sect;8 carries an estimate.</dd></dl></section>
 </div>
-<footer>LOCAL FILE ONLY &mdash; generated 2026-08-26 21:18 UTC by <code>self_play_robots/report/gen_report.py</code> from files on disk; never published.</footer>
+<footer>LOCAL FILE ONLY &mdash; generated 2026-08-26 21:19 UTC by <code>self_play_robots/report/gen_report.py</code> from files on disk; never published.</footer>
 <script>
 (function () {
   var D = document, tabs = [].slice.call(D.querySelectorAll(".tabs a"));
