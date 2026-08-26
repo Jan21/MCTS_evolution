@@ -17,11 +17,9 @@ STORY_CSS = """
 .story .lede { font-size: 1.02rem; }
 .story h3 { margin-top: 2.6rem; font-size: 1.08rem; }
 .story h3 .no { color: var(--mut); font-weight: 500; margin-right: .35rem; }
-.story .toc { position: sticky; top: 2.32rem; z-index: 4; background: var(--bg);
-              border-bottom: 1px solid var(--line); padding: .4rem 0;
+.story .toc { border-bottom: 1px solid var(--line); padding: .4rem 0;
               font-size: .82rem; color: var(--mut); }
 .story .toc a { white-space: nowrap; margin-right: .7rem; }
-@media (max-width: 64rem) { .story .toc { position: static; } }
 .story .key { background: var(--card); border-left: 3px solid var(--acc);
               padding: .6rem .9rem; margin: 1.1rem 0; max-width: 42rem; }
 .story .fig { margin: 1.4rem 0; }
@@ -161,6 +159,7 @@ def _fig_ceiling() -> str:
   <text x="213" y="30" text-anchor="middle" class="bad-t">wall +1.17 (extended)</text>
   <line x1="273.5" y1="68" x2="273.5" y2="120" class="floorln"/>
   <text x="298" y="58" text-anchor="middle" class="bad-t">wall +1.63 (base)</text>
+  <line x1="286" y1="62" x2="276" y2="68" class="lead"/>
   <circle cx="60" cy="120" r="6" class="dot hollow"/>
   <text x="60" y="62" text-anchor="middle" class="ns">perfect play</text>
   <line x1="60" y1="66" x2="60" y2="112" class="lead"/>
@@ -172,8 +171,9 @@ def _fig_ceiling() -> str:
   <line x1="612" y1="94" x2="612" y2="112" class="lead"/>
 </svg>
 <figcaption><strong>The measured wall.</strong> No sub-goal planner can
-average less than +1.63 extra moves (base vocabulary), or +1.17 (extended).
-Training cannot change this. It is a limit of the vocabulary itself. (Tightened
+average less than +1.63 extra moves (base vocabulary), or +1.17 (extended:
+extra tricks, such as parking a robot aside first). Training cannot change
+this. It is a limit of the vocabulary itself. (Tightened
 probe. An earlier run measured +1.72 &mdash; see the
 <a href="#ceiling">Ceiling tab</a>.)</figcaption>
 </figure>'''
@@ -201,8 +201,8 @@ def _fig_break() -> str:
   <text x="120" y="90" text-anchor="middle" class="ns">move-by-move +0.07</text>
   <line x1="72" y1="94" x2="70" y2="112" class="lead"/>
   <circle cx="183.7" cy="120" r="8" class="dot acc"/>
-  <text x="184" y="164" text-anchor="middle" class="lbl">flagship +0.94</text>
-  <line x1="184" y1="152" x2="184" y2="130" class="lead"/>
+  <text x="170" y="164" text-anchor="middle" class="lbl">flagship +0.94</text>
+  <line x1="170" y1="151" x2="181" y2="129" class="lead"/>
   <circle cx="246.1" cy="120" r="6" class="dot"/>
   <text x="300" y="90" text-anchor="middle" class="ns">standard search +1.42</text>
   <line x1="266" y1="94" x2="248" y2="112" class="lead"/>
@@ -252,10 +252,11 @@ def _fig_loop() -> str:
   <path d="M694 210 C 470 140, 400 130, 340 108" class="arr acc dashed" marker-end="url(#sa-acc)"/>
   <text x="380" y="166" class="lbl">next round: better networks, new boards</text>
 </svg>
-<figcaption><strong>The loop&rsquo;s contract.</strong> Only a replayed,
-certified plan becomes a training record. An illegal shortcut fails the replay
-and leaves nothing. Only too-long plans can slip in. One mixed round: ~940
-puzzles, ~12,000 records, 5&ndash;6 hours on one GPU.</figcaption>
+<figcaption><strong>The loop&rsquo;s contract.</strong> An illegal shortcut
+fails the replay and leaves nothing. Only too-long plans can slip in. MCTS is
+the tree search that AlphaZero uses. Warm start: training continues from the
+last weights. One mixed round: ~940 puzzles, ~12,000 records, 5&ndash;6
+GPU-hours.</figcaption>
 </figure>'''
 
 
@@ -306,15 +307,15 @@ def _fig_heads() -> str:
   <text x="124" y="132" text-anchor="middle" class="ns">one vector per cell</text>
   <rect x="330" y="16" width="392" height="92" rx="8" class="nbox"/>
   <text x="526" y="40" text-anchor="middle" class="nt">value network head</text>
-  <text x="526" y="60" text-anchor="middle" class="ns">reads 5 marked cells</text>
-  <text x="526" y="78" text-anchor="middle" class="ns">output: cost distribution, 96 bins</text>
+  <text x="480" y="60" text-anchor="middle" class="ns">reads 5 marked cells</text>
+  <text x="480" y="78" text-anchor="middle" class="ns">output: cost distribution, 96 bins</text>
   <g>
-    <rect x="742" y="46" width="10" height="12" fill="var(--mut)"/>
-    <rect x="755" y="40" width="10" height="18" fill="var(--mut)"/>
-    <rect x="768" y="28" width="10" height="30" fill="var(--acc)"/>
-    <rect x="781" y="36" width="10" height="22" fill="var(--mut)"/>
-    <rect x="794" y="46" width="10" height="12" fill="var(--mut)"/>
-    <line x1="736" y1="58" x2="812" y2="58" class="axis"/>
+    <rect x="646" y="76" width="10" height="12" fill="var(--mut)"/>
+    <rect x="659" y="70" width="10" height="18" fill="var(--mut)"/>
+    <rect x="672" y="58" width="10" height="30" fill="var(--acc)"/>
+    <rect x="685" y="66" width="10" height="22" fill="var(--mut)"/>
+    <rect x="698" y="76" width="10" height="12" fill="var(--mut)"/>
+    <line x1="640" y1="88" x2="714" y2="88" class="axis"/>
   </g>
   <rect x="330" y="132" width="392" height="92" rx="8" class="nbox"/>
   <text x="526" y="156" text-anchor="middle" class="nt">policy network head</text>
@@ -443,7 +444,7 @@ def sec_story() -> str:
     out.append(
         '<p class="lede">A small pair of neural networks taught itself to '
         'solve Ricochet Robots puzzles. No human answers were used. On 200 '
-        'brand-new puzzles it solves 188. The old, human-taught planner '
+        'brand-new puzzles it solves 188. The human-taught planner '
         'solves 134. We also proved a hard quality limit of the planner&rsquo;s '
         'vocabulary. A small search change then broke that limit. '
         '<code>EXPLAINER.md</code> cites a source for every number here.</p>')
@@ -502,7 +503,7 @@ def sec_story() -> str:
     out.append('<h3 id="st-nets"><span class="no">5</span>Two small networks, any board size</h3>')
     out.append(
         '<p>The planner is two networks with one shared encoder design: '
-        '2,206,176 parameters. Tiny, on purpose.</p>')
+        '2,206,176 parameters.</p>')
     out.append(_fig_encoder())
     out.append(_fig_heads())
     out.append('<div class="tw"><table class="t"><thead><tr>'
@@ -588,7 +589,7 @@ def sec_story() -> str:
         'solutions.</li>'
         '<li>The move-by-move planner still wins move quality (+0.12 vs '
         '+0.86).</li>'
-        '<li>Repeating a good recipe does not compound.</li>'
+        
         '</ul>')
     out.append(
         '<p><strong>Next:</strong> the same loop at 80&times;80 and '
