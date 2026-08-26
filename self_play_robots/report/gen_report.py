@@ -451,6 +451,9 @@ def _pw_cell(pw):
                   cls="hlnum" if good else "")
 
 
+_H2H_WHY_SHOWN = False
+
+
 def h2h_table(entries, ref_labels, note_extra="", dstar=None):
     """One apples-to-apples table: common-subset moves + paired deltas.
 
@@ -473,7 +476,7 @@ def h2h_table(entries, ref_labels, note_extra="", dstar=None):
                    f"{r['perfect_n']} common puzzles with a known optimum; "
                    f"mean optimum {r['perfect_mean']:.2f})</span>"]
                   if perfect else [])
-               + ["mean expansions (budget)"])
+               + ["search effort (expansions)"])
     rows_ = []
     for e in r["entries"]:
         if not e["ok"]:
@@ -494,18 +497,25 @@ def h2h_table(entries, ref_labels, note_extra="", dstar=None):
                                 and e["delta_perfect"] < 1.0 else ""))
         cells.append(td(e["mean_exp"], ".0f"))
         rows_.append(row(cells))
-    note = ("Why these columns: a system&rsquo;s own &ldquo;mean moves&rdquo; averages over "
-            "the puzzles <em>it</em> solved, so raw means from two systems are NOT comparable "
-            "&mdash; the one that solves more hard puzzles looks worse. The "
-            "<strong>common-subset moves</strong> column scores every system on the exact same "
-            "puzzles, and each <strong>&Delta;</strong> column is paired on the puzzles both "
-            "systems solved (win/loss counts; p = fluke chance, exact sign test). "
-            + note_extra)
+    global _H2H_WHY_SHOWN
+    if _H2H_WHY_SHOWN:
+        why = ("Same fair-comparison rule as the first head-to-head table "
+               "above. ")
+    else:
+        why = ("Why these columns: a system&rsquo;s own &ldquo;mean moves&rdquo; averages over "
+               "the puzzles <em>it</em> solved, so raw means from two systems are NOT comparable "
+               "&mdash; the one that solves more hard puzzles looks worse. The "
+               "<strong>common-subset moves</strong> column scores every system on the exact same "
+               "puzzles. Each <strong>&Delta;</strong> column is paired on the puzzles both "
+               "systems solved, with win/loss counts and the fluke chance (p, exact sign test). ")
+        _H2H_WHY_SHOWN = True
+    note = why + note_extra
     return table(headers, rows_, note=note, cls="wide")
 
 
 BASE_HEADERS = ["config", "set", "system", "solve rate", "mean realized moves",
-                "mean regret", "% optimal", "mean expansions", "mean s/inst",
+                "extra moves vs optimum", "% optimal",
+                "search effort (expansions)", "seconds per puzzle",
                 "source file"]
 
 
@@ -646,6 +656,8 @@ def sources_txt(entry) -> str:
     bits = []
     for s in ss:
         p = SPR / s if not Path(s).is_absolute() else Path(s)
+        if not p.exists() and not Path(s).is_absolute() and (REPO / s).exists():
+            p = REPO / s
         # sources may be dirs, globs or brace patterns -- expand before judging
         cand = str(p)
         found = p.exists()
@@ -1090,11 +1102,13 @@ def seed_spread_line() -> str:
     if not bits:
         return ""
     return ("<p class='note'><strong>The yardstick, measured from these very "
-            "files.</strong> Two runs of the <em>same</em> arm at g24r4 that "
-            "differ only in random seed — " + "; ".join(bits) +
-            ". PROBLEM.md &sect;4.7 quotes ~3.4 solve / ~6.6 optimality points "
-            "and &sect;8 turns that into the M1 gate (3.5 / 6.6). Any "
-            "self-play win smaller than this bar has shown nothing.</p>")
+            "files.</strong> Two identical 24&times;24 runs differing only in "
+            "their random start disagree by "
+            + "; ".join(b.replace("NN-twin pair", "the NN-taught twin pair")
+                        .replace("exact-taught pair", "the exact-taught pair")
+                        for b in bits) +
+            ". The project brief rounds this to the 3.5-solve / 6.6-optimality "
+            "gate. Any win smaller than this bar is noise.</p>")
 
 
 def sec_baselines() -> str:
@@ -1126,11 +1140,11 @@ def sec_baselines() -> str:
                "system&rsquo;s own aggregates (useful as provenance, but its moves "
                "columns are computed over different solve sets and must not be "
                "compared across rows). The tables here fix that: all systems on one "
-               "exam are scored on the <em>same</em> puzzles. &ldquo;This "
-               "project&rdquo; rows: the mixed-size self-play curriculum&rsquo;s "
-               "final nets (<code>mix_b2mix_iter3</code>, B2 anytime) at 24/32/8r; "
-               "at 16&times;16 the M1 size-free pair (no self-play loop ran "
-               "there).</p>")
+               "exam are scored on the <em>same</em> puzzles. The &ldquo;this "
+               "project&rdquo; rows use the final self-play networks (the run "
+               "name sits in each row label). At 16&times;16 they use this "
+               "project&rsquo;s size-free network pair instead, because no "
+               "self-play loop ran at that size.</p>")
     h2h_specs = [
         ("g16r4", "16&times;16, 4 robots &mdash; legacy 450-puzzle exam", [
             CmpEntry("backward supervised",
@@ -1228,38 +1242,40 @@ def sec_baselines() -> str:
             rows_.extend(baseline_rows(cfg, rel, cls="op"))
         rows_.append(ceiling_row(cfg, bench))
     out.append(table(BASE_HEADERS, rows_,
-                     note="Columns: <em>solve rate</em> = "
+                     note="Every number is read straight off that row&rsquo;s result "
+                          "file. A row&rsquo;s moves average covers only the puzzles "
+                          "that system solved, so rows here are provenance, not a "
+                          "fair race &mdash; compare systems in the head-to-head "
+                          "tables above. &ldquo;frontier&rdquo; marks exams with no "
+                          "known optimum, and the <em>exact optimum</em> row is the "
+                          "ceiling nothing can beat. "
+                          "<details><summary>Column definitions, field by field "
+                          "(for auditors)</summary>Columns: <em>solve rate</em> = "
                           "<code>aggregate.solved</code>/<code>aggregate.n</code> "
                           "and <code>aggregate.solve_rate</code>; <em>mean "
                           "realized moves</em> = <code>aggregate.mean_moves</code> "
                           "(identical to <code>mean_realized_strict</code> for "
                           "backward systems — playable moves after physics "
-                          "replay); <em>mean regret</em> = "
+                          "replay); <em>extra moves vs optimum</em> = "
                           "<code>aggregate.mean_regret</code>; <em>% optimal</em> "
-                          "= <code>aggregate.pct_optimal</code>; <em>mean "
-                          "expansions</em> / <em>mean s/inst</em> = "
+                          "= <code>aggregate.pct_optimal</code>; <em>search "
+                          "effort</em> / <em>seconds per puzzle</em> = "
                           "<code>aggregate.mean_expansions</code> / "
                           "<code>mean_seconds</code>; <em>set</em> is "
                           "<em>frontier</em> when the aggregate carries "
                           "<code>d_star_placeholder</code> or the protocol's "
                           "instances file has no <code>d_star</code> at all "
                           "(regret and optimality are then suppressed, because "
-                          "no optimum exists there). The <em>exact optimum</em> "
-                          "row is the mean <code>d_star</code> of the bench "
-                          "JSONL itself — the ceiling nothing can beat. "
-                          "<strong>Careful:</strong> a system's mean moves and "
-                          "mean regret average over the instances "
-                          "<em>it solved</em>, while the exact-optimum row "
-                          "averages the whole file, so a system that solves "
-                          "only the easy subset can print a mean below the "
-                          "file's mean d* without being better than optimal — "
-                          "always read mean moves next to solve rate, which is "
-                          "exactly why PROBLEM.md &sect;1 makes solve rate the "
-                          "qualifier on the moves metric.",
+                          "no optimum exists there). The exact-optimum row "
+                          "averages the whole file while a system averages its "
+                          "own solves, so a system solving only the easy subset "
+                          "can print a mean below the file's mean d* without "
+                          "being better than optimal — always read mean moves "
+                          "next to solve rate (PROBLEM.md &sect;1).</details>",
                      cls="wide"))
     out.append(
-        "<p class='note'>Reading the g32r4 pair the way PROBLEM.md &sect;7 "
-        "does: the forward planner is slower but near-optimal when it solves, "
+        "<p class='note'>Reading the 32&times;32 pair the way the project "
+        "brief does: the forward planner is slower but near-optimal when it solves, "
         "the backward planner solves more and faster but further from optimal. "
         "<strong>Beating backward on moves while matching its solve rate "
         "&asymp; closing toward forward's quality at backward's speed — that "
@@ -1954,8 +1970,9 @@ def agg_cells(d, a, moves_spec=".2f"):
             td(a.get("mean_seconds"), ".2f")]
 
 
-AGG_HEADERS = ["solved / rate", "mean moves", "mean regret", "% optimal",
-               "mean exp", "s/inst"]
+AGG_HEADERS = ["solved (count &middot; rate)", "moves (that run's solves)",
+               "extra moves vs optimum", "% optimal",
+               "search effort (expansions)", "s/puzzle"]
 AGG_NOTE = ("<em>solved / rate</em> = <code>aggregate.solved</code>/<code>n</code> "
             "and <code>solve_rate</code>; <em>mean moves</em> = "
             "<code>aggregate.mean_moves</code> (over solved rows; = "
@@ -1985,8 +2002,9 @@ def paired_cells(pr):
     return [td_txt(solves), td_txt(moves), td_txt(wins)]
 
 
-PAIRED_HEADERS = ["solves A&minus;only / B&minus;only (McNemar)",
-                  "moves A vs B (both solved)", "moves wins/losses (sign)"]
+PAIRED_HEADERS = ["solves: only-A / only-B (fluke chance)",
+                  "moves on puzzles both solved (A vs B)",
+                  "move wins A/B (fluke chance)"]
 PAIRED_NOTE = ("Paired columns come from the <code>paired</code> block "
                "(<code>spr.gate.paired</code>): <code>a_only</code>/"
                "<code>b_only</code> = instances solved by only one side, "
@@ -2027,12 +2045,14 @@ def m1_pairs():
 
 def sub_m1() -> str:
     out = ['<h3 id="res-m1">M1 &mdash; size-free rebuild vs the per-size supervised pairs</h3>',
-           "<p class='note'>Every pair benched with the arena's own A* loop "
-           "(<code>spr.bench --search arena_astar --prefix-check</code>, 1200 "
-           "expansions, k=5, replay-certified) on both pinned exams; the gate "
-           "file (<code>spr.gate m1</code>) compares it with the per-size "
-           "supervised base-vocabulary pair on the same exam: PASS = solve rate "
-           "within 3.5 pts AND % optimal within 6.6 pts (PROBLEM.md &sect;8).</p>"]
+           "<p class='note'>Every pair is benched by the standard harness on "
+           "both pinned exams, with every solution replay-checked. The gate "
+           "compares it with the recorded per-size supervised pair on the same "
+           "exam. PASS means solve rate within 3.5 points and optimality "
+           "within 6.6 points. <details><summary>Exact command and gate file"
+           "</summary><code>spr.bench --search arena_astar --prefix-check"
+           "</code>, 1200 expansions, k=5; gate = <code>spr.gate m1</code> "
+           "(PROBLEM.md &sect;8).</details></p>"]
     labels = dict(M1_PAIRS)
     rows_ = []
     any_ = False
@@ -2073,14 +2093,14 @@ def sub_m1() -> str:
     out.append(table(["pair (nets)", "exam", *AGG_HEADERS,
                       "ref solved", "ref moves", "ref regret", "ref % opt",
                       "M1 gate", *PAIRED_HEADERS, "source"], rows_,
-                     note=AGG_NOTE + " Reference columns = the <code>ref</code> "
+                     note="Same column rules as defined once at the top of this tab. " + (" Reference columns = the <code>ref</code> "
                           "block of the <code>.gate.json</code> (the recorded "
                           "per-size supervised pair named in <code>ref_desc</code>); "
                           "gate verdict = its <code>pass</code>, "
                           "<code>delta_solve_pts</code>, <code>delta_opt_pts</code>. "
                           + PAIRED_NOTE + " A = the size-free pair, B = the "
                           "supervised reference.",
-                     cls="wide"))
+                     cls="wide")))
     if not any_:
         out.append(pend_note(f"nothing under {disp(RESULTS / 'm1')}"))
     return "\n".join(out)
@@ -2142,7 +2162,7 @@ def sub_m2() -> str:
                 td_txt(src(disp(f)) + (f"<br>{src(disp(g))}" if pr else "")),
             ], hl))
     out.append(table(["search variant", *AGG_HEADERS, *PAIRED_HEADERS, "source"],
-                     rows_, note=AGG_NOTE + " " + PAIRED_NOTE
+                     rows_, note="Same column rules as defined once at the top of this tab. "
                      + " A = the variant, B = greedy on the same exam.",
                      cls="wide"))
     return "\n".join(out)
@@ -2237,12 +2257,12 @@ def sub_transfer() -> str:
                               DASH, DASH,
                               td_txt(src(disp(c["file"])))], "ceil"))
     out.append(table(["nets", "search", *AGG_HEADERS, "source"], rows_,
-                     note=AGG_NOTE + " Ceiling row: <code>summary.n_realizable</code>/"
+                     note="Same column rules as defined once at the top of this tab. " + (" Ceiling row: <code>summary.n_realizable</code>/"
                           "<code>n</code> of the matching <code>results/ceiling/</code> "
                           "file; its regret column is <code>mean_gap_best</code> "
                           "(the best expressible plan's gap to d*), its % optimal "
                           "<code>pct_best_optimal</code>.",
-                     cls="wide"))
+                     cls="wide")))
     return "\n".join(out)
 
 
@@ -2448,7 +2468,7 @@ def sub_mix() -> str:
                 td_txt(" ".join(srcs) if srcs else "&mdash;"),
             ], "hl" if k == max(ks) else ""))
         out.append(table(MIX_HEADERS, rows_,
-                         note=AGG_NOTE + " The frontier columns come from "
+                         note="Same column rules as defined once at the top of this tab. " + (" The frontier columns come from "
                               "<code>bench_&lt;cfg&gt;_frontier_astar.json</code> "
                               "(<code>bench.unsolved.jsonl</code>: no d* exists "
                               "there, so no regret column); generation columns "
@@ -2459,7 +2479,7 @@ def sub_mix() -> str:
                               "iteration), which the job writes from iteration 2 "
                               "on. Iteration-0 and supervised rows are read from "
                               "the files named in the last column.",
-                         cls="wide"))
+                         cls="wide")))
     return "\n".join(out)
 
 
@@ -2770,9 +2790,10 @@ def sub_audit() -> str:
 def sub_forward() -> str:
     out = ['<h3 id="res-fwd">Forward (primitive-move) arm &mdash; <code>spr/fwd</code></h3>',
            "<p class='note'>The comparison arm in the natural AlphaZero action "
-           "space (PROBLEM.md &sect;6.1): PUCT over slides with the MoveNet guide. "
-           "F-M0 = parity vs the recorded forward row; F-M2 = search variants on "
-           "bench450; F-g24 = the same at 24&times;24 (when it lands).</p>"]
+           "space: AlphaZero-style tree search over single robot moves, guided "
+           "by the move network. F-M0 checks the harness reproduces the "
+           "recorded forward result. F-M2 tries the search variants on the "
+           "450-puzzle exam. F-g24 repeats that at 24&times;24.</p>"]
     dirs = [("fwd_m0", "F-M0 &mdash; parity"), ("fwd_m2", "F-M2 &mdash; search variants at g16r4"),
             ("fwd_g24", "F-g24 &mdash; 24&times;24")]
     seen = {n for n, _ in dirs}
@@ -2816,10 +2837,10 @@ def sub_forward() -> str:
                               td_txt(src(disp(f)))]))
         if rows_:
             out.append(table(["arm", *AGG_HEADERS, "paired (.vs_*.json)", "source"], rows_,
-                             note=AGG_NOTE + " Paired column: every "
+                             note="Same column rules as defined once at the top of this tab. " + (" Paired column: every "
                                   "<code>&lt;arm&gt;.vs_&lt;other&gt;.json</code> next to the "
                                   "arm file, A = the arm, B = the other.",
-                             cls="wide"))
+                             cls="wide")))
         else:
             out.append(pend_note(f"no comparison payload under {disp(d_)}"))
     return "\n".join(out)
@@ -3169,6 +3190,10 @@ def sec_results() -> str:
              "files have not landed the cells read <em>pending</em>. Definitions "
              "of the columns are under each table; the reading of the numbers "
              "lives in " + src("self_play_robots/FINDINGS.md") + ".</p>",
+           "<p class='note'>Columns are defined once here &mdash; every table "
+           "in this tab uses the same rules. <details><summary>Column "
+           "definitions, field by field (for auditors)</summary>" + AGG_NOTE
+           + " " + PAIRED_NOTE + "</details></p>",
            "<p class='note'>Jump to: <a href='#res-m1'>M1</a> &middot; "
            "<a href='#res-m2'>M2</a> &middot; <a href='#res-transfer'>transfer / headroom</a> "
            "&middot; <a href='#res-fwd'>forward arm</a> &middot; <a href='#res-loops'>loop "

@@ -12,7 +12,7 @@ from variants import Variant
 VARIANT = Variant(
     vid="v04_deep_emit",
     axis="data",
-    title="Emit all expanded decisions (knob sanity-control)",
+    title="Train on every examined decision (sanity check: small tweak)",
     hypothesis="Off-principal-path certified decisions are cheap extra signal: "
                "same generation budget, ~2x records, better generalization on "
                "unseen boards.",
