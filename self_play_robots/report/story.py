@@ -173,7 +173,7 @@ def _fig_ceiling() -> str:
 <figcaption><strong>The measured wall.</strong> No sub-goal planner can
 average less than +1.63 extra moves (base vocabulary), or +1.17 (extended:
 extra tricks, such as parking a robot aside first). Training cannot change
-this. It is a limit of the vocabulary itself. (An earlier, looser run
+this. It is a limit of the vocabulary itself. (An earlier, shallower probe
 measured +1.72 &mdash; see the <a href="#ceiling">Ceiling tab</a>.)</figcaption>
 </figure>'''
 
@@ -212,7 +212,9 @@ def _fig_break() -> str:
 <figcaption><strong>The wall, crossed.</strong> Same networks, same budget.
 The standard search stays right of the wall (+1.42). The hybrid is the only
 planner left of it (+0.94). On the same puzzles, 40 solutions got
-shorter and none got longer.</figcaption>
+shorter and none got longer. (The supervised dot uses its recorded file,
++4.22; a re-run on this machine gives +4.20 &mdash; rounding drift explained
+on the M0 tab.)</figcaption>
 </figure>'''
 
 
@@ -251,7 +253,7 @@ def _fig_loop() -> str:
   <path d="M694 210 C 470 140, 400 130, 340 108" class="arr acc dashed" marker-end="url(#sa-acc)"/>
   <text x="380" y="166" class="lbl">next round: better networks, new boards</text>
 </svg>
-<figcaption><strong>The loop&rsquo;s contract.</strong> An illegal shortcut
+<figcaption><strong>The loop&rsquo;s contract.</strong> A label = the answer a network trains toward. An illegal shortcut
 fails the replay and leaves nothing. Only too-long plans can slip in. In the
 diagram: MCTS is the tree search that AlphaZero uses. Noise = small random
 nudges at the search&rsquo;s first choice, so rounds explore differently.
@@ -297,7 +299,10 @@ that say which cells may exchange information &mdash; not input channels, so
 information moves only along legal slides. There are no positional embeddings
 (no cell-number table baked into the weights), so nothing depends on board
 size. One saved network file runs on any board. Twelve passes of the same
-block let information travel twelve slides. The block is 740,928 of each
+block let information travel twelve slides. In the diagram: the scratchpad
+token is one extra cell-less slot the network may use as working memory;
+helper-free slides are moves that need no blocker; the mixing layer blends
+each cell&rsquo;s information after the attention step. The block is 740,928 of each
 network&rsquo;s parameters. With its own head on top, the value network
 totals 982,944 and the policy network 1,223,232.</figcaption>
 </figure>'''
@@ -371,7 +376,7 @@ def _fig_expansion() -> str:
   <line x1="800" y1="72" x2="828" y2="72" class="arr ink" marker-end="url(#sa-ink)"/>
 </svg>
 <figcaption><strong>One expansion</strong> = one policy call + one batched
-value call. Exams allow 1,200 per puzzle. Physics checks do not count
+value call. Exams allow 1,200 expansions per puzzle. Physics checks do not count
 against the search budget. The budget counts network calls only &mdash; the
 same rule the benchmark uses. A failed replay removes the plan from the
 tree.</figcaption>
@@ -384,7 +389,7 @@ def _journey_tree() -> str:
   <li><span class="what">Start: supervised planners + one small size-free value net</span>
     <ul>
       <li><span class="chip good">&#10003; kept</span> <span class="what">Rebuild both networks size-free</span>
-          <span class="why">One pair beat the specialist 24&times;24 planner: 215 vs 205, with 5&times; less search.</span>
+          <span class="why">One pair beat the specialist 24&times;24 planner: 215 vs 205 of 232, with 5&times; less search.</span>
         <ul>
           <li><span class="chip bad">&#10007; flat</span> <span class="what">Self-play, base vocabulary</span>
               <span class="why">Two rounds changed nothing, as the wall predicted. A clean negative result.</span>
@@ -393,7 +398,7 @@ def _journey_tree() -> str:
                   <span class="why">Frontier solves went 133 &rarr; 158. The loop learned speed: 26 expansions now match an old 500-expansion search. Moves did not improve.</span>
                 <ul>
                   <li><span class="chip good">&#10003; jump</span> <span class="what">Mixed-size training: 24&times;24 + 32&times;32 + 8 robots</span>
-                      <span class="why">One round ended the stall. Frontier solves: 170, 235 and 269 on the three board types. Later rounds were flat.</span>
+                      <span class="why">One round ended the stall. Frontier solves: 170, 235 and 269 &mdash; of 218, 275 and 289 hard puzzles, one frontier exam per board type. Later rounds were flat.</span>
                     <ul>
                       <li><span class="what">The experiment lab: 11 ideas, one change each</span>
                           <span class="why">Same start networks, same budget, a 200-puzzle unseen exam. Every claim needs a second seed &mdash; a rerun with different random starting conditions.</span>
@@ -401,7 +406,7 @@ def _journey_tree() -> str:
                           <li><span class="chip bad">&#10007; killed</span> <span class="what">v01 &middot; AlphaZero&rsquo;s own policy target</span>
                               <span class="why">v01 replaced our scoring rule (score a candidate by the verified cost of the plans that used it) with AlphaZero&rsquo;s (prefer what the search visited most). Training collapsed on every exam (fluke chance below one in a million). Our rule is what makes the training work.</span></li>
                           <li><span class="chip good">&#10003; adopted</span> <span class="what">v04 &middot; keep every examined decision</span>
-                              <span class="why">Twice the records from the same search. A replicated win on the hard set.</span></li>
+                              <span class="why">Twice the records from the same search. A replicated win on the frontier exam.</span></li>
                           <li><span class="chip warn">~ did not repeat</span> <span class="what">v06 &middot; a different way to randomise the search&rsquo;s first choices</span>
                               <span class="why">Won at seed 7, reversed at seed 8. The two-seed rule caught it.</span></li>
                           <li><span class="chip ctl">control</span> <span class="what">v08 &middot; cold start from random weights</span>
@@ -412,14 +417,14 @@ def _journey_tree() -> str:
                               <span class="why">Flat after one round. Flat after three.</span></li>
                           <li><span class="chip good">&#10003; adopted</span> <span class="what">v14 &middot; v04 + v09 together</span>
                               <span class="why">Wins the unseen exam at both seeds. The lab&rsquo;s recipe.</span></li>
-                          <li><span class="chip bad">&#10007; killed twice</span> <span class="what">v15, v16 &middot; teach the networks about slides</span>
+                          <li><span class="chip bad">&#10007; killed twice</span> <span class="what">v15, v16 &middot; train on practice positions nudged one slide</span>
                               <span class="why">Flat, both seeds, twice. The networks already handle post-slide positions.</span></li>
                           <li><span class="chip good">&#10003; the break</span> <span class="what">v07 &middot; the hybrid search</span>
                               <span class="why">Try one or two ordinary moves first, then plan. The only change that went below the wall. No retraining needed.</span></li>
                         </ul>
                       </li>
                       <li><span class="chip good">&#10003; flagship</span> <span class="what">= the v09 networks + the hybrid search, two ordinary moves allowed first</span>
-                          <span class="why">Chosen by rule: every part survived its control and its second seed.</span></li>
+                          <span class="why">Chosen by rule: every part survived its matched control (an identical run without that one change) and its second seed.</span></li>
                     </ul>
                   </li>
                 </ul>
@@ -476,8 +481,8 @@ def sec_story() -> str:
         'the three exams:</p>')
     out.append('<div class="tw"><table class="t"><thead><tr>'
                '<th>exam</th><th>puzzles</th><th>meaning</th></tr></thead><tbody>'
-        '<tr><td>graded</td><td>232</td><td>optimum known (7.59 moves average)</td></tr>'
-        '<tr><td>frontier</td><td>218</td><td>the exact solver failed</td></tr>'
+        '<tr><td>graded</td><td>232</td><td>optimum known (perfect play averages 7.69 moves over all 232)</td></tr>'
+        '<tr><td>frontier</td><td>218</td><td>the exact solver failed (this is the 24&times;24 set; other board types have their own)</td></tr>'
                '<tr><td>unseen</td><td>200</td><td>fresh boards, never trained on (137 have a known optimum)</td></tr>'
                '</tbody></table></div>')
     out.append(
@@ -525,10 +530,13 @@ def sec_story() -> str:
                '<tr><td>policy</td><td>board, no candidate shown</td><td>which sub-goal to try</td><td>1,223,232</td></tr>'
                '</tbody></table></div>')
     out.append(
-        '<p>The networks trained only at 16&times;16 and 24&times;24. Audited '
+        '<p>The first networks trained at 16&times;16 and 24&times;24 (the '
+        'loop later added 32&times;32 and 8-robot boards). Audited '
         'up to 64&times;64 with the same measuring tool as its teacher, the '
-        'value network beats the teacher at every size (<a href="#res-audit">'
-        'live table</a>).</p>')
+        'loop&rsquo;s starting value network beats the teacher at every size '
+        '(<a href="#res-audit">live table</a>; later 24&times;24-only '
+        'practice trades some of this away &mdash; see that table&rsquo;s '
+        'note).</p>')
 
     # 6
     out.append('<h3 id="st-search"><span class="no">6</span>One search step</h3>')
@@ -567,24 +575,30 @@ def sec_story() -> str:
                '</tbody></table>'
                '<p class="note">* both starred columns count only the 137 puzzles '
                'with a known optimum, restricted to the ones that system '
-               'solved.</p></div>')
+               'solved. The Variants tab shows +0.90 for the same planner: '
+               'that counts only the 93 puzzles every system solved &mdash; a '
+               'smaller, easier set. Both are true.</p></div>')
     out.append(
         '<p>The move-by-move planner is almost perfect when it solves. But '
         'it solves half the exam, at far higher cost. The '
         'goal &mdash; at least as many solves as the baseline, with fewer '
         'moves &mdash; is met.</p>')
     out.append(
-        '<p><strong>Transfer.</strong> All development used 24&times;24 '
-        'boards with 4 robots. Run unchanged elsewhere:</p>')
+        '<p><strong>Transfer.</strong> The hybrid search itself was developed '
+        'at 24&times;24 with 4 robots only. Run unchanged elsewhere:</p>')
     out.append('<div class="tw"><table class="t"><thead><tr>'
                '<th>new exam</th><th>hybrid</th><th>matched control</th>'
                '<th>move wins (shorter / longer)**</th></tr></thead><tbody>'
                '<tr><td>32&times;32 graded</td><td class="g">174/175, +1.60</td><td>172/175, +1.87</td><td>17 / 0</td></tr>'
                '<tr><td>8 robots, graded</td><td class="g">159/161, +1.24</td><td>159/161, +1.82</td><td>23 / 0</td></tr>'
-               '<tr><td>8 robots, frontier</td><td class="g">276/289 &mdash; the project&rsquo;s best result</td><td colspan="2">supervised planner: 161</td></tr>'
+               '<tr><td>8 robots, frontier</td><td class="g">276/289; won the move '
+               'comparison on 82 of 84 differing puzzles</td>'
+               '<td>279/289, far more moves</td>'
+               '<td>82 / 2</td></tr>'
                '</tbody></table>'
-               '<p class="note">** counted on the puzzles both runs '
-               'solved.</p></div>')
+               '<p class="note">** counted on the puzzles both runs solved. On the '
+               '8-robot frontier the supervised planner solves 161 of '
+               '289.</p></div>')
 
     # 9
     out.append('<h3 id="st-failed"><span class="no">9</span>What failed, and why it mattered</h3>')
@@ -607,8 +621,9 @@ def sec_story() -> str:
         '<ul class="plain">'
         '<li>Self-play training bought solve rate and speed, never shorter '
         'solutions.</li>'
-        '<li>The move-by-move planner still wins move quality (+0.12 vs '
-        '+0.94).</li>'
+        '<li>On the standard exam the flagship&rsquo;s move gap to the '
+        'move-by-move planner is 0.87 on shared solves. On new boards that '
+        'planner stays near-perfect (+0.12) but solves barely half.</li>'
         
         '</ul>')
     out.append(
