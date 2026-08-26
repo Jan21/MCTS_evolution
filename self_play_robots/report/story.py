@@ -154,9 +154,9 @@ def _fig_ceiling(with_flagship: bool) -> str:
   <circle cx="69.2" cy="96" r="6" class="dot"/>
   <text x="97" y="63" text-anchor="middle" class="ns">move-by-move</text>
   <text x="97" y="76" text-anchor="middle" class="ns">planner +0.07</text>
-  <circle cx="610.2" cy="96" r="6" class="dot"/>
+  <circle cx="612.8" cy="96" r="6" class="dot"/>
   <text x="610" y="63" text-anchor="middle" class="ns">supervised sub-goal</text>
-  <text x="610" y="76" text-anchor="middle" class="ns">planner +4.20</text>
+  <text x="610" y="76" text-anchor="middle" class="ns">planner +4.22</text>
   <line x1="273.5" y1="52" x2="273.5" y2="96" class="floorln"/>
   <text x="290" y="46" text-anchor="middle" class="bad-t">+1.63 &mdash; base floor</text>
   <line x1="213.3" y1="34" x2="213.3" y2="96" class="floorln"/>
@@ -165,7 +165,7 @@ def _fig_ceiling(with_flagship: bool) -> str:
         aria = ("A number line of extra moves versus perfect play. Perfect play "
                 "at 0, the move-by-move planner at +0.07, two dashed walls at "
                 "+1.17 and +1.63 (the sub-goal language floors), and the "
-                "supervised sub-goal planner far right at +4.20.")
+                "supervised sub-goal planner far right at +4.22.")
     else:
         extra = '''
   <circle cx="60" cy="118" r="6" class="dot hollow"/>
@@ -179,8 +179,8 @@ def _fig_ceiling(with_flagship: bool) -> str:
   <circle cx="246.1" cy="118" r="6" class="dot"/>
   <text x="292" y="81" text-anchor="middle" class="ns">same networks, standard</text>
   <text x="292" y="95" text-anchor="middle" class="ns">search, same budget +1.42</text>
-  <circle cx="610.2" cy="118" r="6" class="dot"/>
-  <text x="610" y="98" text-anchor="middle" class="ns">supervised +4.20</text>
+  <circle cx="612.8" cy="118" r="6" class="dot"/>
+  <text x="610" y="98" text-anchor="middle" class="ns">supervised +4.22</text>
   <line x1="213.3" y1="44" x2="213.3" y2="118" class="floorln"/>
   <text x="228" y="38" text-anchor="middle" class="bad-t">the +1.17 wall</text>'''
         h, axis_y = 190, 118
@@ -201,7 +201,7 @@ def _fig_ceiling(with_flagship: bool) -> str:
   <text x="385" y="{axis_y + 44}" text-anchor="middle" class="cap">extra moves per puzzle vs perfect play (24&times;24 graded exam) &mdash; each system&rsquo;s mean over its own solved set</text>
   {extra}
 </svg>
-<figcaption>{"<strong>The measured wall.</strong> No planner speaking the sub-goal language &mdash; however trained, however long it searches &mdash; can average less than <strong>+1.63</strong> extra moves (base vocabulary) or <strong>+1.17</strong> (extended &ldquo;B2&rdquo; vocabulary: transient blockers, reusing robots already in the plan, shoving a nuisance robot aside first). The optimal move sequence sometimes does things a sub-goal simply cannot say. A <em>language limit, not a learning limit</em> &mdash; and the move-by-move planner&rsquo;s +0.07 shows how much is left on the table." if not with_flagship else "<strong>The breakthrough, drawn.</strong> With the same networks and the same budget, the standard search stays right of the wall (+1.42); the hybrid is the only planner to its left (+0.944, 231 of 232 solved, 68% solved perfectly; depth&nbsp;3 pushes to +0.861). Paired on identical puzzles: 40/0 move wins &mdash; fluke odds below one in a trillion. The wall applies to <em>pure</em> sub-goal planners; the hybrid steps outside the language, which is precisely the point."}</figcaption>
+<figcaption>{"<strong>The measured wall.</strong> No planner speaking the sub-goal language &mdash; however trained, however long it searches &mdash; can average less than <strong>+1.63</strong> extra moves (base vocabulary) or <strong>+1.17</strong> (extended &ldquo;B2&rdquo; vocabulary: transient blockers, reusing robots already in the plan, shoving a nuisance robot aside first). The optimal move sequence sometimes does things a sub-goal simply cannot say. (+1.63 is the tightened probe; the <a href='#ceiling'>Ceiling tab</a> also shows the earlier, looser +1.72 run.) A <em>language limit, not a learning limit</em> &mdash; and the move-by-move planner&rsquo;s +0.07 shows how much is left on the table." if not with_flagship else "<strong>The breakthrough, drawn.</strong> With the same networks and the same budget, the standard search stays right of the wall (+1.42); the hybrid is the only planner to its left (+0.944, 231 of 232 solved, 68% solved perfectly; depth&nbsp;3 pushes to +0.861). Paired on identical puzzles: 40/0 move wins &mdash; fluke odds below one in a trillion. The wall applies to <em>pure</em> sub-goal planners; the hybrid steps outside the language, which is precisely the point."}</figcaption>
 </figure>'''
 
 
@@ -278,6 +278,7 @@ def _fig_arch() -> str:
   <text x="375" y="192" text-anchor="middle" class="ns">concat &rarr; 192 &middot; + feed-forward 192&rarr;768&rarr;192</text>
   <text x="375" y="215" text-anchor="middle" class="lbl">applied &times;12 &mdash; the same weights every time</text>
   <text x="375" y="232" text-anchor="middle" class="ns">740,928 params (untied it would be 8,891,136)</text>
+  <text x="375" y="248" text-anchor="middle" class="ns">each network trains its OWN copy of this block</text>
   <path d="M510 118 C 546 128, 546 176, 510 186" class="arr acc dashed" marker-end="url(#sa-acc)"/>
   <text x="536" y="156" class="lbl">&times;12</text>
   <line x1="172" y1="106" x2="232" y2="120" class="arr ink" marker-end="url(#sa-ink)"/>
@@ -285,7 +286,7 @@ def _fig_arch() -> str:
   <text x="196" y="230" class="cap">masks gate</text>
   <text x="196" y="244" class="cap">the attention</text>
   <rect x="600" y="30" width="286" height="128" rx="8" class="nbox"/>
-  <text x="743" y="52" text-anchor="middle" class="nt">value head &middot; 982,944 params total</text>
+  <text x="743" y="52" text-anchor="middle" class="nt">value network &mdash; 982,944 params in all</text>
   <text x="743" y="72" text-anchor="middle" class="ns">gather 5 cells (start, end, B, S, H) &rarr; MLP</text>
   <text x="743" y="88" text-anchor="middle" class="ns">output: a distribution over 96 cost bins</text>
   <g>
@@ -301,7 +302,7 @@ def _fig_arch() -> str:
   <text x="743" y="132" text-anchor="middle" class="ns">reported value = the distribution&rsquo;s mean;</text>
   <text x="743" y="146" text-anchor="middle" class="ns">trained on certified costs, + a ranking loss</text>
   <rect x="600" y="180" width="286" height="118" rx="8" class="nbox"/>
-  <text x="743" y="202" text-anchor="middle" class="nt">policy head &middot; 1,223,232 params total</text>
+  <text x="743" y="202" text-anchor="middle" class="nt">policy network &mdash; 1,223,232 params in all</text>
   <rect x="614" y="214" width="76" height="30" rx="5" class="nbox alt"/>
   <text x="652" y="233" text-anchor="middle" class="ns">bottleneck?</text>
   <rect x="706" y="214" width="76" height="30" rx="5" class="nbox alt"/>
@@ -323,8 +324,10 @@ def _fig_arch() -> str:
 (<code>nn_labeler/model.py</code>, <code>spr/nets.py</code>).</strong> Three
 unusual choices do the work. <em>Walls are wiring, not input:</em> attention is
 masked so information flows only along legal slides. <em>One block, twelve
-times:</em> the same 740,928 weights are reused for all twelve reasoning rounds
-&mdash; a 12&times; parameter saving. <em>No positional embeddings:</em> the older
+times:</em> within each network, the same 740,928 weights are reused for all
+twelve reasoning rounds &mdash; a 12&times; parameter saving. The two networks each
+train their own copy of the block, so the two boxes on the right are
+full-network totals: 982,944 + 1,223,232 = 2,206,176. <em>No positional embeddings:</em> the older
 per-size networks carried a 110,784-parameter position table that locked each
 checkpoint to one board size; deleting it is what makes these networks
 size-free.</figcaption>
@@ -395,11 +398,11 @@ def _journey_tree() -> str:
                   <li><span class="chip good">&#10003; jump</span> <span class="what">Mixed-size curriculum: self-play on 24&times;24 + 32&times;32 + 8-robot boards at once</span>
                       <span class="why">one iteration broke the plateau everywhere &mdash; frontier 170 / 235 / <strong>269</strong> (the 8-robot jump: 269 of 289 vs 161 for the supervised arm). Diagnosis confirmed: the plateau was a <em>data-distribution</em> limit, not capacity. Iterations 2&ndash;3: flat again &mdash; the loop&rsquo;s recurring shape</span>
                     <ul>
-                      <li><span class="what">The experiment lab: 21 matched-protocol arms, one change each</span>
-                          <span class="why">same frozen starting networks, same budget, a 200-puzzle unseen exam nothing trains on, two-seed replication before any claim &mdash; the full cards live in the <a href="#variants">Variants lab tab</a></span>
+                      <li><span class="what">The experiment lab: 11 distinct ideas, one change each</span>
+                          <span class="why">one matched protocol: same frozen starting networks, same budget, a 200-puzzle unseen exam nothing trains on, two-seed replication before any claim &mdash; the full cards live in the <a href="#variants">Variants lab tab</a></span>
                         <ul>
                           <li><span class="chip bad">&#10007; killed</span> <span class="what">v01 &middot; AlphaZero&rsquo;s own policy target (visit counts)</span>
-                              <span class="why">catastrophic here (every exam collapsed, p &le; 1e-7) &mdash; proof the certified-cost target is load-bearing</span></li>
+                              <span class="why">catastrophic here (every exam collapsed, p &le; 2e-7) &mdash; proof the certified-cost target is load-bearing</span></li>
                           <li><span class="chip good">&#10003; adopted</span> <span class="what">v04 &middot; keep every decision the search examined</span>
                               <span class="why">the control trained only on the winning line; certified off-line decisions are just as true &mdash; ~2&times; the records, replicated frontier gain</span></li>
                           <li><span class="chip warn">~ not replicated</span> <span class="what">v06 &middot; Gumbel-style root exploration</span>
@@ -457,7 +460,7 @@ def sec_story() -> str:
         '<strong>only on its own physically-verified solutions</strong> solves '
         '188 of 200 brand-new puzzles, against 134 for the planner taught from '
         'a solution library. Its plan vocabulary was <strong>proved</strong> to '
-        'cost at least +1.17 moves over perfect play &mdash; and a one-line change '
+        'cost at least +1.17 moves over perfect play &mdash; and a small change '
         'to the search went below that wall, to +0.94. And the same networks, '
         'never adjusted, do it on board sizes and robot counts they never ran '
         'on before.</p>')
@@ -473,7 +476,7 @@ def sec_story() -> str:
     out.append(_fig_slide())
     out.append(
         '<p>That is why the game is hard: solutions are little construction '
-        'projects, 8&ndash;30 moves long, where every robot is a potential wall '
+        'projects, up to ~30 moves long, where every robot is a potential wall '
         'for every other. How hard, concretely? The project ships an exact '
         'optimal solver. On the pinned 24&times;24 exam it cracked '
         '<strong>232 puzzles</strong> (&ldquo;graded&rdquo; &mdash; perfect play is '
@@ -591,7 +594,7 @@ def sec_story() -> str:
     out.append('<div class="tw"><table class="t">'
                '<thead><tr><th>planner</th><th>solved (of 200)</th>'
                '<th>of the 137 graded</th><th>solved perfectly</th>'
-               '<th>extra moves vs perfect</th></tr></thead><tbody>'
+               '<th>extra moves vs perfect (over that system&rsquo;s own solved set)</th></tr></thead><tbody>'
                '<tr class="hl"><td>flagship (self-taught + hybrid search)</td><td>188</td><td>134</td><td>57%</td><td class="g">+1.47</td></tr>'
                '<tr><td>same networks, standard search</td><td>182</td><td>132</td><td>50%</td><td>+1.94</td></tr>'
                '<tr><td>the frozen networks every lab arm started from</td><td>175</td><td>131</td><td>47%</td><td>+2.93</td></tr>'

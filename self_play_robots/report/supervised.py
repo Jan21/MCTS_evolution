@@ -156,8 +156,9 @@ def sec_supervised() -> str:
     body = []
     for cfg, bg, fg, bu, fu in _ladder_rows():
         pool = _pooled(bg, fg, bu, fu)
+        dag = '&thinsp;&dagger;' if cfg == 'g24r4' else ''
         front = (f"{bu['solved']} / {fu['solved']} of {bu['n']}"
-                 if bu and fu else '<span class="dash">&mdash;</span>')
+                 if bu and fu else f'<span class="dash">&mdash;{dag}</span>')
         body.append(
             "<tr>"
             f"<td>{CFG_LABEL[cfg]}</td>"
@@ -168,17 +169,27 @@ def sec_supervised() -> str:
             f"<td>{_f(fg['mean_regret'] if fg else None)}</td>"
             f"<td>{_f(fg['mean_seconds'] if fg else None, 1)}</td>"
             f"<td>{front}</td>"
-            + _margin_cell(pool[3] if pool else None)
+            + _margin_cell(pool[3] if pool else None).replace('</td>', dag + '</td>')
             + "</tr>")
     out.append(hdr + "\n".join(body) + "</tbody></table></div>")
+    out.append(
+        '<p class="note">&dagger; The 24&times;24 4-robot frontier was never '
+        'benched with this base-vocabulary pair &mdash; its recorded frontier '
+        'rows are extended-vocabulary (B2) arms, shown in the next table &mdash; '
+        'so that cell is graded-only, and its &minus;6.5 margin is a '
+        'graded-only number: 24&times;24 with 4 robots is the forward '
+        'planner&rsquo;s strongest big board (220/232, at 4.6 minutes per puzzle '
+        'vs backward&rsquo;s 8 seconds).</p>')
     out.append(
         '<p class="note">Reading, bottom to top. At the base rung the forward '
         'planner is essentially perfect (450/450, +0.07 moves) and the '
         'backward planner trails. As boards and robot counts grow, the '
         'forward planner&rsquo;s search cost explodes (23 minutes per 32&times;32 '
         'puzzle; 2 of 275 frontier puzzles solved there) while the backward '
-        'planner stays at seconds per puzzle &mdash; so above base scale the '
-        'pooled margin flips decisively to backward. The 16&times;16 8-robot '
+        'planner stays at seconds per puzzle &mdash; the pooled margin flips '
+        'decisively to backward at the crowded and large rungs (+44.4, +21.6, '
+        '+30.9 points), while at 24&times;24 with 4 robots the graded-only '
+        'margin&dagger; still favours forward on solves. The 16&times;16 8-robot '
         'rung is the oracle-mortality showcase: the forward planner&rsquo;s exact '
         'teacher failed on most of its training set, and the planner inherited '
         'the failure (25 of 266). That asymmetry &mdash; <em>quality where its '
