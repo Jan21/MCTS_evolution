@@ -812,6 +812,10 @@ def sec_overview() -> str:
     st = status()
     out = ['<section id="overview">', "<h2>Overview</h2>"]
     out.append(
+        "<p><strong>The goal, in one line:</strong> beat both hand-taught "
+        "planners on real moves used, on a fixed exam, with the same search "
+        "budget.</p>")
+    out.append(
         "<p><strong>The north star.</strong> Build a complete "
         "<strong>AlphaZero-style self-play loop</strong> for Ricochet Robots "
         "planning that ends up beating every supervised planner in this "
@@ -840,9 +844,9 @@ def sec_overview() -> str:
                "<li>Cost = number of primitive moves. Non-target "
                "(&ldquo;helper&rdquo;) robots matter: optimal play routinely "
                "parks them as blockers.</li>"
-               "<li>Deterministic MDP, discount 1; ground truth (exact solver) "
-               "exists only for n &le; 64 — <em>validity</em> is checkable at "
-               "any size by physics replay, <em>optimality</em> only &le; 64."
+               "<li>The game has no randomness. An exact solver exists only up to "
+               "64&times;64 boards. Physics replay checks <em>validity</em> at "
+               "any size, so only <em>optimality</em> is capped at 64."
                "</li></ul>"
                "<p class='cite'>PROBLEM.md &sect;2</p>")
     out.append(
@@ -873,12 +877,11 @@ def sec_overview() -> str:
         "optimal than forward-supervised, at backward-supervised "
         "compute.&rdquo;<span class='cite'> PROBLEM.md &sect;7</span>"
         "</blockquote>"
-        "<p class='note'>Partial orderings short of that are still results — "
-        "which is why every milestone below carries its own hard gate. "
-        "Non-negotiables inherited by the arena: playable-moves scoring only, "
-        "the pinned per-config bench files, replay certification of every "
-        "solve, and % optimal / mean regret reported only where exact ground "
-        "truth exists (&le; 64).</p>")
+        "<p class='note'>Results that fall short of the full goal still count "
+        "&mdash; every milestone below has its own pass bar. Fixed rules for "
+        "every test: score only replayed moves, use only the pinned exams, "
+        "certify every solve. Optimality is reported only where the exact "
+        "solver works (boards up to 64&times;64).</p>")
 
     # status strip
     out.append('<h3 id="strip">Milestone status</h3><div class="strip">')
@@ -971,12 +974,12 @@ def sec_overview() -> str:
 
 def sec_loop() -> str:
     out = ['<section id="loop">', "<h2>The loop</h2>",
-           "<p><strong>Iteration k</strong> (PROBLEM.md &sect;5): generate "
-           "fresh instances on fresh lean boards &rarr; search with net k under "
-           "a fixed expansion budget &rarr; certify &rarr; append to buffer "
-           "&rarr; train net k+1 (warm-start from k, CollapseStop armed) &rarr; "
-           "gate: bench vs net k AND vs the frozen supervised baselines &rarr; "
-           "promote or diagnose.</p>",
+           "<p><strong>One round</strong> (PROBLEM.md &sect;5): make fresh puzzles "
+           "on fresh boards &rarr; search them with the current networks under "
+           "a fixed budget &rarr; keep only replay-verified solutions &rarr; "
+           "train the next networks starting from the last ones, with the "
+           "collapse alarm on &rarr; examine them against the previous round "
+           "and the fixed baselines &rarr; keep or investigate.</p>",
            '<figure class="fig">' + svg_loop() +
            "<figcaption>The bootstrap (iteration 0) is free: initialize from "
            "the supervised backward planner pair copied into "
@@ -996,10 +999,11 @@ def sec_loop() -> str:
                      cls="wide"))
     out.append(
         "<p class='note'><strong>The improvement hypothesis, stated "
-        "honestly:</strong> greedy descent under the labeler already labels at "
-        "86&ndash;93% argmin agreement, and MCTS at inference found solutions "
-        "greedy descent misses. If search-labeled data trains a net that "
-        "searches better, the loop climbs. If it merely matches the supervised "
+        "honestly:</strong> the labeling network already picks the same best "
+        "candidate as the exact solver 86&ndash;93% of the time, and the tree "
+        "search finds solutions the one-shot chooser misses. If search-made "
+        "data trains a network that searches better, the loop climbs. If it "
+        "merely matches the supervised "
         "ceiling, that is a publishable negative result about self-play in "
         "deterministic single-agent planning — and per &sect;4.3 the loop can "
         "also go <em>down</em>, which is what the fidelity gauge is for. "
@@ -1065,13 +1069,12 @@ def sec_loop() -> str:
                      cls="wide"))
     out.append(
         "<p class='note'>Two further decisions are already settled in "
-        "PROBLEM.md and need no owner sign-off: <strong>&sect;6.3 value target "
-        "form</strong> — keep the distributional HL-Gauss head, bucket count "
-        "must cover realized costs at the largest curriculum size (the "
-        "&sect;4.5 clamp bug); <strong>&sect;6.5 search budget accounting</strong> "
-        "— gate under the bench convention (1200 expansions, k=5), spend more "
-        "inside self-play generation but never in a way that biases what the "
-        "data contains.</p>")
+        "PROBLEM.md and need no owner sign-off. <strong>&sect;6.3 value target "
+        "form:</strong> keep the 96-bin cost output, and make sure the bins "
+        "cover the biggest real costs (a past bug silently capped them). "
+        "<strong>&sect;6.5 search budget:</strong> compare planners at 1,200 "
+        "expansions with 5 candidates per step. Self-play generation may "
+        "spend more, but never in a way that biases the data.</p>")
     out.append("</section>")
     return "\n".join(out)
 
@@ -1864,8 +1867,8 @@ def sec_milestones() -> str:
                    f'{esc(m.get("title", ""))} {chip(stt, stt)}</h3>')
         out.append(f'<p class="gate"><strong>Gate</strong> (PROBLEM.md &sect;8, '
                    f'est. {cost}): {gate}</p>')
-        if m.get("note"):
-            out.append(f'<p>{esc(m["note"])}</p>')
+        if m.get("note") or m.get("plain_note"):
+            out.append(f'<p>{note_html(m)}</p>')
         out.append(f'<p class="note">status manifest &mdash; sources: '
                    f'{sources_txt(m)}; job(s): {jobs_txt(m)}</p>')
         # generic result pickup: directories named m0, m1, ... (or m1_something)
@@ -1878,12 +1881,9 @@ def sec_milestones() -> str:
                 rendered = True
                 out.append(comparison_table(
                     comp[g],
-                    "Every comparison payload under "
-                    + src(disp(RESULTS / g))
-                    + ", read generically: <code>systems[&hellip;].aggregate</code> "
-                      "for the numbers, <code>protocol</code> for the exam line "
-                      "under each file, and the <code>spr</code> block (when "
-                      "present) for arm/config/certification provenance."))
+                    "Result files under " + src(disp(RESULTS / g))
+                    + ". Columns follow the same rules everywhere &mdash; see "
+                      "the definitions note at the top of this tab."))
             for p, d in summ.get(g, []):
                 rendered = True
                 out.append(kv_table(p, d))
@@ -2093,14 +2093,11 @@ def sub_m1() -> str:
     out.append(table(["pair (nets)", "exam", *AGG_HEADERS,
                       "ref solved", "ref moves", "ref regret", "ref % opt",
                       "M1 gate", *PAIRED_HEADERS, "source"], rows_,
-                     note="Same column rules as defined once at the top of this tab. " + (" Reference columns = the <code>ref</code> "
-                          "block of the <code>.gate.json</code> (the recorded "
-                          "per-size supervised pair named in <code>ref_desc</code>); "
-                          "gate verdict = its <code>pass</code>, "
-                          "<code>delta_solve_pts</code>, <code>delta_opt_pts</code>. "
-                          + PAIRED_NOTE + " A = the size-free pair, B = the "
-                          "supervised reference.",
-                     cls="wide")))
+                     note="Same column rules as defined once at the top of this "
+                          "tab. The reference columns quote the recorded "
+                          "per-size supervised pair the gate compares against. "
+                          "A = the size-free pair, B = the supervised reference.",
+                     cls="wide"))
     if not any_:
         out.append(pend_note(f"nothing under {disp(RESULTS / 'm1')}"))
     return "\n".join(out)
@@ -2257,12 +2254,13 @@ def sub_transfer() -> str:
                               DASH, DASH,
                               td_txt(src(disp(c["file"])))], "ceil"))
     out.append(table(["nets", "search", *AGG_HEADERS, "source"], rows_,
-                     note="Same column rules as defined once at the top of this tab. " + (" Ceiling row: <code>summary.n_realizable</code>/"
+                     note="Same column rules as defined once at the top of this tab."
+                          " Ceiling row: <code>summary.n_realizable</code>/"
                           "<code>n</code> of the matching <code>results/ceiling/</code> "
                           "file; its regret column is <code>mean_gap_best</code> "
                           "(the best expressible plan's gap to d*), its % optimal "
                           "<code>pct_best_optimal</code>.",
-                     cls="wide")))
+                     cls="wide"))
     return "\n".join(out)
 
 
@@ -2468,7 +2466,8 @@ def sub_mix() -> str:
                 td_txt(" ".join(srcs) if srcs else "&mdash;"),
             ], "hl" if k == max(ks) else ""))
         out.append(table(MIX_HEADERS, rows_,
-                         note="Same column rules as defined once at the top of this tab. " + (" The frontier columns come from "
+                         note="Same column rules as defined once at the top of this tab."
+                              " The frontier columns come from "
                               "<code>bench_&lt;cfg&gt;_frontier_astar.json</code> "
                               "(<code>bench.unsolved.jsonl</code>: no d* exists "
                               "there, so no regret column); generation columns "
@@ -2479,7 +2478,7 @@ def sub_mix() -> str:
                               "iteration), which the job writes from iteration 2 "
                               "on. Iteration-0 and supervised rows are read from "
                               "the files named in the last column.",
-                         cls="wide")))
+                         cls="wide"))
     return "\n".join(out)
 
 
@@ -2837,10 +2836,11 @@ def sub_forward() -> str:
                               td_txt(src(disp(f)))]))
         if rows_:
             out.append(table(["arm", *AGG_HEADERS, "paired (.vs_*.json)", "source"], rows_,
-                             note="Same column rules as defined once at the top of this tab. " + (" Paired column: every "
+                             note="Same column rules as defined once at the top of this tab."
+                                  " Paired column: every "
                                   "<code>&lt;arm&gt;.vs_&lt;other&gt;.json</code> next to the "
                                   "arm file, A = the arm, B = the other.",
-                             cls="wide")))
+                             cls="wide"))
         else:
             out.append(pend_note(f"no comparison payload under {disp(d_)}"))
     return "\n".join(out)
@@ -3157,20 +3157,25 @@ def sub_chart() -> str:
         out.append(pend_note("none of the chart's source files is on disk yet"))
     else:
         out.append('<figure class="fig"><div class="chart">' + svg + "</div>"
-                   "<figcaption>Every point is <code>aggregate.solve_rate</code> "
-                   "&times; <code>aggregate.mean_regret</code> of one bench payload on "
-                   "<code>scaling/data/g24r4/bench.solved.jsonl</code> under the 1200-expansion, "
-                   "k=5 protocol; dashed lines are the exhaustive language ceilings "
-                   "(<code>summary.solve_ceiling</code> and <code>summary.mean_gap_best</code> "
-                   "of <code>results/ceiling/g24r4_base.json</code> / <code>g24r4_b2.json</code>). "
-                   "Down and to the right is better; a planner cannot sit right of its "
-                   "language's vertical line, and its regret is bounded below by the "
-                   "horizontal one only if it solves the same instance set. Later B2 "
+                   "<figcaption>Each dot is one benchmark run: puzzles solved "
+                   "(across) against extra moves used (down). Dashed lines are "
+                   "the proven language limits. Down and to the right is "
+                   "better. Hover any dot for its name and exact numbers. The "
+                   "table below lists every dot with its source file. "
+                   "<details><summary>Provenance</summary>x = "
+                   "<code>aggregate.solve_rate</code>, y = "
+                   "<code>aggregate.mean_regret</code> of one bench payload on "
+                   "<code>scaling/data/g24r4/bench.solved.jsonl</code> under the "
+                   "1200-expansion, k=5 protocol. Dashed lines: "
+                   "<code>summary.solve_ceiling</code> and "
+                   "<code>summary.mean_gap_best</code> of "
+                   "<code>results/ceiling/g24r4_base.json</code> / "
+                   "<code>g24r4_b2.json</code>. A planner cannot sit right of its "
+                   "language's vertical line; its regret is bounded below by the "
+                   "horizontal one only on the same instance set. Later "
                    "iterations are picked up automatically from "
-                   "<code>results/selfplay/g24r4_b2_iter&lt;k&gt;/bench_g24r4_{astar,mcts}.json</code>, "
-                   "and the M5 mixed-size curriculum's g24r4 rows from "
-                   "<code>results/selfplay/mix_b2mix_iter&lt;k&gt;/bench_g24r4_astar.json</code>."
-                   "</figcaption></figure>")
+                   "<code>results/selfplay/&hellip;/bench_g24r4_*.json</code>."
+                   "</details></figcaption></figure>")
     rows_ = [row([td_txt(esc(series)), td_txt(esc(label)),
                   td_pct100(xv) if xv is not None else '<td class="pend">pending</td>',
                   td(yv, ".2f"), td_txt(src(f))])
