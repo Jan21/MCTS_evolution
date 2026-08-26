@@ -212,8 +212,8 @@ def _fig_break() -> str:
 </svg>
 <figcaption><strong>The wall, crossed.</strong> Same networks, same budget.
 The standard search stays right of the wall (+1.42). The hybrid is the only
-planner left of it (+0.94). Paired on the same puzzles: 40/0 move
-wins.</figcaption>
+planner left of it (+0.94). On the same puzzles, 40 solutions got
+shorter and none got longer.</figcaption>
 </figure>'''
 
 
@@ -365,7 +365,8 @@ def _fig_expansion() -> str:
 </svg>
 <figcaption><strong>One expansion</strong> = one policy call + one batched
 value call. Exams allow 1,200 per puzzle. Physics checks and replays are free
-&mdash; the same accounting as the frozen benchmark. A failed replay
+&mdash; counted the same way as the fixed benchmark everyone is scored
+on. A failed replay
 removes the plan from the tree.</figcaption>
 </figure>'''
 
@@ -382,24 +383,24 @@ def _journey_tree() -> str:
               <span class="why">Two rounds changed nothing, as the wall predicted. A clean negative result.</span>
             <ul>
               <li><span class="chip good">&#10003; step</span> <span class="what">Five rounds, extended vocabulary</span>
-                  <span class="why">Hard-set solves: 133 &rarr; 158. The loop learned speed: 26 expansions now match an old 500-expansion search. Moves did not improve.</span>
+                  <span class="why">Frontier solves went 133 &rarr; 158. The loop learned speed: 26 expansions now match an old 500-expansion search. Moves did not improve.</span>
                 <ul>
                   <li><span class="chip good">&#10003; jump</span> <span class="what">Mixed-size training: 24&times;24 + 32&times;32 + 8 robots</span>
-                      <span class="why">One round broke the plateau: 170 / 235 / 269 hard-set solves. Later rounds were flat.</span>
+                      <span class="why">One round ended the stall. Frontier solves: 170, 235 and 269 on the three board types. Later rounds were flat.</span>
                     <ul>
                       <li><span class="what">The experiment lab: 11 ideas, one change each</span>
-                          <span class="why">Same start networks, same budget, a 200-puzzle unseen exam, a second seed before any claim. Cards: <a href="#variants">Variants lab tab</a>.</span>
+                          <span class="why">Same start networks, same budget, a 200-puzzle unseen exam. Every claim needs a second seed &mdash; a rerun with different random starting conditions.</span>
                         <ul>
                           <li><span class="chip bad">&#10007; killed</span> <span class="what">v01 &middot; AlphaZero&rsquo;s own policy target</span>
-                              <span class="why">v01 removed the old scoring rule: candidates are scored by the certified cost of the finished plans that used them. Training collapsed on every exam (p &le; 2e-7). That scoring rule is what makes the training work.</span></li>
+                              <span class="why">v01 replaced our scoring rule (score a candidate by the verified cost of the plans that used it) with AlphaZero&rsquo;s (prefer what the search visited most). Training collapsed on every exam (fluke chance below one in a million). Our rule is what makes the training work.</span></li>
                           <li><span class="chip good">&#10003; adopted</span> <span class="what">v04 &middot; keep every examined decision</span>
                               <span class="why">Twice the records from the same search. A replicated win on the hard set.</span></li>
                           <li><span class="chip warn">~ not replicated</span> <span class="what">v06 &middot; Gumbel root exploration</span>
                               <span class="why">Won at seed 7, reversed at seed 8. The two-seed rule caught it.</span></li>
                           <li><span class="chip ctl">control</span> <span class="what">v08 &middot; cold start from random weights</span>
                               <span class="why">One label-free round: 132 of 200 unseen. The supervised planner: 134. A tie, from nothing.</span></li>
-                          <li><span class="chip good">&#10003; adopted</span> <span class="what">v09 &middot; train on the graded number</span>
-                              <span class="why">The value net now predicts real move counts, not abstract cost. Better everywhere, both seeds.</span></li>
+                          <li><span class="chip good">&#10003; adopted</span> <span class="what">v09 &middot; predict real move counts</span>
+                              <span class="why">The value net now predicts real move counts &mdash; the number the project is graded on &mdash; not an internal plan-step count. Better everywhere, both seeds.</span></li>
                           <li><span class="chip bad">&#10007; killed</span> <span class="what">v12 &middot; train only on hard puzzles</span>
                               <span class="why">Flat after one round. Flat after three.</span></li>
                           <li><span class="chip good">&#10003; adopted</span> <span class="what">v14 &middot; v04 + v09 together</span>
@@ -410,7 +411,7 @@ def _journey_tree() -> str:
                               <span class="why">Try one or two ordinary moves first, then plan. The only change that went below the wall. No retraining needed.</span></li>
                         </ul>
                       </li>
-                      <li><span class="chip good">&#10003; flagship</span> <span class="what">= the v09 networks + the depth-2 hybrid search</span>
+                      <li><span class="chip good">&#10003; flagship</span> <span class="what">= the v09 networks + the hybrid search, two ordinary moves allowed first</span>
                           <span class="why">Chosen by rule: every part survived its control and its second seed.</span></li>
                     </ul>
                   </li>
@@ -503,7 +504,7 @@ def sec_story() -> str:
     out.append('<h3 id="st-nets"><span class="no">5</span>Two small networks, any board size</h3>')
     out.append(
         '<p>The planner is two networks with one shared encoder design: '
-        '2,206,176 parameters.</p>')
+        '2,206,176 parameters in total.</p>')
     out.append(_fig_encoder())
     out.append(_fig_heads())
     out.append('<div class="tw"><table class="t"><thead><tr>'
@@ -552,7 +553,7 @@ def sec_story() -> str:
                'with a known optimum.</p></div>')
     out.append(
         '<p>The move-by-move planner is almost perfect when it solves. But '
-        'it solves half the exam, at 3&ndash;4&times; the cost. The '
+        'it solves half the exam, at far higher cost. The '
         'goal &mdash; at least as many solves as the baseline, with fewer '
         'moves &mdash; is met.</p>')
     out.append(
@@ -575,8 +576,8 @@ def sec_story() -> str:
         'certified cost of their finished plans is what makes training work.</li>'
         '<li><strong>The base vocabulary was already full.</strong> Two '
         'rounds changed nothing, as predicted.</li>'
-        '<li><strong>Slide training failed twice.</strong> The lever was the '
-        'search, not the training.</li>'
+        '<li><strong>Slide training failed twice.</strong> The search change '
+        'did the work. The training change did not.</li>'
         '<li><strong>One win vanished on a second seed.</strong> Every '
         'adopted result survived that test.</li>'
         '</ul>')

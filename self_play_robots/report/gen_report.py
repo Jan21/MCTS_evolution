@@ -83,6 +83,18 @@ GATES = {
            "FINDINGS 72c)."),
 }
 
+# plain-language reading of the dense gate quotes (jargon audit MS3)
+PLAIN_GATE = {
+    "M1": "pass if it matches the hand-built pair within normal run-to-run "
+          "variation.",
+    "M3": "pass if the new network beats the previous one beyond run-to-run "
+          "noise, and label quality holds.",
+    "M4": "pass if the benchmarks keep improving and the final network "
+          "clearly beats the supervised baseline.",
+    "M5": "pass if the networks, trained at small sizes, still score well on "
+          "boards up to 64&times;64 where exact answers exist.",
+}
+
 # PROBLEM.md section 5, the AlphaZero mapping table (quoted).
 MAPPING = [
     ("Game rules",
@@ -1350,14 +1362,15 @@ def sec_m0() -> str:
            + src("self_play_robots/spr/arena.py")
            + " — a thin wrapper that <em>calls</em> "
            + src("supervised_valuenet/eval/compare.py")
-           + " (never forks it): chunked 8-wide CPU evaluation, shard merge, "
-             "independent replay certification with <code>eval/replay_validate.py</code>, "
-             "then a per-row parity check against the recorded comparison JSON. "
-             "A run that fails certification is quarantined, not reported.</p>"]
+           + " (never forks it). It runs the exam in 8 parallel chunks and merges "
+             "the shards. An independent replay check certifies every "
+             "solution. Then every row is compared against the recorded "
+             "result. A run that fails certification is quarantined, not "
+             "reported.</p>"]
     m = milestone("M0")
     if m:
         out.append(f'<p class="verdict">{chip(m.get("status", "unknown"), m.get("status", "unknown"))} '
-                   f'{esc(m.get("note", ""))} <span class="note">job(s) '
+                   f'{note_html(m)} <span class="note">job(s) '
                    f'{jobs_txt(m)}; sources: {sources_txt(m)}</span></p>')
 
     ARMS, err = arena_arms()
@@ -1410,8 +1423,8 @@ def sec_m0() -> str:
                    '<span class="note">no recorded reference (frontier arm)</span>'),
             td_txt(f'<span class="note">{esc(a["notes"])}</span>'),
         ]))
-    out.append("<h3>The arm registry</h3>")
-    out.append(table(["arm", "config", "instances", "eval.compare flags",
+    out.append("<h3>The registered test setups</h3>")
+    out.append(table(["setup", "config", "instances", "eval.compare flags",
                       "expansions / k", "recorded reference", "notes"], rrows,
                      note="Read live from the <code>ARMS</code> registry in "
                           + src("self_play_robots/spr/arena.py")
@@ -1491,17 +1504,17 @@ def sec_m0() -> str:
                       and na.get("solved") == ra.get("solved")
                       and na.get("mean_regret") == ra.get("mean_regret"))
             vcls = "good" if passed else "bad"
-            bits = [f"per-row differences on (solved, realized_strict, "
-                    f"expansions, plan_found): <strong>{len(diffs)}"
-                    f"/{len(nrows_)}</strong>",
-                    ("same exam (instances sha matches)" if same_exam else
-                     "<strong>instance sha DIFFERS &mdash; not the same "
-                     "exam</strong>"),
+            bits = [f"same exam: {'yes' if same_exam else '<strong>NO</strong>'}",
                     (f"row counts {len(nrows_)} vs {len(rrows_)}"
                      if not same_n else f"{len(nrows_)} rows on both sides"),
                     f"solved {na.get('solved')} vs {ra.get('solved')}"]
-            out.append(f'<p class="verdict {vcls}">{chip("pass" if passed else "fail", "M0 PARITY " + ("PASS" if passed else "FAIL"))} '
-                       + "; ".join(bits) + ".</p>")
+            plainv = (f"{len(diffs)} of {len(nrows_)} rows differ"
+                      if diffs else f"0 of {len(nrows_)} rows differ")
+            out.append(f'<p class="verdict {vcls}">{chip("pass" if passed else "fail", "parity " + ("PASS" if passed else "FAIL"))} '
+                       f'{plainv}. <details class="inl"><summary>checked fields</summary>'
+                       f'<span class="note">compared per row: solved, '
+                       f'realized_strict, expansions, plan_found. '
+                       + "; ".join(bits) + '.</span></details></p>')
             if diffs:
                 drows = [row([td(i, "d"), td(e, "d"),
                               td_txt("; ".join(f"<code>{esc(k)}</code>: "
@@ -1540,7 +1553,7 @@ CEIL_EXPECTED = [("g16r4", "base"), ("g24r4", "base"),
 def sec_ceiling() -> str:
     out = ['<section id="ceiling">',
            "<h2>Ceiling study &mdash; what the subgoal language can express</h2>",
-           "<p><strong>Why.</strong> PROBLEM.md &sect;6.1: <em>&ldquo;the "
+           "<p><strong>Why (quoted from the brief).</strong> PROBLEM.md &sect;6.1: <em>&ldquo;the "
            "candidate generator bounds the reachable policy: if optimal play "
            "requires a subgoal the generator never proposes, no amount of "
            "search finds it. Measure the generator's ceiling early.&rdquo;</em> "
@@ -1552,22 +1565,26 @@ def sec_ceiling() -> str:
            "whole pinned bench: <strong>how many primitive moves does the best "
            "plan the language can express cost, versus the exact optimum "
            "d*?</strong></p>",
-           "<p><strong>How.</strong> "
+           "<p><strong>How the probe works.</strong> "
            + src("self_play_robots/spr/ceiling.py")
-           + " runs an exhaustive best-first search over partial plans in "
-             "abstract plan-cost order (the solver's own admissible ordering — "
-             "<em>no network anywhere</em>), strictly realizes every complete "
-             "plan it pops (<code>eval.realize.strict_moves</code>, the arena's "
-             "own certified move count) and records the first and the best "
-             "realizable plan. <code>best_realizable_moves</code> is a tight "
-             "<em>upper bound</em> on the language optimum, not a proof: a plan "
-             "whose strict count undercuts its abstract cost (an incidental "
-             "robot serving as a stopper) can in principle sit beyond the "
-             "search bound.</p>"]
+           + " searches every expressible plan in cheapest-plan-first order "
+             "(the solver's own safe ordering &mdash; <em>no network "
+             "anywhere</em>). It replays every complete plan in the physics "
+             "and records the first and the best plan that works. The result "
+             "is a tight <em>upper bound</em> on the language optimum, not a "
+             "proof. A plan can occasionally cost fewer real moves than its "
+             "plan-step estimate (a robot happens to stand in a useful spot), "
+             "and such a plan could hide beyond where the search stopped.</p>",
+           '<p class="note">Outcome categories used in the per-run tables '
+           'below: REALIZABLE_EXISTS = the language can write a plan that '
+           'works. NO_REALIZABLE_PLAN = plans exist on paper but none works. '
+           'NO_COMPLETE_PLAN = the generator never finished a plan. '
+           'INCONCLUSIVE = the search hit its cap. ERROR = the puzzle threw '
+           'an error (recorded, never lost).</p>']
     ss = side_study("ceiling")
     if ss:
         out.append(f'<p class="verdict">{chip(ss.get("status", "unknown"), ss.get("status", "unknown"))} '
-                   f'{esc(ss.get("title", ""))} <span class="note">job(s) '
+                   f'{note_html(ss)} <span class="note">job(s) '
                    f'{jobs_txt(ss)}; sources: {sources_txt(ss)}</span></p>')
 
     found = []
@@ -1679,8 +1696,10 @@ def sec_ceiling() -> str:
     for f, d in found:
         s = d["summary"]
         cfg, voc = d.get("config"), d.get("vocab")
-        out.append(f'<h3>{esc(cfg)} &middot; {esc(voc)} vocabulary '
-                   f'<span class="note">(<code>{esc(f.stem)}</code>)</span></h3>')
+        voc_words = {"base": "base vocabulary", "b1": "extended vocabulary (B1)",
+                     "b2": "extended vocabulary (B2)"}.get(voc, f"{voc} vocabulary")
+        out.append(f'<h3>{cfg_label(cfg)} &mdash; {esc(voc_words)} '
+                   f'<span class="note" title="{esc(f.stem)}"></span></h3>')
         bits = []
         if s.get("capped"):
             cats = s.get("categories") or {}
@@ -1728,14 +1747,8 @@ def sec_ceiling() -> str:
             out.append(table(["category", "instances"],
                              [row([td_txt(f"<code>{esc(k)}</code>"), td(v, "d")])
                               for k, v in sorted(cats.items())],
-                             note="<code>summary.categories</code>: "
-                                  "REALIZABLE_EXISTS = the language can write a "
-                                  "physics-valid plan; NO_REALIZABLE_PLAN = "
-                                  "complete abstract plans exist but none "
-                                  "realizes; NO_COMPLETE_PLAN = the generator "
-                                  "never completed a plan; INCONCLUSIVE = the "
-                                  "search hit a cap; ERROR = the instance threw "
-                                  "(never lost, always recorded)."))
+                             note="Outcome categories &mdash; defined once in "
+                                  "the note at the top of this tab."))
         svg = svg_gap_hist(s.get("gap_best_hist"),
                            f"{cfg} {voc}: distribution of best-plan gap to d*")
         if svg:
@@ -1858,15 +1871,28 @@ def sec_milestones() -> str:
              "is rendered as bench rows in the milestone whose directory it "
              "sits in, and any <code>summary.json</code> is rendered as a "
              "key/value table — so later milestones appear here without "
-             "touching the generator.</p>"]
+             "touching the generator.</p>",
+           '<p class="note"><strong>Terms used in every table:</strong> '
+           'mean regret = extra moves over the proven optimum. '
+           'mean expansions = search effort per puzzle. '
+           'Full definitions: the <a href="#glossary">Glossary tab</a>. '
+           '<details class="inl"><summary>how these tables are read</summary>'
+           '<span class="note">Each result file is read generically: '
+           '<code>systems[&hellip;].aggregate</code> for the numbers, '
+           '<code>protocol</code> for the exam line under each file, and the '
+           '<code>spr</code> block (when present) for setup, config and '
+           'certification provenance.</span></details></p>']
     for k in MILESTONE_KEYS:
         m = milestone(k)
         cost, gate = GATES[k]
         stt = m.get("status", "unknown")
         out.append(f'<h3 id="ms-{k.lower()}">{esc(k)} &mdash; '
                    f'{esc(m.get("title", ""))} {chip(stt, stt)}</h3>')
-        out.append(f'<p class="gate"><strong>Gate</strong> (PROBLEM.md &sect;8, '
-                   f'est. {cost}): {gate}</p>')
+        out.append(f'<p class="gate"><strong>Gate, quoted from the brief</strong> '
+                   f'(PROBLEM.md &sect;8, est. {cost}): &ldquo;{gate}&rdquo;'
+                   + (f'<br><span class="note">In plain terms: '
+                      f'{PLAIN_GATE[k]}</span>' if k in PLAIN_GATE else "")
+                   + '</p>')
         if m.get("note") or m.get("plain_note"):
             out.append(f'<p>{note_html(m)}</p>')
         out.append(f'<p class="note">status manifest &mdash; sources: '
@@ -3247,7 +3273,7 @@ def sec_glossary() -> str:
          "In the result JSONs this is <code>mean_realized_strict</code>, and "
          "<code>mean_moves</code> is set to it. PROBLEM.md &sect;7."),
         ("expansion budget",
-         "The fixed search budget every arm gets, so comparisons are "
+         "The fixed search budget every planner gets, so comparisons are "
          "apples-to-apples: " + budget + "."
          + (f" Expansion definition recorded in the same file: "
             f"<em>{esc(expdef)}</em>." if expdef else "")
@@ -3284,29 +3310,29 @@ def sec_glossary() -> str:
          "comparison files."),
         ("base / B1 / B2 vocabulary",
          "The language a plan is written in. <em>Base</em> names plan steps by "
-         "absolute board cells. <em>B1</em> adds park repairs. <em>B2</em> adds "
-         "<em>by-reference</em> steps (&ldquo;park blue where red currently "
-         "stands&rdquo;) — more expressive, far more expensive for the exact "
-         "solver to label, and the source of the supervised track's negative "
-         "result (a net distilled from iteration-capped B2 data reproduced the "
-         "cap's pathology, FINDINGS 68). Vocabulary separation is absolute: "
-         "base and B2 datasets never mix. <strong>This project is "
-         "base-vocabulary unless the owner says otherwise</strong> "
-         "(PROBLEM.md &sect;10); the B2 rows on this page are baselines and "
-         "ceiling arms, not training data."),
+         "absolute board cells. <em>B1</em> adds park repairs (shove a robot "
+         "aside first). <em>B2</em> adds <em>by-reference</em> steps "
+         "(&ldquo;park blue where red currently stands&rdquo;) — more "
+         "expressive, far more expensive for the exact solver to label. A "
+         "network taught from artificially limited B2 data inherited the "
+         "limitation (main log, entry 68). Vocabulary separation is absolute: "
+         "base and B2 datasets never mix. <strong>The self-play loop runs the "
+         "extended (B2) vocabulary</strong>, with owner approval: the base "
+         "vocabulary was measured as already saturated (see the "
+         "<a href='#ceiling'>Ceiling tab</a>), so B2 self-play data is the "
+         "training data on this page."),
         ("seed noise bars",
-         "Two runs of the same arm differing only in random seed differ by "
-         "~3.4 solve / ~6.6 optimality points at g24r4 (FINDINGS 67&rarr;71); "
-         "PROBLEM.md &sect;8 turns that into the M1 gate of <strong>3.5 solve "
-         "points / 6.6 optimality points</strong>. A promotion decision inside "
-         "the loop must clear this bar — or use a paired-instance test "
-         "(McNemar over the per-instance solved vector). The measured spread "
-         "for this repository's own files is computed live in the "
-         "<a href='#baselines'>Baselines</a> tab."),
+         "Two runs that differ only in their random start can differ by ~3.4 "
+         "solve and ~6.6 optimality points at 24&times;24 (main log, entries "
+         "67&ndash;71). The M1 gate uses those limits: <strong>3.5 solve "
+         "points / 6.6 optimality points</strong>. Any claimed win must clear "
+         "this bar, or compare puzzle-by-puzzle instead (the McNemar test). "
+         "The measured spread for this repository's own files is computed "
+         "live in the <a href='#baselines'>Baselines</a> tab."),
         ("fidelity gauge",
-         "Argmin agreement of self-generated value targets against exact "
-         "optima: at each decision, does the label pick the <em>same best "
-         "candidate</em> as the exact solver? Cheap to measure &le; 64. "
+         "At each decision: does the loop's own label pick the same best "
+         "candidate as the exact solver would? Cheap to measure on boards up "
+         "to 64&times;64. "
          "Calibrated by the supervised track: ~91% agreement &rarr; planners "
          "match exact-taught ones, ~89% keeps solve rate but loses optimality, "
          "~82% collapses (FINDINGS 74). A slide below ~90% predicts a utility "
@@ -3322,8 +3348,9 @@ def sec_glossary() -> str:
          "(&sect;6.4)."),
         ("d*",
          "The exact move-optimal cost of an instance, from the Rust solver, "
-         "stored per line in the pinned bench JSONL. Exists only for n &le; 64 "
-         "(hard engine assert), and only on the graded sets."
+         "stored per line in the pinned bench file. Exists only for boards up to "
+         "64&times;64 (the solver refuses larger boards), and only on the "
+         "graded sets."
          + (" Measured here: " + "; ".join(dstar_bits) + "."
             if dstar_bits else "")),
         ("frontier set",

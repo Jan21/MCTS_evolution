@@ -127,17 +127,14 @@ def sec_supervised() -> str:
     out = ['<section id="supervised">',
            "<h2>The supervised campaign &mdash; backward vs forward</h2>"]
     out.append(
-        '<p>Before any self-play, a full supervised campaign trained and '
-        'benchmarked two planner families on exact-solver labels: the '
-        '<strong>backward sub-goal planner</strong> (cheap, plans in the '
-        'sub-goal language) and the <strong>forward move-by-move planner</strong> '
-        '(near-optimal moves, expensive search, and dependent on an oracle '
-        'teacher that dies as boards grow). Its frozen result rows are the '
-        'baselines every self-play table on this page compares against, and '
-        'its value-labelling network is what bootstrapped the loop. This tab '
-        'regenerates the campaign&rsquo;s key results from the same files its '
-        'own suite reads (<code>supervised_valuenet/scaling/results/</code>, '
-        '<code>eval/results/</code>); the full log is '
+        '<p>Before any self-play, a supervised campaign trained two planner '
+        'families on exact-solver answers. The <strong>backward sub-goal '
+        'planner</strong> is cheap and plans in the sub-goal language. The '
+        '<strong>forward move-by-move planner</strong> is near-perfect but '
+        'slow, and its teacher fails on big boards. The campaign&rsquo;s '
+        'results are locked in as the numbers to beat. Its value network gave '
+        'the self-play loop its starting point. This tab rebuilds the key '
+        'results from the campaign&rsquo;s own result files. The full log is '
         '<code>supervised_valuenet/FINDINGS.md</code>.</p>')
 
     # ---- the scale ladder ---------------------------------------------------
@@ -151,7 +148,7 @@ def sec_supervised() -> str:
            '<th>rung</th>'
            '<th>backward: solved</th><th>extra moves</th><th>s/puzzle</th>'
            '<th>forward: solved</th><th>extra moves</th><th>s/puzzle</th>'
-           '<th>frontier b / f</th><th>pooled margin (pts)</th>'
+           '<th>frontier: backward / forward solved</th><th>pooled margin (pts)</th>'
            '</tr></thead><tbody>')
     body = []
     for cfg, bg, fg, bu, fu in _ladder_rows():
@@ -174,34 +171,34 @@ def sec_supervised() -> str:
     out.append(hdr + "\n".join(body) + "</tbody></table></div>")
     out.append(
         '<p class="note">&dagger; The 24&times;24 4-robot frontier was never '
-        'benched with this base-vocabulary pair &mdash; its recorded frontier '
-        'rows are extended-vocabulary (B2) arms, shown in the next table &mdash; '
-        'so that cell is graded-only, and its &minus;6.5 margin is a '
-        'graded-only number: 24&times;24 with 4 robots is the forward '
-        'planner&rsquo;s strongest big board (220/232, at 4.6 minutes per puzzle '
-        'vs backward&rsquo;s 8 seconds).</p>')
+        'tested with this base-vocabulary pair. Its recorded frontier rows '
+        'use the extended vocabulary and sit in the next table. So that cell '
+        'covers the graded exam only, and its &minus;6.5 margin is a '
+        'graded-only number. 24&times;24 with 4 robots is the forward '
+        'planner&rsquo;s strongest big board: 220 of 232, at 4.6 minutes per '
+        'puzzle against backward&rsquo;s 8 seconds.</p>')
     out.append(
         '<p class="note">Reading, bottom to top. At the base rung the forward '
         'planner is essentially perfect (450/450, +0.07 moves) and the '
         'backward planner trails. As boards and robot counts grow, the '
-        'forward planner&rsquo;s search cost explodes (23 minutes per 32&times;32 '
-        'puzzle; 2 of 275 frontier puzzles solved there) while the backward '
-        'planner stays at seconds per puzzle &mdash; the pooled margin flips '
-        'decisively to backward at the crowded and large rungs (+44.4, +21.6, '
-        '+30.9 points), while at 24&times;24 with 4 robots the graded-only '
-        'margin&dagger; still favours forward on solves. The 16&times;16 8-robot '
-        'rung is the oracle-mortality showcase: the forward planner&rsquo;s exact '
-        'teacher failed on most of its training set, and the planner inherited '
-        'the failure (25 of 266). That asymmetry &mdash; <em>quality where its '
-        'teacher lives, collapse where it dies</em> &mdash; is the whole reason '
-        'the self-play track exists.</p>')
+        'forward planner&rsquo;s search cost explodes: 23 minutes per '
+        '32&times;32 puzzle, and 2 of 275 frontier puzzles solved there. The '
+        'backward planner stays at seconds per puzzle. So the pooled margin '
+        'swings hard to backward on the crowded and large boards (+44.4, '
+        '+21.6, +30.9 points). At 24&times;24 with 4 robots the graded-only '
+        'margin&dagger; still favours forward on solves. The 16&times;16 '
+        '8-robot board is the clearest case of the teacher dying: the exact '
+        'solver failed on most of the forward planner&rsquo;s training set, '
+        'and the planner inherited the failure (25 of 266). That asymmetry is '
+        'the whole reason the self-play track exists.</p>')
 
     # ---- the B2 arms --------------------------------------------------------
     out.append("<h3>The extended vocabulary (B2), under supervision</h3>")
     out.append(
-        '<p>The campaign also trained backward arms on the extended sub-goal '
-        'vocabulary (transient blockers, robot reuse, park repairs). Supply '
-        'existed; supervised training never learned to rank it:</p>')
+        '<p>The campaign also trained backward planners on the extended '
+        'sub-goal vocabulary (transient blockers, robot reuse, park repairs). '
+        'The extra vocabulary was available. Supervised training never '
+        'learned to rank it:</p>')
     b2rows = []
     b2_16 = _sys(_load("eval/results/final450_backward_b2.json"), "backward")
     base_16 = _sys(_load("eval/results/final450_backward_anytime.json"), "backward")
@@ -224,7 +221,7 @@ def sec_supervised() -> str:
                        _f(b2['mean_regret'] if b2 else None),
                        f"{b2u['solved']}/{b2u['n']}" if b2u else "&mdash;"))
     out.append('<div class="tw"><table class="t"><thead><tr>'
-               '<th>rung</th><th>base vocab: solved</th><th>extra moves</th>'
+               '<th>rung</th><th>base vocabulary: solved</th><th>extra moves</th>'
                '<th>B2 vocab: solved</th><th>extra moves</th>'
                '<th>B2 frontier</th></tr></thead><tbody>'
                + "\n".join(
@@ -233,13 +230,13 @@ def sec_supervised() -> str:
                    for c, a, b, d, e, f in b2rows)
                + "</tbody></table></div>")
     out.append(
-        '<p class="note">At 24&times;24 the supervised B2 arm was actually '
-        '<em>worse</em> on the graded exam than its base-vocabulary sibling '
-        '(199 vs 205) despite the richer language &mdash; the training signal, '
-        'not the vocabulary, was the bottleneck. Manufacturing that training '
-        'signal is exactly what the self-play loop later did (B2 loop, '
-        '<a href="#res-loops">milestone results</a>: 227&ndash;228/232 and '
-        '153&ndash;158 frontier from the same vocabulary).</p>')
+        '<p class="note">At 24&times;24 the B2-trained planner did worse '
+        'than the same planner trained on the plain vocabulary (199 vs 205), '
+        'despite the richer language. The training signal, not the '
+        'vocabulary, was the bottleneck. Making that training signal is '
+        'exactly what the self-play loop later did (<a href="#res-loops">'
+        'milestone results</a>: solving 227&ndash;228 of 232 standard puzzles '
+        'and 153&ndash;158 of the frontier from the same vocabulary).</p>')
 
     # ---- seed replication ---------------------------------------------------
     out.append("<h3>Seed replication of the headline rungs</h3>")
@@ -263,24 +260,25 @@ def sec_supervised() -> str:
                 f"<td>{_f(g['mean_regret'] if g else None)}</td>"
                 f"<td>{_solved(u)}</td><td>{pooled}</td></tr>")
     out.append('<div class="tw"><table class="t"><thead><tr>'
-               '<th>arm</th><th>graded solved</th><th>extra moves</th>'
+               '<th>training run</th><th>graded solved</th><th>extra moves</th>'
                '<th>frontier solved</th><th>pooled</th></tr></thead><tbody>'
                + "\n".join(seed_rows) + "</tbody></table></div>")
     out.append(
         '<p class="note">32&times;32 replicates tightly. The 16&times;16 '
-        '8-robot rung is bimodal &mdash; seed 21 fell into a bad basin on the '
-        'frontier (108 of 184 vs 157&ndash;165 for its siblings) &mdash; so the '
-        'campaign reports that rung as a median-of-three with the bad draw '
-        'shown, not hidden.</p>')
+        '8-robot runs split into two groups: seed 21 trained into a much '
+        'worse network &mdash; a known training hazard &mdash; with 108 of 184 '
+        'frontier solves against 157&ndash;165 for the other two. The '
+        'campaign reports the middle result and shows the bad run, not hides '
+        'it.</p>')
 
     # ---- forward rescue -----------------------------------------------------
     out.append("<h3>A fair second chance for the forward planner</h3>")
     out.append(
         '<p>The strongest objection to the ladder was &ldquo;weak '
         'opponent&rdquo;: maybe the forward planner just needed tuning. The '
-        'campaign answered with a 9-arm tune (3 seeds &times; 3 learning '
-        'rates) at the 16&times;16 8-robot rung, selecting by validation only, '
-        'never by test:</p>')
+        'campaign answered with a nine-way tuning sweep (3 seeds &times; 3 '
+        'learning rates) at the 16&times;16 8-robot board. The winner was '
+        'picked on held-out practice puzzles, never on the exam:</p>')
     fc = _sys(_load("scaling/results/g16r8/comparison_forward_control.json"),
               "forward", name_has="forward")
     fr = _sys(_load("scaling/results/g16r8/comparison_forward_rescue.json"),
@@ -292,7 +290,7 @@ def sec_supervised() -> str:
     fou = _sys(_load("scaling/results/g16r8/comparison_ungraded.json"),
                "forward")
     out.append('<div class="tw"><table class="t"><thead><tr>'
-               '<th>forward arm (16&times;16, 8 robots)</th>'
+               '<th>forward training run (16&times;16, 8 robots)</th>'
                '<th>graded solved</th><th>extra moves</th>'
                '<th>frontier solved</th></tr></thead><tbody>'
                f"<tr><td>original (oracle-starved teacher)</td>"
@@ -306,13 +304,14 @@ def sec_supervised() -> str:
                f"<td>{_solved(fru)}</td></tr>"
                "</tbody></table></div>")
     out.append(
-        '<p class="note">The rescue is real but small: the tuned forward '
-        'planner takes the graded set perfectly (266/266 &mdash; no backward arm '
-        'matches that) yet gains only 8 frontier puzzles, far below the '
-        'pre-registered kill line. Pooling both exams against the backward '
-        'median seed (418/450 vs 367/450), the backward margin stands at '
-        '+11.3 points. The &ldquo;weak opponent&rdquo; objection was answered '
-        'with measurement, and the scale claim survived.</p>')
+        '<p class="note">The rescue is real but small. The tuned forward '
+        'planner takes the graded set perfectly (266/266 &mdash; no backward '
+        'run matches that). But it gains only 8 frontier puzzles, far below '
+        'the failure threshold written down before the test ran. Pooled over '
+        'both exams against the backward planner&rsquo;s middle-of-three run '
+        '(418/450 vs 367/450), the backward lead stands at +11.3 points. The '
+        '&ldquo;weak opponent&rdquo; objection was answered with measurement, '
+        'and the scale claim survived.</p>')
 
     # ---- what it handed over ------------------------------------------------
     out.append("<h3>What this campaign handed the self-play track</h3>")
@@ -320,7 +319,7 @@ def sec_supervised() -> str:
         '<ul>'
         '<li><strong>The frozen opponents</strong> &mdash; every baseline row in '
         'the <a href="#baselines">Baselines</a> and '
-        '<a href="#variants">Variants lab</a> tabs is one of the payloads '
+        '<a href="#variants">Variants lab</a> tabs is one of the result files '
         'above, never re-run.</li>'
         '<li><strong>The bootstrap network</strong> &mdash; the size-free '
         'value labeller (trained at 8&times;8&ndash;16&times;16, labels '
@@ -328,8 +327,8 @@ def sec_supervised() -> str:
         'networks.</li>'
         '<li><strong>The instruments</strong> &mdash; the replay-certification '
         'harness, the pinned exams, the expansion-budget accounting, and the '
-        'measured seed-noise bars that make every comparison on this page '
-        'paired rather than aggregate.</li>'
+        'measured run-to-run variation limits, which force every comparison on '
+        'this page to be puzzle-by-puzzle.</li>'
         '<li><strong>The open problem</strong> &mdash; a planner that is cheap '
         '<em>and</em> near-optimal <em>and</em> survives scale. The '
         '<a href="#story">Story tab</a> is what happened next.</li>'
