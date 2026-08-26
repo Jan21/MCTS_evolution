@@ -149,3 +149,34 @@ chip). Files: `results/variants/<vid>/bench_{graded,frontier,unseen}_astar.json`
 rule (also in the report): WIN = a paired p<0.05 in the variant's favour on any
 exam with no significant loss elsewhere (then replicated on a second seed);
 LOSS = the reverse; everything else FLAT. Flat results are results.
+
+## 7. Consolidated verdict table (program closeout, 2026-08-26)
+
+| arm | axis | verdict | one-line evidence |
+|---|---|---|---|
+| v00 control | control | the bar | 228 / 160 / 172 (graded/frontier/unseen); seed pair bounds noise at ~4-5 solves |
+| v01 visit-policy | targets | **KILLED** | every exam collapses, p<=1e-7 |
+| v02/v03/v05 | — | parked | judged too incremental; never run |
+| v04 emit-all | data | **ADOPTED** | frontier +11/+21 at two seeds (Fisher 3.4e-5); r8 extraction 6x cost caveat |
+| v06 Gumbel root | search | not replicated | seed-7 moves win reversed at seed 8 |
+| v07 root-slides | action-space | **FLAGSHIP** | wins all exams vs matched controls; regret 0.86 < pure-subgoal floor 1.17; transfers zero-shot (17/0, 23/0); depth saturates ~3 |
+| v08 cold start | control | prior-worth | label-free-from-zero ties the supervised baseline on unseen (132 vs 134) |
+| v09 strict-value | targets | **ADOPTED** | 2-seed frontier win (Fisher 0.0015), best regret, best unseen |
+| v12 curriculum (+x3) | data | **KILLED** | flat at 1 and at 3 chained iterations |
+| v13 three-way combo | combo | superseded | solves interfere, moves compose |
+| v14 v04+v09 stack | combo | **ADOPTED** (recipe) | unseen win both seeds (Fisher 0.018); does not compound over iterations |
+| v15/v16 slide training | action-space | closed (double negative) | uniform and search-ranked nudges both flat at 2 seeds; nets already generalize to slid states |
+| adopt_mainline | transfer | flat | mature main-line iteration unchanged under the recipe |
+
+**The program's three durable lessons (plain):**
+1. **Train on the number you are graded on.** Switching the value network's
+   target from abstract plan cost to real move counts was the strongest
+   single network change (v09) — and every attempt to be cleverer about
+   targets (v01, v02) lost to it.
+2. **Keep everything the search examined.** Training on every certified
+   decision, not just the winning line, was the cheapest reliable win (v04)
+   — data volume beat data curation (v03, v12) every time they competed.
+3. **Search in subgoals PLUS ordinary moves.** The only change that broke
+   the proven quality ceiling was widening the action space (v07); no
+   amount of better training inside the old space (v15, v16) could match
+   it, and the fix transferred unchanged to board sizes it never saw.
