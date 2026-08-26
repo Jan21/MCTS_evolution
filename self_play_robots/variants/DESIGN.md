@@ -155,7 +155,7 @@ LOSS = the reverse; everything else FLAT. Flat results are results.
 | arm | axis | verdict | one-line evidence |
 |---|---|---|---|
 | v00 control | control | the bar | 228 / 160 / 172 (graded/frontier/unseen); seed pair bounds noise at ~4-5 solves |
-| v01 visit-policy | targets | **KILLED** | every exam collapses, p<=1e-7 |
+| v01 visit-policy | targets | **KILLED** | every exam collapses, p<=2e-7 |
 | v02/v03/v05 | — | parked | judged too incremental; never run |
 | v04 emit-all | data | **ADOPTED** | frontier +11/+21 at two seeds (Fisher 3.4e-5); r8 extraction 6x cost caveat |
 | v06 Gumbel root | search | not replicated | seed-7 moves win reversed at seed 8 |
