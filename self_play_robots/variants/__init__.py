@@ -92,9 +92,13 @@ PLAIN = {
   "Best-case summaries can be hostage to one lucky find; averages explore "
   "more evenly."),
  "v06_gumbel_root": (
-  "We changed how the search explores its FIRST decision. Before: random "
-  "exploration noise. After: a principled lottery (the 'Gumbel' method). "
-  "On paper, the lottery improves the policy even with a tiny search budget.",
+  "We changed how the search explores its FIRST decision. "
+  "Before: random exploration noise. "
+  "After: a weighted lottery (the 'Gumbel' method). "
+  "The search no longer always tries the top-ranked candidates. "
+  "The lottery lets strong-but-unlucky candidates get tried too. "
+  "Then it eliminates candidates in rounds. "
+  "On paper, this improves the policy even with a tiny search budget.",
   "Published results show the biggest gains at exactly our small budgets."),
  "v07_hybrid_actions": (
   "Our planner thinks in 'subgoals' (mini-objectives like 'park a robot "
@@ -102,7 +106,7 @@ PLAIN = {
   "Then it plans subgoals from the new position. "
   "This mixes two kinds of moves that were previously separate worlds.",
   "We proved earlier that pure subgoal planning can never match move-by-move "
-  "play on solution length (main FINDINGS 3). "
+  "play on solution length (see the project log, entry 3). "
   "Changing the set of allowed moves is the only door out."),
  "v08_cold_start": (
   "We threw away the head start from the supervised networks. "

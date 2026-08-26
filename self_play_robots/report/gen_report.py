@@ -375,6 +375,19 @@ def chip_class(kind) -> str:
     return "pend"
 
 
+def chip_word(status) -> str:
+    """One plain word for a chip label; the full status string belongs in a
+    hover, not on the chip (naive-reader audit)."""
+    s = str(status).strip()
+    w = re.split(r"[:(;,]", s, 1)[0].strip().lower()
+    first = w.split()[0] if w else ""
+    return {"pass": "pass", "done": "done", "running": "running",
+            "started": "running", "queued": "queued", "pending": "pending",
+            "partial": "partial", "complete": "done", "on": "on track",
+            "waves": "done", "drafting": "in progress", "curriculum": "done",
+            "in": "in progress"}.get(first, (w[:14] or "unknown"))
+
+
 def chip(kind, text=None) -> str:
     cls = chip_class(kind)
     return f'<span class="chip {cls}">{esc(text if text is not None else kind)}</span>'
@@ -902,9 +915,10 @@ def sec_overview() -> str:
         stt = m.get("status", "unknown")
         title = m.get("title", "")
         href = STRIP_LINKS.get(k, "#milestones")
-        tip = f' title="{esc(m.get("note"))}"' if m.get("note") else ""
+        tip_txt = "; ".join(x for x in (stt, m.get("plain_note") or m.get("note")) if x)
+        tip = f' title="{esc(tip_txt)}"' if tip_txt else ""
         out.append(f'<a class="stripitem" href="{href}"{tip}><span class="mk">'
-                   f'{esc(k)}</span>{chip(stt, stt)}<span class="mt">'
+                   f'{esc(k)}</span>{chip(stt, chip_word(stt))}<span class="mt">'
                    f'{esc(title)}</span></a>')
     out.append("</div>")
     ss = status().get("side_studies") or {}
@@ -913,9 +927,10 @@ def sec_overview() -> str:
         for k, v in ss.items():
             stt = (v or {}).get("status", "unknown")
             href = STRIP_LINKS.get(k, "#results")
-            tip = f' title="{esc((v or {}).get("note"))}"' if (v or {}).get("note") else ""
+            tip_txt = "; ".join(x for x in (stt, (v or {}).get("plain_note") or (v or {}).get("note")) if x)
+            tip = f' title="{esc(tip_txt)}"' if tip_txt else ""
             out.append(f'<a class="stripitem" href="{href}"{tip}><span class="mk">'
-                       f'{esc(k)}</span>{chip(stt, stt)}<span class="mt">'
+                       f'{esc(k)}</span>{chip(stt, chip_word(stt))}<span class="mt">'
                        f'{esc((v or {}).get("title", ""))}</span></a>')
         out.append("</div>")
     upd = st.get("updated")
@@ -953,7 +968,7 @@ def sec_overview() -> str:
             continue
         j = jobs_txt(m)
         bullets.append(
-            f"<li>{chip(stt, stt)} <strong>{esc(k)} &mdash; "
+            f"<li>{chip(stt, chip_word(stt))} <strong>{esc(k)} &mdash; "
             f"{esc(m.get('title', ''))}</strong>: {note_html(m)}"
             + (f' <span class="note">job(s) {j}</span>' if j != "&mdash;" else "")
             + f'<br><span class="note">sources: {sources_txt(m)}</span></li>')
@@ -961,7 +976,7 @@ def sec_overview() -> str:
         v = v or {}
         j = jobs_txt(v)
         bullets.append(
-            f"<li>{chip(v.get('status', 'unknown'), v.get('status', 'unknown'))} "
+            f"<li>{chip(v.get('status', 'unknown'), chip_word(v.get('status', 'unknown')))} "
             f"<strong>side study &mdash; {esc(v.get('title', k))}</strong>"
             + (f": {note_html(v)}" if (v.get("plain_note") or v.get("note")) else "")
             + (f' <span class="note">job(s) {j}</span>' if j != "&mdash;" else "")
@@ -1384,7 +1399,7 @@ def sec_m0() -> str:
              "reported.</p>"]
     m = milestone("M0")
     if m:
-        out.append(f'<p class="verdict">{chip(m.get("status", "unknown"), m.get("status", "unknown"))} '
+        out.append(f'<p class="verdict">{chip(m.get("status", "unknown"), chip_word(m.get("status", "unknown")))} '
                    f'{note_html(m)} <span class="note">job(s) '
                    f'{jobs_txt(m)}; sources: {sources_txt(m)}</span></p>')
 
@@ -1598,7 +1613,7 @@ def sec_ceiling() -> str:
            'an error (recorded, never lost).</p>']
     ss = side_study("ceiling")
     if ss:
-        out.append(f'<p class="verdict">{chip(ss.get("status", "unknown"), ss.get("status", "unknown"))} '
+        out.append(f'<p class="verdict">{chip(ss.get("status", "unknown"), chip_word(ss.get("status", "unknown")))} '
                    f'{note_html(ss)} <span class="note">job(s) '
                    f'{jobs_txt(ss)}; sources: {sources_txt(ss)}</span></p>')
 
@@ -1902,7 +1917,8 @@ def sec_milestones() -> str:
         cost, gate = GATES[k]
         stt = m.get("status", "unknown")
         out.append(f'<h3 id="ms-{k.lower()}">{esc(k)} &mdash; '
-                   f'{esc(m.get("title", ""))} {chip(stt, stt)}</h3>')
+                   f'{esc(m.get("title", ""))} '
+                   f'<span title="{esc(stt)}">{chip(stt, chip_word(stt))}</span></h3>')
         out.append(f'<p class="gate"><strong>Gate, quoted from the brief</strong> '
                    f'(PROBLEM.md &sect;8, est. {cost}): &ldquo;{gate}&rdquo;'
                    + (f'<br><span class="note">In plain terms: '
@@ -3515,19 +3531,19 @@ def sec_variants() -> str:
                   load(vd / "baselines" / "forward_movenet_unseen.json")),
          CmpEntry("backward baseline (supervised per-size)",
                   load(vd / "baselines" / "supervised_persize_unseen.json")),
-         CmpEntry("seed nets (mix_b2mix_iter2)",
+         CmpEntry("the loop's networks before the lab started",
                   load(vd / "baselines" / "seed_nets_unseen.json")),
-         CmpEntry("v00 control (one standard iteration)",
+         CmpEntry("control: one more standard training round",
                   load(vd / "v00_control" / "bench_unseen_astar.json")),
-         CmpEntry("v09 strict-moves value",
+         CmpEntry("networks trained on real move counts (v09)",
                   load(vd / "v09_strict_value" / "bench_unseen_astar.json")),
-         CmpEntry("v14 stack (emit-all + strict value)",
+         CmpEntry("both winning changes combined (v14)",
                   load(vd / "v14_stack" / "bench_unseen_astar.json")),
-         CmpEntry("v07 hybrid, depth 1 (subgoals + a first slide)",
+         CmpEntry("one ordinary move first, then subgoals (v07)",
                   load(vd / "v07_hybrid_actions" / "bench_unseen_hybrid.json")),
-         CmpEntry("flagship: v09 nets + depth-2 hybrid",
+         CmpEntry("flagship: two ordinary moves first (v07 + v09 networks)",
                   load(vd / "v07_hybrid_actions" / "bench_unseen_hybrid_d2.json")),
-         CmpEntry("depth-3 hybrid (saturation check)",
+         CmpEntry("three ordinary moves first (limit check)",
                   load(vd / "v07_hybrid_actions" / "bench_unseen_hybrid_d3.json"))],
         ("backward baseline (supervised per-size)",
          "forward baseline (MoveNet A*)"),
@@ -3541,9 +3557,26 @@ def sec_variants() -> str:
                    "network; a carefully re-tuned forward planner would likely "
                    "solve a few more puzzles and could narrow these gaps slightly "
                    "&mdash; at the size where re-tuning was tried (smaller boards, "
-                   "8 robots) it gained 8 hard puzzles of 184 (main FINDINGS 24)."))
+                   "8 robots) it gained 8 hard puzzles of 184 (see the project log, entry 24)."))
 
     # per-variant cards
+    DISPLAY = {                       # plain card titles (naive-reader gate)
+        "v00_control": "The control run",
+        "v01_visit_policy": "AlphaZero's own scoring rule",
+        "v02_td_blend": "Softened training targets",
+        "v03_hard_mining": "Keep only hard practice puzzles",
+        "v04_deep_emit": "Train on every examined decision",
+        "v05_mean_backup": "Average the branch summaries",
+        "v06_gumbel_root": "Lottery-based first-decision exploration",
+        "v07_hybrid_actions": "Ordinary moves first, then subgoals",
+        "v08_cold_start": "Start from a blank slate",
+        "v09_strict_value": "Predict real move counts",
+        "v12_frontier_curriculum": "Practice only on failed puzzles",
+        "v13_combo": "All three promising changes combined",
+        "v14_stack": "Both winning changes combined",
+        "v15_slide_training": "Practice on randomly nudged puzzles",
+        "v16_ranked_slide_training": "Practice on search-chosen nudges",
+    }
     exams = [("graded", "pinned graded (232)"), ("frontier", "pinned frontier (218)"),
              ("unseen", "unseen boards (200)")]
     for vid, v in meta.items():
@@ -3557,7 +3590,8 @@ def sec_variants() -> str:
             note = vj.get("note", "")
         if v.status in ("parked", "stub"):
             cls, verdict = "pend", v.status
-        out.append(f'<h3 id="var-{esc(vid)}"><code>{esc(vid)}</code> &mdash; {esc(v.title)} '
+        out.append(f'<h3 id="var-{esc(vid)}"><code>{esc(vid)}</code> &mdash; '
+                   f'{esc(DISPLAY.get(vid, v.title))} '
                    f'<span class="chip {cls}">{esc(verdict)}</span> '
                    f'<span class="chip">{esc(v.axis)}</span></h3>')
         result_txt = (vj or {}).get("result") or "Still running &mdash; no results on disk yet."
@@ -3567,7 +3601,8 @@ def sec_variants() -> str:
                    f'<strong>Result:</strong> {esc(result_txt)}<br>'
                    f'<strong>Conclusion:</strong> {esc(concl_txt)}</p>')
         man = load(res / "generation.manifest.json")
-        detail = [f'<p class="note">{esc(v.hypothesis)}<br>{esc(v.mechanism)}<br>'
+        detail = [f'<p class="note"><em>{esc(v.title)}.</em><br>'
+                  f'{esc(v.hypothesis)}<br>{esc(v.mechanism)}<br>'
                   f'{esc(v.expected_failure)}</p>']
         if note:
             detail.append(f'<p class="note"><strong>Statistics:</strong> {esc(note)}</p>')
@@ -3615,6 +3650,23 @@ def sec_variants() -> str:
                 td_txt(gtxt)], cls=cls)
 
         for t, label in exams:
+            if vid == "v07_hybrid_actions":
+                # search variant: its results are its OWN payloads (hybrid) and
+                # its control is the same nets under the standard search
+                arm_p = res / f"bench_{t}_hybrid_d2.json"
+                if not arm_p.is_file():
+                    arm_p = res / f"bench_{t}_hybrid.json"
+                ctl_p = res / f"bench_{t}_stdmcts.json"
+                g = (load(res / f"gate_{t}_d2_vs_std.json")
+                     or load(res / f"gate_{t}_hybrid_vs_std.json")
+                     or load(res / f"gate_frontier_d2_vs_std.json" if t == "frontier"
+                             else res / f"gate_{t}_hybrid_vs_std.json"))
+                rows.append(_arm_cells(
+                    arm_p, ctl_p,
+                    esc(label) + ' <span class="note">(two ordinary moves first '
+                    'vs same-budget standard search)</span>',
+                    _var_agg(load(arm_p)), g))
+                continue
             arm_p = res / f"bench_{t}_astar.json"
             ctl_p = (vd / "v00_control" / f"bench_{t}_astar.json") \
                 if vid != "v00_control" else None
@@ -3631,7 +3683,7 @@ def sec_variants() -> str:
         out.append(table(
             ["exam", "solved", "control solved",
              "moves, on puzzles BOTH solved (experiment vs control)",
-             "&Delta; moves (win/loss, fluke chance)", "regret (graded only)",
+             "&Delta; moves (win/loss, fluke chance)", "extra moves vs perfect (graded exam only)",
              "search effort", "solves vs control (fluke chance)"], rows,
             note="How to read this table: see the two comparison rules at the "
                  "top of the tab."))
