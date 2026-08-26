@@ -3669,7 +3669,11 @@ def sec_variants() -> str:
         'run. Move counts are compared only on puzzles both runs solved, '
         'because averages over different puzzle sets are not comparable. '
         'A minus number in a moves column means the experiment used fewer '
-        'moves. Full protocol: <code>variants/DESIGN.md</code>. Results log: '
+        'moves. Category chips on the cards: targets = what the networks '
+        'learn to predict. data = what they practice on. search = how the '
+        'planner explores. action-space = which moves it may use. '
+        'bootstrap = where training starts from. combo = combined changes. '
+        'Full protocol: <code>variants/DESIGN.md</code>. Results log: '
         '<code>variants/FINDINGS.md</code>.</p>')
     out.append(
         '<details open><summary><strong>Plain-English glossary</strong> (terms used '

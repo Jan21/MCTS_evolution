@@ -1,6 +1,6 @@
 {
  "chip": "run",
- "label": "control (prior-worth)",
+ "label": "control: measures the value of the supervised head start",
  "note": "From random init, one label-free iteration matches the supervised per-size pair on unseen boards (132 vs 134/200).",
  "result": "We deleted the head start from the supervised networks and trained from a blank slate. The result was much worse than the normal loop, by about 40 puzzles on new boards. But it matched the fully supervised planner on new boards: 132 vs 134 of 200. It did this with zero human or solver labels, ever.",
  "conclusion": "This was a measurement, not a candidate. The head start is worth about 40 new-board puzzles today. And a planner trained from nothing, with no labels, already ties the supervised baseline. That is a headline for the self-play idea."

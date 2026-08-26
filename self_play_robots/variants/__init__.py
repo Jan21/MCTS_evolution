@@ -70,7 +70,7 @@ PLAIN = {
  "v01_visit_policy": (
   "We changed WHICH choices the policy network is taught to prefer. Before: "
   "'prefer candidates that led to short solutions'. After: 'prefer candidates "
-  "the search spent the most time exploring' -- the classic AlphaZero recipe.",
+  "the search spent the most time exploring' — the classic AlphaZero recipe.",
   "The search's attention might carry information that solution costs alone miss."),
  "v02_td_blend": (
   "We softened the value network's training target by blending in its own "
@@ -113,7 +113,7 @@ PLAIN = {
   "Those networks came from human-configured exact solvers. "
   "We trained from a blank slate, purely on the loop's own certified "
   "self-play data.",
-  "Measures how much the supervised head start is actually worth -- and "
+  "Measures how much the supervised head start is actually worth — and "
   "whether a fully label-free planner is viable at all."),
  "v09_strict_value": (
   "Until now the value network learned to predict an abstract 'plan cost'. We "

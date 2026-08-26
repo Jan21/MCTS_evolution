@@ -33,7 +33,7 @@ VARIANT = Variant(
               "hybrid-search evaluation runs in the flagship job.",
     expected_failure="Post-slide states are 'free' data only if the slide "
                      "distribution matches what the hybrid search visits; a "
-                     "UNIFORM slide is not the search's ranked slide -- the "
+                     "UNIFORM slide is not the search's ranked slide — the "
                      "shift may be too broad to help.",
     hooks=("selfplay",),
     plain_what="The one-move-first planner (v07) asks the networks about "

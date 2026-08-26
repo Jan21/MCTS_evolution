@@ -31,7 +31,7 @@ VARIANT = Variant(
     title="Strict-moves value targets (train on the metric)",
     hypothesis="A value net regressing realized strict moves ranks plans by "
                "what the bench actually scores, cutting realized moves on "
-               "shared solves -- the axis every previous iteration left flat.",
+               "shared solves — the axis every previous iteration left flat.",
     mechanism="Train-side hook: cost_to_go *= strict_total/abstract_total on "
               "self-play records (proportional strict attribution; clamped to "
               "[0, 95]).",

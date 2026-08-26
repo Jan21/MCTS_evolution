@@ -24,14 +24,14 @@ VARIANT = Variant(
               "state initial-plan cost (the hybrid's criterion) and apply the "
               "best one before the search. Labels/certification untouched.",
     expected_failure="The ranked slide usually LOWERS plan cost, so nudged "
-                     "instances are easier -- the distribution shifts easy, "
+                     "instances are easier — the distribution shifts easy, "
                      "diluting the buffer like v03 feared in reverse.",
     hooks=("selfplay",),
     plain_what="Same idea as v15 (practice on one-move-nudged puzzles), but "
                "nudged by the exact move the one-move-first search itself "
                "would pick, instead of a random one.",
     plain_why="The networks should learn precisely the states the new search "
-              "asks them about -- not random neighbours of them.",
+              "asks them about — not random neighbours of them.",
 )
 
 
