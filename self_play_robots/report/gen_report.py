@@ -33,6 +33,8 @@ OUT = HERE / "selfplay.html"
 sys.path.insert(0, str(HERE))                   # report/compare.py: the
 from compare import Entry as CmpEntry           # noqa: E402  apples-to-apples
 from compare import compare as cmp_compare      # noqa: E402  comparison engine
+from story import STORY_CSS, sec_story          # noqa: E402  the Story tab
+from supervised import sec_supervised           # noqa: E402  supervised-campaign tab
 
 STATS = {"read": [], "missing": [], "error": []}
 _CACHE: dict = {}
@@ -3498,6 +3500,8 @@ def sec_variants() -> str:
     return "\n".join(out)
 
 PANELS = [
+    ("The story &mdash; start here", "story", sec_story),
+    ("Supervised campaign", "supervised", sec_supervised),
     ("Overview", "overview", sec_overview),
     ("The loop", "loop", sec_loop),
     ("Baselines", "baselines", sec_baselines),
@@ -3714,7 +3718,7 @@ def main() -> int:
         '<!doctype html><html lang="en"><head><meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         "<title>Self-play planner suite (self_play_robots)</title>\n"
-        f"<style>{CSS}</style>\n"
+        f"<style>{CSS}{STORY_CSS}</style>\n"
         '<script>document.documentElement.className += " js";</script>'
         "</head><body>\n"
         f"{nav}\n"

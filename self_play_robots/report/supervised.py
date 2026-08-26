@@ -1,0 +1,337 @@
+"""The "Supervised campaign" tab — the backward-vs-forward results that the
+self-play track inherited as its frozen baselines, REGENERATED from the same
+result files the supervised suite reads (nothing copied, nothing screenshotted;
+`supervised_valuenet/` itself is never modified).
+
+Data sources (all read at page build time; a missing file renders as pending):
+  supervised_valuenet/scaling/results/<cfg>/comparison.json           graded
+  supervised_valuenet/scaling/results/<cfg>/comparison_ungraded.json  frontier
+  supervised_valuenet/scaling/results/<cfg>/comparison_b2*.json       B2 arms + seeds
+  supervised_valuenet/scaling/results/g16r8/comparison_forward_{control,rescue}.json
+  supervised_valuenet/eval/results/final450_backward_prefix.json      g16r4 backward of record
+  supervised_valuenet/eval/results/final450_backward_b2.json          g16r4 B2 arm
+  supervised_valuenet/eval/results/comparison_forward.json            g16r4 forward of record
+
+Kept in its own module so edits here never touch the data-tab regions of
+`gen_report.py`.
+"""
+from __future__ import annotations
+
+import html as _html
+import json
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+SV = HERE.parent.parent / "supervised_valuenet"
+
+_READ: list[str] = []
+_MISS: list[str] = []
+
+
+def _esc(s) -> str:
+    return _html.escape(str(s))
+
+
+def _load(rel: str):
+    p = SV / rel
+    try:
+        with open(p) as fh:
+            d = json.load(fh)
+        _READ.append(rel)
+        return d
+    except (OSError, json.JSONDecodeError):
+        _MISS.append(rel)
+        return None
+
+
+def _sys(payload, kind: str, name_has: str | None = None):
+    """First system of the given kind (or whose name contains name_has) with a
+    non-empty aggregate."""
+    if not payload:
+        return None
+    for name, sysd in payload.get("systems", {}).items():
+        a = sysd.get("aggregate") or {}
+        if not a:
+            continue
+        if name_has is not None:
+            if name_has in name:
+                return a
+            continue
+        if sysd.get("kind") == kind or (kind in name and "kind" not in sysd):
+            return a
+    return None
+
+
+def _f(v, nd=2):
+    return "&mdash;" if v is None else f"{v:.{nd}f}"
+
+
+def _solved(a):
+    return f"{a['solved']}/{a['n']}" if a else '<span class="miss">pending</span>'
+
+
+CFG_LABEL = {
+    "g16r4": "16&times;16 &middot; 4 robots (base rung)",
+    "g16r6": "16&times;16 &middot; 6 robots",
+    "g16r8": "16&times;16 &middot; 8 robots",
+    "g24r4": "24&times;24 &middot; 4 robots",
+    "g24r8": "24&times;24 &middot; 8 robots",
+    "g32r4": "32&times;32 &middot; 4 robots",
+}
+
+
+def _ladder_rows():
+    """(cfg, backward graded agg, forward graded agg, backward frontier agg,
+    forward frontier agg) per rung, from the files of record."""
+    rows = []
+    # g16r4: the base rung lives under eval/results (450-puzzle graded exam)
+    b16 = _sys(_load("eval/results/final450_backward_prefix.json"), "backward")
+    f16 = _sys(_load("eval/results/comparison_forward.json"), "forward",
+               name_has="candidate_scored")
+    rows.append(("g16r4", b16, f16, None, None))
+    for cfg in ("g16r6", "g16r8", "g24r4", "g24r8", "g32r4"):
+        g = _load(f"scaling/results/{cfg}/comparison.json")
+        u = _load(f"scaling/results/{cfg}/comparison_ungraded.json") \
+            if cfg != "g24r4" else None
+        rows.append((cfg, _sys(g, "backward"), _sys(g, "forward"),
+                     _sys(u, "backward"), _sys(u, "forward")))
+    return rows
+
+
+def _pooled(bg, fg, bu, fu):
+    """Pooled solve counts and the backward-minus-forward margin in points."""
+    if not bg or not fg:
+        return None
+    bs, fs, n = bg["solved"], fg["solved"], bg["n"]
+    if bu and fu:
+        bs, fs, n = bs + bu["solved"], fs + fu["solved"], n + bu["n"]
+    return bs, fs, n, 100.0 * (bs - fs) / n
+
+
+def _margin_cell(m):
+    if m is None:
+        return '<td class="dash">&mdash;</td>'
+    cls = "g" if m > 0 else ""
+    sign = "+" if m > 0 else ""
+    w = min(abs(m) * 1.6, 80)
+    side = "var(--good-ink)" if m > 0 else "var(--s2)"
+    return (f'<td class="{cls}">{sign}{m:.1f}'
+            f'<span style="display:inline-block;height:.55em;width:{w:.0f}px;'
+            f'background:{side};opacity:.55;margin-left:.4rem;border-radius:2px;">'
+            f'</span></td>')
+
+
+def sec_supervised() -> str:
+    _READ.clear()
+    _MISS.clear()
+    out = ['<section id="supervised">',
+           "<h2>The supervised campaign &mdash; backward vs forward</h2>"]
+    out.append(
+        '<p>Before any self-play, a full supervised campaign trained and '
+        'benchmarked two planner families on exact-solver labels: the '
+        '<strong>backward sub-goal planner</strong> (cheap, plans in the '
+        'sub-goal language) and the <strong>forward move-by-move planner</strong> '
+        '(near-optimal moves, expensive search, and dependent on an oracle '
+        'teacher that dies as boards grow). Its frozen result rows are the '
+        'baselines every self-play table on this page compares against, and '
+        'its value-labelling network is what bootstrapped the loop. This tab '
+        'regenerates the campaign&rsquo;s key results from the same files its '
+        'own suite reads (<code>supervised_valuenet/scaling/results/</code>, '
+        '<code>eval/results/</code>); the full log is '
+        '<code>supervised_valuenet/FINDINGS.md</code>.</p>')
+
+    # ---- the scale ladder ---------------------------------------------------
+    out.append("<h3>The scale ladder: who wins as boards grow</h3>")
+    out.append(
+        '<p>Per rung: the graded exam (perfect play known) and the frontier '
+        'exam (the exact solver failed; solve counts only). '
+        '&ldquo;Pooled margin&rdquo; = backward&rsquo;s solve-rate lead over '
+        'forward across both exams, in points.</p>')
+    hdr = ('<div class="tw"><table class="t wide"><thead><tr>'
+           '<th>rung</th>'
+           '<th>backward: solved</th><th>extra moves</th><th>s/puzzle</th>'
+           '<th>forward: solved</th><th>extra moves</th><th>s/puzzle</th>'
+           '<th>frontier b / f</th><th>pooled margin (pts)</th>'
+           '</tr></thead><tbody>')
+    body = []
+    for cfg, bg, fg, bu, fu in _ladder_rows():
+        pool = _pooled(bg, fg, bu, fu)
+        front = (f"{bu['solved']} / {fu['solved']} of {bu['n']}"
+                 if bu and fu else '<span class="dash">&mdash;</span>')
+        body.append(
+            "<tr>"
+            f"<td>{CFG_LABEL[cfg]}</td>"
+            f"<td>{_solved(bg)}</td>"
+            f"<td>{_f(bg['mean_regret'] if bg else None)}</td>"
+            f"<td>{_f(bg['mean_seconds'] if bg else None, 1)}</td>"
+            f"<td>{_solved(fg)}</td>"
+            f"<td>{_f(fg['mean_regret'] if fg else None)}</td>"
+            f"<td>{_f(fg['mean_seconds'] if fg else None, 1)}</td>"
+            f"<td>{front}</td>"
+            + _margin_cell(pool[3] if pool else None)
+            + "</tr>")
+    out.append(hdr + "\n".join(body) + "</tbody></table></div>")
+    out.append(
+        '<p class="note">Reading, bottom to top. At the base rung the forward '
+        'planner is essentially perfect (450/450, +0.07 moves) and the '
+        'backward planner trails. As boards and robot counts grow, the '
+        'forward planner&rsquo;s search cost explodes (23 minutes per 32&times;32 '
+        'puzzle; 2 of 275 frontier puzzles solved there) while the backward '
+        'planner stays at seconds per puzzle &mdash; so above base scale the '
+        'pooled margin flips decisively to backward. The 16&times;16 8-robot '
+        'rung is the oracle-mortality showcase: the forward planner&rsquo;s exact '
+        'teacher failed on most of its training set, and the planner inherited '
+        'the failure (25 of 266). That asymmetry &mdash; <em>quality where its '
+        'teacher lives, collapse where it dies</em> &mdash; is the whole reason '
+        'the self-play track exists.</p>')
+
+    # ---- the B2 arms --------------------------------------------------------
+    out.append("<h3>The extended vocabulary (B2), under supervision</h3>")
+    out.append(
+        '<p>The campaign also trained backward arms on the extended sub-goal '
+        'vocabulary (transient blockers, robot reuse, park repairs). Supply '
+        'existed; supervised training never learned to rank it:</p>')
+    b2rows = []
+    b2_16 = _sys(_load("eval/results/final450_backward_b2.json"), "backward")
+    base_16 = _sys(_load("eval/results/final450_backward_anytime.json"), "backward")
+    if b2_16 or base_16:
+        b2rows.append(("g16r4",
+                       f"{base_16['solved']}/{base_16['n']}" if base_16 else "&mdash;",
+                       _f(base_16['mean_regret'] if base_16 else None),
+                       f"{b2_16['solved']}/{b2_16['n']}" if b2_16 else "&mdash;",
+                       _f(b2_16['mean_regret'] if b2_16 else None),
+                       "&mdash;"))
+    for cfg in ("g16r6", "g16r8", "g24r4", "g24r8", "g32r4"):
+        base = _sys(_load(f"scaling/results/{cfg}/comparison.json"), "backward")
+        b2 = _sys(_load(f"scaling/results/{cfg}/comparison_b2.json"), "backward")
+        b2u = _sys(_load(f"scaling/results/{cfg}/comparison_ungraded_b2.json"),
+                   "backward")
+        b2rows.append((cfg,
+                       f"{base['solved']}/{base['n']}" if base else "&mdash;",
+                       _f(base['mean_regret'] if base else None),
+                       f"{b2['solved']}/{b2['n']}" if b2 else "&mdash;",
+                       _f(b2['mean_regret'] if b2 else None),
+                       f"{b2u['solved']}/{b2u['n']}" if b2u else "&mdash;"))
+    out.append('<div class="tw"><table class="t"><thead><tr>'
+               '<th>rung</th><th>base vocab: solved</th><th>extra moves</th>'
+               '<th>B2 vocab: solved</th><th>extra moves</th>'
+               '<th>B2 frontier</th></tr></thead><tbody>'
+               + "\n".join(
+                   f"<tr><td>{CFG_LABEL[c]}</td><td>{a}</td><td>{b}</td>"
+                   f"<td>{d}</td><td>{e}</td><td>{f}</td></tr>"
+                   for c, a, b, d, e, f in b2rows)
+               + "</tbody></table></div>")
+    out.append(
+        '<p class="note">At 24&times;24 the supervised B2 arm was actually '
+        '<em>worse</em> on the graded exam than its base-vocabulary sibling '
+        '(199 vs 205) despite the richer language &mdash; the training signal, '
+        'not the vocabulary, was the bottleneck. Manufacturing that training '
+        'signal is exactly what the self-play loop later did (B2 loop, '
+        '<a href="#res-loops">milestone results</a>: 227&ndash;228/232 and '
+        '153&ndash;158 frontier from the same vocabulary).</p>')
+
+    # ---- seed replication ---------------------------------------------------
+    out.append("<h3>Seed replication of the headline rungs</h3>")
+    out.append(
+        '<p>The campaign&rsquo;s reviewers asked whether its headline margins '
+        'were single-seed flukes. Three fresh training seeds at each of the '
+        'two headline rungs:</p>')
+    seed_rows = []
+    for cfg, seeds in (("g16r8", ("21", "37", "53")),
+                       ("g32r4", ("21", "37", "53"))):
+        for s in seeds:
+            g = _sys(_load(f"scaling/results/{cfg}/comparison_b2_seed{s}.json"),
+                     "backward")
+            u = _sys(_load(f"scaling/results/{cfg}/"
+                           f"comparison_ungraded_b2_seed{s}.json"), "backward")
+            pooled = (f"{g['solved'] + u['solved']}/{g['n'] + u['n']}"
+                      if g and u else "&mdash;")
+            seed_rows.append(
+                f"<tr><td>{CFG_LABEL[cfg]} &middot; seed {s}</td>"
+                f"<td>{_solved(g)}</td>"
+                f"<td>{_f(g['mean_regret'] if g else None)}</td>"
+                f"<td>{_solved(u)}</td><td>{pooled}</td></tr>")
+    out.append('<div class="tw"><table class="t"><thead><tr>'
+               '<th>arm</th><th>graded solved</th><th>extra moves</th>'
+               '<th>frontier solved</th><th>pooled</th></tr></thead><tbody>'
+               + "\n".join(seed_rows) + "</tbody></table></div>")
+    out.append(
+        '<p class="note">32&times;32 replicates tightly. The 16&times;16 '
+        '8-robot rung is bimodal &mdash; seed 21 fell into a bad basin on the '
+        'frontier (108 of 184 vs 157&ndash;165 for its siblings) &mdash; so the '
+        'campaign reports that rung as a median-of-three with the bad draw '
+        'shown, not hidden.</p>')
+
+    # ---- forward rescue -----------------------------------------------------
+    out.append("<h3>A fair second chance for the forward planner</h3>")
+    out.append(
+        '<p>The strongest objection to the ladder was &ldquo;weak '
+        'opponent&rdquo;: maybe the forward planner just needed tuning. The '
+        'campaign answered with a 9-arm tune (3 seeds &times; 3 learning '
+        'rates) at the 16&times;16 8-robot rung, selecting by validation only, '
+        'never by test:</p>')
+    fc = _sys(_load("scaling/results/g16r8/comparison_forward_control.json"),
+              "forward", name_has="forward")
+    fr = _sys(_load("scaling/results/g16r8/comparison_forward_rescue.json"),
+              "forward", name_has="forward")
+    fru = _sys(_load("scaling/results/g16r8/"
+                     "comparison_ungraded_forward_rescue.json"),
+               "forward", name_has="forward")
+    fo = _sys(_load("scaling/results/g16r8/comparison.json"), "forward")
+    fou = _sys(_load("scaling/results/g16r8/comparison_ungraded.json"),
+               "forward")
+    out.append('<div class="tw"><table class="t"><thead><tr>'
+               '<th>forward arm (16&times;16, 8 robots)</th>'
+               '<th>graded solved</th><th>extra moves</th>'
+               '<th>frontier solved</th></tr></thead><tbody>'
+               f"<tr><td>original (oracle-starved teacher)</td>"
+               f"<td>{_solved(fo)}</td><td>{_f(fo['mean_regret'] if fo else None)}</td>"
+               f"<td>{_solved(fou)}</td></tr>"
+               f"<tr><td>re-trained control</td>"
+               f"<td>{_solved(fc)}</td><td>{_f(fc['mean_regret'] if fc else None, 3)}</td>"
+               f"<td>&mdash;</td></tr>"
+               f"<tr class=\"hl\"><td>best-of-9, selected by validation</td>"
+               f"<td>{_solved(fr)}</td><td>{_f(fr['mean_regret'] if fr else None, 3)}</td>"
+               f"<td>{_solved(fru)}</td></tr>"
+               "</tbody></table></div>")
+    out.append(
+        '<p class="note">The rescue is real but small: the tuned forward '
+        'planner takes the graded set perfectly (266/266 &mdash; no backward arm '
+        'matches that) yet gains only 8 frontier puzzles, far below the '
+        'pre-registered kill line. Pooling both exams against the backward '
+        'median seed (418/450 vs 367/450), the backward margin stands at '
+        '+11.3 points. The &ldquo;weak opponent&rdquo; objection was answered '
+        'with measurement, and the scale claim survived.</p>')
+
+    # ---- what it handed over ------------------------------------------------
+    out.append("<h3>What this campaign handed the self-play track</h3>")
+    out.append(
+        '<ul>'
+        '<li><strong>The frozen opponents</strong> &mdash; every baseline row in '
+        'the <a href="#baselines">Baselines</a> and '
+        '<a href="#variants">Variants lab</a> tabs is one of the payloads '
+        'above, never re-run.</li>'
+        '<li><strong>The bootstrap network</strong> &mdash; the size-free '
+        'value labeller (trained at 8&times;8&ndash;16&times;16, labels '
+        'near-optimally to 64&times;64) that warm-started the loop&rsquo;s '
+        'networks.</li>'
+        '<li><strong>The instruments</strong> &mdash; the replay-certification '
+        'harness, the pinned exams, the expansion-budget accounting, and the '
+        'measured seed-noise bars that make every comparison on this page '
+        'paired rather than aggregate.</li>'
+        '<li><strong>The open problem</strong> &mdash; a planner that is cheap '
+        '<em>and</em> near-optimal <em>and</em> survives scale. The '
+        '<a href="#story">Story tab</a> is what happened next.</li>'
+        '</ul>')
+
+    n_read, n_miss = len(set(_READ)), len(set(_MISS))
+    miss_txt = ""
+    if n_miss:
+        miss_txt = (' Missing (rendered as pending): '
+                    + ", ".join(f"<code>{_esc(m)}</code>"
+                                for m in sorted(set(_MISS))) + ".")
+    out.append(f'<p class="meta">This tab read {n_read} supervised result '
+               f'file(s) at generation time; nothing under '
+               f'<code>supervised_valuenet/</code> was modified.{miss_txt}</p>')
+    out.append("</section>")
+    return "\n".join(out)
