@@ -118,7 +118,7 @@ PLAIN = {
  "v09_strict_value": (
   "Until now the value network learned to predict an abstract 'plan cost'. We "
   "changed it to predict the actual number of moves the robots end up making "
-  "-- the number the whole project is graded on.",
+  "— the number the whole project is graded on.",
   "You get what you train for: ranking plans by the real metric should cut "
   "wasted moves."),
  "v12_frontier_curriculum": (
