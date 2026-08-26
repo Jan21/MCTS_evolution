@@ -4,7 +4,18 @@
 labeler, label-free self-play, and the action-space extension that passes the
 plan language's proven quality floor.*
 
-**Status: LOCAL DRAFT — not for distribution.** Written 2026-08-26 against
+**Status: FROZEN 2026-08-26 (owner decision) — LOCAL, not for distribution.**
+Commit basis: repo state at draft commit `27bf26d` (data files as of
+2026-08-26; lab closeout through variants/FINDINGS entry 22). **Results
+produced after this line are NOT in this draft.** Known in-flight at freeze,
+carried only as future-work pointers: (a) the 24×24·8-robot frontier
+same-budget control (job 4829779) and (b) the 32×32 frontier hybrid+control
+legs (job 4829780) — both affect only the two cells marked "pending" in §4's
+transfer table; (c) **M6, beyond-oracle self-play at 80×80/96×96** —
+feasibility phase running, zero results claimed here. Updates belong in a
+successor revision, not in edits to this file.
+
+Written against
 `supervised_valuenet/FINDINGS.md` (§1–§87), `self_play_robots/FINDINGS.md`
 (§1–§26), `self_play_robots/variants/FINDINGS.md` (1–22) and
 `variants/DESIGN.md` §7. Every number below carries a source tag:
