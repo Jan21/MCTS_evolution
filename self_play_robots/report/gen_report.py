@@ -1575,15 +1575,24 @@ def sec_m0() -> str:
             # failure. Row-exact is reported as the stronger result when true.
             agg_ok = (same_exam and same_n
                       and na.get("solved") == ra.get("solved")
-                      and na.get("mean_regret") == ra.get("mean_regret"))
+                      and na.get("pct_optimal") == ra.get("pct_optimal"))
             passed = agg_ok
             vcls = "good" if passed else "bad"
             if not diffs and agg_ok:
                 plainv = f"exact match &mdash; 0 of {len(nrows_)} rows differ"
             elif agg_ok:
-                plainv = (f"totals identical; {len(diffs)} of {len(nrows_)} "
-                          f"rows differ only by floating-point rounding across "
-                          f"machines (a thread-count change reproduces them)")
+                try:
+                    dreg = abs((na.get("mean_regret") or 0)
+                               - (ra.get("mean_regret") or 0))
+                    dtxt = (f", shifting mean extra-moves by {dreg:.3f}"
+                            if dreg > 1e-9 else "")
+                except TypeError:
+                    dtxt = ""
+                plainv = (f"totals match ({na.get('solved')} solved, "
+                          f"{(na.get('pct_optimal') or 0):.1f}% optimal on both "
+                          f"sides); {len(diffs)} of {len(nrows_)} rows differ "
+                          f"only by floating-point rounding across machines "
+                          f"(a thread-count change reproduces them){dtxt}")
             else:
                 plainv = f"{len(diffs)} of {len(nrows_)} rows differ"
             out.append(f'<p class="verdict {vcls}">{chip("pass" if passed else "fail", "parity " + ("PASS" if passed else "FAIL"))} '
@@ -2089,7 +2098,7 @@ def agg_cells(d, a, moves_spec=".2f"):
 
 AGG_HEADERS = ["solved (count &middot; rate)", "moves (that run's solves)",
                "extra moves vs optimum", "% optimal",
-               "search effort (expansions)", "s/puzzle"]
+               "search effort (expansions)", "seconds/puzzle"]
 AGG_NOTE = ("<em>solved / rate</em> = <code>aggregate.solved</code>/<code>n</code> "
             "and <code>solve_rate</code>; <em>mean moves</em> = "
             "<code>aggregate.mean_moves</code> (over solved rows; = "

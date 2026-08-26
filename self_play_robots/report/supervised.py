@@ -131,7 +131,8 @@ def sec_supervised() -> str:
         'families on exact-solver answers. The <strong>backward sub-goal '
         'planner</strong> is cheap and plans in the sub-goal language. The '
         '<strong>forward move-by-move planner</strong> is near-perfect but '
-        'slow, and its teacher fails on big boards. The campaign&rsquo;s '
+        'slow, and its teacher &mdash; the exact solver whose answers it learns '
+        'from &mdash; fails on big boards. The campaign&rsquo;s '
         'results are locked in as the numbers to beat. Its value network gave '
         'the self-play loop its starting point. This tab rebuilds the key '
         'results from the campaign&rsquo;s own result files. The full log is '
@@ -146,8 +147,8 @@ def sec_supervised() -> str:
         'forward across both exams, in points.</p>')
     hdr = ('<div class="tw"><table class="t wide"><thead><tr>'
            '<th>rung</th>'
-           '<th>backward: solved</th><th>extra moves</th><th>s/puzzle</th>'
-           '<th>forward: solved</th><th>extra moves</th><th>s/puzzle</th>'
+           '<th>backward: solved</th><th>extra moves</th><th>seconds per puzzle</th>'
+           '<th>forward: solved</th><th>extra moves</th><th>seconds per puzzle</th>'
            '<th>frontier: backward / forward solved</th><th>pooled margin (pts)</th>'
            '</tr></thead><tbody>')
     body = []
@@ -196,7 +197,10 @@ def sec_supervised() -> str:
     out.append("<h3>The extended vocabulary (B2), under supervision</h3>")
     out.append(
         '<p>The campaign also trained backward planners on the extended '
-        'sub-goal vocabulary (transient blockers, robot reuse, park repairs). '
+        'sub-goal vocabulary, called B2 in the logs (see the '
+        '<a href="#glossary">Glossary</a>): blockers that hold only for a '
+        'moment, reuse of robots already placed, and shoving a robot aside '
+        'first. '
         'The extra vocabulary was available. Supervised training never '
         'learned to rank it:</p>')
     b2rows = []
@@ -232,9 +236,10 @@ def sec_supervised() -> str:
     out.append(
         '<p class="note">At 24&times;24 the B2-trained planner did worse '
         'than the same planner trained on the plain vocabulary (199 vs 205), '
-        'despite the richer language. The training signal, not the '
-        'vocabulary, was the bottleneck. Making that training signal is '
-        'exactly what the self-play loop later did (<a href="#res-loops">'
+        'despite the richer language. The problem was the training data, not '
+        'the vocabulary: supervised training never saw examples that taught '
+        'it to rank the new steps. Making those examples is exactly what the '
+        'self-play loop later did (<a href="#res-loops">'
         'milestone results</a>: solving 227&ndash;228 of 232 standard puzzles '
         'and 153&ndash;158 of the frontier from the same vocabulary).</p>')
 
@@ -266,7 +271,8 @@ def sec_supervised() -> str:
     out.append(
         '<p class="note">32&times;32 replicates tightly. The 16&times;16 '
         '8-robot runs split into two groups: seed 21 trained into a much '
-        'worse network &mdash; a known training hazard &mdash; with 108 of 184 '
+        'worse network &mdash; training sometimes lands in a bad solution and '
+        'stays there &mdash; with 108 of 184 '
         'frontier solves against 157&ndash;165 for the other two. The '
         'campaign reports the middle result and shows the bad run, not hides '
         'it.</p>')
@@ -293,7 +299,7 @@ def sec_supervised() -> str:
                '<th>forward training run (16&times;16, 8 robots)</th>'
                '<th>graded solved</th><th>extra moves</th>'
                '<th>frontier solved</th></tr></thead><tbody>'
-               f"<tr><td>original (oracle-starved teacher)</td>"
+               f"<tr><td>original (its teacher failed on most training examples)</td>"
                f"<td>{_solved(fo)}</td><td>{_f(fo['mean_regret'] if fo else None)}</td>"
                f"<td>{_solved(fou)}</td></tr>"
                f"<tr><td>re-trained control</td>"
@@ -321,12 +327,13 @@ def sec_supervised() -> str:
         'the <a href="#baselines">Baselines</a> and '
         '<a href="#variants">Variants lab</a> tabs is one of the result files '
         'above, never re-run.</li>'
-        '<li><strong>The bootstrap network</strong> &mdash; the size-free '
-        'value labeller (trained at 8&times;8&ndash;16&times;16, labels '
-        'near-optimally to 64&times;64) that warm-started the loop&rsquo;s '
-        'networks.</li>'
-        '<li><strong>The instruments</strong> &mdash; the replay-certification '
-        'harness, the pinned exams, the expansion-budget accounting, and the '
+        '<li><strong>The starting network</strong> &mdash; a small value network '
+        '(the &ldquo;labeller&rdquo;) that graded candidates almost as well '
+        'as the exact solver, up to 64&times;64. The self-play networks '
+        'began from its weights.</li>'
+        '<li><strong>The instruments</strong> &mdash; the replay-checking test '
+        'harness, the fixed (&ldquo;pinned&rdquo;) exams, the search-budget '
+        'accounting, and the '
         'measured run-to-run variation limits, which force every comparison on '
         'this page to be puzzle-by-puzzle.</li>'
         '<li><strong>The open problem</strong> &mdash; a planner that is cheap '

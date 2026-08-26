@@ -173,9 +173,8 @@ def _fig_ceiling() -> str:
 <figcaption><strong>The measured wall.</strong> No sub-goal planner can
 average less than +1.63 extra moves (base vocabulary), or +1.17 (extended:
 extra tricks, such as parking a robot aside first). Training cannot change
-this. It is a limit of the vocabulary itself. (Tightened
-probe. An earlier run measured +1.72 &mdash; see the
-<a href="#ceiling">Ceiling tab</a>.)</figcaption>
+this. It is a limit of the vocabulary itself. (An earlier, looser run
+measured +1.72 &mdash; see the <a href="#ceiling">Ceiling tab</a>.)</figcaption>
 </figure>'''
 
 
@@ -253,10 +252,13 @@ def _fig_loop() -> str:
   <text x="380" y="166" class="lbl">next round: better networks, new boards</text>
 </svg>
 <figcaption><strong>The loop&rsquo;s contract.</strong> An illegal shortcut
-fails the replay and leaves nothing. Only too-long plans can slip in. MCTS is
-the tree search that AlphaZero uses. Warm start: training continues from the
-last weights. One mixed round: ~940 puzzles, ~12,000 records, 5&ndash;6
-GPU-hours.</figcaption>
+fails the replay and leaves nothing. Only too-long plans can slip in. In the
+diagram: MCTS is the tree search that AlphaZero uses. Noise = small random
+nudges at the search&rsquo;s first choice, so rounds explore differently.
+Warm start = training continues from the last weights. An epoch = one pass
+over the training data. A paired test compares puzzle by puzzle, on the same
+puzzles. One mixed-size round (all three board types together): ~940
+puzzles, ~12,000 records, 5&ndash;6 GPU-hours.</figcaption>
 </figure>'''
 
 
@@ -289,11 +291,15 @@ def _fig_encoder() -> str:
   <line x1="214" y1="188" x2="292" y2="160" class="arr dashed" marker-end="url(#sa-mut)"/>
   <text x="450" y="252" text-anchor="middle" class="cap">740,928 parameters per network &mdash; each network trains its own copy of the block</text>
 </svg>
-<figcaption><strong>The encoder.</strong> Walls become attention masks, not
-input channels. Information moves only along legal slides. There are no
-positional embeddings, so nothing in the weights depends on board size. One
-checkpoint runs on any board. Twelve rounds let information travel twelve
-slides.</figcaption>
+<figcaption><strong>The encoder.</strong> The board enters as tokens: one
+short list of numbers per cell. Walls become attention masks &mdash; filters
+that say which cells may exchange information &mdash; not input channels, so
+information moves only along legal slides. There are no positional embeddings
+(no cell-number table baked into the weights), so nothing depends on board
+size. One saved network file runs on any board. Twelve passes of the same
+block let information travel twelve slides. The block is 740,928 of each
+network&rsquo;s parameters. With its own head on top, the value network
+totals 982,944 and the policy network 1,223,232.</figcaption>
 </figure>'''
 
 
@@ -330,11 +336,12 @@ def _fig_heads() -> str:
   <line x1="234" y1="102" x2="322" y2="62" class="arr ink" marker-end="url(#sa-ink)"/>
   <line x1="234" y1="134" x2="322" y2="174" class="arr ink" marker-end="url(#sa-ink)"/>
 </svg>
-<figcaption><strong>The two heads.</strong> The value head answers: how
-many steps will this plan still cost? Output: a 96-bin distribution
-(&ldquo;probably 6, maybe 9&rdquo;). The policy head answers: which sub-goal
-next? It points at real board cells, so it works with any candidate
-count.</figcaption>
+<figcaption><strong>The two heads.</strong> The value head reads five
+marked cells &mdash; the mover, the goal, and the candidate&rsquo;s three
+cells (B, S, H) &mdash; and answers: how many steps will this plan still
+cost? Output: a spread over 96 possible costs (&ldquo;probably 6, maybe
+9&rdquo;). The policy head answers: which sub-goal next? It points at real
+board cells, so it works with any candidate count.</figcaption>
 </figure>'''
 
 
@@ -364,10 +371,10 @@ def _fig_expansion() -> str:
   <line x1="800" y1="72" x2="828" y2="72" class="arr ink" marker-end="url(#sa-ink)"/>
 </svg>
 <figcaption><strong>One expansion</strong> = one policy call + one batched
-value call. Exams allow 1,200 per puzzle. Physics checks and replays are free
-&mdash; counted the same way as the fixed benchmark everyone is scored
-on. A failed replay
-removes the plan from the tree.</figcaption>
+value call. Exams allow 1,200 per puzzle. Physics checks do not count
+against the search budget. The budget counts network calls only &mdash; the
+same rule the benchmark uses. A failed replay removes the plan from the
+tree.</figcaption>
 </figure>'''
 
 
@@ -395,10 +402,10 @@ def _journey_tree() -> str:
                               <span class="why">v01 replaced our scoring rule (score a candidate by the verified cost of the plans that used it) with AlphaZero&rsquo;s (prefer what the search visited most). Training collapsed on every exam (fluke chance below one in a million). Our rule is what makes the training work.</span></li>
                           <li><span class="chip good">&#10003; adopted</span> <span class="what">v04 &middot; keep every examined decision</span>
                               <span class="why">Twice the records from the same search. A replicated win on the hard set.</span></li>
-                          <li><span class="chip warn">~ not replicated</span> <span class="what">v06 &middot; Gumbel root exploration</span>
+                          <li><span class="chip warn">~ did not repeat</span> <span class="what">v06 &middot; a different way to randomise the search&rsquo;s first choices</span>
                               <span class="why">Won at seed 7, reversed at seed 8. The two-seed rule caught it.</span></li>
                           <li><span class="chip ctl">control</span> <span class="what">v08 &middot; cold start from random weights</span>
-                              <span class="why">One label-free round: 132 of 200 unseen. The supervised planner: 134. A tie, from nothing.</span></li>
+                              <span class="why">One round with no human or solver answers &mdash; its only labels were its own replay-checked plans: 132 of 200 unseen puzzles. The supervised planner: 134. A tie, from nothing.</span></li>
                           <li><span class="chip good">&#10003; adopted</span> <span class="what">v09 &middot; predict real move counts</span>
                               <span class="why">The value net now predicts real move counts &mdash; the number the project is graded on &mdash; not an internal plan-step count. Better everywhere, both seeds.</span></li>
                           <li><span class="chip bad">&#10007; killed</span> <span class="what">v12 &middot; train only on hard puzzles</span>
@@ -443,11 +450,16 @@ def sec_story() -> str:
         '<a href="#st-limits">10 limits</a>'
         '</nav>')
     out.append(
-        '<p class="lede">A small pair of neural networks taught itself to '
+        '<p class="lede">Two hand-built planners came before this project: a '
+        '<em>supervised</em> one, taught from an exact solver&rsquo;s '
+        'answers, and a slower <em>move-by-move</em> one that is nearly '
+        'perfect when it solves. Then a small pair of neural networks taught '
+        'itself to '
         'solve Ricochet Robots puzzles. No human answers were used. On 200 '
         'brand-new puzzles it solves 188. The human-taught planner '
-        'solves 134. We also proved a hard quality limit of the planner&rsquo;s '
-        'vocabulary. A small search change then broke that limit. '
+        'solves 134. We also measured a hard quality limit of the '
+        'planner&rsquo;s vocabulary. A small search change then broke that '
+        'limit. '
         '<code>EXPLAINER.md</code> cites a source for every number here.</p>')
 
     # 1
@@ -514,8 +526,9 @@ def sec_story() -> str:
                '</tbody></table></div>')
     out.append(
         '<p>The networks trained only at 16&times;16 and 24&times;24. Audited '
-        'up to 64&times;64, the value network still beats its own teacher at '
-        'every size (<a href="#res-audit">live table</a>).</p>')
+        'up to 64&times;64 with the same measuring tool as its teacher, the '
+        'value network beats the teacher at every size (<a href="#res-audit">'
+        'live table</a>).</p>')
 
     # 6
     out.append('<h3 id="st-search"><span class="no">6</span>One search step</h3>')
@@ -537,10 +550,13 @@ def sec_story() -> str:
         '<p>Every row: same budget, every solve replay-certified.</p>')
     out.append(_fig_break())
     out.append(
+        '<p>Allowing a third ordinary move first improves the flagship&rsquo;s '
+        '+0.94 to +0.86 on the standard exam &mdash; measured once, not '
+        'adopted.</p>'
         '<p><strong>The unseen exam.</strong> 200 puzzles on fresh boards. '
         'Perfect play needs 8.71 moves where the optimum is known:</p>')
     out.append('<div class="tw"><table class="t"><thead><tr>'
-               '<th>planner</th><th>solved of 200</th><th>solved perfectly</th>'
+               '<th>planner</th><th>solved of 200</th><th>solved perfectly*</th>'
                '<th>extra moves vs perfect*</th></tr></thead><tbody>'
                '<tr class="hl"><td>flagship (self-taught + hybrid search)</td><td>188</td><td>57%</td><td class="g">+1.47</td></tr>'
                '<tr><td>same networks, standard search</td><td>182</td><td>50%</td><td>+1.94</td></tr>'
@@ -549,8 +565,9 @@ def sec_story() -> str:
                '<tr><td>supervised backward (the baseline)</td><td>134</td><td>36%</td><td>+4.84</td></tr>'
                '<tr><td>supervised move-by-move</td><td>101</td><td>90%</td><td>+0.12</td></tr>'
                '</tbody></table>'
-               '<p class="note">* over that system&rsquo;s own solved puzzles '
-               'with a known optimum.</p></div>')
+               '<p class="note">* both starred columns count only the 137 puzzles '
+               'with a known optimum, restricted to the ones that system '
+               'solved.</p></div>')
     out.append(
         '<p>The move-by-move planner is almost perfect when it solves. But '
         'it solves half the exam, at far higher cost. The '
@@ -561,11 +578,13 @@ def sec_story() -> str:
         'boards with 4 robots. Run unchanged elsewhere:</p>')
     out.append('<div class="tw"><table class="t"><thead><tr>'
                '<th>new exam</th><th>hybrid</th><th>matched control</th>'
-               '<th>paired move wins</th></tr></thead><tbody>'
+               '<th>move wins (shorter / longer)**</th></tr></thead><tbody>'
                '<tr><td>32&times;32 graded</td><td class="g">174/175, +1.60</td><td>172/175, +1.87</td><td>17 / 0</td></tr>'
                '<tr><td>8 robots, graded</td><td class="g">159/161, +1.24</td><td>159/161, +1.82</td><td>23 / 0</td></tr>'
-               '<tr><td>8 robots, frontier</td><td class="g">276/289 &mdash; the record</td><td colspan="2">supervised arm: 161</td></tr>'
-               '</tbody></table></div>')
+               '<tr><td>8 robots, frontier</td><td class="g">276/289 &mdash; the project&rsquo;s best result</td><td colspan="2">supervised planner: 161</td></tr>'
+               '</tbody></table>'
+               '<p class="note">** counted on the puzzles both runs '
+               'solved.</p></div>')
 
     # 9
     out.append('<h3 id="st-failed"><span class="no">9</span>What failed, and why it mattered</h3>')
@@ -589,7 +608,7 @@ def sec_story() -> str:
         '<li>Self-play training bought solve rate and speed, never shorter '
         'solutions.</li>'
         '<li>The move-by-move planner still wins move quality (+0.12 vs '
-        '+0.86).</li>'
+        '+0.94).</li>'
         
         '</ul>')
     out.append(
