@@ -77,14 +77,20 @@ def _mean(xs):
     return sum(xs) / len(xs) if xs else None
 
 
-def compare(entries, ref_labels=()):
+def compare(entries, ref_labels=(), dstar=None):
     """Align entries and compute the comparable columns.
 
     Returns {"error": str} if nothing aligns, else a dict:
       n, common_n, entries: [{label, ok, solved, n, moves_common, mean_exp,
-                              pairwise: {ref_label: {...} }}, ...]
+                              delta_perfect, pairwise: {ref_label: {...}}}, ...]
     Entries whose payload is missing stay in the output with ok=False
     ("pending" rows). Alignment guards run over the present entries only.
+
+    Perfect play: `dstar` is an optional per-position list of exact optima
+    (None where unknown). When omitted, d* is read off the first entry whose
+    rows carry real `d_star` values (graded exams). Each entry then gets
+    `delta_perfect` = mean(moves - d*) over the common-solved positions with a
+    known optimum (`perfect_n` of them; `perfect_mean` = mean d* there).
     """
     present = [e for e in entries if e.ok]
     if not present:
@@ -104,6 +110,15 @@ def compare(entries, ref_labels=()):
     common = [i for i in range(n) if all(e.rows[i]["solved"] for e in present)]
     refs = {e.label: e for e in present if e.label in set(ref_labels)}
 
+    if dstar is None:                     # graded exams: d* lives on the rows
+        for e in present:
+            ds = [r.get("d_star") for r in e.rows]
+            if any(ds):
+                dstar = [d if d else None for d in ds]
+                break
+    perfect_idx = [i for i in common if dstar and dstar[i]] if dstar else []
+    perfect_mean = _mean(dstar[i] for i in perfect_idx) if perfect_idx else None
+
     out_entries = []
     for e in entries:
         if not e.ok:
@@ -115,6 +130,9 @@ def compare(entries, ref_labels=()):
             "moves_common": _mean(_moves(e.rows[i]) for i in common),
             "mean_exp": e.agg.get("mean_expansions",
                                   _mean(r.get("expansions") for r in e.rows)),
+            "delta_perfect": (_mean(_moves(e.rows[i]) - dstar[i]
+                                    for i in perfect_idx)
+                              if perfect_idx else None),
             "pairwise": {},
         }
         for rl, ref in refs.items():
@@ -136,4 +154,5 @@ def compare(entries, ref_labels=()):
             }
         out_entries.append(rec)
     return {"n": n, "common_n": len(common), "sha": present[0].sha,
+            "perfect_n": len(perfect_idx), "perfect_mean": perfect_mean,
             "entries": out_entries}

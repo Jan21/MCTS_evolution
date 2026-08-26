@@ -447,21 +447,28 @@ def _pw_cell(pw):
                   cls="hlnum" if good else "")
 
 
-def h2h_table(entries, ref_labels, note_extra=""):
+def h2h_table(entries, ref_labels, note_extra="", dstar=None):
     """One apples-to-apples table: common-subset moves + paired deltas.
 
     `entries` are compare.CmpEntry objects (label + payload + system filter);
     `ref_labels` name which entries the delta columns compare against.
+    `dstar`: optional per-position exact optima (else read off graded rows);
+    when known, a "vs perfect play" column appears.
     """
-    r = cmp_compare(entries, ref_labels=ref_labels)
+    r = cmp_compare(entries, ref_labels=ref_labels, dstar=dstar)
     if r.get("error"):
         return (f'<p class="note"><span class="chip pend">not renderable</span> '
                 f"head-to-head skipped: {esc(r['error'])}</p>")
     n_ok = sum(1 for e in r["entries"] if e["ok"])
+    perfect = bool(r.get("perfect_n"))
     headers = (["system", "solved",
                 f"moves, on the {r['common_n']} puzzles all {n_ok} systems solved"]
                + [f"&Delta; moves vs {esc(rl)} <span class=\"note\">(both-solved; "
                   f"&minus; = fewer = better)</span>" for rl in ref_labels]
+               + ([f"&Delta; vs perfect play <span class=\"note\">(the "
+                   f"{r['perfect_n']} common puzzles with a known optimum; "
+                   f"mean optimum {r['perfect_mean']:.2f})</span>"]
+                  if perfect else [])
                + ["mean expansions (budget)"])
     rows_ = []
     for e in r["entries"]:
@@ -476,6 +483,11 @@ def h2h_table(entries, ref_labels, note_extra=""):
         for rl in ref_labels:
             cells.append(td_txt("<em>reference</em>") if e["label"] == rl
                          else _pw_cell(e["pairwise"].get(rl)))
+        if perfect:
+            cells.append(td_txt(f"+{e['delta_perfect']:.2f} mv"
+                                if e["delta_perfect"] is not None else "&mdash;",
+                                cls="hlnum" if e["delta_perfect"] is not None
+                                and e["delta_perfect"] < 1.0 else ""))
         cells.append(td(e["mean_exp"], ".0f"))
         rows_.append(row(cells))
     note = ("Why these columns: a system&rsquo;s own &ldquo;mean moves&rdquo; averages over "
@@ -1066,6 +1078,9 @@ def sec_baselines() -> str:
             CmpEntry("self-play line (mix iter3)",
                      load(RESULTS / "selfplay" / "mix_b2mix_iter3" /
                           "bench_g24r4_astar.json")),
+            CmpEntry("current best planner (flagship: v09 nets + depth-2 hybrid)",
+                     load(RESULTS / "variants" / "v07_hybrid_actions" /
+                          "bench_graded_hybrid_d2.json")),
         ]),
         ("g24r8", "24&times;24, 8 robots &mdash; pinned graded exam", [
             CmpEntry("backward supervised",
@@ -1077,6 +1092,12 @@ def sec_baselines() -> str:
             CmpEntry("self-play line (mix iter3)",
                      load(RESULTS / "selfplay" / "mix_b2mix_iter3" /
                           "bench_g24r8_astar.json")),
+            CmpEntry("flagship transferred zero-shot (v09 nets + depth-2 hybrid)",
+                     load(RESULTS / "variants" / "v07_transfer" /
+                          "bench_g24r8_graded_hybrid_d2.json")),
+            CmpEntry("same nets, standard search (transfer control)",
+                     load(RESULTS / "variants" / "v07_transfer" /
+                          "bench_g24r8_graded_stdmcts.json")),
         ]),
         ("g32r4", "32&times;32, 4 robots &mdash; pinned graded exam", [
             CmpEntry("backward supervised",
@@ -1088,11 +1109,38 @@ def sec_baselines() -> str:
             CmpEntry("self-play line (mix iter3)",
                      load(RESULTS / "selfplay" / "mix_b2mix_iter3" /
                           "bench_g32r4_astar.json")),
+            CmpEntry("flagship transferred zero-shot (v09 nets + depth-2 hybrid)",
+                     load(RESULTS / "variants" / "v07_transfer" /
+                          "bench_g32r4_graded_hybrid_d2.json")),
+            CmpEntry("same nets, standard search (transfer control)",
+                     load(RESULTS / "variants" / "v07_transfer" /
+                          "bench_g32r4_graded_stdmcts.json")),
         ]),
     ]
     for cfg, human, ents in h2h_specs:
         out.append(f"<h4><code>{esc(cfg)}</code> &mdash; {human}</h4>")
         out.append(h2h_table(ents, ("backward supervised", "forward supervised")))
+        if cfg == "g24r4":
+            out.append("<p class='note'>Depth-3 slide prefixes push the flagship "
+                       "further on this exam (regret 0.861 vs depth-2&rsquo;s "
+                       "0.944, same 231/232 solves) &mdash; see the Variants tab "
+                       "(<code>v07</code>) for the depth study.</p>")
+    out.append("<h4><code>g24r8</code> frontier &mdash; 24&times;24, 8 robots, "
+               "the 289 puzzles no supervised solver fully cracked</h4>")
+    out.append(h2h_table(
+        [CmpEntry("backward supervised",
+                  load_sv("scaling/results/g24r8/comparison_ungraded.json"),
+                  prefer_kind="backward"),
+         CmpEntry("forward supervised",
+                  load_sv("scaling/results/g24r8/comparison_ungraded.json"),
+                  prefer_kind="forward"),
+         CmpEntry("flagship transferred zero-shot (v09 nets + depth-2 hybrid)",
+                  load(RESULTS / "variants" / "v07_transfer" /
+                       "bench_g24r8_frontier_hybrid_d2.json")),
+         CmpEntry("same nets, standard search (transfer control)",
+                  load(RESULTS / "variants" / "v07_transfer" /
+                       "bench_g24r8_frontier_stdmcts.json"))],
+        ("backward supervised", "forward supervised")))
 
     rows_ = []
     for cfg, rels in OPPONENT_FILES.items():
@@ -3312,6 +3360,14 @@ def sec_variants() -> str:
     # the unseen-exam headline: every system on the same 200 fresh puzzles
     out.append("<h3>The unseen-exam headline &mdash; every system, same 200 fresh "
                "puzzles, same columns</h3>")
+    unseen_dstar = None                  # exact optima sidecar (oracle, offline)
+    ds_path = vd / "exam" / "g24r4_unseen.dstar.jsonl"
+    if ds_path.is_file():
+        recs = [json.loads(l) for l in ds_path.read_text().splitlines() if l.strip()]
+        unseen_dstar = [None] * (max(r["i"] for r in recs) + 1)
+        for r_ in recs:
+            unseen_dstar[r_["i"]] = r_.get("d_star") or None
+        STATS["read"].append(str(ds_path))
     out.append(h2h_table(
         [CmpEntry("forward baseline (MoveNet A*)",
                   load(vd / "baselines" / "forward_movenet_unseen.json")),
@@ -3325,10 +3381,15 @@ def sec_variants() -> str:
                   load(vd / "v09_strict_value" / "bench_unseen_astar.json")),
          CmpEntry("v14 stack (emit-all + strict value)",
                   load(vd / "v14_stack" / "bench_unseen_astar.json")),
-         CmpEntry("v07 hybrid (subgoals + a first slide)",
-                  load(vd / "v07_hybrid_actions" / "bench_unseen_hybrid.json"))],
+         CmpEntry("v07 hybrid, depth 1 (subgoals + a first slide)",
+                  load(vd / "v07_hybrid_actions" / "bench_unseen_hybrid.json")),
+         CmpEntry("flagship: v09 nets + depth-2 hybrid",
+                  load(vd / "v07_hybrid_actions" / "bench_unseen_hybrid_d2.json")),
+         CmpEntry("depth-3 hybrid (saturation check)",
+                  load(vd / "v07_hybrid_actions" / "bench_unseen_hybrid_d3.json"))],
         ("backward baseline (supervised per-size)",
          "forward baseline (MoveNet A*)"),
+        dstar=unseen_dstar,
         note_extra="This is the generalization bar of the whole project: fresh "
                    "boards no network ever saw, no exact labels anywhere. The "
                    "project goal reads directly off the two &Delta; columns: beat "
