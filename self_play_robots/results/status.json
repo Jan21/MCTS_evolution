@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-22T03:07:33",
+ "updated": "2026-08-26T16:06:33",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -89,7 +89,7 @@
   },
   "M5": {
    "title": "scale + zero-shot transfer",
-   "status": "curriculum loop complete (3 iterations, FINDINGS §20/§22): frontier peaks 170/235/269 at iter 1, graded peak 230/232 at iter 3; far-size audits §17; variants lab continues (wave 2 running)",
+   "status": "done: curriculum loop (§20/§22), far-size audits (§17), variants lab waves 1-5 (§23/§25/§26); planner-of-record = v14 training + hybrid d2/d3 search (flagship: graded 231/232 rg 0.944/0.861, frontier 177/218, unseen 188/200 +1.47 vs perfect; transfers zero-shot to 32/8r with paired 17/0, 23/0)",
    "sources": [
     "results/selfplay/mix_b2mix_iter1/",
     "results/selfplay/mix_b2mix_iter2/",
@@ -108,9 +108,12 @@
    "note": "FINDINGS §9, §16"
   },
   "M6": {
-   "title": "beyond the oracle",
-   "status": "pending",
-   "sources": [],
+   "title": "beyond the oracle (80x80+, certification only)",
+   "status": "started: M6 lead agent in Phase 0 feasibility (M6_DESIGN.md to come); budget <=20 nh",
+   "sources": [
+    "M6_DESIGN.md",
+    "M6_FINDINGS.md"
+   ],
    "jobs": []
   }
  },
@@ -174,7 +177,7 @@
   },
   "variants_lab": {
    "title": "self-play design-variants lab (owner 2026-08-20: many approaches, matched comparisons, unseen-board generalization exam)",
-   "status": "waves 1-3 done (FINDINGS §23/§25, variants/FINDINGS.md 1-10): v09 strict-value + v04 emit-all + v14 stack = adopted recipe; v07 hybrid action space breaks the language ceiling (regret 1.01 < 1.17 floor, survives same-budget control); v01/v12 killed; unseen exam grounded in exact optima (137/200); adopt-into-mainline resumed (4747761); ~10 nh of 50",
+   "status": "COMPLETE, standing down to maintenance (waves 1-5; final ledger pending two control legs): adopted v09/v04/v14/v07-d2; killed v01/v12/v15/v16; three lessons in variants/DESIGN.md §7; ~28/50 nh",
    "sources": [
     "variants/DESIGN.md",
     "variants/FINDINGS.md",
@@ -182,6 +185,14 @@
    ],
    "jobs": [],
    "note": "no exact labels in the loop (certification only; exact = diagnostic/control arms); unseen exam = fresh lean boards ids>=20000 with backward+forward supervised baselines benched on the same boards"
+  },
+  "paper": {
+   "title": "joint paper draft (both campaigns)",
+   "status": "drafting: paper/DRAFT.md + paper/CLAIMS.md (local only)",
+   "sources": [
+    "paper/"
+   ],
+   "jobs": []
   }
  },
  "decisions": {
