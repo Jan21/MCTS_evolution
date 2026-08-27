@@ -73,23 +73,25 @@ PLAIN = {
   "the search spent the most time exploring' — the classic AlphaZero recipe.",
   "The search's attention might carry information that solution costs alone miss."),
  "v02_td_blend": (
-  "We softened the value network's training target by blending in its own "
-  "earlier prediction, instead of trusting the searched outcome completely.",
+  "The idea: soften the value network's training target by blending in its "
+  "own earlier prediction, instead of trusting the searched outcome fully.",
   "Outcomes of a single search are noisy; averaging with the network's prior "
   "guess can cancel some of that noise."),
  "v03_hard_mining": (
-  "We kept only the practice puzzles the search had to work hard on, throwing "
-  "away the easy ones.",
+  "The idea: keep only the practice puzzles the search had to work hard "
+  "on, and throw away the easy ones.",
   "Training time spent on puzzles the planner already aces is wasted."),
  "v04_deep_emit": (
   "The search examines many positions per puzzle, but we only trained on the "
   "ones along the final solution path. We changed that to train on EVERY "
   "position the search examined and certified.",
-  "Same search budget per puzzle. Processing each practice puzzle takes "
-  "longer, but yields roughly twice the training data."),
+  "The search already examines many positions it then throws away. "
+  "Keeping them all roughly doubles the training data from the same "
+  "search work."),
  "v05_mean_backup": (
-  "When the search rates a branch, we averaged the scores of everything "
-  "tried below it. Before, it took the single best score found there.",
+  "The idea: when the search rates a branch, average the scores of "
+  "everything tried below it. The default takes the single best score "
+  "found there.",
   "Best-case summaries can be hostage to one lucky find; averages explore "
   "more evenly."),
  "v06_gumbel_root": (

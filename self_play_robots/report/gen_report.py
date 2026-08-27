@@ -1215,19 +1215,20 @@ def seed_spread_line() -> str:
         return ""
     sent = []
     for i, (label, ds, do) in enumerate(bits):
-        who = ("the exact-taught pair" if "exact" in label
-               else "the network-taught twin (the same recipe retrained on "
-                    "network-written labels)" if "twin" in label.lower()
-               else label)
+        who = ("the solver-taught pair" if "exact" in label
+               else "the network-taught twin (the same planner retrained on "
+                    "network-written labels instead of exact answers)"
+               if "twin" in label.lower() else label)
         upto = "up to " if i else ""
         f1 = lambda v: f"{v:.1f}".rstrip("0").rstrip(".")
         if do is None:
-            sent.append(f"{who} disagrees by {upto}{f1(ds)} solved puzzles")
+            sent.append(f"{who} disagrees by {upto}{f1(ds)} solve points")
         elif i == 0:
-            sent.append(f"{who} disagrees by {f1(ds)} solved puzzles and "
+            sent.append(f"{who} disagrees by {f1(ds)} solve points and "
                         f"{f1(do)} optimality points")
         else:
-            sent.append(f"{who} disagrees by up to {f1(ds)} and {f1(do)}")
+            sent.append(f"{who} disagrees by up to {f1(ds)} solve points "
+                        f"and {f1(do)} optimality points")
     return ("<p class='note'><strong>The yardstick, measured from these very "
             "files.</strong> Two identical runs that differ only in their "
             "random start: " + sent[0] + ". "
@@ -1319,7 +1320,7 @@ def sec_baselines() -> str:
                "self-play loop ran at that size.</p>")
     h2h_specs = [
         ("g16r4", "16&times;16, 4 robots &mdash; legacy 450-puzzle exam", [
-            CmpEntry("backward supervised",
+            CmpEntry("solver-taught planner (base vocabulary)",
                      load_sv("eval/results/final450_backward_prefix.json"),
                      prefer_kind="backward"),
             CmpEntry("forward supervised",
@@ -1330,7 +1331,7 @@ def sec_baselines() -> str:
                      tech="M1 size-free pair mixed_value_warm_s21"),
         ]),
         ("g24r4", "24&times;24, 4 robots &mdash; pinned graded exam", [
-            CmpEntry("backward supervised",
+            CmpEntry("solver-taught planner (base vocabulary)",
                      load_sv("scaling/results/g24r4/comparison.json"),
                      prefer_kind="backward"),
             CmpEntry("forward supervised",
@@ -1346,7 +1347,7 @@ def sec_baselines() -> str:
                      tech="v09 strict-value nets + depth-2 slide-prefix hybrid search"),
         ]),
         ("g24r8", "24&times;24, 8 robots &mdash; pinned graded exam", [
-            CmpEntry("backward supervised",
+            CmpEntry("solver-taught planner (base vocabulary)",
                      load_sv("scaling/results/g24r8/comparison.json"),
                      prefer_kind="backward"),
             CmpEntry("forward supervised",
@@ -1365,7 +1366,7 @@ def sec_baselines() -> str:
                           "bench_g24r8_graded_stdmcts.json")),
         ]),
         ("g32r4", "32&times;32, 4 robots &mdash; pinned graded exam", [
-            CmpEntry("backward supervised",
+            CmpEntry("solver-taught planner (base vocabulary)",
                      load_sv("scaling/results/g32r4/comparison.json"),
                      prefer_kind="backward"),
             CmpEntry("forward supervised",
@@ -1386,7 +1387,7 @@ def sec_baselines() -> str:
     ]
     for cfg, human, ents in h2h_specs:
         out.append(f"<h4><code>{esc(cfg)}</code> &mdash; {human}</h4>")
-        out.append(h2h_table(ents, ("backward supervised", "forward supervised")))
+        out.append(h2h_table(ents, ("solver-taught planner (base vocabulary)", "forward supervised")))
         if cfg == "g24r4":
             out.append("<p class='note'>Letting the search try up to three "
                        "single robot moves before subgoal planning "
@@ -1396,9 +1397,11 @@ def sec_baselines() -> str:
                        "same 231/232 solves. The depth study lives on the "
                        "Variants tab (<code>v07</code>).</p>")
     out.append("<h4><code>g24r8</code> frontier &mdash; 24&times;24, 8 robots, "
-               "the 289 puzzles no supervised solver fully cracked</h4>")
+               "the 289 frontier puzzles</h4>")
+    out.append("<p class='note'>Frontier = "
+               "the puzzles no planner had solved when the exam was frozen; an optimum exists but is not known.</p>")
     out.append(h2h_table(
-        [CmpEntry("backward supervised",
+        [CmpEntry("solver-taught planner (base vocabulary)",
                   load_sv("scaling/results/g24r8/comparison_ungraded.json"),
                   prefer_kind="backward"),
          CmpEntry("forward supervised",
@@ -1411,7 +1414,7 @@ def sec_baselines() -> str:
          CmpEntry("same nets, standard search (transfer control)",
                   load(RESULTS / "variants" / "v07_transfer" /
                        "bench_g24r8_frontier_stdmcts.json"))],
-        ("backward supervised", "forward supervised")))
+        ("solver-taught planner (base vocabulary)", "forward supervised")))
 
     rows_ = []
     for cfg, rels in OPPONENT_FILES.items():
@@ -1429,7 +1432,7 @@ def sec_baselines() -> str:
                           "file. A row&rsquo;s moves average covers only the puzzles "
                           "that system solved, so rows here are provenance, not a "
                           "fair race &mdash; compare systems in the head-to-head "
-                          "tables above. &ldquo;frontier&rdquo; marks exams with no "
+                          "tables above. &ldquo;frontier&rdquo; = the puzzles no planner had solved when the exam was frozen; an optimum exists but is not known "
                           "known optimum, and the <em>exact optimum</em> row is the "
                           "ceiling nothing can beat. "
                           "<details><summary>Column definitions, field by field "
@@ -3138,7 +3141,11 @@ def sub_forward() -> str:
         if not d_.is_dir():
             out.append(pend_note(f"{disp(d_)} not on disk"))
             continue
-        files = [f for f in sorted(d_.glob("*.json")) if ".vs_" not in f.name]
+        files = [f for f in sorted(d_.rglob("*.json"))
+                 if ".vs_" not in f.name and not f.name.startswith("gate_")
+                 and f.name != "generation.manifest.json"
+                 and f.name != "train.result.json" and f.name != "train.data.json"
+                 and f.name != "DATA.json"]
         rows_ = []
         for f in files:
             d, a = agg_of(f)
@@ -3165,7 +3172,10 @@ def sub_forward() -> str:
                                f'&middot; <span title="exact sign test, '
                                f'p={_pf(pr.get("sign_p_moves"))}">'
                                f"{fluke(pr.get('sign_p_moves'))}</span>")
-            rows_.append(row([td_txt(f"<code>{esc(f.stem)}</code><br><span class='note'>{esc(sysname[:90])}</span>"),
+            sub = f.parent.name if f.parent != d_ else ""
+            slab = (f"<code>{esc(sub)}/{esc(f.stem)}</code>" if sub
+                    else f"<code>{esc(f.stem)}</code>")
+            rows_.append(row([td_txt(f"{slab}<br><span class='note'>{esc(sysname[:90])}</span>"),
                               *agg_cells(d, a, ".3f"),
                               td_txt("<br>".join(vs_bits) if vs_bits else "&mdash;"),
                               td_txt(src(disp(f)))]))
@@ -4077,6 +4087,16 @@ def sec_variants() -> str:
                                    _var_agg(load(arm_p)), gates.get(t)))
             if res8.is_dir():
                 a8_p = res8 / f"bench_{t}_astar.json"
+                if vid == "v00_control":
+                    # the control's replicate would compare itself with itself;
+                    # show the seed-7 vs seed-8 spread instead: the noise yardstick
+                    rows.append(_arm_cells(
+                        a8_p, arm_p,
+                        f"&nbsp;&nbsp;&#8627; {esc(label)} <em>(two identical "
+                        f"recipes, different random starts &mdash; the "
+                        f"run-to-run noise yardstick)</em>",
+                        _var_agg(load(a8_p)), None, cls="dim"))
+                    continue
                 c8_p = vd / "v00_control_s8" / f"bench_{t}_astar.json"
                 rows.append(_arm_cells(
                     a8_p, c8_p,
