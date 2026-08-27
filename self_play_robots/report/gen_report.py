@@ -565,7 +565,7 @@ def h2h_table(entries, ref_labels, note_extra="", dstar=None):
     global _H2H_WHY_SHOWN
     if _H2H_WHY_SHOWN:
         why = ("Same fair-comparison rule as the first head-to-head table "
-               "above. ")
+               "(Baselines tab). ")
     else:
         why = ("Why these columns: a system&rsquo;s own &ldquo;mean moves&rdquo; averages over "
                "the puzzles <em>it</em> solved, so raw means from two systems are NOT comparable "
@@ -1235,7 +1235,8 @@ def seed_spread_line() -> str:
         if do is None:
             sent.append(f"{who} disagrees by {upto}{f1(ds)} solve points")
         elif i == 0:
-            sent.append(f"{who} disagrees by {f1(ds)} solve points and "
+            sent.append(f"{who} disagrees by {f1(ds)} solve points "
+                        "(percentage-point difference in puzzles solved) and "
                         f"{f1(do)} optimality points")
         else:
             sent.append(f"{who} disagrees by up to {f1(ds)} solve points "
@@ -1408,8 +1409,10 @@ def sec_baselines() -> str:
                        "(&ldquo;depth-3 slide prefixes&rdquo;) pushes the "
                        "flagship further still: 0.861 extra moves over the "
                        "known optimum, against depth-2&rsquo;s 0.944, with the "
-                       "same 231/232 solves. The depth study lives on the "
-                       "Variants tab (<code>v07</code>).</p>")
+                       "same 231/232 solves. Those two figures average over "
+                       "each planner&rsquo;s own solves; the table&rsquo;s "
+                       "+0.90 counts only the shared puzzles. The depth study "
+                       "lives on the Variants tab (<code>v07</code>).</p>")
     out.append("<h4><code>g24r8</code> frontier &mdash; 24&times;24, 8 robots, "
                "the 289 frontier puzzles</h4>")
     out.append("<p class='note'>Frontier = "
@@ -1435,8 +1438,9 @@ def sec_baselines() -> str:
         "original plan document does: the forward planner is slower but near-optimal when it solves, "
         "the backward planner solves more and faster but further from optimal. "
         "<strong>Beating backward on moves while matching its solve rate "
-        "comes close to forward's quality at backward's speed — that "
-        "is the headline chart this project is aiming at.</strong></p>")
+        "comes close to forward's quality at backward's speed — that is the "
+        "finish line this project aims at (<a href='#res-chart'>the "
+        "regret-vs-solve chart</a>).</strong></p>")
     out.append('<p class="banner">Below this line: the raw run ledger, kept '
                'for auditors. It holds the bench protocol, each '
                'system&rsquo;s own aggregates, the pinned exam files and '
@@ -1547,7 +1551,8 @@ def sec_baselines() -> str:
 
 
 def sec_m0() -> str:
-    out = ['<section id="m0">', "<h2>M0 &mdash; arena parity</h2>",
+    out = ['<section id="m0">', "<h2>M0 &mdash; arena parity "
+           "<span class='note'>(arena = the fixed exam-and-rules harness)</span></h2>",
            "<p>M0 answers one bookkeeping question. This project's new test "
            "harness re-ran the recorded exams and had to reproduce the "
            "recorded totals. It did &mdash; the parity verdicts below say "
@@ -3991,9 +3996,25 @@ def sec_variants() -> str:
         for r_ in recs:
             unseen_dstar[r_["i"]] = r_.get("d_star") or None
         STATS["read"].append(str(ds_path))
+    uents = [CmpEntry("forward baseline (move-by-move planner)",
+                      load(vd / "baselines" / "forward_movenet_unseen.json"),
+                      tech="MoveNet A*")]
+    _gap = {}
+    for _lab, _pth in (("v00", vd / "v00_control" / "bench_unseen_astar.json"),
+                       ("d2", vd / "v07_hybrid_actions" / "bench_unseen_hybrid_d2.json")):
+        _r = cmp_compare([uents[0], CmpEntry(_lab, load(_pth))], ref_labels=(uents[0].label,))
+        if not _r.get("error") and _r["entries"][1]["ok"]:
+            _pw = _r["entries"][1]["pairwise"].get(uents[0].label)
+            if _pw and _pw["delta"] is not None:
+                _gap[_lab] = _pw["delta"]
+    gap_txt = ""
+    if "v00" in _gap and "d2" in _gap:
+        gap_txt = (f"close the moves gap to the forward baseline &mdash; from "
+                   f"+{_gap['v00']:.2f} extra moves (the standard loop) to "
+                   f"+{_gap['d2']:.2f} (the flagship) on shared solves")
     out.append(h2h_table(
-        [CmpEntry("forward baseline (MoveNet A*)",
-                  load(vd / "baselines" / "forward_movenet_unseen.json")),
+        uents +
+        [
          CmpEntry("backward baseline (supervised per-size)",
                   load(vd / "baselines" / "supervised_persize_unseen.json")),
          CmpEntry("the loop's networks before the lab started",
@@ -4011,14 +4032,14 @@ def sec_variants() -> str:
          CmpEntry("three ordinary moves first (limit check)",
                   load(vd / "v07_hybrid_actions" / "bench_unseen_hybrid_d3.json"))],
         ("backward baseline (supervised per-size)",
-         "forward baseline (MoveNet A*)"),
+         "forward baseline (move-by-move planner)"),
         dstar=unseen_dstar,
         note_extra="This is the generalization bar of the whole project: fresh "
                    "boards no network ever saw, no exact labels anywhere. The "
                    "project goal reads directly off the two &Delta; columns: beat "
                    "the backward baseline (done, with fewer moves AND more solves) "
-                   "and close the moves gap to the forward baseline (v07 cuts it "
-                   "roughly in half). Caveat: the forward baseline is the original "
+                   "and " + (gap_txt or "close the moves gap to the forward "
+                   "baseline") + ". Caveat: the forward baseline is the original "
                    "network; a carefully re-tuned forward planner would likely "
                    "solve a few more puzzles and could narrow these gaps slightly "
                    "&mdash; at the size where re-tuning was tried (smaller boards, "
