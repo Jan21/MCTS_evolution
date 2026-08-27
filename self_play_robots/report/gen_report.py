@@ -36,6 +36,7 @@ sys.path.insert(0, str(HERE))                   # report/compare.py: the
 from compare import Entry as CmpEntry           # noqa: E402  apples-to-apples
 from compare import compare as cmp_compare      # noqa: E402  comparison engine
 from story import STORY_CSS, sec_story          # noqa: E402  the Story tab
+from breakthrough import sec_breakthrough      # noqa: E402  the Breakthrough tab
 from supervised import sec_supervised           # noqa: E402  supervised-campaign tab
 
 STATS = {"read": [], "missing": [], "error": []}
@@ -4302,6 +4303,7 @@ def sec_variants() -> str:
 
 PANELS = [
     ("The story &mdash; start here", "story", sec_story),
+    ("The breakthrough", "breakthrough", sec_breakthrough),
     ("Supervised campaign", "supervised", sec_supervised),
     ("Overview", "overview", sec_overview),
     ("The loop", "loop", sec_loop),

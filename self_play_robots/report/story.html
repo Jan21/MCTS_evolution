@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>From backward-forward to self-play</title>
+<title>From taught planners to self-play</title>
 <style>
 :root { --ink:#1a1a1a; --mut:#6a6a6a; --line:#d8d8d8; --hl:#f4f1fb;
         --bg:#fff; --card:#f7f6fa; --good-ink:#2c5e1e; --bad-ink:#8a2b1d;
@@ -98,41 +98,34 @@ footer { margin-top: 3.5rem; border-top: 1px solid var(--line);
 <marker id="sa-mut" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="ah mutf"/></marker>
 </defs>
 </svg>
-
-<h1>From backward-forward to self-play</h1>
+<h1>From taught planners to self-play</h1>
 <p class="sub">How a Ricochet Robots planner learned to write its own lessons, and how it broke a limit that training alone could not move.</p>
 
 <nav class="toc" aria-label="contents">
-<a href="#s1">1 &middot; the game</a>
+<a href="#s1">1 &middot; the game, and why it is hard</a>
 <a href="#s2">2 &middot; two taught planners</a>
-<a href="#s3">3 &middot; labels with no teacher</a>
-<a href="#s4">4 &middot; one round of self-play</a>
-<a href="#s5">5 &middot; the wall, and the key</a>
+<a href="#s3">3 &middot; networks that write their own training data</a>
+<a href="#s4">4 &middot; how self-play actually works</a>
+<a href="#s5">5 &middot; the limit that training could not move</a>
+<a href="#s6">6 &middot; the breakthrough, step by step</a>
 </nav>
 
 <p class="lede">This project solves Ricochet Robots puzzles with a tree search
 and two small neural networks. It began with two planners that an exact solver
-taught. It now has a planner that teaches itself, on boards the exact solver
-cannot reach. This page tells that story in order, and it reads in under ten
-minutes.</p>
+taught. It now has a planner that teaches itself.</p>
 
 <h2 id="s1"><span class="no">1</span>The game, and why it is hard</h2>
 <p>Ricochet Robots is a puzzle on a square grid with walls on some cell edges.
-A move sends one robot in one direction. The robot slides in a straight line
-until a wall or another robot stops it. It cannot stop halfway. The puzzle ends
-when the target robot stops on the target cell. The score is the number of
-moves, and fewer is better.</p>
+A move sends one robot in one direction. The robot slides until a wall or
+another robot stops it. It cannot stop halfway. The puzzle ends when the target
+robot stops on the target cell, and fewer moves is better.</p>
 
-<p>The sliding rule changes what a solution is. You cannot step towards the
-target. The question is never which direction the goal lies in. The question is
-what will stop you in the right place. The other robots are the answer.</p>
-
-<p>Good play spends moves to park a helper robot on an empty cell, only so the
-target robot can stop against it later. A solution is a small construction
-project, not a path.</p>
+<p>The sliding rule changes what a solution is. A robot cannot travel one cell
+at a time, so you cannot walk it to the target. The real question is what will
+stop it, and the other robots are the answer.</p>
 
 <figure class="w600">
-<svg viewBox="0 0 600 150" role="img" aria-label="Two mini-boards. On the left the red robot slides past the target cell. On the right a blue robot parked one cell past the target stops it on the target.">
+<svg viewBox="0 0 600 168" role="img" aria-label="Two mini-boards. On the left the red robot slides past the target cell and stops at the wall. On the right a blue robot parked one cell past the target stops the red robot on the target.">
   <g>
     <text x="121" y="24" text-anchor="middle" class="ns">Red slides past the target</text>
     <rect x="30" y="38" width="182" height="78" class="bgrid"/>
@@ -142,6 +135,7 @@ project, not a path.</p>
     <text x="121" y="83" text-anchor="middle" class="nb">&#9678;</text>
     <circle cx="43" cy="77" r="8" fill="#c94436"/>
     <line x1="56" y1="77" x2="202" y2="77" class="arr ink" marker-end="url(#sa-ink)"/>
+    <text x="121" y="140" text-anchor="middle" class="cap">the shaded cell is the target</text>
   </g>
   <g>
     <text x="461" y="24" text-anchor="middle" class="ns">park Blue first, and Red stops</text>
@@ -153,17 +147,19 @@ project, not a path.</p>
     <circle cx="487" cy="77" r="8" fill="#3a6fc9"/>
     <circle cx="383" cy="77" r="8" fill="#c94436"/>
     <line x1="396" y1="77" x2="468" y2="77" class="arr ink" marker-end="url(#sa-ink)"/>
+    <text x="461" y="140" text-anchor="middle" class="cap">Blue is the stopper</text>
   </g>
 </svg>
-<figcaption><strong>The core mechanic.</strong> Left: nothing stops Red, so it
-slides past the target cell. Right: Blue stands one cell past the target, so
-Red stops on it.</figcaption>
+<figcaption><strong>The core mechanic.</strong> Left: nothing stands past the
+target cell, so Red slides past it and stops at the wall. Right: Blue stands one
+cell past the target, so Red stops on it.</figcaption>
 </figure>
 
 <p>This project uses boards from 16&times;16 to 96&times;96, with 4 or 8
-robots. An exact solver exists, and its failures measure the difficulty. On the
-fixed 24&times;24 benchmark of 450 puzzles it graded 232 and failed on 218,
-which is 48%. That split defines the three exams used all through this page.</p>
+robots. An exact solver exists. It returns a shortest solution, but it is too slow for
+hard puzzles. On the fixed 24&times;24 benchmark of 450 puzzles
+it graded 232 and failed on 218, which is 48%. That split defines three
+exams.</p>
 
 <ul class="plain">
 <li>The <b>standard exam</b>: the 232 puzzles it graded, where perfect play is
@@ -174,108 +170,85 @@ knows it.</li>
 137 of them.</li>
 </ul>
 
+<p>Perfect play on the standard exam needs 7.69 moves per puzzle. This page
+scores a planner by its extra moves over perfect play, averaged over its own
+solves. A score of +1 means one wasted move.</p>
 <h2 id="s2"><span class="no">2</span>Two taught planners</h2>
-<p>There are two ways to search this game. An exact solver taught the first
-networks for both.</p>
+<p>The project built two kinds of planner, and the exact solver taught the
+networks inside both.</p>
 
-<p>The move-by-move planner searches in single robot slides. Its tree is narrow
-and very deep, because solutions run from about 8 to 30 moves. It is close to
-perfect when it solves. On the 24&times;24 standard exam it solves 220 of 232
-puzzles at +0.07 extra moves over perfect play, averaged over its own 220
-solves. But it is slow, and it spends 275 seconds per
-puzzle.</p>
+<p>The <b>move-by-move planner</b> searches in single robot slides. Its tree is
+narrow and very deep, because a hard puzzle can need 30 moves. It is close to
+perfect when it solves, at +0.07 extra moves over its own 220 solves of the
+standard exam. But it spends 275 seconds per puzzle.</p>
 
-<p>Its teacher fails too. On 32&times;32 boards the exact solver missed 61%
-of the benchmark, worse than the 48% at 24&times;24. So nobody can teach this
-planner at scale.</p>
+<p>Its teacher fails too. On a 450-puzzle benchmark at 32&times;32 the exact
+solver failed on 275 puzzles, which is 61%. With 8 robots it failed on 289. So
+nobody can teach this planner at scale.</p>
 
-<p>The sub-goal planner searches in decisions instead of moves. One decision
-reads: send helper robot H to cell S, so that the mover stops at cell B. From B
-the mover can finish its journey. The choice creates two new journeys, and the
-same question repeats on each. The tree is wide, but only 2 to 6 decisions
-deep. This planner spends 7.8 seconds per puzzle, and it stays cheap as boards
-grow.</p>
+<p>The <b>sub-goal planner</b> searches in decisions instead of moves. Call the
+robot that must travel the <b>mover</b>. One decision names a helper robot, the
+cell to send it to, and the cell where the mover will stop. It leaves two
+smaller puzzles behind. The tree is wide, but only 2 to 6 decisions deep. It
+spends 7.8 seconds per puzzle, and stays cheap as boards grow.</p>
 
 <figure class="w640">
-<svg viewBox="0 0 640 250" role="img" aria-label="Two search trees side by side. The move-by-move tree is narrow and 8 to 30 levels deep. The sub-goal tree is wide and only 2 to 6 levels deep.">
-  <text x="150" y="22" text-anchor="middle" class="lbl">move by move</text>
-  <text x="150" y="40" text-anchor="middle" class="cap">deep and narrow</text>
-  <circle cx="150" cy="60" r="4" class="dot"/>
-  <line x1="150" y1="64" x2="120" y2="82" class="tw"/>
-  <line x1="150" y1="64" x2="180" y2="82" class="tw"/>
-  <circle cx="120" cy="86" r="4" class="dot"/>
-  <circle cx="180" cy="86" r="4" class="dot"/>
-  <line x1="120" y1="90" x2="108" y2="108" class="tw"/>
-  <line x1="180" y1="90" x2="192" y2="108" class="tw"/>
-  <circle cx="108" cy="112" r="4" class="dot"/>
-  <circle cx="192" cy="112" r="4" class="dot"/>
-  <line x1="108" y1="116" x2="102" y2="134" class="tw"/>
-  <line x1="192" y1="116" x2="198" y2="134" class="tw"/>
-  <circle cx="102" cy="138" r="4" class="dot"/>
-  <circle cx="198" cy="138" r="4" class="dot"/>
-  <text x="150" y="172" text-anchor="middle" class="ns">8 to 30 levels deep</text>
-  <text x="150" y="196" text-anchor="middle" class="good-t">+0.07 extra moves</text>
-  <text x="150" y="216" text-anchor="middle" class="cap">275 s per puzzle</text>
-  <text x="150" y="234" text-anchor="middle" class="cap">solves 101 of 200 new boards</text>
-  <text x="470" y="22" text-anchor="middle" class="lbl">sub-goals</text>
-  <text x="470" y="40" text-anchor="middle" class="cap">wide and shallow</text>
-  <circle cx="470" cy="60" r="4" class="dot acc"/>
-  <line x1="470" y1="64" x2="380" y2="96" class="tw"/>
-  <line x1="470" y1="64" x2="425" y2="96" class="tw"/>
-  <line x1="470" y1="64" x2="515" y2="96" class="tw"/>
-  <line x1="470" y1="64" x2="560" y2="96" class="tw"/>
-  <circle cx="380" cy="100" r="4" class="dot"/>
-  <circle cx="425" cy="100" r="4" class="dot"/>
-  <circle cx="515" cy="100" r="4" class="dot"/>
-  <circle cx="560" cy="100" r="4" class="dot"/>
-  <line x1="425" y1="104" x2="405" y2="132" class="tw"/>
-  <line x1="425" y1="104" x2="445" y2="132" class="tw"/>
-  <line x1="515" y1="104" x2="495" y2="132" class="tw"/>
-  <line x1="515" y1="104" x2="535" y2="132" class="tw"/>
-  <circle cx="405" cy="136" r="4" class="dot"/>
-  <circle cx="445" cy="136" r="4" class="dot"/>
-  <circle cx="495" cy="136" r="4" class="dot"/>
-  <circle cx="535" cy="136" r="4" class="dot"/>
-  <text x="470" y="172" text-anchor="middle" class="ns">2 to 6 levels deep</text>
-  <text x="470" y="196" text-anchor="middle" class="bad-t">a measured floor of +1.17</text>
-  <text x="470" y="216" text-anchor="middle" class="cap">7.8 s per puzzle</text>
-  <text x="470" y="234" text-anchor="middle" class="cap">solves 134 of 200 new boards</text>
+<svg viewBox="0 0 640 210" role="img" aria-label="One sub-goal decision on a mini-board. Blue is sent to the cell past the stop cell, Red slides right and stops there, then Red slides up to the target. The decision leaves two smaller puzzles: get the helper to its cell, and get the mover to its stop cell.">
+  <text x="137" y="24" text-anchor="middle" class="lbl">one decision</text>
+  <rect x="20" y="40" width="234" height="104" class="bgrid"/>
+  <path d="M46 40V144 M72 40V144 M98 40V144 M124 40V144 M150 40V144 M176 40V144 M202 40V144 M228 40V144 M20 66H254 M20 92H254 M20 118H254" class="bgrid"/>
+  <rect x="98.5" y="40.5" width="25" height="25" class="cellmark"/>
+  <text x="111" y="58" text-anchor="middle" class="nb">&#9678;</text>
+  <circle cx="111" cy="105" r="8" fill="none" stroke="#c94436" stroke-width="1.6" stroke-dasharray="3 3"/>
+  <circle cx="137" cy="105" r="8" fill="#3a6fc9"/>
+  <circle cx="33" cy="105" r="8" fill="#c94436"/>
+  <line x1="46" y1="105" x2="97" y2="105" class="arr ink" marker-end="url(#sa-ink)"/>
+  <line x1="111" y1="97" x2="111" y2="70" class="arr ink" marker-end="url(#sa-ink)"/>
+  <text x="137" y="166" text-anchor="middle" class="cap">Blue stops Red at the stop cell</text>
+  <text x="137" y="188" text-anchor="middle" class="cap">then Red slides up to the target</text>
+  <text x="466" y="24" text-anchor="middle" class="lbl">what the decision leaves</text>
+  <rect x="310" y="46" width="312" height="48" rx="8" class="nbox alt"/>
+  <text x="466" y="68" text-anchor="middle" class="nt">get the helper to its cell</text>
+  <text x="466" y="86" text-anchor="middle" class="ns">one smaller puzzle</text>
+  <rect x="310" y="110" width="312" height="48" rx="8" class="nbox alt"/>
+  <text x="466" y="132" text-anchor="middle" class="nt">get the mover to its stop cell</text>
+  <text x="466" y="150" text-anchor="middle" class="ns">the other smaller puzzle</text>
+  <text x="466" y="186" text-anchor="middle" class="cap">each smaller puzzle asks the same question</text>
+  <path d="M258 92 C 284 92, 282 70, 304 70" class="arr" marker-end="url(#sa-mut)"/>
+  <path d="M258 108 C 284 108, 282 134, 304 134" class="arr" marker-end="url(#sa-mut)"/>
 </svg>
-<figcaption><strong>Two vocabularies for the same puzzle.</strong> The
-move-by-move planner picks single slides, so its tree is deep. The sub-goal
-planner picks decisions, so its tree is shallow and wide. Solve counts are from
-the new-boards exam, times from the standard exam.</figcaption>
+<figcaption><strong>One decision, and the two puzzles it leaves.</strong> The
+dashed ring marks the stop cell. Red is the mover, and Blue is the helper. The
+planner never writes the moves. It writes the decision.</figcaption>
 </figure>
 
-<p>The price is the plan language itself. Some optimal move sequences do
-something that no sub-goal can express. The cheapest plan the base vocabulary
-can express costs +1.63 extra moves over perfect play, averaged over the 216
-standard-exam puzzles it reaches. An extended vocabulary costs +1.17, over 228
-of the 232. Section 5 returns to this number.</p>
-
+<p>It pays for that speed in the plan language. Some shortest move sequences do
+something that no sub-goal can name. The <b>solver-taught sub-goal planner</b>
+scores +4.22 extra moves over its own 205 solves. Section 5 measures how much
+of that the language causes.</p>
 <h2 id="s3"><span class="no">3</span>Networks that write their own training data</h2>
-<p>The exact solver stops at 64&times;64, and well below that size it already
-fails on most puzzles. A planner learns from labels, and one label answers one
-decision. So where do labels come from at 96&times;96? The project's answer is
-a value network that writes its own labels, at any board size.</p>
+<p>The exact solver stops at 64&times;64, and below that it already fails on
+most puzzles. A planner learns from labels, and one label answers one decision.
+So where do labels come from at 96&times;96? A value network writes its own, at
+any size.</p>
 
-<p>The change that makes this work is a subtraction. The older networks each
-carried a learned position table, one 192-number vector per board cell. At
-24&times;24 that table holds 110,784 numbers, and it locked the saved file to
-one board size. The new networks carry no position table at all. Position comes
-from the walls instead. Two attention masks connect cell A to cell B exactly
-when a robot can slide from A to B.</p>
+<p>The change that makes this work is a subtraction. The older networks carried
+a position table, one list of 192 numbers per board cell, and it locked the
+saved file to one board size. The new networks carry none. Position comes from
+the walls, so information moves only along legal slides, and one saved file
+runs at every size from 16&times;16 to 96&times;96.</p>
 
-<p>Information inside the network therefore moves only along legal slides. One
-saved file runs at 16&times;16, 24&times;24, 32&times;32, 64&times;64 and
-96&times;96 with no change. Fresh boards are cheap too, because the generator
-builds a 32&times;32 board in 0.24 seconds and a 96&times;96 board in 3.8
-seconds.</p>
+<p>The planner uses two networks of this kind. The value network estimates how
+much more a plan will cost. The ranking network chooses which decision to try
+next. Together they hold 2,206,176 numbers. Modern language models hold
+billions.</p>
 
-<p>The planner uses two such networks. The value
-network estimates how much more a plan will cost. The ranking network chooses
-which decision to try next. Together they hold 2,206,176 numbers, which is
-small for a modern network.</p>
+<p>Below 64&times;64 the exact solver can still grade single decisions, and the
+project checked the label-writing network at 20 sizes. Agreement means it
+picked the solver&rsquo;s own best candidate. From 17&times;17 to
+64&times;64 it agreed 86% to 93% of the time, at 93% on 24&times;24 and 90% on
+64&times;64. That last board is four times as wide as any board it trained
+on.</p>
 
 <figure class="w700">
 <svg viewBox="0 0 700 230" role="img" aria-label="Two bars over a board-size axis. The exact solver bar stops at 64. The value network bar runs to 96. They agree 86 to 93 percent of the time where both work.">
@@ -306,45 +279,34 @@ small for a modern network.</p>
 board larger than 16&times;16.</figcaption>
 </figure>
 
-<p>Below 64&times;64 the exact solver can still grade single decisions, and the
-project used it at 20 board sizes. At every size from 17&times;17 to
-64&times;64 the network picked the solver's own best candidate 86% to 93% of
-the time. The curve has no size trend, at 93% on 24&times;24 boards and 90% on
-64&times;64 boards. That last board is four times the largest one the network
-ever trained on.</p>
-
-<p>The project then retrained planners on network labels and on solver labels,
-over the same boards and puzzles. At 24&times;24 with 4 robots the benchmark
-cannot separate the two planners. Label quality sets what the planner
-becomes. On 8-robot boards the labels agreed only 82% of the time, and the
-planner trained on them was clearly worse. Without this network the story stops
-at 64&times;64.</p>
-
+<p>The project retrained planners on network labels and on solver labels.
+At 24&times;24 with 4 robots the benchmark cannot tell the two retrained
+planners apart. On 8-robot
+boards the labels agreed only 82% of the time, and that planner was clearly
+worse. Label quality sets what a planner becomes. Without this network the
+story stops at 64&times;64.</p>
 <h2 id="s4"><span class="no">4</span>How self-play actually works</h2>
-<p>Cheap boards and self-made labels let the planner practise with no teacher
-at all. That practice is the self-play loop. The loop runs in rounds, and one
-round does seven things, in order.</p>
+<p>Fresh boards and self-made labels let the planner practise with no teacher.
+That is the self-play loop, and one round does seven things.</p>
 
 <ol class="steps">
-<li><b>Make fresh boards.</b> The generator builds brand-new random boards and
-places the robots at random. Every board carries an ID number, and the loop
-refuses to start if any ID touches an exam pool.</li>
+<li><b>Make fresh boards.</b> The generator builds new random boards and places
+the robots at random. No new board may sit in an exam.</li>
 <li><b>Search each puzzle, with added randomness.</b> The two networks drive a
-tree search, and one expansion is one step of that search. The code mixes
-random noise into the ranking network's opinion at the root of the tree. The search
-therefore does not always try the same thing first.</li>
-<li><b>Replay every finished plan.</b> The simulator plays it against the real game
-physics, one move at a time.</li>
+tree search, and random noise enters the ranking network&rsquo;s first
+opinion.</li>
+<li><b>Replay every finished plan.</b> The simulator plays it against the real
+game physics, one move at a time.</li>
 <li><b>Keep only the plans that work.</b> A plan passes when the target robot
-really stops on the target cell. The loop discards a plan that fails.</li>
-<li><b>Turn the kept plans into training answers.</b> Every candidate with a
-certified plan below it gets one record, and the label is the real cost of that
-plan. The loop drops a decision with fewer than two labelled candidates,
-because one candidate cannot teach ranking.</li>
-<li><b>Retrain the two networks.</b> Training starts from the previous round's
-weights, not from random weights.</li>
-<li><b>Measure on fixed exams.</b> The exams never change, and paired tests compare
-the new networks against the old ones.</li>
+really stops on the target cell. The loop discards the rest.</li>
+<li><b>Write the answers.</b> At every decision, the loop lists the choices
+the search tried. Each choice that led to a working plan gets that plan&rsquo;s
+real cost in moves. Choice and cost make one training answer. A lone choice
+teaches nothing about ranking, so the loop drops it.</li>
+<li><b>Retrain the two networks.</b> Training starts from what the networks
+learned last round, not from scratch.</li>
+<li><b>Measure on fixed exams.</b> The exams never change, and the new networks
+meet the old ones puzzle by puzzle.</li>
 </ol>
 
 <figure class="w900">
@@ -366,7 +328,7 @@ the new networks against the old ones.</li>
   <text x="780" y="268" text-anchor="middle" class="ns">the real cost of the plan</text>
   <rect x="390" y="224" width="220" height="60" rx="8" class="nbox"/>
   <text x="500" y="248" text-anchor="middle" class="nt">6 &middot; retrain the nets</text>
-  <text x="500" y="268" text-anchor="middle" class="ns">warm start from last weights</text>
+  <text x="500" y="268" text-anchor="middle" class="ns">keep what they learned</text>
   <rect x="100" y="224" width="220" height="60" rx="8" class="nbox alt"/>
   <text x="210" y="248" text-anchor="middle" class="nt">7 &middot; sit the fixed exams</text>
   <text x="210" y="268" text-anchor="middle" class="ns">keep only real gains</text>
@@ -381,119 +343,186 @@ the new networks against the old ones.</li>
   <path d="M100 244 C 30 224, 24 150, 92 108" class="arr acc dashed" marker-end="url(#sa-acc)"/>
   <text x="130" y="196" class="lbl">next round: new boards, better networks</text>
 </svg>
-<figcaption><strong>One round.</strong> The dead end is the point of this
-picture. A plan that fails the replay leaves no training record.</figcaption>
+<figcaption><strong>One round.</strong> The dead end is the point. A plan that
+fails the replay leaves no training record, so no illegal or unplayable plan
+can enter the training data. One error still survives: a plan can work and
+still be longer than it needs to be.</figcaption>
 </figure>
 
-<div class="key">
-<p><strong>What cannot go wrong.</strong> A wrong answer cannot enter the
-training data. A plan that does not replay produces no record at all. Label
-corruption is therefore structurally impossible.</p>
-<p><strong>What can go wrong.</strong> One error survives. A plan can be
-legal and still longer than it needs to be. The loop can teach itself a
-detour, but it cannot teach itself an illegal move.</p>
-</div>
+<p>This puzzle has no opponent and no win or loss. The outcome is a cost in
+moves, and fresh boards give the variety an opponent would give. Physics is the
+referee: does this plan work, and in how many moves?</p>
 
-<p>AlphaZero needs an opponent and a win or a loss. This puzzle has neither.</p>
+<p>Five rounds at 24&times;24 lifted the hard exam from 133 solves of 218 to a
+peak of 158 in round three, then settled at 153. They also cut the
+standard exam&rsquo;s search cost from 53 expansions per puzzle to 30. One
+round of mixed practice then beat all five. That round drew boards of three
+kinds: 24&times;24 and 32&times;32 with 4 robots, and 24&times;24 with 8 robots.
+On the hard exam of each kind it reached 170 of 218, 235 of 275, and 269 of
+289.</p>
 
-<ul class="plain">
-<li>There is no opponent, and no win or loss. The outcome is a cost in moves,
-and fresh boards give the variety that an opponent would give.</li>
-<li>Physics is the referee. The simulator answers one question: does this plan
-work, and in how many moves?</li>
-</ul>
-
-<p>Five rounds at 24&times;24 lifted the hard exam from 133 solves to 158, and
-the last two rounds held it at 153. The same rounds also cut the search cost on
-the standard exam from 53 expansions per puzzle to 30. One round of mixed
-practice on three board types then beat all five. That round made 941 fresh
-puzzles, solved 864 of them, and certified 11,915 training records. On the hard
-exams it reached:</p>
-
-<ul class="plain">
-<li>170 of 218 at 24&times;24,</li>
-<li>235 of 275 at 32&times;32,</li>
-<li>269 of 289 with 8 robots.</li>
-</ul>
-
-<p>The loop started from networks copied from the solver-taught planner, so one
-control tested whether it needed them. That control began from random weights
-and used only its own replay-checked plans as answers. After one round it
-solved 132 of 200 new-board puzzles, against the solver-taught planner's
-134.</p>
-
-<h2 id="s5"><span class="no">5</span>The wall, and the key that opened it</h2>
+<p>One control tested whether the loop needs a teacher at all. It began from
+scratch, with only its own replay-checked plans as answers. After one round it
+solved 132 of 200 new-board puzzles, against the solver-taught sub-goal
+planner&rsquo;s 134. Self-play needs no teacher to start.</p>
+<h2 id="s5"><span class="no">5</span>The limit that training could not move</h2>
 <p>Self-play bought solve rate and speed. It never bought shorter solutions,
-and the number from section 2 explains why.</p>
+and the plan language explains why.</p>
 
-<p>Before any training, the project measured the plan language's own limit. The
-probe lists every plan the vocabulary can express, replays each one, and
+<p>A sub-goal is one word of a plan language. The base vocabulary holds one
+word: send a helper to a cell, so the mover stops where the plan needs it. The
+extended vocabulary adds three more words.</p>
+
+<ul class="plain">
+<li>Park a robot aside for a later step.</li>
+<li>Reuse a robot the plan already sends somewhere.</li>
+<li>Use a stopper that stands in place for one move only.</li>
+</ul>
+
+<p>Before any training, the project measured what those words can do at best.
+The probe lists every plan a vocabulary can express, replays each one, and
 compares the best with perfect play. On the standard exam the base vocabulary
-reaches 216 of the 232 puzzles, and its best plans cost +1.63 extra moves. The
-extended vocabulary reaches 228 puzzles and costs +1.17. Those numbers belong
-to the vocabulary, not to the networks. Training cannot move them.</p>
+reaches 216 of 232 puzzles at +1.63 extra moves, and the extended vocabulary
+reaches 228 at +1.17. Those numbers belong to the vocabulary, not to the
+networks, and training cannot move them.</p>
 
-<p>The measurement also made a prediction. Two rounds of self-play inside the
-base vocabulary changed nothing on any exam. The loop then moved to the
+<p>The measurement predicted that more practice inside the base vocabulary would
+buy nothing. Two rounds inside it changed nothing, so the loop moved to the
 extended vocabulary.</p>
 
-<p>Read the floor as a measured limit, not a mathematical proof. The probe
-searched everything the vocabulary can express, under stated budgets of search
-and time. The two deepest probes differ by a few hundredths of a
-move. The hybrid beat the extended floor by a quarter of a move, which is far
-more.</p>
+<p>Read +1.17 as a measured limit, not a proof. The probe searched everything
+the extended vocabulary can express, inside a fixed search budget. Two probes
+at different budgets differ by a few hundredths of a move. The limit belongs to
+the language, so only a change to the planner&rsquo;s actions can score below
+it.</p>
+<h2 id="s6"><span class="no">6</span>The breakthrough, step by step</h2>
+<p>The change is one sentence long. Before the planner starts sub-goal
+planning, let it play one or two ordinary robot moves first. The position after
+a slide is a different plan space, and it can hold a cheaper plan. Call the
+result <b>the hybrid</b>. One puzzle runs like this.</p>
 
-<p>The key is a change to the search, not to the networks. Let the planner play
-one or two ordinary robot moves before it starts sub-goal planning. The
-position after one slide is a different plan space. It can hold a cheaper plan,
-even after the slide costs its own move.</p>
+<ol class="steps">
+<li><b>Search the start position.</b> The ordinary sub-goal search runs on the
+untouched puzzle, with 500 of the 1,200 expansions.</li>
+<li><b>List the slides.</b> The planner lists every legal single robot move
+from the start.</li>
+<li><b>Score each one.</b> For each slid position it builds the cheap opening
+plan and reads its cost.</li>
+<li><b>Add a second slide.</b> The four cheapest slid positions each get one
+more legal move, scored the same way.</li>
+<li><b>Keep eight.</b> The score adds one point per slide, and the eight
+cheapest starts stay.</li>
+<li><b>Search each kept start.</b> Each one gets 80 expansions, so the whole
+search stays inside 1,200.</li>
+<li><b>Pay for the slides.</b> A plan found after two slides costs two moves
+more than the sub-plan itself.</li>
+<li><b>Replay everything.</b> Physics replays every finished plan, and the
+joined answers replay against the original puzzle.</li>
+<li><b>Return the cheapest.</b> The cheapest total that really works wins.</li>
+</ol>
 
-<p>With two moves allowed first, the flagship reaches +0.94 extra moves,
-averaged over its own 231 solves. With three, it reaches +0.86. Both sit below
-the extended vocabulary's floor of +1.17, which the probe measured over the 228
-puzzles it proved reachable. A planner that slides first is no longer a pure
-sub-goal planner.</p>
+<figure class="w900">
+<svg viewBox="0 0 900 300" role="img" aria-label="The hybrid pipeline. The start position feeds two lanes: one ordinary sub-goal search with 500 expansions, and eight slid start positions with 80 expansions each. Both lanes feed a physics replay against the original puzzle, and the cheapest total wins.">
+  <rect x="8" y="118" width="124" height="56" rx="8" class="nbox alt"/>
+  <text x="70" y="142" text-anchor="middle" class="nt">the puzzle</text>
+  <text x="70" y="160" text-anchor="middle" class="ns">start position</text>
+  <rect x="214" y="40" width="232" height="56" rx="8" class="nbox"/>
+  <text x="330" y="64" text-anchor="middle" class="nt">1 &middot; search the start position</text>
+  <text x="330" y="82" text-anchor="middle" class="ns">500 expansions, no slide</text>
+  <rect x="170" y="196" width="200" height="56" rx="8" class="nbox alt"/>
+  <text x="270" y="220" text-anchor="middle" class="nt">2 &middot; list the slides</text>
+  <text x="270" y="238" text-anchor="middle" class="ns">every legal robot move</text>
+  <rect x="392" y="196" width="214" height="56" rx="8" class="nbox"/>
+  <text x="499" y="220" text-anchor="middle" class="nt">3 &middot; keep the best eight</text>
+  <text x="499" y="238" text-anchor="middle" class="ns">80 expansions each</text>
+  <rect x="650" y="100" width="240" height="56" rx="8" class="nbox alt"/>
+  <text x="770" y="124" text-anchor="middle" class="nt">4 &middot; replay in physics</text>
+  <text x="770" y="142" text-anchor="middle" class="ns">against the original puzzle</text>
+  <rect x="650" y="196" width="240" height="56" rx="8" class="nbox"/>
+  <text x="770" y="220" text-anchor="middle" class="nt">5 &middot; cheapest total wins</text>
+  <text x="770" y="238" text-anchor="middle" class="ns">slides pay their own moves</text>
+  <path d="M132 138 C 170 138, 176 68, 208 68" class="arr ink" marker-end="url(#sa-ink)"/>
+  <path d="M132 156 C 150 156, 148 224, 164 224" class="arr ink" marker-end="url(#sa-ink)"/>
+  <line x1="370" y1="224" x2="386" y2="224" class="arr ink" marker-end="url(#sa-ink)"/>
+  <path d="M446 68 C 540 68, 560 120, 644 124" class="arr ink" marker-end="url(#sa-ink)"/>
+  <path d="M606 224 C 626 224, 634 150, 644 134" class="arr ink" marker-end="url(#sa-ink)"/>
+  <line x1="770" y1="158" x2="770" y2="190" class="arr ink" marker-end="url(#sa-ink)"/>
+  <text x="388" y="278" text-anchor="middle" class="cap">a two-slide start pays two extra moves</text>
+</svg>
+<figcaption><strong>The pipeline.</strong> Two lanes race inside one budget of
+1,200 expansions. Only a plan that survives the physics replay can win, and a
+slid start pays for its slides.</figcaption>
+</figure>
 
-<p>The gain is the idea, not extra compute. Both searches used the same two
-networks and the same cap of 1,200 expansions. On the 230 puzzles both searches solved, the hybrid
-found a shorter solution on 40 and a longer one on none. It also needed one
-fifth of the running time. The fluke chance is below one in a billion.</p>
+<p>The gain is the idea, not extra compute. The hybrid and the <b>self-play
+sub-goal planner</b> use the same two networks and the same cap of 1,200
+expansions, and only the search differs. The hybrid solved 231 of 232
+standard-exam puzzles at +0.94 extra moves, over its own 231 solves. The
+self-play sub-goal planner solved 230 at +1.42. On the 230 both solved, the
+hybrid was shorter on 40 puzzles and longer on none. The fluke chance is below
+one in a billion.</p>
+
+<p>The hybrid also used one fifth of the running time, 21 seconds per puzzle
+against 103. A version that plays three moves first reaches +0.86, and the gain
+stops.</p>
 
 <figure class="w760">
-<svg viewBox="0 0 760 210" role="img" aria-label="A number line of extra moves against perfect play. Perfect play is 0, the move-by-move planner +0.07, the hybrid +0.94, the extended vocabulary wall +1.17, the plain search +1.42, the base wall +1.63, the solver-taught planner +4.22.">
-  <line x1="55" y1="126" x2="715" y2="126" class="axis"/>
-  <line x1="60" y1="121" x2="60" y2="131" class="axis"/><text x="60" y="148" text-anchor="middle" class="cap">0</text>
-  <line x1="191" y1="121" x2="191" y2="131" class="axis"/><text x="191" y="148" text-anchor="middle" class="cap">+1</text>
-  <line x1="322" y1="121" x2="322" y2="131" class="axis"/><text x="322" y="148" text-anchor="middle" class="cap">+2</text>
-  <line x1="453" y1="121" x2="453" y2="131" class="axis"/><text x="453" y="148" text-anchor="middle" class="cap">+3</text>
-  <line x1="584" y1="121" x2="584" y2="131" class="axis"/><text x="584" y="148" text-anchor="middle" class="cap">+4</text>
-  <line x1="715" y1="121" x2="715" y2="131" class="axis"/><text x="715" y="148" text-anchor="middle" class="cap">+5</text>
-  <text x="385" y="200" text-anchor="middle" class="cap">extra moves per puzzle against perfect play, 24&times;24 standard exam</text>
-  <line x1="213.3" y1="42" x2="213.3" y2="126" class="floorln"/>
-  <text x="213" y="32" text-anchor="middle" class="bad-t">wall +1.17</text>
-  <line x1="273.5" y1="70" x2="273.5" y2="126" class="floorln"/>
-  <text x="330" y="62" text-anchor="middle" class="bad-t">wall +1.63, base words</text>
-  <line x1="288" y1="66" x2="276" y2="72" class="lead"/>
-  <circle cx="60" cy="126" r="6" class="dot hollow"/>
-  <text x="60" y="64" text-anchor="middle" class="ns">perfect play</text>
-  <line x1="60" y1="68" x2="60" y2="118" class="lead"/>
-  <circle cx="69.2" cy="126" r="6" class="dot"/>
-  <text x="140" y="92" text-anchor="middle" class="ns">move by move +0.07</text>
-  <line x1="110" y1="98" x2="74" y2="118" class="lead"/>
-  <circle cx="183.1" cy="126" r="8" class="dot acc"/>
-  <text x="168" y="176" text-anchor="middle" class="lbl">hybrid +0.94</text>
-  <line x1="170" y1="163" x2="181" y2="135" class="lead"/>
-  <circle cx="246" cy="126" r="6" class="dot"/>
-  <text x="400" y="92" text-anchor="middle" class="ns">same nets, plain search +1.42</text>
-  <line x1="330" y1="98" x2="250" y2="118" class="lead"/>
-  <circle cx="612.8" cy="126" r="6" class="dot"/>
-  <text x="612" y="92" text-anchor="middle" class="ns">solver-taught +4.22</text>
-  <line x1="612" y1="96" x2="612" y2="118" class="lead"/>
+<svg viewBox="0 0 760 230" role="img" aria-label="A number line of extra moves against perfect play. Perfect play is 0, the move-by-move planner +0.07, the hybrid +0.94, the extended vocabulary limit +1.17, the self-play sub-goal planner +1.42, the base vocabulary limit +1.63, the solver-taught sub-goal planner +4.22.">
+  <line x1="55" y1="150" x2="715" y2="150" class="axis"/>
+  <line x1="60" y1="145" x2="60" y2="155" class="axis"/><text x="60" y="172" text-anchor="middle" class="cap">0</text>
+  <line x1="191" y1="145" x2="191" y2="155" class="axis"/><text x="191" y="172" text-anchor="middle" class="cap">+1</text>
+  <line x1="322" y1="145" x2="322" y2="155" class="axis"/><text x="322" y="172" text-anchor="middle" class="cap">+2</text>
+  <line x1="453" y1="145" x2="453" y2="155" class="axis"/><text x="453" y="172" text-anchor="middle" class="cap">+3</text>
+  <line x1="584" y1="145" x2="584" y2="155" class="axis"/><text x="584" y="172" text-anchor="middle" class="cap">+4</text>
+  <line x1="715" y1="145" x2="715" y2="155" class="axis"/><text x="715" y="172" text-anchor="middle" class="cap">+5</text>
+  <line x1="213.3" y1="40" x2="213.3" y2="146" class="floorln"/>
+  <line x1="273.5" y1="64" x2="273.5" y2="146" class="floorln"/>
+  <text x="330" y="26" text-anchor="middle" class="bad-t">the extended vocabulary cannot beat +1.17</text>
+  <line x1="248" y1="32" x2="216" y2="42" class="lead"/>
+  <text x="412" y="50" text-anchor="middle" class="bad-t">the base vocabulary cannot beat +1.63</text>
+  <line x1="300" y1="56" x2="276" y2="66" class="lead"/>
+  <circle cx="60" cy="150" r="6" class="dot hollow"/>
+  <text x="60" y="74" text-anchor="middle" class="ns">perfect play</text>
+  <line x1="60" y1="78" x2="60" y2="142" class="lead"/>
+  <circle cx="69.2" cy="150" r="6" class="dot"/>
+  <text x="150" y="98" text-anchor="middle" class="ns">move-by-move planner +0.07</text>
+  <line x1="120" y1="104" x2="74" y2="142" class="lead"/>
+  <text x="612" y="98" text-anchor="middle" class="ns">solver-taught sub-goal planner +4.22</text>
+  <line x1="612" y1="104" x2="612" y2="142" class="lead"/>
+  <circle cx="612.8" cy="150" r="6" class="dot"/>
+  <text x="400" y="124" text-anchor="middle" class="ns">self-play sub-goal planner +1.42</text>
+  <line x1="330" y1="130" x2="250" y2="142" class="lead"/>
+  <circle cx="246" cy="150" r="6" class="dot"/>
+  <circle cx="183.1" cy="150" r="8" class="dot acc"/>
+  <text x="170" y="196" text-anchor="middle" class="lbl">the hybrid +0.94</text>
+  <line x1="172" y1="184" x2="181" y2="160" class="lead"/>
+  <text x="385" y="220" text-anchor="middle" class="cap">extra moves per puzzle against perfect play, 24&times;24 standard exam</text>
 </svg>
-<figcaption><strong>The wall, and the planner that crossed it.</strong> Every
-dot averages over that planner's own solves on the standard exam. The hybrid is
-the only sub-goal planner left of the +1.17 floor.</figcaption>
+<figcaption><strong>The limit, and the planner that scored below it.</strong>
+Every dot averages over that planner&rsquo;s own solves. The two dashed lines
+are limits of the plan language, not planners. The hybrid is the only planner
+using sub-goals left of +1.17.</figcaption>
 </figure>
+
+<p>Two controls say this is the idea, not luck. A second, unrelated pair of
+networks repeated the win. The change also transfers, with no new training, to
+sizes it never met.</p>
+
+<ul class="plain">
+<li>174 of 175 on the 32&times;32 standard exam, against 172 without the
+change.</li>
+<li>251 of 275 on the 32&times;32 hard exam, against 239 without the change.
+There 77 of the 80 solutions that differed got shorter.</li>
+<li>276 of 289 on the 8-robot hard exam. The ordinary search solved three more
+there, but 82 of the 84 solutions that differed got shorter.</li>
+</ul>
+
+<p>One limit remains. The move-by-move planner still writes shorter solutions
+when it solves. On the 219 standard-exam puzzles both solve, the hybrid used
++0.79 more moves. That is not 0.94 minus 0.07, because those scores average
+over different puzzles. But that planner works one move at a time, so long
+solutions defeat it. On new boards it solves 101 of 200, against the
+hybrid&rsquo;s 188.</p>
 
 <div class="scroll">
 <table>
@@ -501,24 +530,18 @@ the only sub-goal planner left of the +1.17 floor.</figcaption>
 <tbody>
 <tr><td>perfect play</td><td>232 of 232</td><td>0</td><td>&mdash;</td></tr>
 <tr><td>move-by-move planner</td><td>220 of 232</td><td class="g">+0.07</td><td>101 of 200</td></tr>
-<tr><td>solver-taught planner</td><td>205 of 232</td><td>+4.22</td><td>134 of 200</td></tr>
-<tr class="hl"><td>self-play flagship</td><td>231 of 232</td><td>+0.94</td><td class="g">188 of 200</td></tr>
+<tr><td>solver-taught sub-goal planner</td><td>205 of 232</td><td>+4.22</td><td>134 of 200</td></tr>
+<tr><td>self-play sub-goal planner</td><td>230 of 232</td><td>+1.42</td><td>182 of 200</td></tr>
+<tr class="hl"><td>the hybrid</td><td>231 of 232</td><td>+0.94</td><td class="g">188 of 200</td></tr>
 </tbody>
 </table>
 </div>
-<p class="note">Extra moves are averaged over each planner's own solves.
-Perfect play averages 7.69 moves per puzzle on the standard exam. That column
-covers the standard exam only, because the new-boards exam has a known optimum
-for just 137 of its 200 puzzles. On the hard exam the flagship solves 177 of
-218.</p>
+<p class="note">Extra moves are averaged over each planner&rsquo;s own solves.
+That column covers the standard exam only, because the new-boards exam has a
+known optima for only 137 of its 200 puzzles.</p>
 
-<p>Two limits remain. The move-by-move planner still wins on pure solution
-quality. On the 219 standard-exam puzzles that both planners solved, the
-flagship used +0.79 more moves than the move-by-move planner. But that planner works one move at
-a time, so long solutions defeat it. On the new-boards exam it solves 101 of
-200, against the flagship's 188. Work on boards beyond the exact solver's
-reach is in progress, and physics replay will be the only referee there.</p>
-
+<p>The full pipeline, with every control, is in the breakthrough tab of
+<a href="selfplay.html">selfplay.html</a>.</p>
 <footer>
 <p>This page is the story only. The full knowledgebase, with every table and
 every control, is <a href="selfplay.html">selfplay.html</a>. Every number in
