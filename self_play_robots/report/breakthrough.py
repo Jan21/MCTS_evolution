@@ -109,6 +109,47 @@ def _n(v, nd=2):
     return PEND if v is None else f"{v:.{nd}f}"
 
 
+def _selfplay_series():
+    """(first, last, lo, hi, n_rounds) standard-exam score of the mainline
+    self-play chain, under the same search settings as everything else."""
+    import glob
+    out = []
+    for d in sorted(glob.glob(str(RES / "selfplay" / "g24r4_b2_iter*"))):
+        for f in sorted(Path(d).glob("*g24r4*mcts*.json")) + \
+                 sorted(Path(d).glob("*bench_solved_mcts*.json")):
+            a = _agg(_load(f))
+            if a and a.get("n") == 232 and a.get("mean_regret") is not None:
+                out.append(a["mean_regret"])
+                break
+    if len(out) < 2:
+        return None
+    return out[0], out[-1], min(out), max(out), len(out) - 1
+
+
+def _common_population():
+    """The +0.94-vs-+1.17 comparison redone on one identical puzzle set."""
+    c = _load(RES / "ceiling" / "g24r4_b2.json")
+    h = _rows(_load(V07 / "bench_graded_hybrid_d2.json"))
+    if not c or not h:
+        return None
+    cr = c.get("rows") or []
+    if len(cr) != len(h) or not all(a.get("env_id") == b.get("env_id")
+                                    for a, b in zip(cr, h)):
+        return None
+    idx = [i for i, r in enumerate(cr)
+           if r.get("category") == "REALIZABLE_EXISTS"
+           and r.get("best_realizable_moves") is not None
+           and r.get("d_star") is not None
+           and h[i].get("solved") and h[i].get("regret") is not None]
+    if not idx:
+        return None
+    probe = [cr[i]["best_realizable_moves"] - cr[i]["d_star"] for i in idx]
+    hyb = [h[i]["regret"] for i in idx]
+    wins = sum(1 for a, b in zip(hyb, probe) if a < b)
+    loss = sum(1 for a, b in zip(hyb, probe) if a > b)
+    return (len(idx), sum(probe) / len(probe), sum(hyb) / len(hyb), wins, loss)
+
+
 def _i(v):
     return PEND if v is None else f"{v:,d}"
 
@@ -340,6 +381,19 @@ def sec_breakthrough() -> str:
         'the base vocabulary would buy nothing, and two rounds of self-play '
         'inside it changed nothing on any exam. Only a change to the actions '
         'the planner may consider could score below the limit.</p>')
+    ser = _selfplay_series()
+    if ser:
+        first, last, lo, hi, rounds = ser
+        out.append(
+            f'<p>Training inside the extended vocabulary was flat in the same '
+            f'way. The mainline self-play chain scored +{_n(first)} extra '
+            f'moves on the standard exam before its first round. After all '
+            f'{rounds} rounds it scored +{_n(last)}, and it never left the '
+            f'band +{_n(lo)} to +{_n(hi)}. That chain and the control in '
+            f'section 4 run the same search under the same cap. They differ '
+            f'only in which trained network pair they load, which is why '
+            f'their standard-exam scores are close but not equal. The story '
+            f'page quotes the section 4 pair throughout.</p>')
 
     # ---- 2. the change ------------------------------------------------------
     out.append('<h3 id="bt-change"><span class="no">2</span>The change, in one sentence</h3>')
@@ -472,6 +526,17 @@ def sec_breakthrough() -> str:
         if "backward" in _nm:
             taught = (_sd.get("aggregate") or {}).get("mean_regret")
             break
+    cp = _common_population()
+    if cp:
+        n_cp, probe_m, hyb_m, w, l = cp
+        out.append(
+            f'<p>Is the comparison with the limit fair? The two averages cover '
+            f'different puzzle sets. It was therefore redone on one identical '
+            f'set: the {n_cp} puzzles the probe can reach and the hybrid also '
+            f'solves. There the probe&rsquo;s best possible sub-goal plan '
+            f'averages +{_n(probe_m)} extra moves and the hybrid averages '
+            f'+{_n(hyb_m)}. Puzzle by puzzle, the hybrid beats the best '
+            f'possible sub-goal plan on {w} and loses on {l}.</p>')
     out.append(_fig_line(
         (ah or {}).get("mean_regret"), (as_ or {}).get("mean_regret"),
         (afwd or {}).get("mean_regret"), base_lim, b2_lim, taught))
