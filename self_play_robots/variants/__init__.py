@@ -85,10 +85,11 @@ PLAIN = {
   "The search examines many positions per puzzle, but we only trained on the "
   "ones along the final solution path. We changed that to train on EVERY "
   "position the search examined and certified.",
-  "Same compute per puzzle, roughly twice the training data."),
+  "Same search budget per puzzle. Processing each practice puzzle takes "
+  "longer, but yields roughly twice the training data."),
  "v05_mean_backup": (
-  "When the search summarizes how good a branch is, we averaged over its "
-  "outcomes instead of taking the best case.",
+  "When the search rates a branch, we averaged the scores of everything "
+  "tried below it. Before, it took the single best score found there.",
   "Best-case summaries can be hostage to one lucky find; averages explore "
   "more evenly."),
  "v06_gumbel_root": (
@@ -105,12 +106,13 @@ PLAIN = {
   "there'). We added one option: make an ordinary robot move first. "
   "Then it plans subgoals from the new position. "
   "This mixes two kinds of moves that were previously separate worlds.",
-  "We proved earlier that pure subgoal planning can never match move-by-move "
-  "play on solution length (see the project log, entry 3). "
+  "We measured a hard limit earlier: pure subgoal planning cannot match "
+  "move-by-move play on solution length (project log, entry 3 — a companion "
+  "document). It is a measurement, not a mathematical proof. "
   "Changing the set of allowed moves is the only door out."),
  "v08_cold_start": (
   "We threw away the head start from the supervised networks. "
-  "Those networks came from human-configured exact solvers. "
+  "Those networks were taught by an exact solver. "
   "We trained from a blank slate, purely on the loop's own certified "
   "self-play data.",
   "Measures how much the supervised head start is actually worth — and "

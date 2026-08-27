@@ -83,6 +83,15 @@ GATES = {
            "FINDINGS 72c)."),
 }
 
+# C2 (reader round 4): the ceiling's epistemic status, one formulation
+# everywhere it is described.
+CEILING_STATUS = (
+    "A measured limit. We searched everything the sub-goal vocabulary can "
+    "express on these exams. No expressible plan does better. The limit "
+    "binds any planner that speaks only this vocabulary. It is a "
+    "measurement, not a mathematical proof. Deeper probes tightened it "
+    "from 1.72 to 1.63.")
+
 # plain-language reading of the dense gate quotes (jargon audit MS3)
 PLAIN_GATE = {
     "M0": "pass if the new harness reproduces the old recorded results.",
@@ -1720,15 +1729,18 @@ def sec_ceiling() -> str:
              "proof. A plan can occasionally cost fewer real moves than its "
              "plan-step estimate (a robot happens to stand in a useful spot), "
              "and such a plan could hide beyond where the search stopped.</p>",
+           '<p class="key">' + CEILING_STATUS + '</p>',
            '<p class="note">Outcome categories used in the per-run tables '
            'below: REALIZABLE_EXISTS = the language can write a plan that '
            'works. NO_REALIZABLE_PLAN = plans exist on paper but none works. '
            'NO_COMPLETE_PLAN = the generator never finished a plan. '
            'INCONCLUSIVE = the search hit its cap. ERROR = the puzzle threw '
-           'an error (recorded, never lost). &ldquo;Slack&rdquo; in a '
-           'heading = how much further past the first answer the probe '
-           'keeps searching. More slack = a deeper probe = a tighter '
-           'proven limit.</p>']
+           'an error (recorded, never lost). &ldquo;Slack 12&rdquo; in a heading '
+           '= keep searching until every plan within 12 extra plan-cost '
+           'units of the first answer has been checked. More slack = a '
+           'deeper probe = a tighter measured limit. At 24&times;24 the '
+           'three probes gave +1.72 (standard), +1.69 (slack 4) and '
+           '+1.63 (slack 12).</p>']
     ss = side_study("ceiling")
     if ss:
         out.append(f'<p class="verdict">{chip(ss.get("status", "unknown"), chip_word(ss.get("status", "unknown")))} '
@@ -1804,7 +1816,7 @@ def sec_ceiling() -> str:
                       "graded &amp; realizable", "mean d*", "mean best-plan moves",
                       "mean gap (best)", "% best = optimal",
                       "mean first-plan moves", "mean gap (first)",
-                      "% first = optimal", "capped", "reading", "source file"], rows_,
+                      "% first = optimal", "capped", "verdict in words", "source file"], rows_,
                      note="Every <code>results/ceiling/*.json</code> carrying a "
                           "<code>summary</code> (base, B2, slack re-runs, graded and "
                           "frontier sets). Columns from <code>summary</code>: "
@@ -1858,11 +1870,12 @@ def sec_ceiling() -> str:
         if s.get("capped"):
             cats = s.get("categories") or {}
             bits.append(
-                f"The probe hit a cap on <strong>{esc(s.get('capped'))}</strong> "
-                f"instance(s) ({esc(cats.get('INCONCLUSIVE', 0))} left inconclusive), "
-                f"so its solve ceiling of {esc(s.get('n_realizable'))}/{esc(s.get('n'))} "
+                f"The search gave up early on <strong>{esc(s.get('capped'))}</strong> "
+                f"puzzle(s). {esc(cats.get('INCONCLUSIVE', 0))} of them ended "
+                f"with no verdict at all. "
+                f"So its solve ceiling of {esc(s.get('n_realizable'))}/{esc(s.get('n'))} "
                 f"is a <strong>lower bound</strong>"
-                + (" and its best-plan moves an upper bound on the language optimum"
+                + (", and its best-plan moves are an upper limit on the language optimum"
                    if s.get("mean_best_moves") is not None else ""))
         if s.get("mean_best_moves") is not None and s.get("mean_d_star") is not None:
             gapb = s.get("mean_gap_best")
@@ -1940,7 +1953,8 @@ def sec_ceiling() -> str:
                            note="Provenance block of " + src(disp(f)) + ".")
                    + "</details>")
     out.append(
-        "<p class='note'><strong>What this bounds.</strong> Everything above is "
+        "<p class='note'><strong>What this bounds.</strong> " + CEILING_STATUS + " "
+        "Everything above is "
         "measured with <em>no network anywhere</em> — it is a property of the "
         "plan language and its candidate generator, not of any planner. In the "
         "subgoal action space the self-play planner can never beat the "
@@ -3532,9 +3546,9 @@ def sec_glossary() -> str:
         ("playable-moves scoring",
          "The only scoring the arena accepts: a solution counts as the number "
          "of <em>primitive moves actually executed</em> against the physics, "
-         "after replay — not the abstract plan cost the planner thought it had. "
-         "In the result JSONs this is <code>mean_realized_strict</code>, and "
-         "<code>mean_moves</code> is set to it. PROBLEM.md &sect;7."),
+         "after replay — not the plan-step cost the planner thought it had "
+         "(field name in the result files: <code>mean_realized_strict</code>). "
+         "From the project brief."),
         ("expansion budget",
          "The fixed search budget every planner gets, so comparisons are "
          "apples-to-apples: " + budget + "."
@@ -3565,11 +3579,11 @@ def sec_glossary() -> str:
          "and physics-verifies it. PROBLEM.md &sect;2, &sect;6.1."),
         ("backward vs forward planner",
          "Two action-space views with separately trained nets. "
-         "<em>Backward / subgoal</em>: shallow horizon (2&ndash;6 decisions), "
-         "branching = candidate-set size; the strongest supervised planner and "
+         "<em>Backward / subgoal</em>: few decisions deep (2&ndash;6), with up "
+         "to ~50 choices per decision; the strongest solver-taught planner and "
          "the recommended self-play main line. <em>Forward / move-level</em>: "
-         "actions are primitive moves, deep horizon (8&ndash;30+), small "
-         "branching; slower but near-optimal when it solves. Both appear in "
+         "actions are single moves, many decisions deep (8&ndash;30+), few "
+         "choices each; slower but near-optimal when it solves. Both appear in "
          "the <a href='#baselines'>Baselines</a> tables, read from the same "
          "comparison files."),
         ("base / B1 / B2 vocabulary",
@@ -3577,12 +3591,12 @@ def sec_glossary() -> str:
          "absolute board cells. <em>B1</em> adds park repairs (shove a robot "
          "aside first). <em>B2</em> adds <em>by-reference</em> steps "
          "(&ldquo;park blue where red currently stands&rdquo;) — more "
-         "expressive, far more expensive for the exact solver to label. A "
+         "expressive, far more costly for the exact solver to label. A "
          "network taught from artificially limited B2 data inherited the "
          "limitation (main log, entry 68). Vocabulary separation is absolute: "
          "base and B2 datasets never mix. <strong>The self-play loop runs the "
          "extended (B2) vocabulary</strong>, with owner approval: the base "
-         "vocabulary was measured as already saturated (see the "
+         "vocabulary was measured as already full &mdash; no room left (see the "
          "<a href='#ceiling'>Ceiling tab</a>), so B2 self-play data is the "
          "training data on this page."),
         ("seed noise bars",
@@ -3606,7 +3620,7 @@ def sec_glossary() -> str:
          "Boards generated at any size in seconds by "
          "<code>nn_labeler/leanboard.py</code> (3.8 s at 96&times;96 vs 11.9 h "
          "for the eager path), layout-identical to eager boards "
-         "(checked cell for cell against the slow generator), computing "
+         "(checked cell for cell against the old, slow generator), computing "
          "distances only when asked. They make &ldquo;fresh "
          "instances every iteration&rdquo; essentially free — which is where "
          "self-play diversity comes from in a deterministic single-agent game "
@@ -3627,6 +3641,49 @@ def sec_glossary() -> str:
          "The complement: <code>bench.solved.jsonl</code> (and "
          "<code>eval/data/bench450.jsonl</code> at g16r4), where every instance "
          "carries d*, so % optimal and mean regret are defined."),
+        ("transformer / encoder / attention",
+         "A transformer is a standard neural-network building block that "
+         "lets every cell look at every other cell (that looking step is "
+         "called attention). The encoder is the part of the network that "
+         "turns the board into numbers."),
+        ("token / parameter / head",
+         "A token is one slot of network input &mdash; here, one board cell. "
+         "A parameter is one trainable number inside the network. A head is "
+         "a small output part bolted onto the encoder."),
+        ("arm",
+         "One experiment in a comparison &mdash; a term borrowed from "
+         "medical trials."),
+        ("gate",
+         "A pass/fail test a result must clear before it counts."),
+        ("collapse alarm",
+         "Value networks can suddenly start giving the same answer for "
+         "everything. The alarm detects this, stops training, and keeps the "
+         "best earlier pass."),
+        ("oracle",
+         "An exact answer source &mdash; here, the exact solver."),
+        ("inference",
+         "Using a trained network, as opposed to training it."),
+        ("learning rate",
+         "How big each training adjustment is."),
+        ("prefix-check / anytime / best-at-budget",
+         "Search options. Prefix-check: discard plans whose first moves "
+         "already fail physics. Anytime: keep searching after the first "
+         "answer and keep the best so far. Best-at-budget: search until the "
+         "budget runs out, then return the best verified answer."),
+        ("min / mean backup",
+         "How a tree search summarises a branch: by its best child (min "
+         "cost) or by the average. This project uses min &mdash; there is no "
+         "opponent, so the planner can simply take the best branch."),
+        ("slack",
+         "A ceiling-probe setting: keep searching until every plan within "
+         "N extra plan-cost units of the first answer has been checked. "
+         "More slack = deeper probe = tighter measured limit."),
+        ("record",
+         "One saved training example: a decision, its candidates, and the "
+         "verified cost of the plans that used them."),
+        ("g16r4, g24r8, &hellip; (config names)",
+         "Board naming: g&lt;size&gt;r&lt;robots&gt;. g24r8 = a "
+         "24&times;24 board with 8 robots."),
         ("supervised",
          "Trained from provided answers. Here: planners taught from the "
          "exact solver&rsquo;s solutions. The opposite of self-play, which "
@@ -3748,10 +3805,14 @@ def sec_variants() -> str:
     vd = RESULTS / "variants"
     out = ['<section id="variants"><h2>Variants lab</h2>']
     out.append(
-        '<p>This tab is the experiment lab. Each experiment changes exactly one '
-        'thing in the self-play design and is measured against an unchanged '
-        'control run. Every experiment starts from the same saved networks, '
-        'gets the same practice budget, and takes the same three exams. '
+        '<p>This tab is the experiment lab: 15 cards in all &mdash; one '
+        'unchanged-recipe control, three not run, eleven tested ideas. '
+        'Most experiments change exactly one thing in the self-play design. '
+        'Combination cards (v13, v14) stack changes that won alone. '
+        'The from-scratch control (v08) changes the starting point itself. '
+        'All use the same practice budget and take the same three exams: the '
+        'standard exam (graded), the hard exam (frontier), and the new-boards '
+        'exam (unseen). '
         'Every verdict is a puzzle-by-puzzle comparison against the control '
         'run. Move counts are compared only on puzzles both runs solved, '
         'because averages over different puzzle sets are not comparable. '
@@ -3760,6 +3821,8 @@ def sec_variants() -> str:
         'learn to predict. data = what they practice on. search = how the '
         'planner explores. action-space = which moves it may use. '
         'bootstrap = where training starts from. combo = combined changes. '
+        'Verdict chips: adopted / flat (no effect) / loss / not replicated '
+        '(did not repeat on a second run) / mixed / parked (not run). '
         'Full protocol: <code>variants/DESIGN.md</code>. Results log: '
         '<code>variants/FINDINGS.md</code>.</p>')
     out.append(
@@ -3859,8 +3922,9 @@ def sec_variants() -> str:
         "v15_slide_training": "Practice on randomly nudged puzzles",
         "v16_ranked_slide_training": "Practice on search-chosen nudges",
     }
-    exams = [("graded", "pinned graded (232)"), ("frontier", "pinned frontier (218)"),
-             ("unseen", "unseen boards (200)")]
+    exams = [("graded", "standard exam (graded, 232)"),
+             ("frontier", "hard exam (frontier, 218)"),
+             ("unseen", "new-boards exam (unseen, 200)")]
     for vid, v in meta.items():
         res = vd / vid
         gates = {t: load(res / f"gate_{t}_vs_control.json") for t, _ in exams}
@@ -3872,7 +3936,7 @@ def sec_variants() -> str:
             note = vj.get("note", "")
         if v.status in ("parked", "stub"):
             cls, verdict = "pend", v.status
-        out.append(f'<h3 id="var-{esc(vid)}"><code>{esc(vid)}</code> &mdash; '
+        out.append(f'<h3 id="var-{esc(vid)}" title="{esc(vid)}">'
                    f'{esc(DISPLAY.get(vid, v.title))} '
                    f'<span class="chip {cls}">{esc(verdict)}</span> '
                    f'<span class="chip">{esc(v.axis)}</span></h3>')
@@ -3883,7 +3947,8 @@ def sec_variants() -> str:
                    f'<strong>Result:</strong> {esc(result_txt)}<br>'
                    f'<strong>Conclusion:</strong> {esc(concl_txt)}</p>')
         man = load(res / "generation.manifest.json")
-        detail = [f'<p class="note"><em>{esc(v.title)}.</em><br>'
+        detail = [f'<p class="note"><em>{esc(v.title)}</em> '
+                  f'(run name <code>{esc(vid)}</code>).<br>'
                   f'{esc(v.hypothesis)}<br>{esc(v.mechanism)}<br>'
                   f'{esc(v.expected_failure)}</p>']
         if note:
