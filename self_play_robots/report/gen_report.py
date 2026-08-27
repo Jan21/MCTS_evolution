@@ -1432,8 +1432,9 @@ def sec_baselines() -> str:
                           "file. A row&rsquo;s moves average covers only the puzzles "
                           "that system solved, so rows here are provenance, not a "
                           "fair race &mdash; compare systems in the head-to-head "
-                          "tables above. &ldquo;frontier&rdquo; = the puzzles no planner had solved when the exam was frozen; an optimum exists but is not known "
-                          "known optimum, and the <em>exact optimum</em> row is the "
+                          "tables above. &ldquo;frontier&rdquo; = the puzzles no planner had "
+                          "solved when the exam was frozen; an optimum exists "
+                          "but is not known. The <em>exact optimum</em> row is the "
                           "ceiling nothing can beat. "
                           "<details><summary>Column definitions, field by field "
                           "(for auditors)</summary>Columns: <em>solve rate</em> = "
@@ -1452,7 +1453,7 @@ def sec_baselines() -> str:
                           "<code>d_star_placeholder</code> or the protocol's "
                           "instances file has no <code>d_star</code> at all "
                           "(regret and optimality are then suppressed, because "
-                          "no optimum exists there). The exact-optimum row "
+                          "the optimum is not known there). The exact-optimum row "
                           "averages the whole file while a system averages its "
                           "own solves, so a system solving only the easy subset "
                           "can print a mean below the file's mean d* without "
@@ -1485,7 +1486,7 @@ def sec_baselines() -> str:
             brows.append(row([td_txt(src(s["path"]) + ' <span class="tag front">'
                                      "frontier</span>"), td(s["n"], "d"),
                               td(s["n_graded"], "d"),
-                              td_txt("&mdash; (no optimum exists)")], "sub"))
+                              td_txt("&mdash; (optimum not known)")], "sub"))
     out.append("<h3>The exact-optimum ceiling, per pinned bench file</h3>")
     out.append(table(["bench file (the pinned exam)", "instances",
                       "with a known optimum", "mean known optimum"], brows,
@@ -3523,7 +3524,7 @@ def sub_chart() -> str:
         out.append('<figure class="fig"><div class="chart">' + svg + "</div>"
                    "<figcaption>Each dot is one benchmark run: puzzles solved "
                    "(across) against extra moves used (down). Dashed lines are "
-                   "the proven language limits. Down and to the right is "
+                   "the measured language limits. Down and to the right is "
                    "better. Hover any dot for its name and exact numbers. The "
                    "table below lists every dot with its source file. "
                    "<details><summary>Provenance</summary>x = "
