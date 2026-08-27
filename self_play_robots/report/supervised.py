@@ -141,8 +141,9 @@ def sec_supervised() -> str:
     # ---- the scale ladder ---------------------------------------------------
     out.append("<h3>The scale ladder: who wins as boards grow</h3>")
     out.append(
-        '<p>Per rung: the standard exam (perfect play known) and the frontier '
-        'exam (the exact solver failed; solve counts only). '
+        '<p>Per rung: the standard exam (perfect play known) and the hard '
+        'exam (frontier &mdash; puzzles the exact solver could not crack '
+        'when the exams were frozen, so solve counts only). '
         '&ldquo;Pooled margin&rdquo; = backward&rsquo;s solve-rate lead over '
         'forward across both exams, in points.</p>')
     hdr = ('<div class="tw"><table class="t wide"><thead><tr>'
@@ -154,7 +155,7 @@ def sec_supervised() -> str:
     body = []
     for cfg, bg, fg, bu, fu in _ladder_rows():
         pool = _pooled(bg, fg, bu, fu)
-        dag = '&thinsp;&dagger;' if cfg == 'g24r4' else ''
+        dag = '&thinsp;&dagger;' if not (bu and fu) else ''
         front = (f"{bu['solved']} / {fu['solved']} of {bu['n']}"
                  if bu and fu else f'<span class="dash">&mdash;{dag}</span>')
         body.append(
@@ -171,13 +172,12 @@ def sec_supervised() -> str:
             + "</tr>")
     out.append(hdr + "\n".join(body) + "</tbody></table></div>")
     out.append(
-        '<p class="note">&dagger; The 24&times;24 4-robot frontier was never '
-        'tested with this base-vocabulary pair. Its recorded frontier rows '
-        'use the extended vocabulary and sit in the next table. So that cell '
-        'covers the standard exam only, and its &minus;6.5 margin is a '
-        'graded-only number. 24&times;24 with 4 robots is the forward '
-        'planner&rsquo;s strongest big board: 220 of 232, at 4.6 minutes per '
-        'puzzle against backward&rsquo;s 8 seconds.</p>')
+        '<p class="note">&dagger; No frontier exam was tested for this '
+        'pair at the daggered rungs. Those margins cover the standard exam '
+        'only. At 24&times;24 with 4 robots the recorded frontier rows use '
+        'the extended vocabulary and sit in the next table. That board is '
+        'the forward planner&rsquo;s strongest big board: 220 of 232, at '
+        '4.6 minutes per puzzle against backward&rsquo;s 8 seconds.</p>')
     out.append(
         '<p class="note">Reading, bottom to top. At the base rung the forward '
         'planner is essentially perfect (450/450, +0.07 moves) and the '
@@ -248,8 +248,8 @@ def sec_supervised() -> str:
         'the vocabulary: supervised training never saw examples that taught '
         'it to rank the new steps. Making those examples is exactly what the '
         'self-play loop later did (<a href="#res-loops">'
-        'milestone results</a>: solving 227&ndash;228 of 232 standard puzzles '
-        'and 153&ndash;158 of the frontier from the same vocabulary).</p>')
+        'milestone results</a>: solving 225&ndash;228 of 232 standard puzzles '
+        'and 139&ndash;158 of the frontier from the same vocabulary).</p>')
 
     # ---- seed replication ---------------------------------------------------
     out.append("<h3>Seed replication of the headline rungs</h3>")
@@ -293,7 +293,8 @@ def sec_supervised() -> str:
         'campaign answered with a nine-way tuning sweep (3 seeds &times; 3 '
         'learning rates &mdash; a learning rate sets how big each training '
         'adjustment step is) at the 16&times;16 8-robot board. The winner was '
-        'picked on held-out practice puzzles, never on the exam:</p>')
+        'picked on held-out practice puzzles (set aside from training, never '
+        'the exam):</p>')
     fc = _sys(_load("scaling/results/g16r8/comparison_forward_control.json"),
               "forward", name_has="forward")
     fr = _sys(_load("scaling/results/g16r8/comparison_forward_rescue.json"),
@@ -322,9 +323,9 @@ def sec_supervised() -> str:
         '<p class="note">The rescue is real but small. The tuned forward '
         'planner takes the standard exam perfectly (266/266 &mdash; no '
         'backward run matches that). But it gains only 8 hard-exam puzzles '
-        '(93 &rarr; 101). The kill line written down before the test ran '
-        'said: about 150 hard-exam solves would kill the scale claim. It '
-        'reached 101. Pooled over '
+        '(93 &rarr; 101). The pre-registered failure rule said: about 150 '
+        'hard-exam solves would kill the scale claim (that the backward '
+        'planner wins as boards grow). It reached 101. Pooled over '
         'both exams against the backward planner&rsquo;s middle-of-three run '
         '(418/450 vs 367/450), the backward lead stands at +11.3 points. The '
         '&ldquo;weak opponent&rdquo; objection was answered with measurement, '
@@ -345,8 +346,9 @@ def sec_supervised() -> str:
         '<li><strong>The instruments</strong> &mdash; the replay-checking test '
         'harness, the fixed (&ldquo;pinned&rdquo;) exams, the search-budget '
         'accounting, and the '
-        'measured run-to-run variation limits, which force every comparison on '
-        'this page to be puzzle-by-puzzle.</li>'
+        'measured run-to-run variation limits. Run-to-run randomness is '
+        'bigger than many effects, so only puzzle-by-puzzle pairing '
+        'separates real wins from luck.</li>'
         '<li><strong>The open problem</strong> &mdash; a planner that is cheap '
         '<em>and</em> near-optimal <em>and</em> survives scale. The '
         '<a href="#story">Story tab</a> is what happened next.</li>'

@@ -56,7 +56,7 @@
    "plain_note": "With the same networks, tree search beat the one-shot chooser on every exam."
   },
   "M3": {
-   "title": "one self-play iteration helps",
+   "title": "the self-play loop shows a real gain (checked at round 3)",
    "status": "pass (B2 loop)",
    "sources": [],
    "jobs": [
@@ -68,7 +68,7 @@
     4689628
    ],
    "note": "B2 loop g24r4: iteration 3 vs 0 frontier 158 vs 133 (p=5e-6), graded at B2 ceiling with regret 1.87/1.50 and -32% expansions; base loop flat (saturated). FINDINGS §10-§15.",
-   "plain_note": "One round of self-play produced a real, statistically checked improvement in the extended vocabulary."
+   "plain_note": "Three self-play rounds beat the starting networks on the hard exam: 158 vs 133 solves (p=5e-6: fluke chance about 1 in 200,000). One round alone was not separable from run-to-run noise."
   },
   "M4": {
    "title": "the loop climbs",
@@ -114,7 +114,7 @@
    "plain_note": "Training on all three board types at once ended the stall, and the networks transfer to board sizes they never saw."
   },
   "M6": {
-   "title": "beyond the oracle (80x80+, certification only)",
+   "title": "beyond the exact solver (80x80 and up, replay-checked only)",
    "status": "started: M6 lead agent in Phase 0 feasibility (M6_DESIGN.md to come); budget <=20 nh",
    "sources": [
     "M6_DESIGN.md",
@@ -126,7 +126,7 @@
  },
  "side_studies": {
   "ceiling": {
-   "title": "candidate-generator / plan-language ceiling on the moves metric",
+   "title": "how good could any sub-goal planner be? (the ceiling study)",
    "status": "done",
    "sources": [
     "results/ceiling/g16r4_base.json",

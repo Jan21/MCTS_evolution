@@ -134,8 +134,10 @@ def _fig_subgoal() -> str:
   <text x="280" y="118" class="nb">2 &middot; the mover stops at B,</text>
   <text x="280" y="136" class="nb">because H blocks it there</text>
 </svg>
-<figcaption><strong>One sub-goal</strong> = a triple (B, S, H): send helper
-H to support cell S, so the mover stops at bottleneck B. The choice creates
+<figcaption><strong>One sub-goal</strong> = a triple (B, S, H). The
+bottleneck B: the cell where the mover needs something to crash into. The
+support S: the cell the helper H must stand on to provide that crash. So
+the sub-goal reads: send H to S, and the mover stops at B. The choice creates
 two new journeys: mover to B, and H to S. That recursion is the search tree
 &mdash; wide, but only 2&ndash;6 decisions deep. A full worked decision:
 <code>EXPLAINER.md</code> &sect;2.3.</figcaption>
@@ -327,7 +329,7 @@ def _fig_heads() -> str:
   <rect x="330" y="16" width="392" height="92" rx="8" class="nbox"/>
   <text x="526" y="40" text-anchor="middle" class="nt">value network head</text>
   <text x="480" y="60" text-anchor="middle" class="ns">reads 5 marked cells</text>
-  <text x="480" y="78" text-anchor="middle" class="ns">output: cost distribution, 96 bins</text>
+  <text x="480" y="78" text-anchor="middle" class="ns">output: scores 0&ndash;95 plan-steps</text>
   <g>
     <rect x="646" y="76" width="10" height="12" fill="var(--mut)"/>
     <rect x="659" y="70" width="10" height="18" fill="var(--mut)"/>
@@ -384,7 +386,8 @@ def _fig_expansion() -> str:
   <line x1="800" y1="72" x2="828" y2="72" class="arr ink" marker-end="url(#sa-ink)"/>
 </svg>
 <figcaption><strong>One expansion</strong> = one policy call plus one value
-call that scores all five children together. Exams allow 1,200 expansions per puzzle. Physics checks do not count
+call that scores all five children together. The exam budget is 1,200
+expansions per puzzle (2,400 network calls). Physics checks do not count
 against the search budget. The budget counts network calls only &mdash; the
 same rule the benchmark uses. A failed replay removes the plan from the
 tree.</figcaption>
@@ -409,7 +412,7 @@ def _journey_tree() -> str:
                       <span class="why">One round ended the stall. Hard-exam solves: 170, 235 and 269 &mdash; of 218, 275 and 289 puzzles, one hard exam per board type. Later rounds gave a little back (165, 225, 268).</span>
                     <ul>
                       <li><span class="what">The experiment lab: 15 cards, most changing one thing</span>
-                          <span class="why">One control, three never run, eleven tested ideas. Two cards stack proven winners. Same start networks, same budget, a 200-puzzle new-boards exam. Every claim needs a second seed &mdash; a rerun with different random starting conditions.</span>
+                          <span class="why">One control (the unchanged recipe), three never run, eleven tested ideas. Two cards stack proven winners. Same start networks, same budget, a 200-puzzle new-boards exam. Every claim needs a second seed &mdash; a rerun with different random starting conditions.</span>
                         <ul>
                           <li><span class="chip bad">&#10007; killed</span> <span class="what">v01 &middot; AlphaZero&rsquo;s own policy target</span>
                               <span class="why">v01 replaced our scoring rule (score a candidate by the verified cost of the plans that used it) with AlphaZero&rsquo;s (prefer what the search visited most). Training collapsed on every exam (fluke chance below one in a million). Our rule is what makes the training work.</span></li>
@@ -417,7 +420,7 @@ def _journey_tree() -> str:
                               <span class="why">Twice the records from the same search. A replicated win on the hard exam.</span></li>
                           <li><span class="chip warn">~ did not repeat</span> <span class="what">v06 &middot; a different way to randomise the search&rsquo;s first choices</span>
                               <span class="why">Won at seed 7, reversed at seed 8. The two-seed rule caught it.</span></li>
-                          <li><span class="chip ctl">control</span> <span class="what">v08 &middot; cold start from random weights</span>
+                          <li><span class="chip ctl">from-scratch run</span> <span class="what">v08 &middot; cold start from random weights</span>
                               <span class="why">One round with no human or solver answers &mdash; its only labels were its own replay-checked plans: 132 of 200 new-board puzzles. The solver-taught planner: 134. A tie, from nothing (the puzzle-by-puzzle test finds no real difference).</span></li>
                           <li><span class="chip good">&#10003; adopted</span> <span class="what">v09 &middot; predict real move counts</span>
                               <span class="why">The value net now predicts real move counts &mdash; the number the project is graded on &mdash; not an internal plan-step count. Better everywhere, both seeds.</span></li>
@@ -490,12 +493,14 @@ def sec_story() -> str:
     out.append(_fig_slide())
     out.append(
         '<p>Solutions are construction projects, up to ~30 moves. An exact '
-        'solver exists, but it fails on many puzzles. Its failures define '
-        'the three exams:</p>')
+        'solver exists, but it fails on many puzzles. Its reach defines two '
+        'of the three exams: the puzzles it graded form the standard exam, '
+        'and its failures form the hard exam. The third uses fresh '
+        'boards:</p>')
     out.append('<div class="tw"><table class="t"><thead><tr>'
                '<th>exam</th><th>puzzles</th><th>meaning</th></tr></thead><tbody>'
         '<tr><td>standard (also called graded)</td><td>232</td><td>optimum known (perfect play averages 7.69 moves over all 232)</td></tr>'
-        '<tr><td>hard (frontier)</td><td>218</td><td>the exact solver failed (this is the 24&times;24 set; other board types have their own)</td></tr>'
+        '<tr><td>hard (frontier)</td><td>218</td><td>the exact solver could not crack these when the exam was frozen. An optimum exists but is not known. Planners have since solved many. (24&times;24 set; other board types have their own)</td></tr>'
                '<tr><td>new boards (unseen)</td><td>200</td><td>fresh boards, never trained on (137 have a known optimum)</td></tr>'
                '</tbody></table></div>')
     out.append(
@@ -542,20 +547,21 @@ def sec_story() -> str:
     out.append(_fig_heads())
     out.append('<div class="tw"><table class="t"><thead><tr>'
                '<th>network</th><th>input</th><th>output</th><th>parameters</th></tr></thead><tbody>'
-               '<tr><td>value</td><td>board + one candidate sub-goal</td><td>cost still needed (96 bins)</td><td>982,944</td></tr>'
+               '<tr><td>value</td><td>board + one candidate sub-goal</td><td>cost still needed (scores 0&ndash;95 plan-steps &mdash; enough for the largest boards)</td><td>982,944</td></tr>'
                '<tr><td>policy</td><td>board, no candidate shown</td><td>which sub-goal to try</td><td>1,223,232</td></tr>'
                '</tbody></table></div>')
     out.append(
         '<p>The first networks trained at 16&times;16 and 24&times;24 (the '
-        'loop later added 32&times;32 and 8-robot boards). Audited '
-        'at sizes 32, 40, 48, 56 and 64 &mdash; its teacher (the '
-        'solver-taught labelling network it was copied from) re-measured '
-        'with the same tool at 56 and 64 &mdash; the loop&rsquo;s starting value '
-        'network beats the teacher at every size '
-        '(see the far-size audit table in the <a href="#res-audit">Milestone '
-        'results tab</a>; later 24&times;24-only '
-        'practice trades some of this away &mdash; see that table&rsquo;s '
-        'note).</p>')
+        'loop later added 32&times;32 and 8-robot boards). The starting '
+        'value network was audited at sizes 32, 40, 48, 56 and 64. The '
+        'measure: how often its top-ranked candidate is truly optimal on '
+        'solver-graded decisions. It beats its teacher at every size. (The '
+        'teacher = the solver-taught labelling network it was copied from '
+        '&mdash; the network that wrote its training answers. The teacher '
+        'was re-measured with the same tool at 56 and 64.) Details: the '
+        'far-size audit table in the <a href="#res-audit">Milestone '
+        'results tab</a>. Later 24&times;24-only practice trades some of '
+        'this away &mdash; see that table&rsquo;s note.</p>')
 
     # 6
     out.append('<h3 id="st-search"><span class="no">6</span>One search step</h3>')
@@ -602,10 +608,16 @@ def sec_story() -> str:
                'smaller, easier set. Both are true.</p></div>')
     out.append(
         '<p>The move-by-move planner is almost perfect when it solves. But '
-        'it solves barely half the exam, at about eight times the search '
-        'effort. The '
-        'goal &mdash; at least as many solves as the baseline, with fewer '
-        'moves &mdash; is met.</p>')
+        'it solves barely half the exam. And it spends 688 expansions per '
+        'puzzle &mdash; 23 times the solver-taught baseline&rsquo;s 30. '
+        '(The flagship spends 798: quality costs search wherever it comes '
+        'from.)</p>')
+    out.append(
+        '<p>The original goal had two halves. The first &mdash; at least as '
+        'many solves as the solver-taught baseline, with fewer moves &mdash; '
+        'is met. The second &mdash; matching the move-by-move '
+        'planner&rsquo;s solution quality &mdash; is not. The hybrid halved '
+        'the gap.</p>')
     out.append(
         '<p><strong>Transfer.</strong> The hybrid search itself was developed '
         'at 24&times;24 with 4 robots only. Run unchanged elsewhere:</p>')
@@ -649,8 +661,9 @@ def sec_story() -> str:
         '<ul class="plain">'
         '<li>Self-play training bought solve rate and speed, never shorter '
         'solutions.</li>'
-        '<li>On the standard exam the flagship&rsquo;s move gap to the '
-        'move-by-move planner is 0.87 on shared solves. On new boards that '
+        '<li>On the standard exam the flagship uses +0.79 more moves than '
+        'the move-by-move planner, on the 219 puzzles both solved. (That is '
+        'the paired number in <a href="#baselines">Baselines</a>.) On new boards that '
         'planner stays near-perfect (+0.12 on its own solves) but solves barely half.</li>'
         
         '</ul>')
