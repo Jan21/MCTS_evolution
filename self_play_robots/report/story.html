@@ -203,15 +203,15 @@ starts as the target robot.</p>
   <text x="137" y="63" text-anchor="middle" class="nb">&#9678;</text>
   <circle cx="137" cy="109" r="9" fill="none" stroke="#c94436" stroke-width="1.6" stroke-dasharray="3 3"/>
   <rect x="151.5" y="97.5" width="23" height="23" fill="none" stroke="#3a6fc9" stroke-width="1.6" stroke-dasharray="3 3"/>
-  <path d="M72 57 H150" class="arr dashed" style="stroke:#3a6fc9" marker-end="url(#sa-blue)"/>
+  <path d="M72 57 H163 V100" class="arr dashed" style="stroke:#3a6fc9" marker-end="url(#sa-blue)"/>
   <circle cx="163" cy="57" r="5" fill="none" stroke="#3a6fc9" stroke-width="1.6"/>
-  <path d="M163 64 V100" class="arr dashed" style="stroke:#3a6fc9" marker-end="url(#sa-blue)"/>
   <path d="M46 109 H122" class="arr dashed" style="stroke:#c94436" marker-end="url(#sa-red)"/>
   <circle cx="33" cy="109" r="9" fill="#c94436"/>
   <text x="33" y="113" text-anchor="middle" class="rlbl">R</text>
   <circle cx="59" cy="57" r="9" fill="#3a6fc9"/>
   <text x="59" y="61" text-anchor="middle" class="rlbl">B</text>
   <line x1="137" y1="100" x2="137" y2="68" class="arr" style="stroke:#c94436" marker-end="url(#sa-red)"/>
+  <text x="112" y="146" text-anchor="middle" class="cap">then Red slides up to the target</text>
   <text x="415" y="26" text-anchor="middle" class="lbl">two smaller puzzles</text>
   <rect x="240" y="44" width="350" height="52" rx="8" class="nbox"/>
   <text x="415" y="66" text-anchor="middle" class="nt">get Blue to the dashed square</text>
@@ -219,7 +219,6 @@ starts as the target robot.</p>
   <rect x="240" y="110" width="350" height="52" rx="8" class="nbox"/>
   <text x="415" y="132" text-anchor="middle" class="nt">get Red to the dashed ring</text>
   <text x="415" y="150" text-anchor="middle" class="ns">Red is the mover here</text>
-  <text x="415" y="182" text-anchor="middle" class="cap">then Red slides up to the target</text>
 </svg>
 <figcaption><strong>One sub-goal, and the two puzzles it leaves.</strong> The
 dashed ring is where Red will stop, and the dashed square is where Blue must
@@ -235,23 +234,29 @@ solves.</p>
 <h2 id="s3">Networks that teach themselves</h2>
 <p>The exact solver stops at 64&times;64. A planner learns from answers, and one
 answer says what one sub-goal costs. So where do answers come from on bigger
-boards? A network writes its own, at any board size.</p>
+boards? A separate labelling network writes them, at any board size.</p>
 
 <p>The older networks memorised a number for every square, so each saved network
 file was locked to one board size. The new one is shown only which cells a robot can
 slide between, so one file runs at any size.</p>
 
-<p>The planner uses two of them. The <b>cost network</b> estimates how much more
-a plan will cost. It can also write training answers on its own, at sizes the
-exact solver cannot reach. The <b>choice network</b> picks the next sub-goal to
-try.</p>
+<p>The planner uses two networks of this new kind. The <b>cost network</b> estimates how much more
+a plan will cost. The <b>choice network</b> picks the next sub-goal to try.</p>
 
-<p>The exact solver checked the cost network at 20 board sizes, from 17&times;17
-up to 64&times;64. The network chose the same sub-goal as the solver 86% to 93%
-of the time, and it never trained on a board wider than 16&times;16. The low end
-of that range is a single size, 20&times;20. At 24&times;24, where the loop
-trains, it reads 93%. That check can only run where the solver still
-works.</p>
+<p>A separate copy of the cost network, the <b>labelling network</b>, writes
+training answers where the exact solver cannot reach. That is the other way to
+make training data, and the self-play loop never uses it.</p>
+
+<p>The exact solver checked the labelling network at 20 board sizes, from
+17&times;17 up to 64&times;64. The network gives every candidate sub-goal a
+cost, and the cheapest one wins. That pick matched the solver&rsquo;s own best
+choice 86% to 93% of the time. The low end of that range is a single size,
+20&times;20, and 24&times;24 reads 93%. The check can only run where the solver
+still works.</p>
+
+<p>The labelling network never trained on a board wider than 16&times;16. The
+loop trains the planner&rsquo;s own two networks, and it trains them at
+24&times;24 and above.</p>
 
 <p>Is that good? Planners trained on answers that agreed 91% of the time
 matched solver-taught ones. At 89% they solved as many puzzles but wrote longer
@@ -323,24 +328,28 @@ cell, so the mover stops where the plan needs it. The extended vocabulary,
 which self-play uses, allows three more.</p>
 
 <ul class="plain">
-<li>A helper may use a cell with no wall beside it, if it stays there only for a
-moment.</li>
+<li>A helper may stand on a cell with no wall beside it. Another robot, or the
+order of the plan, must hold it there.</li>
 <li>A robot the plan already sends somewhere may serve as a helper where it
 stands, at no extra cost.</li>
 <li>The planner may move a blocking robot aside, then try the plan again.</li>
 </ul>
 
-<p>Those three do not shorten solutions. They make more puzzles
-expressible: 228 of the standard exam, against 216 before.</p>
+<p>Those three let the language express more puzzles: 228 of the standard exam,
+against 216 before. A planner using them still did not write shorter
+solutions.</p>
 
 <p>Before any training, a probe measured what those sub-goals can do at best.
 It listed every plan a vocabulary can express and replayed each one. Even the
 best extended-vocabulary plans cost +1.17 extra moves, averaged over the 228
-puzzles it reaches. The best base plans cost +1.63.</p>
+puzzles it reaches. The best base plans cost +1.63, over the 216 it reaches.
+The two limits therefore cover different puzzles.</p>
 
 <p>Read that as a measured limit, not a proof. The probe runs under its own time
 and memory caps. It finished its search on 225 of those 228 puzzles. It ran out
-on the other three, so a cheaper plan may exist there. The limit
+on the other three, so a cheaper plan may exist there. It also left four
+puzzles undecided, which is why a planner can solve more than 228. The
+limit
 belongs to the plan language, so only a change to the planner&rsquo;s moves can
 score below it.</p>
 <h2 id="s6">The breakthrough, step by step</h2>
@@ -385,14 +394,15 @@ the whole puzzle. The four cheapest slides get a second slide, and the eight
 cheapest starts of all are the ones searched.</figcaption>
 </figure>
 
-<p>Both planners search under the same limit. The hybrid does about a sixth more
+<p>Both planners get the same budget, meaning the number of sub-goals a search
+may try on one puzzle. The hybrid does about a sixth more
 searching than the self-play sub-goal planner. It still finishes five times
 faster, at 21 seconds per puzzle against 103. The solver-taught planner&rsquo;s
 time is not comparable, because it stops at its first working plan.</p>
 
-<p>The hybrid solved 231 of 232 standard-exam puzzles at +0.94 extra moves,
-against the self-play sub-goal planner&rsquo;s 230 at +1.42. On the puzzles both solved, the
-hybrid was shorter on 40 puzzles and longer on none.</p>
+<p>The hybrid scores +0.94 extra moves against the self-play sub-goal
+planner&rsquo;s +1.42. On the puzzles both solved, the hybrid was shorter on 40
+puzzles and longer on none.</p>
 
 <figure class="w760">
 <svg viewBox="0 0 760 230" role="img" aria-label="A number line of extra moves against perfect play on the standard exam. Perfect play is 0, the move-by-move planner plus 0.07, the hybrid plus 0.94, the sub-goal language limit plus 1.17, the self-play sub-goal planner plus 1.42, the base vocabulary limit plus 1.63, and the solver-taught sub-goal planner plus 4.22.">
@@ -435,6 +445,18 @@ cover different sets. The hybrid solves all 228 puzzles the probe reaches. On
 exactly those, it scores +0.87 against the same limit.</figcaption>
 </figure>
 
+<div class="scroll">
+<table>
+<thead><tr><th>planner</th><th>extra moves<br>vs perfect play</th><th>standard exam<br>solved of 232</th><th>seconds<br>per puzzle</th><th>new boards<br>solved of 200</th></tr></thead>
+<tbody>
+<tr><td>move-by-move planner</td><td class="g">+0.07 over 220</td><td>220</td><td>275</td><td>101</td></tr>
+<tr><td>solver-taught sub-goal planner</td><td>+4.22 over 205</td><td>205</td><td>7.8</td><td>134</td></tr>
+<tr><td>self-play sub-goal planner</td><td>+1.42 over 230</td><td>230</td><td>103</td><td>182</td></tr>
+<tr class="hl"><td>the hybrid</td><td>+0.94 over 231</td><td>231</td><td>21</td><td class="g">188</td></tr>
+</tbody>
+</table>
+</div>
+
 <p>One honest note. The two-move setting also raised the number of starts the
 planner keeps. So part of the gain comes from looking at more starts, not from
 plans that really use two moves.</p>
@@ -444,15 +466,14 @@ the win. The same saved hybrid also worked on bigger and more crowded boards,
 with no new training. On 32&times;32 boards the exact solver leaves a hard exam of
 275 puzzles, and the hybrid solved 251.</p>
 
-<p>The new-boards exam reorders them. The move-by-move planner writes the
-shortest solutions of any planner here, and yet it falls to last. Of its 200
-puzzles the hybrid
-solves 188, the self-play sub-goal planner 182, the solver-taught one 134, and
-the move-by-move planner 101.</p>
+<p>The new-boards exam reorders the four planners. The move-by-move planner
+writes the shortest solutions of any planner here, and yet it falls to
+last.</p>
 
 <p>One weakness remains. The move-by-move planner still writes shorter solutions:
-on the 219 puzzles both solve, the hybrid used +0.79 more moves. But it works
-one move at a time, so long solutions defeat it.</p>
+on the 219 puzzles both solve, the hybrid used +0.79 more moves. But the
+move-by-move planner works one move at a time, so long solutions defeat
+it.</p>
 
 <p>The full pipeline is in the breakthrough tab of
 <a href="selfplay.html">selfplay.html</a>.</p>
