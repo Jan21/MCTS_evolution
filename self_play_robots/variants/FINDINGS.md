@@ -455,9 +455,15 @@ is duplicated there.
     solutions (14.25 vs 15.30 mean, p=4e-22) -- the strongest single moves
     result of the program. The larger-board hard exam's control leg
     (4835373) is the program's last open measurement.
+    Final cell (2026-08-27, jobs 4829780 + 4835373): the larger-board hard
+    exam. Hybrid d2 solved **251/275** — a program record for this exam
+    (prior best 235) — vs the same-budget standard search's 239. On shared
+    solutions the hybrid won moves 77/3 (20.31 vs 21.48 mean, p=1.4e-19).
+    This is the strongest transfer cell of the study: MORE solves AND fewer
+    moves, on the hardest exam of a board size the method never practiced on.
     Conclusion (plain): the one-move-first idea works on bigger boards and
     crowded boards it never practiced on. At every size tried, the planner
-    solves about as many puzzles and uses clearly fewer moves.
+    solves as many or more puzzles and uses clearly fewer moves.
     Sources: `results/variants/v07_transfer/`.
 
 20. **Depth-3: graded still descends, unseen saturated (2026-08-25, jobs
@@ -479,3 +485,20 @@ is duplicated there.
     Conclusion (plain): teaching the networks the search's own nudges did
     not help because they never needed the lesson; both attempts to improve
     the networks FOR the new search are now honestly closed as failures.
+
+
+22. **Program closeout: final ledger; the lab stands down to maintenance
+    (2026-08-27).** Every planned measurement is complete. Final costs:
+    waves 1-2 ~6.5 nh, wave 3 3.85 nh, wave 4 10.38 nh, wave 5 9.70 nh
+    (5.83 + 3.87 for the final transfer legs). **Program total ~30.4 of the
+    50-nh cap.** Deliverables: 16 experiment arms (4 adopted, 3 killed, 2
+    training bets closed as clean negatives, replication or matched controls
+    behind every claim), the unseen exam + exact-optima sidecar as permanent
+    instruments, the flagship planner (strict-value nets + two-slides-first
+    search) measured on five exams and three board types, and the three
+    durable lessons in DESIGN §7. Remaining open item (not the lab's): the
+    forward-baseline re-tune caveat, owned by the supervised session.
+    Conclusion (plain): the lab spent three-fifths of its budget, answered
+    every question it was asked, and closes with a planner that is better
+    everywhere it was measured. Maintenance only from here: cards and the
+    report stay current as the main line uses what the lab found.
