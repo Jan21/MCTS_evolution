@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ricochet Robots planner study — walkthrough</title>
+<style>
+:root{
+  --bg:#fdfdfc; --fg:#1b1b19; --muted:#5d5d57; --line:#d9d6cf;
+  --accent:#8a3d12; --accent2:#14477e; --card:#f4f3ee; --code:#eeece6;
+  --warn:#8d2a0a; --ok:#2c6136; --th:#e9e7e0;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#15171a; --fg:#e7e5e0; --muted:#a3a19b; --line:#33363c; --accent:#e2a271;
+    --accent2:#82b6ea; --card:#1d2025; --code:#22252b; --warn:#f0967c; --ok:#8fc79a;
+    --th:#23262c;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font:16px/1.62 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+.wrap{max-width:66rem; margin:0 auto; padding:2.2rem 1.2rem 6rem}
+h1{font-size:1.95rem; line-height:1.25; margin:0 0 .3rem; letter-spacing:-.01em}
+h2{font-size:1.45rem; margin:3.2rem 0 .6rem; padding-top:.9rem; border-top:2px solid var(--line); letter-spacing:-.01em}
+h3{font-size:1.13rem; margin:2.1rem 0 .5rem; color:var(--accent)}
+h4{font-size:1rem; margin:1.4rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; font-weight:700}
+p{margin:.7rem 0}
+.sub{color:var(--muted); font-size:1.02rem; margin:.2rem 0 1.4rem}
+a{color:var(--accent2)}
+code{background:var(--code); padding:.08em .32em; border-radius:3px; font-size:.9em;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+pre{background:var(--code); padding:.8rem 1rem; border-radius:5px; overflow-x:auto; font-size:.85rem; line-height:1.5}
+pre code{background:none; padding:0}
+.tw{overflow-x:auto; margin:1rem 0; border:1px solid var(--line); border-radius:5px}
+table{border-collapse:collapse; width:100%; font-size:.87rem; min-width:34rem}
+th,td{border-bottom:1px solid var(--line); padding:.42rem .6rem; text-align:left; vertical-align:top}
+th{background:var(--th); font-weight:700; white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right; white-space:nowrap}
+details{background:var(--card); border:1px solid var(--line); border-left:3px solid var(--accent);
+  border-radius:4px; margin:1rem 0; padding:.2rem .9rem}
+details summary{cursor:pointer; font-weight:600; padding:.55rem 0; color:var(--accent); font-size:.94rem}
+details[open] summary{border-bottom:1px solid var(--line); margin-bottom:.5rem}
+details table{font-size:.83rem}
+nav.toc{background:var(--card); border:1px solid var(--line); border-radius:5px; padding:1rem 1.3rem; margin:1.6rem 0 2rem}
+nav.toc ol{margin:.3rem 0; padding-left:1.3rem}
+nav.toc li{margin:.22rem 0}
+.note{border-left:3px solid var(--accent2); background:var(--card); padding:.7rem 1rem; margin:1.1rem 0; border-radius:0 4px 4px 0}
+.flag{border-left:3px solid var(--warn); background:var(--card); padding:.7rem 1rem; margin:1.1rem 0; border-radius:0 4px 4px 0}
+.flag strong,.sev-high{color:var(--warn)}
+.src{font-size:.88rem; color:var(--muted); margin-top:1.6rem; padding-top:.7rem; border-top:1px dashed var(--line)}
+ol.proc>li{margin:.55rem 0}
+ul{margin:.6rem 0; padding-left:1.3rem}
+li{margin:.25rem 0}
+.tag{display:inline-block; font-size:.72rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:.05em; padding:.1rem .4rem; border-radius:3px; border:1px solid currentColor}
+.t-high{color:var(--warn)} .t-med{color:var(--accent)} .t-low{color:var(--muted)}
+.lede{font-size:1.05rem}
+hr{border:none; border-top:1px solid var(--line); margin:2.4rem 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Ricochet Robots planner study</h1>
+<p class="sub">A walkthrough of the setups, the metrics, the solvers, the plan language, self-play, and the action-space result. Top layer, with the detail one click away.</p>
+
+<h2 id="how">How to read this</h2>
+<p class="lede">This page is the top layer of a reference document about the Ricochet Robots planning study in this repository. It runs in four steps: first the setups, the metrics and the solvers that use no learning, then the two learned planning approaches and the plan-language extensions, then self-play and the action-space result, and last a single table of every place where the code or the stored data contradicts the project's own written claims. The full detail lives in three markdown files under <code>self_play_robots/report/</code>, and each part below links to its own source at the end of that part.</p>
+
+<div class="note">
+<p><strong>Conventions used everywhere on this page.</strong> Every count keeps its denominator and names the population it was measured on. Every project term is defined at its first use. Grey collapsed blocks hold supporting detail only. A reader who reads only the visible text still receives a correct and complete picture, because no caveat is hidden inside a collapsed block.</p>
+</div>
+
+<nav class="toc">
+<ol>
+<li><a href="#part1">Part 1 — the ground: setups, metrics, non-learned solvers</a></li>
+<li><a href="#part2">Part 2 — the two approaches, and the language</a></li>
+<li><a href="#part3">Part 3 — self-play, then the breakthrough</a></li>
+<li><a href="#part4">Part 4 — what checking the code turned up</a></li>
+<li><a href="#part5">Open questions and things never measured</a></li>
+</ol>
+</nav>
+
+<h2 id="part1">Part 1 — the ground</h2>
+
+<h3 id="p1-game">What one puzzle is</h3>
+<p>Ricochet Robots is a single-player puzzle on a square grid of <code>n</code> by <code>n</code> cells. Walls sit on cell edges. The four outer edges are always walls. Several robots stand on distinct cells. One robot is the <strong>target robot</strong>. One empty cell is the <strong>goal cell</strong>.</p>
+<p>A <strong>move</strong> (also called a <strong>slide</strong>) is a pair of one robot and one direction. The robot slides until a wall, the board edge, or another robot stops it. The robot cannot stop where you want. The puzzle is solved when the target robot stands on the goal cell. Fewer moves is better.</p>
+<p>The consequence of the sliding rule is that robots serve as bumpers. To stop the target robot on the goal cell, another robot often has to stand on the cell just past the goal first. Solutions therefore contain helper moves that have nothing to do with the target robot's own path.</p>
+<p>Two objects must stay separate. A <strong>board</strong> is the geometry alone: the grid size and the wall layout. An <strong>instance</strong> (also called a puzzle) is a board plus a start placement: all robot cells, which robot is the target, and the goal cell. Instances live one per line in JSON Lines files. Each line carries a field <code>d_star</code>, written <strong>d*</strong> in this page, which is the exact move optimum when it is known. No planner ever reads <code>d_star</code> at solve time.</p>
+
+<details>
+<summary>The instance record format, and where the physics lives</summary>
+<div class="tw"><table>
+<thead><tr><th>field</th><th>type</th><th>meaning</th></tr></thead>
+<tbody>
+<tr><td><code>env_id</code></td><td>int</td><td>the board id, resolved against the configuration's board directory</td></tr>
+<tr><td><code>positions</code></td><td>list of <code>[x, y]</code></td><td>robot cells, in the canonical colour order</td></tr>
+<tr><td><code>target_idx</code></td><td>int</td><td>index into <code>positions</code> of the robot that must reach the goal</td></tr>
+<tr><td><code>target</code></td><td><code>[x, y]</code></td><td>the goal cell</td></tr>
+<tr><td><code>d_star</code></td><td>int, <code>null</code>, or <code>0</code></td><td>the exact move optimum, when known</td></tr>
+</tbody></table></div>
+<p>One real line, the first of the 16x16 base benchmark:</p>
+<pre><code>{"d_star":12,"env_id":2400,"positions":[[1,15],[2,12],[11,6],[0,3]],"target":[9,15],"target_idx":0}</code></pre>
+<p>The slide physics is <code>supervised_valuenet/simulate.py::slide</code>. The joint-state game is <code>supervised_valuenet/move_planner/state.py</code>. Wall density is not a free parameter. It is pinned to the base game and scaled by area: <code>walls(n) = round(48 * (n/16)^2)</code>. Board generation is deterministic per board id, so any shard or restart reproduces the same bytes.</p>
+</details>
+
+<h3 id="p1-configs">Every setup we test</h3>
+<p>A configuration is named <code>g&lt;grid&gt;r&lt;robots&gt;</code>. <code>g24r4</code> means a 24x24 board with 4 robots. The registry <code>supervised_valuenet/scaling/configs.py</code> holds 36 configurations. Each one fixes the grid size, the robot count, the wall count, the board directory, and the board-id ranges for training, validation, testing and benchmarking.</p>
+<p>Two labelling systems produce the data files. <strong>Backward labels</strong> are subgoal-decision labels, one record per candidate subgoal at each decision, with its exact cost. <strong>Forward labels</strong> are move-by-move labels, one record per position, with the optimal move set and the exact cost-to-go. A <strong>benchmark</strong> is a pinned instance file used to score a system.</p>
+
+<div class="tw"><table>
+<thead><tr><th>configuration</th><th class="num">grid</th><th class="num">robots</th><th class="num">walls</th><th class="num">boards on disk</th><th>data present</th><th>role</th></tr></thead>
+<tbody>
+<tr><td>g8r4 … g15r4 (8 configs)</td><td class="num">8-15</td><td class="num">4</td><td class="num">12-42</td><td class="num">1200 each</td><td>backward labels only</td><td>labeller-fidelity ladder</td></tr>
+<tr><td><strong>g16r4</strong></td><td class="num">16</td><td class="num">4</td><td class="num">48</td><td class="num">2139</td><td>backward (extended language, two cap settings). Benchmark lives at <code>eval/data/bench450.jsonl</code></td><td><strong>full rung</strong></td></tr>
+<tr><td><strong>g16r6</strong></td><td class="num">16</td><td class="num">6</td><td class="num">48</td><td class="num">1200</td><td>backward, forward, benchmark, graded and frontier splits</td><td><strong>full rung</strong></td></tr>
+<tr><td><strong>g16r8</strong></td><td class="num">16</td><td class="num">8</td><td class="num">48</td><td class="num">1200</td><td>backward, forward, benchmark, splits, 10x cap probe</td><td><strong>full rung</strong></td></tr>
+<tr><td>g17r4 … g23r4 (7 configs)</td><td class="num">17-23</td><td class="num">4</td><td class="num">54-99</td><td class="num">150 each</td><td>backward audit corpus only</td><td>labeller-fidelity ladder</td></tr>
+<tr><td><strong>g24r4</strong></td><td class="num">24</td><td class="num">4</td><td class="num">108</td><td class="num">1200</td><td>backward, forward, benchmark, splits</td><td><strong>full rung</strong></td></tr>
+<tr><td><strong>g24r8</strong></td><td class="num">24</td><td class="num">8</td><td class="num">108</td><td class="num">1200</td><td>backward, forward, benchmark, splits</td><td><strong>full rung</strong></td></tr>
+<tr><td>g25r4 … g31r4 (7 configs)</td><td class="num">25-31</td><td class="num">4</td><td class="num">117-180</td><td class="num">150 each</td><td>backward audit corpus only</td><td>labeller-fidelity ladder</td></tr>
+<tr><td><strong>g32r4</strong></td><td class="num">32</td><td class="num">4</td><td class="num">192</td><td class="num">2250</td><td>backward, forward, benchmark, splits</td><td><strong>full rung</strong></td></tr>
+<tr><td>g40r4</td><td class="num">40</td><td class="num">4</td><td class="num">300</td><td class="num">170</td><td>backward audit corpus only</td><td>lean-board size probe</td></tr>
+<tr><td>g48r4</td><td class="num">48</td><td class="num">4</td><td class="num">432</td><td class="num">170</td><td>backward audit corpus only</td><td>lean-board size probe</td></tr>
+<tr><td>g56r4</td><td class="num">56</td><td class="num">4</td><td class="num">588</td><td class="num">170</td><td>backward audit corpus only</td><td>lean-board size probe</td></tr>
+<tr><td>g64r4</td><td class="num">64</td><td class="num">4</td><td class="num">768</td><td class="num">170</td><td>backward audit corpus only</td><td>last size with exact ground truth</td></tr>
+<tr><td>g80r4</td><td class="num">80</td><td class="num">4</td><td class="num">1200</td><td class="num">20</td><td><strong>none</strong></td><td>marked UNVERIFIABLE in the registry</td></tr>
+<tr><td>g96r4</td><td class="num">96</td><td class="num">4</td><td class="num">1728</td><td class="num">20</td><td><strong>none</strong></td><td>marked UNVERIFIABLE in the registry</td></tr>
+</tbody></table></div>
+
+<p>Six configurations carry a full pipeline. The project calls them <strong>the six rungs</strong>: g16r4, g16r6, g16r8, g24r4, g24r8 and g32r4. Everything else is either a rung of the labeller-fidelity ladder or a size probe. The two configurations above 64x64 hold 20 boards each and no data at all, because they lie beyond the exact solver's size envelope.</p>
+
+<details>
+<summary>Board-id splits, and lean boards (why sizes above 32x32 exist at all)</summary>
+<p>Two split conventions exist. <code>g16r4</code> inherits the legacy ids of the original 16x16 pipeline: train 0-95 and 1000-1799, validation 1800-2399, test 112-127 and 2400-2999, benchmark 2400-2549. Every other configuration uses the standard convention over 1200 boards: train 0-699, validation 700-899, test and benchmark 900-1049, spare 1050-1199. Test and benchmark are the same 150 boards. The two conventions use disjoint id blocks, so they must never be described as one range. The self-play project adds a third rule: generation uses ids 40000-49999, examination uses ids 20000-20999, and nothing may ever train on 0-1199 or on 20000 and above.</p>
+<p><strong>Lean boards.</strong> A standard board pickle stores two all-pairs distance tables. Building them costs about <code>O(n^4 log n)</code>. The measured cold build cost is 8.2 s at 16x16, 60 s at 24x24 and 222 s at 32x32, and a log-log fit projects about 1.7 h at 64x64 and about 11.9 h at 96x96. A full 1200-board 64x64 set would need about 230 GB of sidecar tables. A lean board drops the tables and answers a distance query on demand. Measured lean cost per board is 0.24 s at 32x32, 1.5 s at 64x64 and 3.8 s at 96x96, with pickles of 1.1 MB, 4.9 MB and 11.7 MB. A lazy query costs 1.43 times a dictionary lookup and returns bit-identical results, checked exhaustively over 1.45 M table entries at 16x16 and 24x24 with zero mismatches. Lean boards are layout-identical to standard boards by construction, because the two table builders consume no randomness. The configurations at 40x40 and above exist only as lean boards.</p>
+</details>
+
+<h3 id="p1-bench">The benchmarks, and the graded / frontier split</h3>
+<p>Every pinned benchmark holds 450 instances drawn from 150 boards, 3 instances per board. At benchmark construction time an exact solver attempts each instance. Where it succeeds, the instance receives a <code>d_star</code>. Where it fails, the instance keeps a placeholder. The file is then split in two.</p>
+<ul>
+<li>The <strong>graded set</strong> (<code>bench.solved.jsonl</code>) holds the instances with a known optimum. Every quality metric is computable there.</li>
+<li>The <strong>frontier set</strong> (<code>bench.unsolved.jsonl</code>) holds the instances the exact solver could not grade. No optimum exists there, at any budget. Only solve rate, search cost and wall clock mean anything.</li>
+</ul>
+
+<div class="tw"><table>
+<thead><tr><th>configuration</th><th class="num">instances</th><th class="num">graded</th><th class="num">frontier</th><th class="num">exact-solver failure rate</th><th class="num">mean d* on graded</th><th class="num">max d*</th></tr></thead>
+<tbody>
+<tr><td>g16r4 (base)</td><td class="num">450</td><td class="num">450</td><td class="num">0</td><td class="num">0 % <em>by construction</em></td><td class="num">6.369</td><td class="num">12</td></tr>
+<tr><td>g16r6</td><td class="num">450</td><td class="num">316</td><td class="num">134</td><td class="num">29.78 %</td><td class="num">5.693</td><td class="num">10</td></tr>
+<tr><td>g16r8</td><td class="num">450</td><td class="num">266</td><td class="num">184</td><td class="num">40.89 %</td><td class="num">5.188</td><td class="num">9</td></tr>
+<tr><td>g24r4</td><td class="num">450</td><td class="num">232</td><td class="num">218</td><td class="num">48.44 %</td><td class="num">7.690</td><td class="num">14</td></tr>
+<tr><td>g32r4</td><td class="num">450</td><td class="num">175</td><td class="num">275</td><td class="num">61.11 %</td><td class="num">7.823</td><td class="num">12</td></tr>
+<tr><td>g24r8</td><td class="num">450</td><td class="num">161</td><td class="num">289</td><td class="num"><strong>64.22 %</strong></td><td class="num">5.621</td><td class="num">9</td></tr>
+</tbody></table></div>
+
+<div class="flag">
+<p><strong>The 0 % at g16r4 is a definition, not a measurement.</strong> The base benchmark was built by a different script whose sampler discards and redraws any instance the exact solver could not grade, at a cap of 60,000 expansions. Every other row was built by a sampler that keeps the failure and records it, at a cap of 200,000 expansions and a 60 second wall-time limit. The five points are therefore not on one protocol. No measurement of the exact solver's failure rate at 16x16 with 4 robots under the scaling protocol exists in this repository.</p>
+</div>
+
+<p>Two facts carry forward. First, the worst rung is <strong>g24r8 at 64.22 % of 450</strong>, not g32r4. Second, the maximum exact optimum stays between 9 and 14 moves at every size measured. Larger boards lengthen slides. They do not lengthen solutions.</p>
+
+<details>
+<summary>The fresh unseen exam, and the frontier placeholder inconsistency</summary>
+<p>The self-play project added a benchmark on boards nothing has ever trained on. The project calls a pinned instance set an <strong>exam</strong>. It is the same kind of object as a benchmark.</p>
+<div class="tw"><table>
+<thead><tr><th>property</th><th>value</th></tr></thead>
+<tbody>
+<tr><td>instance file</td><td><code>self_play_robots/results/variants/exam/g24r4_unseen.jsonl</code></td></tr>
+<tr><td>configuration</td><td>g24r4: 24x24, 4 robots, 108 walls</td></tr>
+<tr><td>board ids</td><td>20000-20049, that is 50 boards</td></tr>
+<tr><td>instances</td><td>200, exactly 4 per board</td></tr>
+<tr><td>in-line <code>d_star</code></td><td>the literal <code>0</code> on all 200 lines, a placeholder and never a value</td></tr>
+<tr><td>optimum sidecar</td><td>137 of 200 labelled, 63 unlabelled. Overall mean d* 8.708, minimum 1, maximum 14</td></tr>
+<tr><td>sidecar passes</td><td>pass 1 at 200,000 expansions and 60 s labelled 103 instances at mean d* 7.553. Pass 2 at 1,000,000 expansions and 300 s labelled 34 more at mean d* 12.206</td></tr>
+</tbody></table></div>
+<p>Pass 1 uses exactly the caps that defined the graded and frontier split of every pinned benchmark, so the unseen exam divides the same way: 137 graded-unseen and 63 frontier-unseen inside one physical file. Any statement about mean regret on the unseen exam is a statement about those 137 instances only.</p>
+<p><strong>The placeholder inconsistency.</strong> The frontier files use two different conventions: <code>d_star = 0</code> on all lines at g16r6, g16r8, g24r8 and g32r4, and <code>d_star = null</code> on all 218 lines at g24r4. The comparison harness detects both forms and suppresses regret and percent-optimal when it sees them. Any consumer that skips that check silently computes regret against zero. Part 4 lists ten stored files where exactly that happened.</p>
+</details>
+
+<h3 id="p1-metrics">Every metric, defined once</h3>
+<p>One function is the single canonical aggregator: <code>supervised_valuenet/eval/compare.py::aggregate</code>. Every other driver in either source tree imports and calls that exact function. So all headline metrics have one definition and one implementation.</p>
+
+<div class="tw"><table>
+<thead><tr><th>metric</th><th>what it measures</th><th>unit</th><th>direction</th><th>denominator of the mean</th><th>where it can be computed</th></tr></thead>
+<tbody>
+<tr><td><strong>solve rate</strong></td><td>the fraction of attempted instances a system solved</td><td>fraction in [0, 1]</td><td>higher is better</td><td>all instances attempted</td><td>every set</td></tr>
+<tr><td><strong>realized strict moves</strong></td><td>primitive robot moves in a legal execution of a plan</td><td>moves (integer)</td><td>lower is better</td><td>solved rows</td><td>every set, because it needs no optimum</td></tr>
+<tr><td><strong>regret</strong></td><td>realized moves minus d*</td><td>moves</td><td>lower is better, 0 is optimal</td><td>solved rows only</td><td><strong>graded sets only</strong>, and 137 of the 200 unseen instances</td></tr>
+<tr><td><strong>percent optimal</strong></td><td>share of solved instances solved in exactly d* moves</td><td>percent 0-100</td><td>higher is better</td><td>solved rows only</td><td><strong>graded sets only</strong>, and 137 of the 200 unseen instances</td></tr>
+<tr><td><strong>expansions</strong></td><td>search work, in units of one network-scored node expansion</td><td>count</td><td>lower is better at equal solve rate</td><td>all rows, including unsolved ones</td><td>every set</td></tr>
+<tr><td><strong>seconds per puzzle</strong></td><td>elapsed search time on one instance</td><td>seconds</td><td>lower is better</td><td>all rows</td><td>every set, but comparable only within one machine</td></tr>
+<tr><td><strong>argmin agreement</strong></td><td>how often a labeller's top pick is genuinely optimal</td><td>fraction in [0, 1]</td><td>higher is better</td><td>matched decision groups</td><td>matched label corpora only, never on a benchmark</td></tr>
+</tbody></table></div>
+
+<h4>Realized strict moves is the definition that changed the project</h4>
+<p>A subgoal planner does not produce moves. It produces a <strong>plan</strong>, which is a graph of subgoals. A plan is <em>complete</em> when no part of it is left unresolved. A complete plan is still an abstraction, and it may not be playable.</p>
+<p><code>strict_moves</code> is the legal joint-game realization and the metric of record. It orders the plan's physical segments so that a helper reaches its support cell before the mover bounces off it, then executes one segment at a time on the full board with every other robot as a blocker. It returns the total slide count, or nothing at all if any segment is unreachable. A subgoal instance counts as solved only when <code>strict_moves</code> returns a number.</p>
+<p>The measured consequence is the whole shape of the project. The subgoal planner's historical 99.6 % solve rate counted plans that could not be played. Forced through strict realization it fell to 53.1 % of 450. Four verified defect fixes later it reached 80 %, and a playability check inside the search reached 89.1 %.</p>
+<p>Every arena result file is also replayed by an independent checker before the project accepts it. That checker imports only the physics layer, replays the dumped move list from the start positions, and requires that every move is a legal full slide, that the sequence length equals the reported move count, and that the target robot ends on the goal. A failure quarantines the file and stops the run.</p>
+
+<details>
+<summary>The six ways a complete plan fails, and the two counters that are not the metric of record</summary>
+<p>A complete plan can fail realization in six ways: the segment's robot cannot reach the segment end with every other robot as a blocker, no reachable certified cell exists before a split segment's bounce, the leg after the support is placed is unreachable, the dependency graph has no topological order, everything executes but the target robot is not on the goal cell, or the plan has no physical segments at all.</p>
+<p><code>abstract_moves</code> is a diagnostic, not the metric of record. It costs each segment on its own with only its intended support robot on the board. It can under-count real moves, so a regret computed from it can be negative. A counter named <code>n_negative_abstract_regret</code> exists purely to catch that case.</p>
+<p><strong>Label regret</strong> is a second, unrelated quantity that shares the name. It is the cost-to-go gap between the candidate a value network ranks first and the truly best candidate in the same decision. It is measured in label cost units, not in game moves, and it is not comparable to move regret.</p>
+</details>
+
+<h4>Expansions, and the granularity asymmetry the project states itself</h4>
+<p>Both planner families are best-first searches. They are compared at a fixed budget so that neither can simply buy a better result. The unit is the <strong>expansion</strong>, defined in every result file as one popped search node whose children are generated, which costs one policy pass plus one batched value pass over at most <em>k</em> children. <em>k</em> is 5 in every result cited on this page. The standard budget is 1200 expansions.</p>
+<p>The project records the asymmetry in its own generated protocol note. One subgoal expansion commits an entire subgoal, which is worth several primitive moves. One move-by-move expansion commits a single primitive move. A shared expansion cap therefore grants the subgoal planner strictly more solution-building work per step. That is the conservative direction for the headline comparison. It is also the reason why wall-clock time is always reported next to expansions and never instead of it.</p>
+
+<details>
+<summary>Two honest caveats about the expansion counter, and what the timer includes</summary>
+<p><em>Over-count.</em> The counter increments before candidate generation. A pop that produces no candidates still costs one expansion while making zero network passes.</p>
+<p><em>Derivation on the move-by-move side.</em> Under <code>eval.compare</code> the move planner's expansions are not counted but derived from the number of network calls, as <code>(calls - 1) // 2</code>. The cap actually passed to the search increments even on a pop with no successors, so the reported expansion count can be lower than the iterations actually spent. The self-play bench runner keeps both counters per row and cross-checks them.</p>
+<p><em>Free work.</em> Three kinds of work are explicitly free and are recorded in separate accounting fields: forced exact fixes where a segment turns out to have a known exact path, the final pop of a complete plan, and all physics work such as strict realization, prefix checks and park repairs.</p>
+<p><em>The timer.</em> It starts after the board is loaded and the state is built, and stops when the search returns. It excludes checkpoint loading, board loading and state construction. It includes the whole search loop and all network passes. In <em>anytime</em> mode it also includes realization, park repairs and prefix checks, because those run inside the search.</p>
+</details>
+
+<h3 id="p1-solvers">The solvers that use no learning</h3>
+<p>Four systems in this repository solve or bound puzzles with no neural network anywhere. They are the ground floor everything else is measured against.</p>
+
+<div class="tw"><table>
+<thead><tr><th>system</th><th>what it is</th><th>what it produces</th><th>where it is used</th></tr></thead>
+<tbody>
+<tr><td><strong>exact move oracle</strong></td><td>A* over joint robot states, with an admissible heuristic</td><td>the exact optimum d*</td><td>benchmark labels, move-by-move training labels</td></tr>
+<tr><td><strong>exact subgoal labeller</strong></td><td>best-first search over partial plans, every candidate priced by a full solve</td><td>per-candidate exact costs</td><td>subgoal training labels, audit corpora</td></tr>
+<tr><td><strong>hand-written-scorer subgoal search</strong></td><td>the production search with both network calls replaced by hand-written functions</td><td>plans, scored like a real planner</td><td>the no-network control</td></tr>
+<tr><td><strong>exhaustive plan-language probe</strong></td><td>exhaustive best-first enumeration of the plan language, every complete plan strictly realized</td><td>the language's ceiling</td><td>measuring what the plan vocabulary can express at all</td></tr>
+</tbody></table></div>
+
+<p>The first two exist twice, as a Python reference implementation and as a Rust port. The Rust port is the production engine. A formal gate replayed 20,649 decision contexts and 258,999 labels against the Python reference with zero differences. A later gate for the extended plan language replayed 894 labels across 68 pinned decisions with zero differences.</p>
+
+<h4 id="p1-oracle">The exact move oracle: score, timings, and where it stops</h4>
+<p>When this solver returns a number, that number is the exact minimum. Its heuristic is admissible, edges have unit cost, and the goal test happens on pop. When it cannot finish it returns nothing at all. It never returns an approximation. Its score is therefore the same as the graded share of each benchmark in the table above: it grades 450 of 450 at g16r4 by construction, and between 161 and 316 of 450 at the other five rungs.</p>
+
+<p><strong>Where more budget helps, measured once.</strong> All 184 oracle failures at g16r8 were re-run at ten times the budget. 75 of 184 (40.8 %) then solved, at mean d* 8.23 and maximum 10, which is harder than the graded set's mean of 5.19. 109 of 184 (59.2 %) stayed unsolved. No equivalent probe exists at any other rung.</p>
+
+<p><strong>Timing.</strong> No per-instance timing file for this solver survives on disk. Two indirect facts exist. The 60 second wall-time cap means one failure at g24r8 costs up to 60 s, and a repository analysis note states that benchmark construction cost is dominated by oracle failures at 60 s each. Separately, the exact move labelling run at 64x64 reported a yield of about 11 solvable instances per 120 attempts at a 40,000-expansion budget, which is about 9 %.</p>
+
+<div class="tw"><table>
+<thead><tr><th>limit</th><th>value</th><th>consequence</th></tr></thead>
+<tbody>
+<tr><td>grid size</td><td><code>n &gt; 64</code></td><td><strong>Cannot run.</strong> A hard assertion is compiled into the release build. No exact answer exists at 80x80 or 96x96 at any budget, because the engine packs the joint robot state into one integer with 6 bits per coordinate.</td></tr>
+<tr><td>robot count</td><td><code>R &gt; 10</code></td><td><strong>Cannot run.</strong> The same assertion. No configuration in the study exceeds 8 robots, so this limit never binds.</td></tr>
+<tr><td>expansion budget</td><td>200,000 at benchmark time</td><td>Runs, but fails on 29.78 % to 64.22 % of 450 instances depending on the rung.</td></tr>
+<tr><td>wall time</td><td>60 s at benchmark time</td><td>Contributes to the same failures. The two causes are not separated in the stored metadata.</td></tr>
+</tbody></table></div>
+
+<h4 id="p1-labeller">The exact subgoal labeller: yield, timings, and where it stops</h4>
+<p>This is a second, different exact system. It searches over partial plans, not over robot positions. For each decision it enumerates candidate subgoals, commits each one, and solves the remaining plan to completion to price it. The candidate with the lowest resulting cost is marked optimal.</p>
+<p>The labeller does not solve a fixed instance list. It samples up to four times the target count per board and keeps the first instances that produce records, so its keep rate is the closest thing the study has to an exact-solver success rate at large sizes.</p>
+
+<div class="tw"><table>
+<thead><tr><th>configuration</th><th class="num">grid</th><th class="num">boards</th><th class="num">attempts</th><th class="num">kept</th><th class="num">keep rate</th><th class="num">wall seconds</th><th class="num">seconds per kept instance</th></tr></thead>
+<tbody>
+<tr><td>g8r4</td><td class="num">8</td><td class="num">1050</td><td class="num">16,156</td><td class="num">10,500</td><td class="num">0.650</td><td class="num">not on disk</td><td class="num">—</td></tr>
+<tr><td>g10r4</td><td class="num">10</td><td class="num">1050</td><td class="num">16,259</td><td class="num">10,500</td><td class="num">0.646</td><td class="num">not on disk</td><td class="num">—</td></tr>
+<tr><td>g15r4</td><td class="num">15</td><td class="num">1050</td><td class="num">16,825</td><td class="num">10,500</td><td class="num">0.624</td><td class="num">not on disk</td><td class="num">—</td></tr>
+<tr><td>g17r4</td><td class="num">17</td><td class="num">150</td><td class="num">2,437</td><td class="num">1,500</td><td class="num">0.616</td><td class="num">not on disk</td><td class="num">—</td></tr>
+<tr><td>g20r4</td><td class="num">20</td><td class="num">150</td><td class="num">2,520</td><td class="num">1,500</td><td class="num">0.595</td><td class="num">not on disk</td><td class="num">—</td></tr>
+<tr><td>g24r4 (20-board probe)</td><td class="num">24</td><td class="num">20</td><td class="num">338</td><td class="num">200</td><td class="num">0.592</td><td class="num">prose only</td><td class="num">0.030 <em>(unverified)</em></td></tr>
+<tr><td>g31r4</td><td class="num">31</td><td class="num">150</td><td class="num">2,577</td><td class="num">1,500</td><td class="num">0.582</td><td class="num">not on disk</td><td class="num">—</td></tr>
+<tr><td>g32r4 (20-board probe)</td><td class="num">32</td><td class="num">20</td><td class="num">379</td><td class="num">200</td><td class="num">0.528</td><td class="num">prose only</td><td class="num">0.075 <em>(unverified)</em></td></tr>
+<tr><td>g40r4</td><td class="num">40</td><td class="num">150</td><td class="num">2,582</td><td class="num">1,500</td><td class="num">0.581</td><td class="num">31</td><td class="num">0.021</td></tr>
+<tr><td>g48r4</td><td class="num">48</td><td class="num">150</td><td class="num">2,662</td><td class="num">1,500</td><td class="num">0.564</td><td class="num">61</td><td class="num">0.041</td></tr>
+<tr><td>g56r4</td><td class="num">56</td><td class="num">150</td><td class="num">2,669</td><td class="num">1,500</td><td class="num">0.562</td><td class="num">111</td><td class="num">0.074</td></tr>
+<tr><td>g64r4</td><td class="num">64</td><td class="num">150</td><td class="num">2,716</td><td class="num">1,500</td><td class="num">0.552</td><td class="num">188</td><td class="num">0.125</td></tr>
+</tbody></table></div>
+
+<p>The degradation from 8x8 to 64x64 is gentle: the keep rate falls from 0.650 to 0.552 across an eight-fold increase in board side. Contrast that with the move oracle's 0 % to 64 % failure curve over a two-fold increase. The two systems fail at completely different rates, because they solve completely different problems. The study therefore has exact <em>subgoal</em> labels far past the size where it has exact <em>move</em> optima.</p>
+<p><strong>Where it cannot run.</strong> The same <code>n &lt;= 64</code> envelope as the move oracle, for the same reason, because it uses the same packed state. At 80x80 and 96x96 nothing can check its output, which is why the registry marks those two configurations UNVERIFIABLE.</p>
+<div class="flag">
+<p><strong>Two timing numbers here are prose only.</strong> The 0.030 and 0.075 seconds per instance at 24x24 and 32x32 come from the project's own findings log. The primary timing file is a session scratchpad that no longer exists on disk. The run's raw audit trail survives and confirms that the run happened at the stated scale, but it carries no timing. Both numbers are reported as prose, not as verified measurements.</p>
+</div>
+
+<details>
+<summary>Caps, the accepted non-determinism, and the reported speed-ups</summary>
+<p><strong>Caps written into every work item:</strong> 14 candidates per decision, 4,000 pops of the plan-space search, a 40,000-entry heap guard, a helper-dependent edge weight of 2, and a deterministic budget of 10,000,000 plan-solve iterations per rollout. The Rust engine refuses a wall-time cap outright, with the message that a timeout is a non-deterministic parity knob it does not implement. Determinism is preferred over a time limit.</p>
+<p><strong>The accepted limit.</strong> The inner plan search's cost estimate is not admissible, and the Python reference's candidate ordering depends on the iteration order of a Python set. The trajectory a rollout takes can therefore differ between two runs at equal-score tie points. The measured incidence is 12 records in 71,200, about 0.017 %. The project adjudicated and accepted this, because the reference itself is under-determined at those points.</p>
+<p><strong>Reported speed-ups against the Python reference:</strong> subgoal labelling 52.7x at g16r4, 178.9x at g16r6, 169.2x at g16r8, 108.0x at g24r4 and 79.9x at g32r4. Move labelling ran 58.4x to 79.9x faster after optimisation. The verification document adds two cautions: the g16r4 margin is load-sensitive and an independent re-run measured 50.4x, and an earlier "about 66x" move-labelling figure was unpaired and must not be quoted.</p>
+<p><strong>Board construction cost</strong> for the same runs, using lean boards, for 170 boards each: 20 s at 40x40, 31 s at 48x48, 45 s at 56x56, 63 s at 64x64.</p>
+</details>
+
+<h4 id="p1-control">The no-network control: the same search with hand-written scorers</h4>
+<p>This system answers a direct question. Are the learned subgoal results just the hand-written labeller replayed? It runs the production evaluation loop and replaces exactly the two points where a network acts. Everything else stays unchanged: the same candidate pool, the same 1200-expansion budget, the same width <em>k</em> = 5, the same realization check, the same repairs. All solved rows were replay-certified inside the job.</p>
+
+<div class="tw"><table>
+<thead><tr><th>set</th><th class="num">n</th><th class="num">solved</th><th class="num">solve rate</th><th class="num">mean expansions</th><th class="num">median s</th><th class="num">mean s</th><th class="num">total s</th><th class="num">mean regret</th><th class="num">percent optimal</th></tr></thead>
+<tbody>
+<tr><td>g16r4 base 450</td><td class="num">450</td><td class="num">394</td><td class="num">87.56 %</td><td class="num">21.5</td><td class="num">0.0044</td><td class="num">0.0372</td><td class="num">16.7</td><td class="num">1.756</td><td class="num">58.38 %</td></tr>
+<tr><td>g16r6 graded</td><td class="num">316</td><td class="num">276</td><td class="num">87.34 %</td><td class="num">163.8</td><td class="num">0.0067</td><td class="num">0.5630</td><td class="num">177.9</td><td class="num">2.101</td><td class="num">56.88 %</td></tr>
+<tr><td>g16r6 frontier</td><td class="num">134</td><td class="num">77</td><td class="num">57.46 %</td><td class="num">576.8</td><td class="num">1.0845</td><td class="num">1.5578</td><td class="num">208.7</td><td class="num">not defined</td><td class="num">not defined</td></tr>
+<tr><td>g16r6 pooled</td><td class="num">450</td><td class="num">353</td><td class="num">78.44 %</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">not defined</td><td class="num">not defined</td></tr>
+<tr><td>g16r8, g24r4, g24r8, g32r4</td><td class="num">—</td><td class="num">—</td><td colspan="7"><strong>Cannot report: never run.</strong> The script accepts all four configurations. The runs were simply never made.</td></tr>
+</tbody></table></div>
+
+<p>The learned system beats this control everywhere it was measured: by 8.0 points on the base 450 with a 95 % interval of [+5.6, +10.7], by 9.5 points on the g16r6 graded set with [+5.7, +13.7], by 23.1 points on the g16r6 frontier set with [+15.4, +31.2], and by 13.6 points pooled with [+10.2, +17.1], all at p below 0.0001.</p>
+<p>One result here matters for Part 2. On the g16r6 frontier set the no-network subgoal search scores 57.5 % of 134, and the trained move-by-move planner scores 48.5 % of the same 134. The point estimate favours the formulation that uses no learning at all. The interval [-2.3, +20.1] at p = 0.14 means the comparison is underpowered. On the graded sets this control loses badly. The reading the project records is that both ingredients are needed: subgoal structure to survive the frontier, and learned ranking to win everywhere.</p>
+<div class="flag">
+<p><strong>Do not read the stored regret for the g16r6 frontier row.</strong> The stored aggregate reports a mean regret of 16.19 and a percent optimal of 0.0. Both numbers are meaningless, because that file's 134 instances carry <code>d_star = 0</code>, so "regret" there is simply the solution length. Read solve rate, expansions and seconds from frontier files. Read nothing else.</p>
+</div>
+
+<h4 id="p1-ceiling">The exhaustive plan-language probe: what the vocabulary can express at all</h4>
+<p>This probe measures what the subgoal plan vocabulary can express, with no network anywhere. For each instance it enumerates partial plans in abstract-cost order and strictly realizes every complete plan it pops, using the same certifier the real arena uses. It classifies each instance into one of four categories: a playable plan exists, complete plans exist but none survives physics, the language cannot even express a complete plan, or a cap tripped before either answer was reached.</p>
+
+<div class="tw"><table>
+<thead><tr><th>set</th><th class="num">n</th><th>vocabulary</th><th class="num">solve ceiling</th><th class="num">mean d*</th><th class="num">best plan moves</th><th class="num">best regret</th><th class="num">reaches d*</th><th class="num">capped</th></tr></thead>
+<tbody>
+<tr><td>g16r4 base 450</td><td class="num">450</td><td>base</td><td class="num">408 = <strong>90.67 %</strong></td><td class="num">6.262</td><td class="num">7.681</td><td class="num">+1.419</td><td class="num">61.76 %</td><td class="num">0</td></tr>
+<tr><td>g16r4 base 450</td><td class="num">450</td><td>extended (B2)</td><td class="num">441 = <strong>&ge; 98.00 %</strong></td><td class="num">6.324</td><td class="num">7.220</td><td class="num">+0.896</td><td class="num">66.89 %</td><td class="num">9</td></tr>
+<tr><td>g24r4 graded</td><td class="num">232</td><td>base</td><td class="num">216 = <strong>93.10 %</strong></td><td class="num">7.593</td><td class="num">9.315</td><td class="num">+1.722</td><td class="num">57.41 %</td><td class="num">0</td></tr>
+<tr><td>g24r4 graded</td><td class="num">232</td><td>extended (B2)</td><td class="num">228 = <strong>&ge; 98.28 %</strong></td><td class="num">7.640</td><td class="num">8.811</td><td class="num">+1.171</td><td class="num">62.72 %</td><td class="num">7</td></tr>
+<tr><td>g24r8 graded</td><td class="num">161</td><td>base</td><td class="num">148 = <strong>91.93 %</strong></td><td class="num">5.534</td><td class="num">7.115</td><td class="num">+1.581</td><td class="num">58.78 %</td><td class="num">0</td></tr>
+<tr><td>g24r8 graded</td><td class="num">161</td><td>extended (B2)</td><td class="num">159 = <strong>&ge; 98.76 %</strong></td><td class="num">5.610</td><td class="num">6.943</td><td class="num">+1.333</td><td class="num">62.89 %</td><td class="num">2</td></tr>
+<tr><td>g32r4 graded</td><td class="num">175</td><td>base</td><td class="num">156 = <strong>89.14 %</strong></td><td class="num">7.692</td><td class="num">9.250</td><td class="num">+1.558</td><td class="num">57.69 %</td><td class="num">0</td></tr>
+<tr><td>g32r4 graded</td><td class="num">175</td><td>extended (B2)</td><td class="num">166 = <strong>&ge; 94.86 %</strong></td><td class="num">7.729</td><td class="num">9.006</td><td class="num">+1.277</td><td class="num">61.45 %</td><td class="num">11</td></tr>
+<tr><td>g24r4 frontier</td><td class="num">218</td><td>base</td><td class="num">103 = <strong>47.25 %</strong></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">0</td></tr>
+<tr><td>g24r4 frontier</td><td class="num">218</td><td>extended (B2)</td><td class="num">114 = <strong>&ge; 52.29 %</strong></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">115</td></tr>
+<tr><td>g32r4 frontier</td><td class="num">275</td><td>base</td><td class="num">142 = <strong>51.64 %</strong></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">0</td></tr>
+<tr><td>g32r4 frontier</td><td class="num">275</td><td>extended (B2)</td><td class="num">152 = <strong>&ge; 55.27 %</strong></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">133</td></tr>
+<tr><td>g24r8 frontier</td><td class="num">289</td><td>extended (B2)</td><td class="num">180 = <strong>&ge; 62.28 %</strong></td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">124</td></tr>
+<tr><td>g24r8 frontier</td><td class="num">289</td><td>base</td><td colspan="6"><strong>Missing.</strong> The job script requests this arm. The file does not exist on disk.</td></tr>
+</tbody></table></div>
+
+<p><strong>Read the two vocabulary rows differently.</strong> Every base row is a true ceiling, because no instance hit a cap. Every extended row is a lower bound, because between 2 and 133 instances hit a cap. A soundness check passes everywhere: on every graded arm, no certified plan ever produced fewer moves than the exact optimum, so the probe never contradicts the exact solver.</p>
+<p><strong>The load-bearing consequence.</strong> Even with perfect ranking and exhaustive search, the base subgoal language solves at most 89.14 % to 93.10 % of the graded benchmarks, at a mean of 1.42 to 1.72 moves above the optimum. That is a property of the vocabulary and not of training. No amount of learning moves it. That fact is the whole reason the plan language was extended, and it is the bridge into Part 2.</p>
+
+<details>
+<summary>Probe caps, timings, where it cannot run, and the older probe that disagrees</summary>
+<p><strong>Caps:</strong> 200,000 pops per instance, a 400,000-entry heap guard, 60 s of wall clock per instance by default, 2 parks per repair, and 16 worker processes. The <em>slack</em> setting controls how far past the first certified plan the search keeps exploring. Re-running with slack of 4 and 12 moved the mean best-plan regret by at most 0.093 moves, so the bound is tight in practice.</p>
+<p><strong>Timing.</strong> The base vocabulary is nearly free. The whole 450-instance base benchmark finishes in 5.8 s on 16 workers, and the median instance takes no measurable time. The extended vocabulary is far more expensive on three of the four graded sets. Comparing total per-row seconds, it costs 65.9 times more at g16r4 (1113.4 s against 16.9 s), 45.1 times more at g24r4 (784.7 s against 17.4 s) and 57.0 times more at g32r4 (359.3 s against 6.3 s). At g24r8 the comparison inverts (88.5 s against 162.9 s), because three instances dominate the base arm: two on board 995 at 62.18 s and 58.17 s, and one on board 939 at 34.7 s, together 155.05 s of that arm's 162.92 s. On the frontier sets the extended-vocabulary median instance takes 11 to 22 s and a third to a half of all instances trip a cap.</p>
+<p><strong>Where it cannot run.</strong> The probe has no lean-board path. It cannot be pointed at the 40x40 to 96x96 configurations, and it cannot be pointed at the unseen exam's boards. There is therefore no ceiling number for the unseen exam.</p>
+<p><strong>The older probe.</strong> A second, earlier probe exists. It was applied only to the instances the planner failed. The two probes agree exactly on the base vocabulary at 16x16 with 4 robots: 408 of 450 realizable, with the identical 22 and 20 split of the two structural failure kinds, from two independent implementations. They differ on the extended vocabulary, 99.6 % against 98.0 %, which is a caps and scope difference and is listed in Part 4.</p>
+<p><strong>Cap sensitivity, checked.</strong> Every "no complete plan" verdict was re-probed at four times the plan-width cap. At 16x16 with 4 robots all 22 stayed structural. At 16x16 with 6 robots all 48 stayed structural, with one instance moving between the two structural categories. Zero of 70 became solvable. The ceiling is a property of the language and not of the search budget.</p>
+</details>
+
+<h3 id="p1-limits">The hard limits of the ground truth</h3>
+<p>Two walls exist, and they bind at very different places.</p>
+<p><strong>Wall one, the size wall at 64.</strong> The exact engine packs the joint robot state into a fixed-width integer with 6 bits per coordinate, which addresses 0 to 63. <code>assert!(n &lt;= 64)</code> is compiled into the release build. There is no configuration flag, no slower fallback and no approximation. Above 64 the study has no exact answer at any price.</p>
+<p><strong>Wall two, and it binds first.</strong> Well below 64, the exact solver already fails on most instances.</p>
+
+<div class="tw"><table>
+<thead><tr><th>configuration</th><th>grid / robots</th><th class="num">share of the pinned 450 with an exact optimum</th></tr></thead>
+<tbody>
+<tr><td>g16r4</td><td>16 / 4</td><td class="num">100 %, but by resampling and not by measurement</td></tr>
+<tr><td>g16r6</td><td>16 / 6</td><td class="num">70.22 % (316 of 450)</td></tr>
+<tr><td>g16r8</td><td>16 / 8</td><td class="num">59.11 % (266 of 450)</td></tr>
+<tr><td>g24r4</td><td>24 / 4</td><td class="num">51.56 % (232 of 450)</td></tr>
+<tr><td>g32r4</td><td>32 / 4</td><td class="num">38.89 % (175 of 450)</td></tr>
+<tr><td>g24r8</td><td>24 / 8</td><td class="num">35.78 % (161 of 450)</td></tr>
+</tbody></table></div>
+
+<p>At the hardest measured rung roughly two puzzles in three cannot be graded at all. Three consequences shape everything downstream.</p>
+<ol>
+<li><strong>Quality metrics exist on a shrinking, biased subset.</strong> Regret and percent optimal are computable only on the graded half. That half is by construction the <em>easier</em> half, because it is defined as the instances an exact search finished quickly. Any claim of the form "system A has lower regret than system B at 24x24 with 8 robots" is a claim about the easiest 161 of 450 instances.</li>
+<li><strong>Supervised training for the move-by-move planner exhausts its teacher.</strong> Its labels are exactly what the exact move oracle produces. Where the oracle fails, no move label exists.</li>
+<li><strong>On the frontier sets, solving is self-certifying and nothing else is measurable.</strong> A solved instance produces a legal replayed move sequence, which proves solvability. No reference exists to compare its length against.</li>
+</ol>
+<p>The project's answer to the size wall is a licence argument and not a proof. It shows that a learned labeller matches the exact labeller at every size up to 64, and treats that as the warranty for using it above 64.</p>
+
+<div class="tw"><table>
+<thead><tr><th>rung</th><th class="num">argmin agreement</th><th class="num">mean label gap</th><th class="num">share with gap 0</th><th class="num">negative gaps</th><th class="num">depth-0 coverage</th></tr></thead>
+<tbody>
+<tr><td>24x24</td><td class="num">92.63 %</td><td class="num">0.566</td><td class="num">85.2 %</td><td class="num">3</td><td class="num">100 %</td></tr>
+<tr><td>32x32</td><td class="num">91.52 %</td><td class="num">0.553</td><td class="num">87.7 %</td><td class="num">0</td><td class="num">100 %</td></tr>
+<tr><td>40x40</td><td class="num">90.74 %</td><td class="num">0.616</td><td class="num">86.5 %</td><td class="num">2</td><td class="num">100 %</td></tr>
+<tr><td>48x48</td><td class="num">90.59 %</td><td class="num">0.618</td><td class="num">87.0 %</td><td class="num">0</td><td class="num">100 %</td></tr>
+<tr><td>56x56</td><td class="num">89.60 %</td><td class="num">0.655</td><td class="num">86.6 %</td><td class="num">0</td><td class="num">100 %</td></tr>
+<tr><td>64x64</td><td class="num">90.06 %</td><td class="num">0.721</td><td class="num">86.6 %</td><td class="num">3</td><td class="num">100 %</td></tr>
+</tbody></table></div>
+
+<p>The ordering quality stays flat from 24 to 64. The absolute calibration drifts, because the mean gap grows from 0.55 to 0.72. Whether that licence holds at 80 and 96 is, by construction, untestable.</p>
+
+<p class="src">Full detail for this part: <a href="walkthrough_part1.md"><code>self_play_robots/report/walkthrough_part1.md</code></a> (1,503 lines, with a per-number provenance appendix).</p>
+
+<h2 id="part2">Part 2 — the two approaches, and the language</h2>
+
+<p>Two learned planner families exist. They differ in one thing only: what counts as an action. Everything else follows from that choice.</p>
+
+<h3 id="p2-spaces">What each approach actually is</h3>
+
+<h4>Move-by-move, called the <em>forward</em> planner</h4>
+<p>A search node is a board state, that is the joint position of every robot. An action is one robot slide. The action set has size 4 times the robot count, minus the slides that cannot leave their cell. The transition is the true multi-robot physics. Every move costs 1. The goal test is that the target robot stands on the goal cell.</p>
+<p>One network with two heads drives the search. The value head predicts the exact optimal cost-to-go. The policy head predicts which robot and direction to play. The search is best-first with priority equal to moves so far plus the predicted cost-to-go. At each expansion the policy orders the legal successors and the search keeps the top 5.</p>
+<p><strong>The stopping rule is simple.</strong> The search returns as soon as it pops a goal state. Because the transition model is the real game, any returned path is playable by construction. There is no realization step and no realization failure.</p>
+
+<h4>Subgoals, called the <em>backward</em> planner</h4>
+<p>A search node is a <strong>partial plan</strong>, which is a directed acyclic graph. An action is one <strong>subgoal</strong>. A subgoal is a triple: a <strong>bottleneck</strong> cell that the moving robot must reach, a <strong>support</strong> cell that a helper robot must occupy, and the <strong>helper</strong> robot chosen to occupy it. Read as an English sentence, a subgoal says "park helper H on cell S, so that the moving robot stops on cell B".</p>
+<p>Each edge of the plan carries a status. A <strong>fixed</strong> edge has an exact shortest path and an exact cost. An <strong>open</strong> edge has no exact path yet, carries an optimistic estimate, and still needs a subgoal. A plan is <strong>complete</strong> when it has no open edges. The search pops the cheapest plan, returns it if it is complete, and otherwise resolves its first open edge. It first tries to pin that edge to an exact path. If that fails, a proposal step generates candidate subgoals and each candidate spawns one child plan.</p>
+<p>Two networks drive it. A <strong>proposal net</strong> ranks candidate subgoals. A <strong>value net</strong> predicts the cost to complete a partial plan. At each expansion the driver ranks all surviving candidates with one proposal pass, keeps the top 5, and scores those 5 with one batched value pass.</p>
+<p><strong>The stopping rule is not simple, and it is not the same in every result file.</strong> Three modes exist and they are not equivalent.</p>
+
+<div class="tw"><table>
+<thead><tr><th>mode</th><th>flag</th><th>behaviour</th></tr></thead>
+<tbody>
+<tr><td>plain</td><td>none</td><td>Return the first complete plan. Realization is checked once, afterwards. If it fails, the instance is unsolved even though budget remained.</td></tr>
+<tr><td>prefix-check</td><td><code>--backward-prefix-check</code></td><td>Before a child plan enters the frontier, its already-fixed legs are replayed. Children whose prefix cannot be played are discarded. The search still stops at the first complete plan.</td></tr>
+<tr><td>anytime</td><td><code>--backward-anytime</code></td><td>A complete plan that fails realization is discarded and the search continues inside the same budget. The first plan that plays out is returned.</td></tr>
+</tbody></table></div>
+
+<h4 id="p2-example">One worked subgoal example</h4>
+<p>Benchmark index 0, board 2400, at 16x16 with 4 robots. The exact optimum is d* = 12. Red starts at (1,15) and must reach (9,15). The plan holds two subgoals.</p>
+<ol class="proc">
+<li><strong>Subgoal 1.</strong> Bottleneck (9,15) for Red, support (10,15) held by Blue. Red slides right and Blue stops it exactly on the goal cell. Red's leg costs 7 moves.</li>
+<li><strong>Subgoal 2.</strong> Blue cannot reach (10,15) on its own. So the plan adds a nested subgoal: bottleneck (10,15) for Blue, support (11,15) held by Green. Blue's leg costs 2 moves. Green's leg costs 3 moves.</li>
+</ol>
+<p>Total plan cost is 12. The strict realization plays 12 legal moves. Both equal d* = 12. This is what "the search commits a whole subgoal per expansion" means in practice. Two decisions produced a 12-move solution.</p>
+
+<h4 id="p2-side">Side by side, with the measured shapes</h4>
+<div class="tw"><table>
+<thead><tr><th>property</th><th>move-by-move (forward)</th><th>subgoals (backward)</th></tr></thead>
+<tbody>
+<tr><td>search node</td><td>a board state</td><td>a partial plan (a graph)</td></tr>
+<tr><td>action</td><td>one robot slide</td><td>one subgoal</td></tr>
+<tr><td>branching, measured at 24x24 with 4 robots</td><td>13.72 mean legal moves over 40 instances, median 14, max 16</td><td>215.4 mean candidates over 38 instances with an open root segment, median 25.5, max 1017</td></tr>
+<tr><td>branching, measured at 24x24 with 8 robots</td><td>26.80 mean over 30 instances, max 30</td><td>698.2 mean over 27 instances, max 4557</td></tr>
+<tr><td>depth, measured at 24x24 with 4 robots</td><td>7.57 moves mean</td><td>0.82 subgoals mean, median 1, max 3, over 56 realized plans of 60</td></tr>
+<tr><td>physics used at search time</td><td>exact multi-robot slides</td><td>precomputed slide graph and distance tables, zero slide calls</td></tr>
+<tr><td>result is playable?</td><td>always</td><td>only after strict realization succeeds</td></tr>
+<tr><td>work not counted as an expansion</td><td>none</td><td>realization checks, prefix checks, park repairs, exact-fix pops, per-board table build</td></tr>
+</tbody></table></div>
+<p>The two shapes are opposite. The subgoal search is shallow and very wide. The move search is narrow and deep. About one third of instances need no subgoal at all, because the target robot reaches the goal along an exact path. That single sentence explains most of the cost results below.</p>
+
+<h3 id="p2-scores">How each planner scores, per configuration</h3>
+<p>Every row below uses the same protocol: the same pinned instance file verified by a hash, a budget of 1200 expansions, a proposal width of 5, and CPU execution. Quality is measured in primitive moves against d*.</p>
+
+<h4>Graded sets, where an optimum exists</h4>
+<div class="tw"><table>
+<thead><tr><th>configuration</th><th>system</th><th class="num">solved</th><th class="num">solve rate</th><th class="num">mean regret</th><th class="num">% optimal</th><th class="num">mean moves</th><th class="num">mean expansions</th><th class="num">mean s</th></tr></thead>
+<tbody>
+<tr><td>g16r4 (450)</td><td>forward</td><td class="num">450</td><td class="num">100.0 %</td><td class="num">0.067</td><td class="num">94.2 %</td><td class="num">6.436</td><td class="num">36.0</td><td class="num">0.986</td></tr>
+<tr><td>g16r4 (450)</td><td>backward, base vocabulary, anytime</td><td class="num">401</td><td class="num">89.1 %</td><td class="num">2.147</td><td class="num">50.4 %</td><td class="num">8.387</td><td class="num">7.6</td><td class="num">1.094</td></tr>
+<tr><td>g16r4 (450)</td><td>backward, extended language (B2)</td><td class="num">430</td><td class="num">95.6 %</td><td class="num">2.040</td><td class="num">53.0 %</td><td class="num">8.307</td><td class="num">9.7</td><td class="num">0.550</td></tr>
+<tr><td>g16r6 (316)</td><td>forward control</td><td class="num">314</td><td class="num">99.4 %</td><td class="num">0.096</td><td class="num">92.4 %</td><td class="num">5.777</td><td class="num">64.2</td><td class="num">21.649</td></tr>
+<tr><td>g16r6 (316)</td><td>backward, base vocabulary, per-config nets</td><td class="num">275</td><td class="num">87.0 %</td><td class="num">2.222</td><td class="num">50.9 %</td><td class="num">7.865</td><td class="num">72.9</td><td class="num">11.697</td></tr>
+<tr><td>g16r6 (316)</td><td>backward, extended language (B2)</td><td class="num">306</td><td class="num">96.8 %</td><td class="num">2.386</td><td class="num">52.6 %</td><td class="num">8.062</td><td class="num">27.1</td><td class="num">2.694</td></tr>
+<tr><td>g16r8 (266)</td><td>forward control</td><td class="num">261</td><td class="num">98.1 %</td><td class="num">0.107</td><td class="num">92.0 %</td><td class="num">5.272</td><td class="num">62.4</td><td class="num">21.206</td></tr>
+<tr><td>g16r8 (266)</td><td>forward, best of nine retrainings</td><td class="num">266</td><td class="num">100.0 %</td><td class="num">0.098</td><td class="num">91.4 %</td><td class="num">5.286</td><td class="num">44.9</td><td class="num">16.027</td></tr>
+<tr><td>g16r8 (266)</td><td>backward, base vocabulary, per-config nets</td><td class="num">230</td><td class="num">86.5 %</td><td class="num">1.965</td><td class="num">51.3 %</td><td class="num">7.130</td><td class="num">53.8</td><td class="num">14.713</td></tr>
+<tr><td>g16r8 (266)</td><td>backward, extended language (B2)</td><td class="num">262</td><td class="num">98.5 %</td><td class="num">2.550</td><td class="num">50.4 %</td><td class="num">7.740</td><td class="num">8.6</td><td class="num">1.750</td></tr>
+<tr><td>g24r4 (232)</td><td>forward</td><td class="num">220</td><td class="num">94.8 %</td><td class="num">0.068</td><td class="num">94.1 %</td><td class="num">7.568</td><td class="num">191.0</td><td class="num">274.945</td></tr>
+<tr><td>g24r4 (232)</td><td>backward, base vocabulary, prefix-check</td><td class="num">205</td><td class="num">88.4 %</td><td class="num">4.220</td><td class="num">38.5 %</td><td class="num">11.810</td><td class="num">26.9</td><td class="num">7.803</td></tr>
+<tr><td>g24r4 (232)</td><td>backward, extended language (B2), anytime</td><td class="num">199</td><td class="num">85.8 %</td><td class="num">4.889</td><td class="num">36.7 %</td><td class="num">12.327</td><td class="num">53.5</td><td class="num">23.448</td></tr>
+<tr><td>g24r8 (161)</td><td>forward</td><td class="num">157</td><td class="num">97.5 %</td><td class="num">0.166</td><td class="num">85.4 %</td><td class="num">5.758</td><td class="num">151.6</td><td class="num">183.505</td></tr>
+<tr><td>g24r8 (161)</td><td>backward, base vocabulary, prefix-check</td><td class="num">144</td><td class="num">89.4 %</td><td class="num">2.486</td><td class="num">50.7 %</td><td class="num">7.993</td><td class="num">44.0</td><td class="num">34.056</td></tr>
+<tr><td>g24r8 (161)</td><td>backward, extended language (B2), anytime</td><td class="num">148</td><td class="num">91.9 %</td><td class="num">2.345</td><td class="num">46.6 %</td><td class="num">7.892</td><td class="num">94.9</td><td class="num">65.897</td></tr>
+<tr><td>g32r4 (175)</td><td>forward</td><td class="num">133</td><td class="num">76.0 %</td><td class="num">0.135</td><td class="num">88.7 %</td><td class="num">7.338</td><td class="num">469.2</td><td class="num">1378.611</td></tr>
+<tr><td>g32r4 (175)</td><td>backward, base vocabulary, prefix-check</td><td class="num">147</td><td class="num">84.0 %</td><td class="num">2.367</td><td class="num">51.7 %</td><td class="num">9.980</td><td class="num">13.8</td><td class="num">10.222</td></tr>
+<tr><td>g32r4 (175)</td><td>backward, extended language (B2), anytime</td><td class="num">154</td><td class="num">88.0 %</td><td class="num">2.844</td><td class="num">47.4 %</td><td class="num">10.519</td><td class="num">34.5</td><td class="num">30.606</td></tr>
+</tbody></table></div>
+
+<h4>Frontier sets, where no optimum exists</h4>
+<p>Only solve rate, effort and time are meaningful here. No regret column appears, because none can be computed.</p>
+<div class="tw"><table>
+<thead><tr><th>configuration</th><th>system</th><th class="num">solved</th><th class="num">solve rate</th><th class="num">mean moves</th><th class="num">mean expansions</th><th class="num">median s</th><th class="num">budget exhausted</th></tr></thead>
+<tbody>
+<tr><td>g16r6 (134)</td><td>forward control</td><td class="num">65</td><td class="num">48.5 %</td><td class="num">9.785</td><td class="num">835.1</td><td class="num">326.22</td><td class="num">not reported</td></tr>
+<tr><td>g16r6 (134)</td><td>backward, extended language (B2)</td><td class="num">108</td><td class="num">80.6 %</td><td class="num">16.824</td><td class="num">269.1</td><td class="num">2.25</td><td class="num">not reported</td></tr>
+<tr><td>g16r8 (184)</td><td>forward control</td><td class="num">93</td><td class="num">50.5 %</td><td class="num">8.828</td><td class="num">818.8</td><td class="num">334.35</td><td class="num">not reported</td></tr>
+<tr><td>g16r8 (184)</td><td>backward, extended language (B2)</td><td class="num">163</td><td class="num">88.6 %</td><td class="num">17.810</td><td class="num">182.8</td><td class="num">1.84</td><td class="num">not reported</td></tr>
+<tr><td>g24r4 (218)</td><td>forward</td><td class="num">15</td><td class="num">6.9 %</td><td class="num">11.867</td><td class="num">1162.9</td><td class="num">2561.93</td><td class="num">203 of 218 = 93.1 %</td></tr>
+<tr><td>g24r4 (218)</td><td>backward, extended language (B2), anytime</td><td class="num">125</td><td class="num">57.3 %</td><td class="num">22.536</td><td class="num">110.2</td><td class="num">54.04</td><td class="num">0 of 218</td></tr>
+<tr><td>g24r8 (289)</td><td>forward</td><td class="num">44</td><td class="num">15.2 %</td><td class="num">8.545</td><td class="num">1100.8</td><td class="num">1227.57</td><td class="num">245 of 289 = 84.8 %</td></tr>
+<tr><td>g24r8 (289)</td><td>backward, base vocabulary, prefix-check</td><td class="num">154</td><td class="num">53.3 %</td><td class="num">15.675</td><td class="num">260.1</td><td class="num">4.25</td><td class="num">47 of 289 = 16.3 %</td></tr>
+<tr><td>g24r8 (289)</td><td>backward, extended language (B2), anytime</td><td class="num">161</td><td class="num">55.7 %</td><td class="num">15.522</td><td class="num">635.4</td><td class="num">423.76</td><td class="num">128 of 289 = 44.3 %</td></tr>
+<tr><td>g32r4 (275)</td><td>forward</td><td class="num">2</td><td class="num">0.7 %</td><td class="num">11.500</td><td class="num">1198.5</td><td class="num">2377.04</td><td class="num">273 of 275 = 99.3 %</td></tr>
+<tr><td>g32r4 (275)</td><td>backward, base vocabulary, prefix-check</td><td class="num">127</td><td class="num">46.2 %</td><td class="num">21.276</td><td class="num">29.7</td><td class="num">5.92</td><td class="num">0 of 275</td></tr>
+<tr><td>g32r4 (275)</td><td>backward, extended language (B2), anytime</td><td class="num">196</td><td class="num">71.3 %</td><td class="num">24.587</td><td class="num">96.1</td><td class="num">59.37</td><td class="num">0 of 275</td></tr>
+</tbody></table></div>
+
+<h4>Who wins what</h4>
+<p>The tests below are exact two-sided McNemar tests on discordant pairs. The intervals are percentile bootstraps over boards, because puzzles share a board's wall layout. The <em>pooled</em> row is the union of graded and frontier, that is the whole 450-puzzle pool at that configuration, and it needs no selection argument.</p>
+
+<div class="tw"><table>
+<thead><tr><th>configuration</th><th>set</th><th class="num">backward, best language</th><th class="num">forward</th><th class="num">difference in points</th><th class="num">95 % interval</th><th class="num">p</th></tr></thead>
+<tbody>
+<tr><td>g16r4</td><td>graded</td><td class="num">430/450</td><td class="num">450/450</td><td class="num">-4.4</td><td class="num">[-6.2, -2.7]</td><td class="num">1.9e-06</td></tr>
+<tr><td>g16r6</td><td>graded</td><td class="num">306/316</td><td class="num">314/316</td><td class="num">-2.5</td><td class="num">[-4.8, -0.6]</td><td class="num">0.039</td></tr>
+<tr><td>g16r6</td><td>frontier</td><td class="num">108/134</td><td class="num">65/134</td><td class="num"><strong>+32.1</strong></td><td class="num">[+22.1, +42.3]</td><td class="num">7.1e-10</td></tr>
+<tr><td>g16r6</td><td>pooled</td><td class="num">414/450</td><td class="num">379/450</td><td class="num"><strong>+7.8</strong></td><td class="num">[+4.2, +11.6]</td><td class="num">1.6e-05</td></tr>
+<tr><td>g16r8</td><td>graded</td><td class="num">262/266</td><td class="num">261/266</td><td class="num">+0.4</td><td class="num">[-1.9, +2.7]</td><td class="num">1.00</td></tr>
+<tr><td>g16r8</td><td>frontier</td><td class="num">163/184</td><td class="num">93/184</td><td class="num"><strong>+38.0</strong></td><td class="num">[+30.2, +45.5]</td><td class="num">4.3e-17</td></tr>
+<tr><td>g16r8</td><td>pooled</td><td class="num">425/450</td><td class="num">354/450</td><td class="num"><strong>+15.8</strong></td><td class="num">[+11.6, +20.0]</td><td class="num">2.3e-15</td></tr>
+<tr><td>g24r4</td><td>graded</td><td class="num">199/232</td><td class="num">220/232</td><td class="num"><strong>-9.1</strong></td><td class="num">[-13.7, -4.4]</td><td class="num">0.00032</td></tr>
+<tr><td>g24r4</td><td>frontier</td><td class="num">125/218</td><td class="num">15/218</td><td class="num"><strong>+50.5</strong></td><td class="num">[+44.0, +57.1]</td><td class="num">4.4e-32</td></tr>
+<tr><td>g24r4</td><td>pooled</td><td class="num">324/450</td><td class="num">235/450</td><td class="num"><strong>+19.8</strong></td><td class="num">[+14.4, +25.1]</td><td class="num">3.9e-14</td></tr>
+<tr><td>g24r8</td><td>graded</td><td class="num">148/161</td><td class="num">157/161</td><td class="num">-5.6</td><td class="num">[-10.5, -1.2]</td><td class="num">0.035</td></tr>
+<tr><td>g24r8</td><td>frontier</td><td class="num">161/289</td><td class="num">44/289</td><td class="num"><strong>+40.5</strong></td><td class="num">[+34.6, +46.4]</td><td class="num">3.1e-30</td></tr>
+<tr><td>g24r8</td><td>pooled</td><td class="num">309/450</td><td class="num">201/450</td><td class="num"><strong>+24.0</strong></td><td class="num">[+19.6, +28.7]</td><td class="num">1.7e-21</td></tr>
+<tr><td>g32r4</td><td>graded</td><td class="num">154/175</td><td class="num">133/175</td><td class="num"><strong>+12.0</strong></td><td class="num">[+3.5, +20.4]</td><td class="num">0.0038</td></tr>
+<tr><td>g32r4</td><td>frontier</td><td class="num">196/275</td><td class="num">2/275</td><td class="num"><strong>+70.6</strong></td><td class="num">[+64.9, +76.1]</td><td class="num">8.0e-59</td></tr>
+<tr><td>g32r4</td><td>pooled</td><td class="num">350/450</td><td class="num">135/450</td><td class="num"><strong>+47.8</strong></td><td class="num">[+42.7, +52.7]</td><td class="num">3.0e-51</td></tr>
+</tbody></table></div>
+
+<p>Four statements summarise the whole table.</p>
+<ul>
+<li><strong>Solution quality belongs to the move-by-move planner everywhere it solves.</strong> Its mean regret runs from 0.067 to 0.166 moves and it reaches the optimum on 85.4 % to 94.2 % of graded instances. The subgoal planner's regret runs from 1.97 to 4.89 moves at 36.7 % to 53.0 % optimal. No configuration reverses this.</li>
+<li><strong>Solve rate on graded sets belongs to the move-by-move planner up to 24x24.</strong> It loses only at 32x32, by 12.0 points.</li>
+<li><strong>Solve rate on frontier sets belongs to the subgoal planner everywhere it was measured with its full language</strong>, by +32.1, +38.0, +50.5, +40.5 and +70.6 points.</li>
+<li><strong>On the whole 450-puzzle pool the subgoal planner wins every configuration except the base one</strong>, and the margin grows along both hardness axes: +7.8, +15.8, +19.8, +24.0 and +47.8 points.</li>
+</ul>
+<p>In one sentence: as boards grow, the move-by-move planner's search cost grows faster than its budget and it stops solving, while the subgoal planner's cost grows slowly, so the subgoal margin widens.</p>
+
+<details>
+<summary>The cost trend, and one collapsed forward run that must never be quoted</summary>
+<p><strong>Median seconds per puzzle.</strong> Every pair below is same-machine, so the ratio is meaningful.</p>
+<div class="tw"><table>
+<thead><tr><th>configuration and set</th><th class="num">forward median s</th><th class="num">backward, base vocabulary</th><th class="num">ratio</th><th class="num">backward, extended language</th><th class="num">ratio</th></tr></thead>
+<tbody>
+<tr><td>g16r4 (450)</td><td class="num">0.38</td><td class="num">0.35 (anytime)</td><td class="num">1.1x</td><td class="num">0.38 (B1)</td><td class="num">1.0x</td></tr>
+<tr><td>g16r6 graded</td><td class="num">5.38</td><td class="num">0.51</td><td class="num">10.5x</td><td class="num">0.39 (B1)</td><td class="num">13.8x</td></tr>
+<tr><td>g16r6 frontier</td><td class="num">326.22</td><td class="num">11.30</td><td class="num">28.9x</td><td class="num">4.58 (B1)</td><td class="num">71.2x</td></tr>
+<tr><td>g16r8 graded</td><td class="num">5.55</td><td class="num">0.43</td><td class="num">12.9x</td><td class="num">not same machine</td><td class="num">—</td></tr>
+<tr><td>g16r8 frontier</td><td class="num">334.35</td><td class="num">1.87</td><td class="num">178.8x</td><td class="num">not same machine</td><td class="num">—</td></tr>
+<tr><td>g24r4 graded</td><td class="num">65.94</td><td class="num">2.90</td><td class="num">22.7x</td><td class="num">not same machine</td><td class="num">—</td></tr>
+<tr><td>g24r4 frontier</td><td class="num">2561.93</td><td class="num">never measured</td><td class="num">—</td><td class="num">54.04 (B2)</td><td class="num">47.4x</td></tr>
+<tr><td>g24r8 graded</td><td class="num">59.49</td><td class="num">1.18</td><td class="num">50.4x</td><td class="num">not same machine</td><td class="num">—</td></tr>
+<tr><td>g24r8 frontier</td><td class="num">1227.57</td><td class="num">4.25</td><td class="num">288.8x</td><td class="num">423.76 (B2)</td><td class="num"><strong>2.9x</strong></td></tr>
+<tr><td>g32r4 graded</td><td class="num">655.95</td><td class="num">2.06</td><td class="num">318.4x</td><td class="num">8.80 (B2)</td><td class="num">74.5x</td></tr>
+<tr><td>g32r4 frontier</td><td class="num">2377.04</td><td class="num">5.92</td><td class="num">401.5x</td><td class="num">59.37 (B2)</td><td class="num">40.0x</td></tr>
+</tbody></table></div>
+<p>Two qualifications travel with this table. The base configuration is the one place where the move-by-move planner is not slower. And the subgoal planner's cost distribution is heavy tailed. At the g16r8 frontier its 90th percentile is 384.35 s against a median of 1.87 s, so at the 90th percentile the margin against the move planner's 392.61 s all but vanishes. Median and tail must always be printed together.</p>
+<p><strong>One collapsed run.</strong> The g16r8 <code>comparison.json</code> file records a move-by-move arm that solves 25 of 266, which is 9.4 %. That training run collapsed. The project's own report generator marks the row as withheld and never renders it as a comparable result. The control of record is 261 of 266, and the best-of-nine retraining is 266 of 266. This page uses the control and the retraining, never the collapsed row.</p>
+</details>
+
+<h3 id="p2-fair">Fairness: which comparisons hold, and which do not</h3>
+<p>Four issues exist. Three favour the move-by-move planner and one favours the subgoal planner. All four are stated here in the visible text, because none of them is optional reading.</p>
+
+<p><strong>Issue 1. The stopping rules are not the same, and they are not even the same across subgoal arms.</strong> The exact search flags were extracted from the recorded command of every result file.</p>
+<div class="tw"><table>
+<thead><tr><th>result files</th><th>search variant actually used</th></tr></thead>
+<tbody>
+<tr><td>base-vocabulary arms at g16r8, g24r4, g24r8, g32r4, the g16r6 frontier arm, and the base-configuration prefix file</td><td><code>--backward-prefix-check</code></td></tr>
+<tr><td>the g16r6 graded base arm, the base-configuration anytime file, every fixed-nets old-vocabulary file</td><td><code>--backward-anytime</code></td></tr>
+<tr><td>every extended-language file</td><td><code>--backward-anytime</code> plus the vocabulary flag</td></tr>
+</tbody></table></div>
+<p>So the base-language arm and the extended-language arm differ in the stopping rule at four of six configurations. The move-by-move planner stops at its first goal state in every row. The direction of the effect is known: the anytime rule can only help solve rate, because it retries after a realization failure inside the same budget. At the base configuration the two variants give exactly the same count, 401 of 450, so the confound is empirically null there. At the other configurations it was never measured. This matters for the negative result at 24x24 below, where the anytime arm still lost.</p>
+
+<p><strong>Issue 2. The shared expansion cap gives the subgoal planner more work per step.</strong> One subgoal expansion commits a whole subgoal, which is worth several primitive moves. This is the conservative direction for the headline comparison and the project states it in its own generated protocol note.</p>
+
+<p><strong>Issue 3. Real work is performed that no expansion counter records, and all of it is on the subgoal side.</strong> Realization checks, prefix checks, park repairs, exact-fix pops and the per-board distance-table build all fall outside the counter. The size of this is measurable. At g24r4 the base prefix-check arm records 36.24 prefix-check calls per instance against 8.46 policy passes. The extended-language arm records 1.95 realization calls and 1.09 park-repair calls per instance against 14.29 policy passes.</p>
+<p>The project measured the two stacks in a common unit, the one physics primitive both reach. On the same five base-configuration puzzles the subgoal arm performs a median of 64 physics slides and a mean of 3.4 expansions, and the move arm performs a median of 5,776 physics slides and a mean of 337.0 expansions. The subgoal search itself performs <strong>zero</strong> slide calls, because it plans over precomputed tables. The physics-only ratio is about 90x against an expansion ratio of about 99x, so the efficiency advantage survives a matched physics unit essentially unchanged. That said, this is a five-puzzle pilot and not a per-configuration measurement, and its move-planner arm is not the headline network.</p>
+
+<p><strong>Issue 4. Wall-clock time compares only inside one result file.</strong> Within one file both arms ran in the same job on the same machine. Across files they often did not, because the study moved to a new cluster on 2026-07-20. The size of the machine effect was measured directly: the g24r4 move-planner rows in the two files are identical in all 232 rows on solved status, move count and expansion count, and only the timings differ, at a median of 65.94 s against 87.62 s, a factor of 1.33.</p>
+
+<h3 id="p2-lang">The plan language, and the two effects that must stay apart</h3>
+<p>Two extensions were added to the subgoal vocabulary. The project calls them <strong>B1</strong> and <strong>B2</strong>. Before any number, one distinction has to be fixed, because it is the single most important idea in this part.</p>
+<ul>
+<li><strong>Expressibility.</strong> How many instances the language can describe at all. An exhaustive search with no networks measures this. It answers the question: does a playable plan exist in this vocabulary?</li>
+<li><strong>Achievement.</strong> What a trained planner reaches at a fixed budget with that vocabulary available. A benchmark run measures this. It answers a different question: does the planner find such a plan inside 1200 steps?</li>
+</ul>
+<p><strong>The two extensions moved the first quantity a lot. They moved the second much less, and at one configuration they moved it the wrong way.</strong></p>
+
+<h4>What the base language could not say, and what each extension adds</h4>
+<p>A helper robot must reach its support cell, and a robot can only stop at a wall or at another robot. The base vocabulary handles this by admitting only support cells that already have an adjacent wall. That is one line of code in the proposal step. Everything else in the stack was already general. So the base language cannot say: <em>put the helper on a cell that only becomes holdable because a second robot goes there first</em>.</p>
+
+<div class="tw"><table>
+<thead><tr><th>level</th><th>what it adds</th><th>measured cost</th></tr></thead>
+<tbody>
+<tr><td><strong>B1a</strong>, transient supports</td><td>Support cells with no adjacent wall are admitted. The helper's placement leg then has no exact path, so it stays open and the existing recursion turns it into its own nested subgoal.</td><td>The root candidate pool grows 1.76x at g16r4 (146.9 to 257.9), 2.43x at g24r4 (215.4 to 523.5) and 2.85x at g24r8 (698.2 to 1986.2).</td></tr>
+<tr><td><strong>B1b</strong>, step-aside parks</td><td>A plan may schedule one robot to slide to a parking cell before a named leg runs, so it clears that leg's way. Parks cost ordinary plan moves. They are produced from realization feedback and not proposed by a network.</td><td>A tail cost, not a mean cost. On a 20-instance slice one unsolved puzzle spent 106,817 slide calls, 96 % of them inside repair, which was 89.6 % of the whole slice's physics work.</td></tr>
+<tr><td><strong>B2a</strong>, supports by reference</td><td>A robot the plan already commits may serve a second time at its <em>planned</em> cell instead of being recruited twice. Three shapes exist: one parked robot stopping two sliders, a robot serving as a stopper while passing through, and a robot relocating at ordinary plan cost.</td><td>Measured inside a real search on the g16r6 frontier set: +52.89 candidates per expansion, a 1.54x pool, offered in 97.0 % of 46,351 expansions and on 134 of 134 instances.</td></tr>
+<tr><td><strong>B2b</strong>, generalized parks</td><td>The park cap rises from 1 to 2, destinations extend to two-slide cells, and two robots may be cleared at once when no single-robot repair exists.</td><td>Pairwise clearing is quadratic in the movable robots and two-slide destinations multiply the destination set.</td></tr>
+</tbody></table></div>
+
+<details>
+<summary>Three worked examples, one per new construct</summary>
+<p><strong>A transient stopper, impossible before B1.</strong> Benchmark index 333, board 2511, d* = 4. Yellow is the target at (6,1) and must reach (3,1). The root subgoal is bottleneck (3,1) for Yellow with support (4,1) held by Blue. The cell (4,1) has no adjacent wall, so the base vocabulary discards this pair and then builds zero complete plans for this puzzle. Blue cannot reach (4,1) alone, so a nested subgoal places Green on (4,0), which sits at the border wall and is an ordinary base-vocabulary support. Plan cost 4, realized in 4 legal moves, equal to d*.</p>
+<p><strong>A step-aside park.</strong> Benchmark index 28, board 2409, d* = 7. Red must reach (7,3) and the exact path costs 6. Blue at (10,3) blocks it. The plan carries one park node: Blue slides to (10,0) at cost 1, ordered before the goal leg. Plan cost 7, realized in 11 legal moves, which is above d* but legal.</p>
+<p><strong>A support by reference.</strong> Benchmark index 156, board 2452, d* = 8. Green is the target at (11,9) and must reach (12,4). Three subgoals: Red supports at (12,5), Blue supports Green at (13,0), and then Red's own approach reuses <strong>Blue, already standing at (13,0)</strong>, wired to the existing plan node at cost 0. Total plan cost 8, realized in 8 legal moves, equal to d*. Without the by-reference rule the plan would need a second robot for the same stopper duty, and none was available.</p>
+</details>
+
+<h4 id="p2-express">Effect one: how much more the language can express</h4>
+<p>This is the exhaustive probe from Part 1, with no networks anywhere. The paired comparison below matches instances by index and keeps only instances that both vocabularies express, which removes the denominator problem.</p>
+
+<div class="tw"><table>
+<thead><tr><th>set</th><th class="num">realizable under both</th><th class="num">only under B2</th><th class="num">only under base</th><th class="num">mean move gap, base &rarr; B2</th><th class="num">change</th><th class="num">B2 shorter / longer / equal</th><th class="num">% optimal, base &rarr; B2</th></tr></thead>
+<tbody>
+<tr><td>g16r4 (450)</td><td class="num">404</td><td class="num">37</td><td class="num">4</td><td class="num">1.2550 &rarr; 0.7574</td><td class="num"><strong>-0.4975</strong></td><td class="num">53 / 1 / 350</td><td class="num">62.38 % &rarr; 69.55 %</td></tr>
+<tr><td>g24r4 graded (232)</td><td class="num">214</td><td class="num">14</td><td class="num">2</td><td class="num">1.6168 &rarr; 1.1028</td><td class="num"><strong>-0.5140</strong></td><td class="num">19 / 2 / 193</td><td class="num">57.94 % &rarr; 62.62 %</td></tr>
+<tr><td>g24r8 graded (161)</td><td class="num">147</td><td class="num">12</td><td class="num">1</td><td class="num">1.4762 &rarr; 1.1429</td><td class="num"><strong>-0.3333</strong></td><td class="num">13 / 0 / 134</td><td class="num">59.18 % &rarr; 65.31 %</td></tr>
+<tr><td>g32r4 graded (175)</td><td class="num">152</td><td class="num">14</td><td class="num">4</td><td class="num">1.3421 &rarr; 1.0724</td><td class="num"><strong>-0.2697</strong></td><td class="num">7 / 0 / 145</td><td class="num">59.21 % &rarr; 62.50 %</td></tr>
+<tr><td>g24r4 frontier (218)</td><td class="num">79</td><td class="num">35</td><td class="num">24</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+<tr><td>g32r4 frontier (275)</td><td class="num">105</td><td class="num">47</td><td class="num">37</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+</tbody></table></div>
+
+<p>The extended language raises the solve ceiling by 5 to 7 points on graded sets and by about 4 to 5 points on frontier sets, and it lowers the language's own move floor by 0.27 to 0.51 moves in the paired comparison. Those are real properties of the vocabulary. No training produces them and no training removes them.</p>
+<p><strong>Two honest qualifications sit on this table.</strong> The "only under base" column is a cap artefact and not a language regression, because the extended plan set is a strict superset of the base plan set by code inspection, and every such instance is marked inconclusive rather than impossible. And the frontier rows used unequal caps, 180 s per instance for the base probe against 120 s for the extended probe, so the base probe had more time and still expressed fewer instances. The extended-language advantage on the frontier is therefore understated.</p>
+
+<details>
+<summary>Which half of the extension carries the gain, and the 0.05-move bias in every floor number</summary>
+<p><strong>The B1 decomposition at the base configuration</strong>, from the older incremental probes, which ran on the 49 instances the best subgoal planner failed:</p>
+<div class="tw"><table>
+<thead><tr><th>vocabulary</th><th class="num">no complete plan</th><th class="num">no realizable plan</th><th class="num">realizable</th><th class="num">implied base-configuration ceiling</th></tr></thead>
+<tbody>
+<tr><td>base</td><td class="num">22</td><td class="num">20</td><td class="num">7</td><td class="num">408 of 450 = 90.7 %</td></tr>
+<tr><td>plus transient supports only</td><td class="num">7</td><td class="num">14</td><td class="num">28</td><td class="num">429 of 450 = 95.3 %</td></tr>
+<tr><td>plus parks, that is full B1</td><td class="num">7</td><td class="num">4</td><td class="num">38</td><td class="num">439 of 450 = 97.6 %</td></tr>
+<tr><td>plus B2 on the 11 residual instances</td><td class="num">0</td><td class="num">0</td><td class="num">9, with 2 inconclusive</td><td class="num">448 of 450 = 99.6 %</td></tr>
+</tbody></table></div>
+<p>Transient supports carry the larger share. Parks add 10 more instances. B2 adds the last 9.</p>
+<p><strong>The 0.05-move bias.</strong> The probe's "best" plan is not a proven upper bound on the language's move optimum. Its stopping rule assumes that a strict realization never costs less than the plan's abstract cost, and that assumption fails when an incidental robot happens to serve as a stopper. The project's own audit found certified planner plans shorter than the probe's best on 4 of 215 g24r4 instances and 3 of 401 g16r4 instances, and a full re-probe on subsets lowered the mean gap by about 0.05 moves. Every floor number on this page is therefore approximately 0.05 moves too high. The <em>solve</em> ceilings are unaffected, and the audit found no case where a planner solved an instance the base probe calls unrealizable, across 21 g16r4 and 27 g24r4 payloads.</p>
+</details>
+
+<h4 id="p2-achieve">Effect two: what a trained planner actually achieved</h4>
+<p>The clean measurement holds the networks and the search variant fixed, so that only the vocabulary changes. That control exists at two configurations only.</p>
+
+<div class="tw"><table>
+<thead><tr><th>set</th><th class="num">old vocabulary</th><th class="num">B1</th><th class="num">B2</th><th class="num">old &rarr; B1</th><th class="num">B1 &rarr; B2</th></tr></thead>
+<tbody>
+<tr><td>g16r6 graded (316)</td><td class="num">282</td><td class="num">304</td><td class="num">306</td><td class="num"><strong>+22</strong></td><td class="num">+2</td></tr>
+<tr><td>g16r6 frontier (134)</td><td class="num">80</td><td class="num">108</td><td class="num">108</td><td class="num"><strong>+28</strong></td><td class="num"><strong>0</strong></td></tr>
+<tr><td>g16r8 graded (266)</td><td class="num">232</td><td>not run</td><td class="num">262</td><td class="num">—</td><td class="num">—</td></tr>
+<tr><td>g16r8 frontier (184)</td><td class="num">95</td><td>not run</td><td class="num">163</td><td class="num">—</td><td class="num">—</td></tr>
+</tbody></table></div>
+
+<p>At g16r6, where all three arms exist at fixed networks and a fixed search variant, essentially the whole gain is B1. B2 adds 2 solves of 316 on the graded set and nothing at all on the frontier set.</p>
+<p>The remaining configurations have no fixed-networks old-language arm. Their old row uses the prefix-check rule and their extended row uses the anytime rule, so the vocabulary and the stopping rule change together. Those cells carry that caveat.</p>
+
+<div class="tw"><table>
+<thead><tr><th>set</th><th class="num">old vocabulary</th><th class="num">extended (B2)</th><th class="num">difference in points</th><th class="num">95 % interval</th><th class="num">p</th><th>significant?</th></tr></thead>
+<tbody>
+<tr><td>g16r4 (450)</td><td class="num">401</td><td class="num">430</td><td class="num">+6.4</td><td class="num">[+3.8, +9.1]</td><td class="num">1.1e-06</td><td>yes</td></tr>
+<tr><td>g16r6 graded (316)</td><td class="num">275</td><td class="num">306</td><td class="num">+9.8</td><td class="num">[+6.1, +13.8]</td><td class="num">3.4e-07</td><td>yes</td></tr>
+<tr><td>g16r6 frontier (134)</td><td class="num">70</td><td class="num">108</td><td class="num">+28.4</td><td class="num">[+20.2, +37.0]</td><td class="num">4.1e-10</td><td>yes</td></tr>
+<tr><td>g16r8 graded (266)</td><td class="num">230</td><td class="num">262</td><td class="num">+12.0</td><td class="num">[+8.0, +16.4]</td><td class="num">4.1e-09</td><td>yes</td></tr>
+<tr><td>g16r8 frontier (184)</td><td class="num">88</td><td class="num">163</td><td class="num">+40.8</td><td class="num">[+33.0, +48.3]</td><td class="num">7.3e-20</td><td>yes</td></tr>
+<tr><td><strong>g24r4 graded (232)</strong></td><td class="num"><strong>205</strong></td><td class="num"><strong>199</strong></td><td class="num"><strong>-2.6</strong></td><td class="num"><strong>[-7.3, +2.1]</strong></td><td class="num"><strong>0.377</strong></td><td><strong>no, and the sign is negative</strong></td></tr>
+<tr><td>g24r8 graded (161)</td><td class="num">144</td><td class="num">148</td><td class="num">+2.5</td><td class="num">[-2.4, +7.6]</td><td class="num">0.424</td><td>no</td></tr>
+<tr><td>g24r8 frontier (289)</td><td class="num">154</td><td class="num">161</td><td class="num">+2.4</td><td class="num">[-3.1, +7.9]</td><td class="num">0.464</td><td>no</td></tr>
+<tr><td>g32r4 graded (175)</td><td class="num">147</td><td class="num">154</td><td class="num">+4.0</td><td class="num">[-1.8, +10.0]</td><td class="num">0.248</td><td>no</td></tr>
+<tr><td>g32r4 frontier (275)</td><td class="num">127</td><td class="num">196</td><td class="num">+25.1</td><td class="num">[+18.9, +31.4]</td><td class="num">8.2e-13</td><td>yes</td></tr>
+</tbody></table></div>
+
+<p>The shape is clear. At 16x16 the extension delivers large, significant gains and they are largest on the frontier. At the big boards it delivers one large frontier gain at g32r4 and four cells that are statistically indistinguishable from zero, one of which points the wrong way.</p>
+
+<h4 id="p2-negative">The negative result at 24x24, confirmed with its confounds named</h4>
+<p>Both arms at g24r4 use the identical two checkpoint files, the identical 232-instance file verified by hash, and the identical budget of 1200 expansions at width 5. Only the inference convention differs.</p>
+
+<div class="tw"><table>
+<thead><tr><th>metric</th><th class="num">base vocabulary</th><th class="num">extended (B2)</th><th class="num">change</th></tr></thead>
+<tbody>
+<tr><td>solved</td><td class="num">205 of 232 = 88.36 %</td><td class="num">199 of 232 = 85.78 %</td><td class="num"><strong>-6 puzzles, -2.59 points</strong></td></tr>
+<tr><td>McNemar test</td><td class="num">—</td><td class="num">—</td><td class="num">p = 0.377, interval [-7.3, +2.1]</td></tr>
+<tr><td>discordant pairs</td><td class="num">—</td><td class="num">—</td><td class="num">extended arm gains 13, loses 19</td></tr>
+<tr><td>mean regret over solved</td><td class="num">4.220</td><td class="num">4.889</td><td class="num"><strong>+0.669 moves</strong></td></tr>
+<tr><td>percent optimal</td><td class="num">38.5 %</td><td class="num">36.7 %</td><td class="num">-1.8 points</td></tr>
+<tr><td>mean moves on the 186 instances both arms solve</td><td class="num">10.661</td><td class="num">12.247</td><td class="num"><strong>+1.586 moves</strong></td></tr>
+<tr><td>of those 186: extended shorter / longer / equal</td><td class="num">—</td><td class="num">—</td><td class="num">15 / 41 / 130</td></tr>
+<tr><td>mean expansions</td><td class="num">26.9</td><td class="num">53.5</td><td class="num"><strong>1.99x</strong></td></tr>
+<tr><td>plans found</td><td class="num">208</td><td class="num">208</td><td class="num">unchanged</td></tr>
+<tr><td>plans found that then failed realization</td><td class="num">3</td><td class="num">9</td><td class="num"><strong>3x</strong></td></tr>
+</tbody></table></div>
+
+<p>At the same configuration the language's own floor moved the other way. The solve ceiling rose from 93.10 % to at least 98.28 % of 232, and the paired mean move gap fell from 1.6168 to 1.1028. <strong>So: a richer language, a lower theoretical floor, and a worse trained planner.</strong></p>
+<p><strong>The confounds, stated plainly.</strong> The two arms differ in three ways and not one. The vocabulary changed, the stopping rule changed from prefix-check to anytime, and the prefix filter was disabled, which the counters confirm at 1.42 children pruned per instance in the base arm against 0.00 in the extended arm. Changes two and three pull in opposite directions. Anytime should help solve rate. Losing the prefix filter should hurt it. So this is not a clean single-variable measurement and it must not be presented as one. What is not in doubt is the direction at the level a reader cares about: the extended arm received the retry rule that can only help, received a strictly larger set of expressible plans, spent twice the search steps, and still solved six fewer puzzles and wrote solutions 1.59 moves longer where both arms solved.</p>
+
+<h4 id="p2-why">Why the richer language did not reach the trained planner</h4>
+<p>Four measured mechanisms explain the gap. All four were verified against the source files.</p>
+<ol class="proc">
+<li><strong>The by-reference machinery was never wired into the learned planner.</strong> The evaluation driver calls the proposal step without injecting the reference helpers and applies candidates without the by-reference flag. The wiring exists only in a branch the neural loop never reaches. The instrumented census settles it: across 46,351 expansions and 4,577,425 candidate applications, the shipped driver generated, ranked, shortlisted and expanded <strong>exactly zero</strong> by-reference candidates, while a correctly wired driver would have offered 2,451,324 of them, in 97.0 % of expansions and on 134 of 134 instances. <strong>Consequence: every "B2" row measured in the supervised study is really B1 plus generalized park repairs.</strong></li>
+<li><strong>The featurization cannot even name a by-reference candidate.</strong> The encoder maps a candidate's helper by its robot's <em>start</em> position, and the driver drops any candidate whose helper is not at a start cell. A by-reference helper never is, by definition.</li>
+<li><strong>The policy net never trained on one.</strong> The trainer silently skips any record whose candidate helper is not at a start cell. Every by-reference record was filtered out of every corpus before the policy trainer saw it. Only the value net, which uses raw cell indices, saw them. The corpora do contain them, at a by-reference share of 12.7 % at g16r4, 11.0 % at g16r6, 10.4 % at g16r8, 10.5 % at g24r8 and 10.6 % at g32r4.</li>
+<li><strong>Roughly half of the exact extended-vocabulary labels price plans that cannot be played.</strong> A review of the label pipeline sampled 16 depth-0 decisions covering 28 exact-optimal extended completions, and strict realization certified only <strong>13 of 28, that is 46 %</strong>. The remaining 54 % are transient-support plans that the abstract language accepts and physics rejects. The exact labeller also never prices parks at all, because a park is a realization-time repair and not part of any labelling vocabulary.</li>
+</ol>
+<p><strong>The direct test of the first three mechanisms.</strong> The by-reference step was later wired into the driver and run as a matched A/B at g16r6 with the same banked networks and the same pinned instances. With the step off the arm solves 310 of 316 graded and 105 of 134 frontier. With it on the arm solves 310 of 316 graded and 108 of 134 frontier, while ranking 599.1 by-reference candidates per graded instance and 5363.3 per frontier instance. The pooled McNemar test gives p = 0.61. The supply is enormous and the effect is +3 frontier solves and 0 graded solves. The supply is not the bottleneck. The training signal is.</p>
+<p>Retraining on extended-vocabulary labels was also tried at the base configuration. It moved the count by +3 solves and then by -4 solves of 450, and it increased the mean search effort from 9.7 to 14.6 and then 15.3 expansions. The project's own log records the same conclusion for the whole campaign: the zero-shot configuration remains the method's best at every rung measured.</p>
+<p><strong>One sentence for this section.</strong> A richer language raises what is possible. It does not by itself teach a planner to use it, and when its cost model predicts real moves worse, it can make a trained planner worse.</p>
+
+<div class="note">
+<p><strong>What Part 2 hands to Part 3.</strong> The base subgoal language is saturated, because the supervised planner already sits at or within a few solves of every exhaustive base ceiling. Both vocabularies have a measured quality floor far above the exact optimum, at about 1.26 and 1.62 moves for the base language and 0.76 and 1.10 for the extended language at 16x16 and 24x24, against a move-by-move planner regret of 0.067 and 0.068. So no subgoal-space planner, however well trained, can approach the move-by-move planner on move quality at these sizes. And the supervised route to the extended language is exhausted, because all four blocking mechanisms above are properties of the supervised pipeline. The remaining lever is a training signal generated by certified play rather than by an abstract cost model.</p>
+</div>
+
+<p class="src">Full detail for this part: <a href="walkthrough_part2.md"><code>self_play_robots/report/walkthrough_part2.md</code></a> (1,488 lines, with a per-number provenance appendix and a list of unverifiable claims).</p>
+
+<h2 id="part3">Part 3 — self-play, then the breakthrough</h2>
+
+<p>Part 2 ended with an exhausted supervised route. Self-play is the project's answer. It generates its own training data on fresh boards, and every label it writes is a measurement made by the physics engine rather than a prediction made by a network.</p>
+
+<h3 id="p3-loops">Three loops actually ran</h3>
+<p>The job script has defaults and the runs overrode them. The values below come from the recorded manifest of each round, not from the script defaults.</p>
+
+<div class="tw"><table>
+<thead><tr><th>loop</th><th class="num">rounds</th><th class="num">boards per round</th><th class="num">board ids</th><th class="num">instances per board</th><th class="num">search budget</th><th>stop rule</th><th>vocabulary</th><th>exact anchors in the buffer</th></tr></thead>
+<tbody>
+<tr><td>base-vocabulary loop</td><td class="num">2</td><td class="num">120</td><td class="num">5000-5239</td><td class="num">8</td><td class="num">600 expansions</td><td>stop after 150</td><td>base</td><td>yes</td></tr>
+<tr><td><strong>B2 loop at 24x24</strong></td><td class="num">5</td><td class="num">60</td><td class="num">8000-8299</td><td class="num">8</td><td class="num">300 expansions</td><td>stop after 80</td><td>B2</td><td><strong>no</strong></td></tr>
+<tr><td>mixed-size curriculum</td><td class="num">3</td><td class="num">30 per configuration</td><td class="num">9000-9089</td><td class="num">8</td><td class="num">300 expansions</td><td>stop after 80</td><td>B2</td><td><strong>no</strong></td></tr>
+</tbody></table></div>
+
+<p>"Stop after 80" means the search halts once 80 expansions have passed with no improvement to the best certified plan. "Anchors" means the exact supervised corpora are added to the training buffer. The job script forces anchors off whenever the vocabulary is B2, so the five B2 rounds and all three mixed rounds trained on self-play records only. The procedure below describes the B2 loop at 24x24, because that is the loop the project's headline claims rest on.</p>
+
+<h3 id="p3-round">One round, as a numbered procedure</h3>
+<ol class="proc">
+<li><strong>Write fresh boards.</strong> The generator writes 60 new lean boards using the round number as the random seed. Round <em>k</em> uses board ids 8000 + 60(<em>k</em>-1) through 8000 + 60<em>k</em> - 1.</li>
+<li><strong>Refuse any board id that could leak into an exam.</strong> Before anything else, the code collects every id at or below 1199 and raises a fatal error if that list is not empty. Every pinned exam board of every configuration lives in the range 0-1199, and the graded and frontier exams use ids 900-1049. This is a hard failure and not a warning.</li>
+<li><strong>Start 6 worker processes.</strong> Each worker is a fresh process. Each loads its own copy of the policy net and the value net onto the GPU, builds the B2 solver, and enables by-reference helper resolution.</li>
+<li><strong>Draw instances.</strong> For each board a worker samples robot cells and a goal cell uniformly. There is no difficulty filter and no curriculum. The worker keeps drawing until 8 instances have produced at least one training record, and it gives up after 24 attempts.</li>
+<li><strong>Search one instance</strong> with a PUCT tree search at these settings: budget 300 expansions, width <em>k</em> = 5, keep the cheapest certified plan rather than the first, exploration constant 1.5, backup by minimum, Dirichlet root noise at weight 0.25 and alpha 0.3, all candidates considered at the root rather than the top 5, stop after 80 expansions with no improvement, park repairs enabled, and a per-instance wall-clock cap of 600 seconds.</li>
+<li><strong>Certify every complete plan.</strong> When selection reaches a complete plan, the certifier calls strict realization, which executes the plan segment by segment on the full joint state with real slide physics. If it returns a number, the node becomes solved and that number propagates up the path. If it returns nothing, the node is dead, unless park repairs produce repaired variants, which then re-enter the search as ordinary complete plans.</li>
+<li><strong>Extract records from the tree.</strong> Follow the principal path from the root, that is the chain of children whose best certified result matches the parent's. At each node on that path, examine every child that was a real decision. A child is labelled only if some complete plan below it was strictly realized. If a child was never certified, a greedy completion attempts to finish it in at most 16 steps and passes the result to the same certifier. A decision emits a training group only when at least 2 of its children were labelled.</li>
+<li><strong>Write the round's data</strong> atomically, plus a manifest and a per-instance statistics file.</li>
+<li><strong>Run the fidelity gauge.</strong> Sample up to 200 depth-0 decisions from the round, label the same decisions exactly with the Rust engine, and compare.</li>
+<li><strong>Build the training buffer</strong> from the record files of the last 3 rounds. Inside each round the board ids are sorted and the last 15 % of the ids become validation. Validation is therefore board-disjoint from training by construction.</li>
+<li><strong>Train both nets</strong>, once for the policy and once for the value net, both warm-started from the previous round's checkpoint: 6 epochs, learning rate 1e-4, AdamW at weight decay 1e-4 with no scheduler, batch of 8 decision groups for the policy and 4 groups for the value net, and checkpoint selection on minimum validation regret. The policy target is a softmax over the group's candidates. The value target is a 96-bin distribution plus a within-group ranking loss. A collapse guard halts the value net after 3 epochs with a validation group spread below 0.05.</li>
+<li><strong>Bench and gate.</strong> Bench the new nets on the graded exam and on the frontier exam with two searches, best-first and PUCT, both at 1200 expansions and width 5. Merge the shards, then run the independent replay validator on the merged payload. If replay fails, quarantine the file and fail the job. Finally run a paired comparison against the previous round: an exact McNemar test on the solved vectors and a sign test on moves over the instances both rounds solved.</li>
+</ol>
+
+<div class="tw"><table>
+<thead><tr><th>round</th><th class="num">instances attempted</th><th class="num">instances solved</th><th class="num">records</th><th class="num">mean strict moves of the solved plans</th><th class="num">mean expansions</th><th class="num">generation wall time</th></tr></thead>
+<tbody>
+<tr><td>1</td><td class="num">681</td><td class="num">598</td><td class="num">5,822</td><td class="num">13.72</td><td class="num">108.1</td><td class="num">4,301 s</td></tr>
+<tr><td>2</td><td class="num">655</td><td class="num">588</td><td class="num">5,694</td><td class="num">13.78</td><td class="num">102.9</td><td class="num">4,064 s</td></tr>
+<tr><td>3</td><td class="num">660</td><td class="num">582</td><td class="num">6,301</td><td class="num">14.10</td><td class="num">109.2</td><td class="num">4,197 s</td></tr>
+<tr><td>4</td><td class="num">675</td><td class="num">600</td><td class="num">6,069</td><td class="num">14.15</td><td class="num">102.9</td><td class="num">4,136 s</td></tr>
+<tr><td>5</td><td class="num">676</td><td class="num">609</td><td class="num">6,661</td><td class="num">13.83</td><td class="num">98.5</td><td class="num">3,868 s</td></tr>
+</tbody></table></div>
+<p>One round costs about 1.1 hours of one GPU for generation and yields about 6,000 labelled decisions from about 600 solved instances.</p>
+
+<h3 id="p3-labels">Where the training answers come from, and what makes a bad label impossible</h3>
+<p>The answer is measurement and not network prediction. The label of a labelled child is the abstract cost of the certified plan below it, minus the cost already fixed at that decision. That certified plan exists only because the physics engine executed it.</p>
+<p>Three code facts exclude a wrong label, where "wrong" means a claim that a plan reaches the goal when it does not.</p>
+<ol class="proc">
+<li><strong>A label needs a realized plan.</strong> A node is marked solved only inside the branch where strict realization returned a number. Strict realization executes the plan segment by segment on the full joint state and returns nothing on the first segment it cannot execute. A plan that cannot be played produces no label at all.</li>
+<li><strong>Only certified subtrees propagate.</strong> The best certified result moves up the path only from a node that certified. Record extraction skips any child with no certified descendant.</li>
+<li><strong>The greedy sibling path uses the same gate.</strong> A greedily completed sibling is passed to the same certifier. If certification fails, a counter increases and the sibling is dropped.</li>
+</ol>
+<p>The value net's own prediction is written into every record, but under its own key. It is provenance. It is never the label, and nothing reads it back during training. The network does choose <em>which</em> plans get measured, because the policy ranks candidates and the value net drives selection. It never supplies a number that becomes an answer.</p>
+<p>A second, independent check applies to every exam row. Before the bench runner accepts a result, the replay validator re-executes the emitted move list from the instance's start positions, using only the physics layer and the standard library. It requires that every move is a real slide that changes the robot's cell, that the sequence length equals the claimed move count, and that the target robot ends on the goal. It never touches the planner or the realizer.</p>
+<p><strong>So the loop can be wrong about which plan is best. It cannot be wrong about whether a plan works or about how many moves it costs.</strong></p>
+
+<div class="flag">
+<p><strong>The error that can still enter the data, and it is large in the B2 vocabulary.</strong> A label is a certified <em>upper bound</em> on the true cost-to-go. If the search never finds the shortest plan through a candidate, that candidate's label is too large, and if the error is uneven inside a group, the "optimal" marker can point at the wrong candidate. The fidelity gauge measures exactly this against exact labels.</p>
+<div class="tw"><table>
+<thead><tr><th>loop</th><th class="num">round</th><th class="num">argmin agreement</th><th class="num">mean gap</th><th class="num">median gap</th><th class="num">negative gaps</th><th class="num">matched decisions</th></tr></thead>
+<tbody>
+<tr><td>base</td><td class="num">1</td><td class="num">0.915</td><td class="num">0.99</td><td class="num">0.0</td><td class="num">0</td><td class="num">200</td></tr>
+<tr><td>base</td><td class="num">2</td><td class="num">0.850</td><td class="num">1.29</td><td class="num">0.0</td><td class="num">0</td><td class="num">200</td></tr>
+<tr><td>B2</td><td class="num">1</td><td class="num">0.513</td><td class="num">3.93</td><td class="num">2.0</td><td class="num">0</td><td class="num">197</td></tr>
+<tr><td>B2</td><td class="num">2</td><td class="num">0.500</td><td class="num">4.12</td><td class="num">2.0</td><td class="num">0</td><td class="num">74</td></tr>
+<tr><td>B2</td><td class="num">3</td><td class="num">0.568</td><td class="num">3.98</td><td class="num">1.0</td><td class="num">0</td><td class="num">74</td></tr>
+<tr><td>B2</td><td class="num">4</td><td class="num">0.451</td><td class="num">4.73</td><td class="num">3.0</td><td class="num">0</td><td class="num">195</td></tr>
+<tr><td>B2</td><td class="num">5</td><td class="num">0.460</td><td class="num">4.76</td><td class="num">3.0</td><td class="num">0</td><td class="num">189</td></tr>
+</tbody></table></div>
+<p>Two readings. First, <strong>no negative gap ever appeared</strong> in any of the seven gauge runs, which is the empirical confirmation that the labels are upper bounds. Second, <strong>in the B2 vocabulary the labels are loose</strong>. The gauge's own calibration places about 0.91 agreement as equivalent to exact labels, about 0.89 as keeping solve rate while losing optimality, and about 0.82 as collapse. The B2 rounds sit at 0.451 to 0.568, well inside the collapse band, while the base rounds sit at 0.850 to 0.915. The project reads the B2 gauge as uninformative rather than as a collapse signal, because the exact engine's B2 rollouts are themselves capped. That reading could not be verified from the files and it is listed in Part 4. What the numbers support without interpretation is the direction of the error: the B2 labels are on average about 4 cost units above the exact answer, and never below it.</p>
+</div>
+
+<details>
+<summary>A second labelling mechanism exists, and the loop does not use it</summary>
+<p>The project has a <strong>certified-descent labeller</strong>, which prices a candidate by greedy network completion instead of by exhaustive solving. It commits the candidate, follows the value net's best-scored candidate until the plan is complete, then realizes the result. Its purpose is to remove the cost wall of the exact labeller. It produced the "twin" corpora, and a per-size supervised planner retrained on them solves 212 of 232 graded g24r4 instances at mean regret 3.047, against the exact-labelled planner's 205 of 232 at 4.220. A second seed of the same experiment reads 204 of 232 at regret 4.225.</p>
+<p>The self-play loop never imports that labeller and writes a different label source string. One honest overlap exists: the loop's sibling-completion option uses the same <em>idea</em>, and every run used that option. But the resulting plan is still certified before it can carry a label. In neither mechanism does a network output become a training target.</p>
+</details>
+
+<h3 id="p3-decomp">What self-play bought, and what the network rebuild bought</h3>
+<p>Every row below is on the same 232-instance graded exam at 24x24 with 4 robots, at 1200 expansions and width 5, so each pair of adjacent rows differs in exactly one thing.</p>
+
+<div class="tw"><table>
+<thead><tr><th class="num">#</th><th>system</th><th>what changed against the row above</th><th class="num">solved of 232</th><th class="num">mean moves</th><th class="num">mean regret</th><th class="num">% optimal</th><th class="num">mean expansions</th></tr></thead>
+<tbody>
+<tr><td class="num">1</td><td>per-size supervised subgoal pair, base vocabulary, best-first</td><td>the starting point</td><td class="num">205</td><td class="num">11.81</td><td class="num">4.220</td><td class="num">38.5</td><td class="num">26.9</td></tr>
+<tr><td class="num">2</td><td>same pair, <strong>B2 vocabulary</strong>, best-first anytime</td><td>vocabulary only</td><td class="num"><strong>199</strong></td><td class="num">12.33</td><td class="num"><strong>4.889</strong></td><td class="num">36.7</td><td class="num">53.5</td></tr>
+<tr><td class="num">3</td><td><strong>size-free rebuilt pair</strong>, base vocabulary, best-first</td><td>network family and training data, same vocabulary as row 1</td><td class="num"><strong>215</strong></td><td class="num">10.00</td><td class="num"><strong>2.433</strong></td><td class="num">54.4</td><td class="num">5.3</td></tr>
+<tr><td class="num">4</td><td>same rebuilt pair, <strong>B2 vocabulary</strong>, best-first anytime</td><td>vocabulary only, against row 3</td><td class="num"><strong>223</strong></td><td class="num">9.51</td><td class="num">1.946</td><td class="num">55.6</td><td class="num">52.8</td></tr>
+<tr><td class="num">5</td><td>same rebuilt pair, B2, <strong>PUCT tree search</strong></td><td>search only, against row 4</td><td class="num"><strong>228</strong></td><td class="num">9.19</td><td class="num">1.553</td><td class="num">58.8</td><td class="num">490.3</td></tr>
+<tr><td class="num">6</td><td>after <strong>5 self-play rounds</strong>, B2, best-first anytime</td><td>training data only, against row 4</td><td class="num"><strong>227</strong></td><td class="num">9.85</td><td class="num">2.233</td><td class="num">54.2</td><td class="num"><strong>30.3</strong></td></tr>
+<tr><td class="num">7</td><td>after 5 self-play rounds, B2, PUCT</td><td>training data only, against row 5</td><td class="num">228</td><td class="num">9.18</td><td class="num">1.548</td><td class="num">57.5</td><td class="num">543.1</td></tr>
+<tr><td class="num">8</td><td>mixed-size curriculum, round 3, B2, best-first anytime</td><td>training data across three board sizes</td><td class="num"><strong>230</strong></td><td class="num">9.87</td><td class="num">2.200</td><td class="num">55.2</td><td class="num">24.1</td></tr>
+<tr><td class="num">9</td><td><em>reference</em>: exhaustive B2 language optimum, no network at all</td><td>—</td><td class="num">228 proven realizable</td><td class="num">8.81</td><td class="num">1.171</td><td class="num">62.7</td><td class="num">—</td></tr>
+<tr><td class="num">10</td><td><em>reference</em>: supervised move-by-move planner</td><td>a different action space entirely</td><td class="num">220</td><td class="num">7.57</td><td class="num">0.068</td><td class="num">94.1</td><td class="num">191.0</td></tr>
+</tbody></table></div>
+
+<p><strong>The rebuild bought the move quality, and it happened before any self-play data existed.</strong> Row 1 to row 3 changed the network family only. Regret fell from 4.220 to 2.433, mean moves from 11.81 to 10.00, optimality rose from 38.5 % to 54.4 %, solves rose from 205 to 215 of 232, and expansions fell from 26.9 to 5.3. The row-3 networks are exactly the networks that seeded the self-play loop as its round zero.</p>
+
+<p><strong>What five self-play rounds bought, with denominators.</strong></p>
+<div class="tw"><table>
+<thead><tr><th>round</th><th class="num">records</th><th class="num">gauge</th><th class="num">graded best-first (of 232)</th><th class="num">graded regret</th><th class="num">graded expansions</th><th class="num">graded PUCT (of 232)</th><th class="num">frontier best-first (of 218)</th><th class="num">frontier PUCT (of 218)</th></tr></thead>
+<tbody>
+<tr><td>0 (seed)</td><td class="num">—</td><td class="num">—</td><td class="num">223</td><td class="num">1.946</td><td class="num">52.8</td><td class="num">228</td><td class="num">133</td><td class="num">171</td></tr>
+<tr><td>1</td><td class="num">5,822</td><td class="num">0.513</td><td class="num">226</td><td class="num">1.991</td><td class="num">43.0</td><td class="num">229</td><td class="num">144</td><td class="num">169</td></tr>
+<tr><td>2</td><td class="num">5,694</td><td class="num">0.500</td><td class="num">227</td><td class="num">2.207</td><td class="num">35.5</td><td class="num">229</td><td class="num">139</td><td class="num">172</td></tr>
+<tr><td>3</td><td class="num">6,301</td><td class="num">0.568</td><td class="num">225</td><td class="num">1.867</td><td class="num">35.9</td><td class="num">228</td><td class="num"><strong>158</strong></td><td class="num">171</td></tr>
+<tr><td>4</td><td class="num">6,069</td><td class="num">0.451</td><td class="num"><strong>228</strong></td><td class="num">2.083</td><td class="num"><strong>25.9</strong></td><td class="num">228</td><td class="num">153</td><td class="num"><strong>178</strong></td></tr>
+<tr><td>5</td><td class="num">6,661</td><td class="num">0.460</td><td class="num">227</td><td class="num">2.233</td><td class="num">30.3</td><td class="num">228</td><td class="num">153</td><td class="num">174</td></tr>
+</tbody></table></div>
+
+<p>Paired tests of round 5 against round 0 give the honest decomposition.</p>
+<ul>
+<li><strong>Solve rate on the hard exam rose and the rise is significant.</strong> 133 to 153 of 218 on the best-first row, with 27 instances gained and 7 lost, McNemar p = 0.00082. Round 3 alone reaches 158 of 218, p = 4.7e-6 against round 0.</li>
+<li><strong>Search efficiency improved a lot.</strong> The cheap first-solution search went from 52.8 expansions to 25.9-30.3 while its solve count rose from 223 to 227-228 of 232. On the graded exam it caught the 490-expansion tree search. That is search distilled into the network, which is the AlphaZero mechanism.</li>
+<li><strong>Move quality did not improve.</strong> In every paired test the move sign test is not significant. Best-first regret drifts upward from 1.946 to 2.233 as the planner solves harder instances on the first attempt, and tree-search regret stays inside 1.465 to 1.581.</li>
+<li><strong>The reach at 1200 expansions did not move.</strong> The frontier tree-search row is 171 of 218 at round 0 and 174 of 218 at round 5, p = 0.66.</li>
+</ul>
+
+<p><strong>The base-vocabulary loop is a clean null result, and the reason is measured.</strong> Two rounds ran before the project pivoted. Graded solves went 215, 216, 215 of 232 and frontier solves went 99, then 100 of 218. Nothing moved, because the exhaustive base-language search finds a realizable plan on only 216 of the 232 graded instances and 103 of the 218 frontier instances, and the seed nets already solved 215 and 99. There was nothing left in that language for a loop to learn.</p>
+
+<details>
+<summary>The mixed-size curriculum, and the from-scratch control</summary>
+<p><strong>The mixed-size curriculum</strong> trains one size-free network pair on the union of three board distributions. One iteration produced the largest single jump of the loop line, and then the line flattened.</p>
+<div class="tw"><table>
+<thead><tr><th>round</th><th class="num">g24r4 graded (232)</th><th class="num">g24r4 frontier (218)</th><th class="num">g32r4 graded (175)</th><th class="num">g32r4 frontier (275)</th><th class="num">g24r8 graded (161)</th><th class="num">g24r8 frontier (289)</th></tr></thead>
+<tbody>
+<tr><td>1</td><td class="num">226, regret 2.040</td><td class="num"><strong>170</strong></td><td class="num"><strong>173</strong>, regret 2.613</td><td class="num"><strong>235</strong></td><td class="num">159, regret 2.346</td><td class="num"><strong>269</strong></td></tr>
+<tr><td>2</td><td class="num">227, regret 2.189</td><td class="num">165</td><td class="num">170, regret 2.147</td><td class="num">224</td><td class="num">159, regret 2.277</td><td class="num">265</td></tr>
+<tr><td>3</td><td class="num"><strong>230</strong>, regret 2.200</td><td class="num">165</td><td class="num">172, regret 2.227</td><td class="num">225</td><td class="num">159, regret 2.346</td><td class="num">268</td></tr>
+</tbody></table></div>
+<p>Round 1's 170 of 218 on the g24r4 frontier exam is above the 24x24-only loop's best of 158 of 218. Every round-3 against round-2 gate is not significant, with McNemar p at or above 0.25 and every move sign test at or above 0.56. Again, solves rose and regret did not fall. The 230 of 232 at round 3 is the best pure-subgoal solve count in the project, and it also proves that at least 230 of the 232 graded instances have a realizable B2 plan, which is above the exhaustive probe's 228 proven cases.</p>
+<p><strong>The from-scratch control</strong> runs one matched round with a single change: both networks start from random initialization. Generation is unchanged and still uses the frozen seed nets, so the two arms consume the same kind of data. The arm therefore isolates the <em>training prior</em>, not "self-play without any supervision". The round produced 329 instances, 306 solved and 3,787 records.</p>
+<div class="tw"><table>
+<thead><tr><th>exam</th><th class="num">cold start</th><th class="num">matched control</th><th class="num">paired result</th></tr></thead>
+<tbody>
+<tr><td>graded (232)</td><td class="num">200</td><td class="num">228</td><td class="num">control-only 29, cold-only 1, p = 5.8e-8</td></tr>
+<tr><td>frontier (218)</td><td class="num">96</td><td class="num">160</td><td class="num">control-only 70, cold-only 6, p = 6.3e-15</td></tr>
+<tr><td>unseen (200)</td><td class="num">132</td><td class="num">172</td><td class="num">control-only 41, cold-only 1, p = 2.0e-11</td></tr>
+</tbody></table></div>
+<p>The reference point that matters is the unseen exam. The per-size supervised subgoal pair solves 134 of 200 there. The cold arm solves 132 of 200. So one round of certified self-play data, from random weights, reaches the supervised planner's level on fresh boards, and the supervised warm start is worth about 40 more unseen solves on top of that. Two limits: the control is one round deep, and its generation used trained nets.</p>
+</details>
+
+<h3 id="p3-break">The breakthrough</h3>
+<p>The reason a search-time change was the only remaining lever is a measurement and not an opinion. On the 232-instance graded exam the exhaustive B2 language optimum, with no network anywhere, still writes solutions 1.171 moves longer than optimal on the 228 instances it can express, and reaches the optimum on 62.7 % of them. The move-by-move planner on the same exam sits at 0.068 mean regret and 94.1 % optimal. <strong>A perfect ranker with unlimited search inside the subgoal language cannot pass 1.171. Better networks cannot pass it. Better search cannot pass it. Only a change to the set of actions can.</strong></p>
+<p>The change is small. Before planning, let one or two robots slide, price each resulting position cheaply, and spend part of the same expansion budget planning from the best few positions. Each slide is charged as a real move.</p>
+
+<h4>The algorithm, with the flagship constants</h4>
+<p>The constants below are the flagship values, taken from the job scripts and confirmed in the recorded search block of every row of every result payload. They are <strong>not</strong> the module defaults.</p>
+
+<div class="tw"><table>
+<thead><tr><th>constant</th><th>meaning</th><th class="num">flagship (depth 2)</th><th class="num">depth-1 arm</th><th class="num">depth-3 probe</th></tr></thead>
+<tbody>
+<tr><td><code>b0</code></td><td>budget for the search on the untouched position</td><td class="num">500</td><td class="num">600</td><td class="num">460</td></tr>
+<tr><td><code>top_m</code></td><td>prefix candidates that receive a sub-search</td><td class="num">8</td><td class="num">6</td><td class="num">10</td></tr>
+<tr><td><code>sub</code></td><td>budget per sub-search</td><td class="num">80</td><td class="num">100</td><td class="num">70</td></tr>
+<tr><td><code>prefix_depth</code></td><td>maximum number of slides in a prefix</td><td class="num">2</td><td class="num">1</td><td class="num">3</td></tr>
+<tr><td><code>d2_from</code></td><td>how many prefixes of each depth are extended</td><td class="num">4</td><td class="num">—</td><td class="num">4</td></tr>
+<tr><td><code>expansions</code></td><td>overall cap, the arena convention</td><td class="num">1200</td><td class="num">1200</td><td class="num">1200</td></tr>
+<tr><td>—</td><td><strong>structural maximum spend</strong></td><td class="num"><strong>500 + 8x80 = 1140</strong></td><td class="num"><strong>600 + 6x100 = 1200</strong></td><td class="num"><strong>460 + 10x70 = 1160</strong></td></tr>
+</tbody></table></div>
+
+<ol class="proc">
+<li><strong>Search the untouched position.</strong> Run the standard PUCT search on the instance as given, at budget 500, keeping the cheapest certified plan. Call the result the incumbent. Add its expansions to the running total.</li>
+<li><strong>Enumerate every legal single slide.</strong> On the graded exam at 24x24 with 4 robots this yields a mean of 13.72 legal slides per instance, with a minimum of 8 and a maximum of 16.</li>
+<li><strong>Score each slid position with a cheap estimator.</strong> The estimator builds the moved state, creates a two-node plan whose single edge is fixed at the exact shortest path length when the engine can compute one, repeatedly pins any remaining open edge to its exact shortest path, and returns the resulting abstract plan cost. <strong>It builds no tree, calls no network, and certifies nothing.</strong></li>
+<li><strong>Form the depth-1 candidate list.</strong> Each legal slide becomes a candidate with rank key equal to the estimate plus 1. The plus 1 charges the slide as a real move at ranking time. Every legal slide enters the list.</li>
+<li><strong>Extend the most promising positions.</strong> Sort the depth-1 states by their raw estimate, take the best 4, and enumerate every legal slide from each. Each two-slide position becomes a candidate with rank key equal to its estimate plus 2. Depth 3 repeats the construction from the best 4 depth-2 states.</li>
+<li><strong>Merge and sort.</strong> All candidates live in one list sorted by rank key, so depth-1 and depth-2 prefixes compete directly for the same slots, with the depth-2 ones carrying a plus-2 handicap instead of plus 1.</li>
+<li><strong>Run a sub-search on the top 8 candidates,</strong> in rank order, at a budget of 80 each while budget remains. One pruning rule applies: skip a candidate whose rank key is at least 3 above the current best total. A skipped candidate still consumes one of the 8 slots, and its budget is not reassigned.</li>
+<li><strong>Compete.</strong> A sub-search result replaces the incumbent only when the prefix length plus the sub-search's strict move count is strictly less than the current best. Ties go to the incumbent, which means to the pure-subgoal result when one exists. The winning move list is the prefix slides followed by the sub-plan's moves.</li>
+<li><strong>Report</strong> the total spend, the composed move list, the winner tag and the four search constants.</li>
+</ol>
+<p>A prefix of length <em>p</em> costs exactly <em>p</em> strict moves. The charge is applied at ranking time and again at comparison time, and the independent replay checker then counts the composed list, so the charge is enforced by a program that knows nothing about prefixes.</p>
+
+<h4>Verification, in two layers</h4>
+<p>Inside the search, the sub-search's certifier was constructed with the <em>moved</em> state, so strict realization executes the sub-plan against the position that exists after the slides. After the run, the independent replay validator reads the composed move list, replays it from the <strong>original</strong> start positions under full joint physics, and requires that each move is a real slide, that the length equals the claimed count, and that the target robot ends on the goal. Every hybrid payload in the repository has a passing replay log with zero failures: 231 of 232 rows passed on the graded exam with 1 skipped as unsolved, 188 of 200 on the unseen exam with 12 skipped, 177 of 218 on the frontier exam with 41 skipped, and the same pattern on all four transfer payloads.</p>
+
+<h4>Results, against the same networks at the same protocol</h4>
+<p>The control is the same two checkpoint files, the same 1200-expansion protocol and the same B2 vocabulary, under standard PUCT best-at-budget. The two payloads name identical checkpoints.</p>
+
+<div class="tw"><table>
+<thead><tr><th>exam</th><th>arm</th><th class="num">solved</th><th class="num">mean moves</th><th class="num">mean regret</th><th class="num">% optimal</th><th class="num">mean expansions</th></tr></thead>
+<tbody>
+<tr><td>graded (232)</td><td>standard PUCT control</td><td class="num">230</td><td class="num">9.083</td><td class="num">1.417</td><td class="num">59.6</td><td class="num">499.0</td></tr>
+<tr><td>graded (232)</td><td>hybrid depth 1</td><td class="num">231</td><td class="num">8.688</td><td class="num">1.009</td><td class="num">66.2</td><td class="num">569.7</td></tr>
+<tr><td>graded (232)</td><td><strong>hybrid depth 2 (flagship)</strong></td><td class="num"><strong>231</strong></td><td class="num"><strong>8.623</strong></td><td class="num"><strong>0.944</strong></td><td class="num"><strong>68.4</strong></td><td class="num">581.6</td></tr>
+<tr><td>graded (232)</td><td>hybrid depth 3</td><td class="num">231</td><td class="num">8.541</td><td class="num">0.861</td><td class="num">70.6</td><td class="num">603.8</td></tr>
+<tr><td>frontier (218)</td><td>standard PUCT control</td><td class="num">174</td><td class="num">19.052</td><td class="num">no optimum exists</td><td class="num">—</td><td class="num">962.9</td></tr>
+<tr><td>frontier (218)</td><td>hybrid depth 2</td><td class="num"><strong>177</strong></td><td class="num">17.994</td><td class="num">no optimum exists</td><td class="num">—</td><td class="num">1049.4</td></tr>
+<tr><td>unseen (200)</td><td>standard PUCT control</td><td class="num">182</td><td class="num">14.132</td><td class="num">1.939 over the 132 solved with a known d*</td><td class="num">—</td><td class="num">689.1</td></tr>
+<tr><td>unseen (200)</td><td><strong>hybrid depth 2</strong></td><td class="num"><strong>188</strong></td><td class="num">13.335</td><td class="num"><strong>1.470 over the 134 solved with a known d*</strong></td><td class="num">—</td><td class="num">798.5</td></tr>
+</tbody></table></div>
+
+<div class="tw"><table>
+<thead><tr><th>exam</th><th>arm against control</th><th class="num">solved, arm / control</th><th class="num">arm-only / control-only</th><th class="num">McNemar p</th><th class="num">both solved</th><th class="num">mean moves, arm / control</th><th class="num">shorter, arm / control</th><th class="num">sign p</th></tr></thead>
+<tbody>
+<tr><td>graded</td><td>depth 1</td><td class="num">231 / 230</td><td class="num">1 / 0</td><td class="num">1.00</td><td class="num">230</td><td class="num">8.643 / 9.083</td><td class="num"><strong>30 / 0</strong></td><td class="num"><strong>1.9e-9</strong></td></tr>
+<tr><td>graded</td><td>depth 2</td><td class="num">231 / 230</td><td class="num">1 / 0</td><td class="num">1.00</td><td class="num">230</td><td class="num">8.578 / 9.083</td><td class="num"><strong>40 / 0</strong></td><td class="num"><strong>1.8e-12</strong></td></tr>
+<tr><td>frontier</td><td>depth 1</td><td class="num">176 / 174</td><td class="num">4 / 2</td><td class="num">0.69</td><td class="num">172</td><td class="num">17.866 / 18.791</td><td class="num"><strong>44 / 1</strong></td><td class="num"><strong>2.6e-12</strong></td></tr>
+<tr><td>frontier</td><td>depth 2</td><td class="num">177 / 174</td><td class="num">5 / 2</td><td class="num">0.45</td><td class="num">172</td><td class="num">17.826 / 18.791</td><td class="num"><strong>47 / 2</strong></td><td class="num"><strong>4.4e-12</strong></td></tr>
+<tr><td>unseen</td><td>depth 1</td><td class="num">186 / 182</td><td class="num">5 / 1</td><td class="num">0.22</td><td class="num">181</td><td class="num">13.276 / 13.646</td><td class="num"><strong>31 / 1</strong></td><td class="num"><strong>1.5e-8</strong></td></tr>
+<tr><td>unseen</td><td>depth 2</td><td class="num">188 / 182</td><td class="num">7 / 1</td><td class="num">0.070</td><td class="num">181</td><td class="num">13.072 / 13.646</td><td class="num"><strong>39 / 1</strong></td><td class="num"><strong>7.5e-11</strong></td></tr>
+</tbody></table></div>
+
+<p>The pattern is the same on all three exams. <strong>Solve rate rises a little and never reaches significance. Move length falls, and the sign test is decisive.</strong></p>
+
+<h4>The floor comparison, done on a paired basis</h4>
+<p>The project states its headline as "graded regret 0.944, below the pure-B2 language floor of 1.171". Those two numbers have different denominators, 231 solved instances against 228 realizable instances. The paired recomputation restricts to the 225 of 232 graded instances that the exhaustive search completed without hitting a cap and that have a known d*.</p>
+
+<div class="tw"><table>
+<thead><tr><th>system</th><th class="num">instances</th><th class="num">mean regret</th><th class="num">shorter than the exhaustive B2 optimum</th><th class="num">longer than it</th></tr></thead>
+<tbody>
+<tr><td>exhaustive B2 language optimum, no network</td><td class="num">225</td><td class="num"><strong>0.978</strong></td><td class="num">—</td><td class="num">—</td></tr>
+<tr><td>same nets, standard PUCT</td><td class="num">225</td><td class="num">1.191</td><td class="num">4</td><td class="num">17</td></tr>
+<tr><td><strong>hybrid depth 2</strong></td><td class="num">225</td><td class="num"><strong>0.760</strong></td><td class="num"><strong>27</strong></td><td class="num">7</td></tr>
+</tbody></table></div>
+
+<p>The pure-subgoal search with these networks sits <em>above</em> the language's exhaustive optimum, as it must. The hybrid sits <em>below</em> it, on a paired basis, on 27 individual instances. No amount of training or search inside the subgoal language could produce that row. It works because the floor is a property of what the language can <em>express</em>, and a plan that begins with an ordinary move is simply not in the set the floor bounds.</p>
+
+<h4>Controls that the result survives</h4>
+<ul>
+<li><strong>A different network pair.</strong> Repeated with a second adopted lab arm, the graded exam gives 230 against 229 solved with 33 shorter solutions to 0 at p = 2.3e-10, and the unseen exam gives 186 against 184 solved with 36 shorter to 0 at p = 2.9e-11. The direction, the magnitude and the significance all repeat.</li>
+<li><strong>Board sizes and robot counts the hybrid never ran on</strong>, using a third network pair. At g32r4 graded (175) it solves 174 against 172 with 17 shorter solutions to 0 at p = 1.5e-5. At g32r4 frontier (275) it solves 251 against 239, McNemar p = 0.00049, with 77 shorter to 3 at p = 1.4e-19. At g24r8 graded (161) it solves 159 against 159 with 23 shorter to 0 at p = 2.4e-7 and cuts regret from 1.818 to 1.239, which is the largest regret cut at any size. At g24r8 frontier (289) it solves 276 against 279, which is the one cell where the hybrid solves fewer, at p = 0.45.</li>
+<li><strong>Absolute grounding on the fresh unseen exam</strong>, over the 137 of 200 instances with a known optimum: the supervised per-size subgoal pair solves 115 at mean regret 4.844, the frozen seed nets solve 131 at 2.931, the cold-start arm solves 109 at 2.890, standard PUCT solves 132 at 1.939, hybrid depth 1 solves 135 at 1.674, hybrid depth 2 solves 134 at 1.470, and the supervised move-by-move planner solves 101 at 0.119.</li>
+</ul>
+
+<h4 id="p3-caveats">Caveats on the breakthrough, all of them</h4>
+<ol class="proc">
+<li><strong>Most of the depth-2 gain is wider screening and not two-slide plans.</strong> The depth-2 configuration changes four things at once against depth 1. Across the three 24x24 exams, 24 of the 31 depth-2 improvements are still one-slide plans found because 8 candidates were screened instead of 6, and only 7 of 31 came from a genuine two-slide prefix. On the graded exam not one of the 10 improvements came from a two-slide prefix.</li>
+<li><strong>The move-by-move planner still writes shorter solutions on shared instances.</strong> On the graded exam, over the 219 instances both solve, the hybrid averages 8.338 moves against 7.553, and it wins 6 while the move planner wins 64. The hybrid narrows the gap and does not close it. It does solve far more instances on fresh boards, 188 of 200 against 101 of 200.</li>
+<li><strong>The move-by-move baseline is the original network.</strong> A re-tuned move planner gains about 5 graded and 8 frontier puzzles at a different configuration, and no re-tuned 24x24 move planner exists.</li>
+<li><strong>The wall-clock gap is not explained by the algorithm.</strong> The payloads report 21.1 mean seconds per instance for the hybrid on the graded exam and 103.4 for the control, and that comparison is invalid. The control ran through a runner with 8 worker processes on one GPU, and the hybrid ran as a single process with 16 threads. In total job wall time the control graded run took 3,618 s for 232 instances and the hybrid's per-row seconds sum to 4,898 s. Nobody has measured the two systems at equal concurrency.</li>
+<li><strong>The two systems cannot reach the same number of search steps, and the asymmetry runs both ways.</strong> The hybrid's structural cap is 1140 against the control's 1200, so it can never spend the full budget, and its search on the untouched position is capped at 500, which is 42 % of the control's 1200. Against that, the hybrid's average spend is higher on every exam, by 17 % on graded, 16 % on unseen and 9 % on frontier, because the control terminates early on easy instances. The graded medians are 613 expansions for the hybrid against 74.5 for the control. Only the depth-1 arm is exactly budget-matched at 600 + 6 x 100 = 1200, and its graded result is 30 shorter solutions to 0 at p = 1.9e-9, so the headline survives at an exactly equal cap.</li>
+<li><strong>The candidate screening is free under the project's accounting and not free in reality.</strong> The estimator calls the exact shortest-path engine once per legal slide, which is 13.72 times per graded instance on average, plus once per depth-2 position. It passes no accounting handle, so these calls appear in no counter at all. The project's budget unit counts only network passes, so this is internally consistent, but a reader who thinks of the budget as "work" should know that the hybrid performs an uncounted amount of exact-engine work that the control does not.</li>
+<li><strong>The pruning rule compares two different units.</strong> The rule tests an abstract plan cost plus prefix length against a strict move count, and its margin of 3 has no derivation in the file. A pruned candidate also consumes one of the 8 slots, so pruning reduces the number of sub-searches instead of redirecting the budget.</li>
+<li><strong>Deduplication is partial.</strong> The seen-position set starts as the original position and grows only with depth-2 and depth-3 positions. Depth-1 positions are never added, so a two-slide prefix landing on a position also reachable in one slide is not detected as a duplicate. Nothing measures how often that happens.</li>
+<li><strong>Ties favour the incumbent.</strong> The replacement test is a strict inequality, so a slide plan that ties the pure-subgoal plan never wins. The slide-winner counts are therefore a lower bound.</li>
+<li><strong>The floor it beat is measured and not proved.</strong> The exhaustive probe capped 7 of the 232 graded instances, and its best-plan value is described in its own docstring as a tight upper bound rather than a proof. The paired comparison above restricts to the 225 uncapped instances to reduce this risk.</li>
+<li><strong>The d* coverage of the unseen exam is partial.</strong> 137 of the 200 unseen instances carry an exact optimum, and the flagship solves 134 of those 137. The 1.470 figure is an average over 134 instances, not 137 and not 200.</li>
+<li><strong>The hybrid is inference only.</strong> Generation and training were never changed. Two attempts to teach the networks about slides both failed. One was flat at two seeds. The other showed a frontier signal at one seed, 38 shorter solutions to 17, and failed to repeat it at the second seed, 28 to 29.</li>
+</ol>
+
+<p class="src">Full detail for this part: <a href="walkthrough_part3.md"><code>self_play_robots/report/walkthrough_part3.md</code></a> (1,462 lines, with a per-number provenance appendix and a code-versus-documents appendix).</p>
+
+<h2 id="part4">Part 4 — what checking the code turned up</h2>
+
+<p>Each of the three source documents was written by verifying every number against a result file and reading the code directly. Along the way, 22 places appeared where the code or the stored payloads contradict the project's own written documents, or where a published number is not what its label says. The table below merges all of them. It is the most useful section of this page for a discussion, so it is not buried and nothing in it is collapsed.</p>
+<p>Severity uses three levels. <span class="tag t-high">high</span> means a reader who trusts the published claim reaches a wrong conclusion about a result. <span class="tag t-med">medium</span> means the claim is directionally right but its number, denominator or protocol is wrong. <span class="tag t-low">low</span> means the documentation is stale or internally inconsistent without changing any conclusion.</p>
+
+<div class="tw"><table>
+<thead><tr><th class="num">#</th><th>the claim as published</th><th>what the data or the code actually says</th><th>where it appears</th><th>severity</th></tr></thead>
+<tbody>
+
+<tr><td class="num">1</td><td>"The nets rank the new by-reference candidate type zero-shot," so every B2 row measures the full extended language.</td><td>An instrumented census across 46,351 expansions and 4,577,425 candidate applications found <strong>zero</strong> by-reference candidates generated, ranked, shortlisted or expanded by the shipped driver, against a counterfactual supply of 2,451,324. The featurization cannot name such a candidate and the policy trainer filtered every one out of every corpus. <strong>Every "B2" row in the supervised study is B1 plus generalized park repairs.</strong> The same source file contradicts itself: one line still carries the false help text and another records the correction.</td><td>Claim in <code>supervised_valuenet/FINDINGS.md</code> §16 and §17 and in <code>eval/compare.py</code> line 690. Correction in the same file at line 322 and in FINDINGS §40. Census in <code>analysis/artifacts/byref_topk_ablation.json</code>. Part 2 §B.1.2 and §C.7.</td><td><span class="tag t-high">high</span></td></tr>
+
+<tr><td class="num">2</td><td>Ten stored result files publish a <code>mean_regret</code> for a frontier set.</td><td>In each of those files <code>mean_regret</code> equals <code>mean_moves</code> to the last digit, because the frontier instances carry a placeholder <code>d_star</code> of 0. The number is a mean solution length and not a regret. Newer files record a placeholder flag and suppress the field. These ten predate that guard.</td><td>Nine files listed in Part 2 §B.5, at g16r6, g16r8, g24r8 and g32r4, plus <code>scaling/results/g16r6/comparison_ungraded_heuristic_baseline.json</code> at 16.19 from Part 1 §F.3. Logged as a live footgun in <code>supervised_valuenet/FINDINGS.md</code> §25.</td><td><span class="tag t-high">high</span></td></tr>
+
+<tr><td class="num">3</td><td>The "oracle death" curve starts at 0 % exact-solver failure at 16x16 with 4 robots, as the first of five measured points.</td><td>That point is hard-coded to <code>0.0</code> in the report generator. The base benchmark was built by a different sampler that discards and redraws unsolvable instances, at a cap of 60,000 expansions rather than 200,000 and with no wall-time cap. The five points are not on one protocol, and no measurement of that rate under the scaling protocol exists in the repository.</td><td><code>supervised_valuenet/PRIMER.md</code> §6 and the generated report. Hard-coded value at <code>eval/report_sections_scale.py</code> lines 25-27. Part 1 §B.4.1 and §F.1.</td><td><span class="tag t-high">high</span></td></tr>
+
+<tr><td class="num">4</td><td>"B2 removes nearly all of what remained of the ceiling," read as a statement about the trained planner.</td><td>The ceiling claim itself is supported. The planner reading is not. At fixed networks and a fixed search variant, B1 to B2 is +2 solves of 316 on the g16r6 graded set and 0 of 134 on the g16r6 frontier set. At g24r4 the full language solves <strong>6 fewer</strong> of 232 than the base language.</td><td><code>supervised_valuenet/FINDINGS.md</code>. Data in the fixed-nets series and in <code>scaling/results/g24r4/comparison{,_b2}.json</code>. Part 2 §B.2.2 and §C.6.</td><td><span class="tag t-high">high</span></td></tr>
+
+<tr><td class="num">5</td><td>The extended-vocabulary ceiling at 16x16 with 4 robots is 99.6 %.</td><td>Two numbers circulate for the same cell. 99.6 % (448 of 450) comes from a chain in which only 11 residual instances were re-probed at much larger caps. 98.0 % (441 of 450) comes from one whole-benchmark pass at a 60 s per-instance cap with 9 instances inconclusive. Both are honest lower bounds at different caps. The union of every proven-realizable index across all four probe files reproduces 448 of 450 exactly, with only indices 405 and 427 never proven.</td><td>99.6 % in <code>supervised_valuenet/FINDINGS.md</code> §16. 98.0 % in <code>self_play_robots/results/ceiling/g16r4_b2.json</code>. Reconciliation already recorded in <code>self_play_robots/FINDINGS.md</code> §3 but not in the supervised log. Part 1 §D.5 and Part 2 §B.1.1.</td><td><span class="tag t-med">medium</span></td></tr>
+
+<tr><td class="num">6</td><td>The oracle-failure curve is "0 % &rarr; 29.8 % &rarr; 40.9 % &rarr; 48.4 % &rarr; 61.1 %".</td><td>It omits g24r8 at <strong>64.22 % of 450</strong>, which is the highest failure rate measured anywhere in the study. The omission is already recorded as an erratum in the findings log, but the primer text was never corrected.</td><td><code>supervised_valuenet/PRIMER.md</code> §6. Erratum at <code>supervised_valuenet/FINDINGS.md</code> §18b. Part 1 §D.1 and §F.2.</td><td><span class="tag t-med">medium</span></td></tr>
+
+<tr><td class="num">7</td><td>The probe's best-plan value is the language's move optimum, used as a floor.</td><td>It is a tight upper bound and not a proof. The probe's stopping rule assumes that a strict realization never costs less than the plan's abstract cost, and that assumption fails when an incidental robot serves as a stopper. The project's own audit found certified planner plans shorter than the probe's best on 4 of 215 g24r4 instances and 3 of 401 g16r4 instances, and estimated the bias at about 0.05 moves. The <em>solve</em> ceilings are unaffected.</td><td><code>self_play_robots/spr/ceiling.py</code> module docstring. Audit at <code>self_play_robots/results/audit_claims_2026-08-18.md</code> §7b. Part 2 §B.2.3 and Part 3 §3.1.</td><td><span class="tag t-med">medium</span></td></tr>
+
+<tr><td class="num">8</td><td>The language table in the findings log compares the old vocabulary against B1 and B2 on equal terms.</td><td>Its "old" column at g16r6 uses per-configuration networks while the B1 and B2 columns use the base network pair, and it mixes prefix-check rows with anytime rows. The project corrected this itself. The clean fixed-nets, fixed-variant series is 282 &rarr; 304 &rarr; 306 graded of 316 and 80 &rarr; 108 &rarr; 108 frontier of 134. The qualitative conclusion survives the correction.</td><td><code>supervised_valuenet/FINDINGS.md</code> §37, corrected in §39. Part 2 §B.1.4.</td><td><span class="tag t-med">medium</span></td></tr>
+
+<tr><td class="num">9</td><td>The frontier instance files use one placeholder convention.</td><td>They use two. <code>d_star = 0</code> on all lines at g16r6 (134), g16r8 (184), g24r8 (289) and g32r4 (275), and <code>d_star = null</code> on all 218 lines at g24r4. The harness detects both. Only one is safe for a reader or a script that skips the check.</td><td><code>supervised_valuenet/scaling/data/*/bench.unsolved.jsonl</code>, detection at <code>eval/compare.py</code> lines 492-499 and 756-761. Part 1 §B.4.1 and §F.</td><td><span class="tag t-med">medium</span></td></tr>
+
+<tr><td class="num">10</td><td>The physics-work ratio between the two planner families is about 90x, presented as a per-configuration measurement.</td><td>The per-configuration accounting file exists but its records array is empty. The only slide-count data is a five-instance pilot, and its move-planner arm is not the base-configuration headline network. So the 90x ratio is a five-puzzle pilot.</td><td><code>supervised_valuenet/eval/results/compute_accounting.json</code> and <code>eval/results/instrumentation_ab/v3_split_*.json</code>. Part 2 §B.3.1.</td><td><span class="tag t-med">medium</span></td></tr>
+
+<tr><td class="num">11</td><td>The flagship verdict reads "unseen exam, 200 puzzles: 188 solved, with 1.47 extra moves against perfect play on the 137 puzzles with known optima".</td><td>137 is the number of unseen instances that carry an exact optimum. The flagship solves <strong>134</strong> of those 137. The 1.47 average is over 134 instances, not 137 and not 200. The variants log states this correctly. The verdict file does not.</td><td><code>self_play_robots/results/variants/v07_hybrid_actions/VERDICT.json</code>, corrected in <code>variants/FINDINGS.md</code> entry 17. Part 3 §10.8.</td><td><span class="tag t-med">medium</span></td></tr>
+
+<tr><td class="num">12</td><td>The project prose compares the hybrid's graded regret of 0.944 against the language floor of 1.171.</td><td>Those averages have different denominators, 231 hybrid-solved instances against 228 probe-realizable instances, so they are not a paired comparison. The paired recomputation over the 225 instances the probe completed without a cap supports the claim <em>more</em> strongly, at 0.760 against 0.978 with 27 instances strictly better. The direction is right and the published pair of numbers is not the evidence for it.</td><td><code>self_play_robots/variants/FINDINGS.md</code> entry 8 and the verdict file. Part 3 §3.5 and §10.9.</td><td><span class="tag t-med">medium</span></td></tr>
+
+<tr><td class="num">13</td><td>"The fidelity gauge stays uninformative in B2."</td><td>The gauge output carries no such flag. Its clean field is <code>false</code> for every B2 round, and its own docstring places the observed 0.451 to 0.568 well inside the band it calls collapse. The proposed explanation is that the exact side is itself weakened by a rollout cap that the help text says "keeps about 99 % of rollouts". That the remaining 1 % explains a drop from 0.91 to 0.46 could not be verified. The interpretation is open.</td><td><code>self_play_robots/FINDINGS.md</code> entry 19(c) against <code>results/selfplay/g24r4_b2_iter*/gauge.json</code> and <code>spr/gauge.py</code>. Part 3 §1.6 and §10.10.</td><td><span class="tag t-med">medium</span></td></tr>
+
+<tr><td class="num">14</td><td>Every self-play bench payload records <code>byref: false</code> in its protocol block.</td><td>The bench module hard-codes that value. The search module sets by-reference resolution from the vocabulary and enables it for every B2 run. So every B2 payload in the repository claims the feature was off while it was in fact active. The field is legacy and misleading, and the vocabulary must be read from the vocabulary fields instead.</td><td><code>self_play_robots/spr/bench.py</code> against <code>spr/search.py::run</code>. Part 3 §10.5.</td><td><span class="tag t-med">medium</span></td></tr>
+
+<tr><td class="num">15</td><td>The design document states the self-play loop's board ids and search budget as ids from 5000 in steps of 120, 600 expansions, stop after 150, and 100 boards per round.</td><td>The B2 loop, which is the loop the headline claims rest on, used <strong>60 boards from id 8000, 300 expansions and stop after 80</strong>. One later section of the design document records the id change. The budget change is recorded only in the run manifests.</td><td><code>self_play_robots/DESIGN.md</code> §3 and the <code>spr.selfplay</code> docstring, against <code>results/selfplay/g24r4_b2_iter*/generation.manifest.json</code>. Part 3 §10.6.</td><td><span class="tag t-med">medium</span></td></tr>
+
+<tr><td class="num">16</td><td>The design document states that the training buffer includes exact supervised anchors.</td><td>The job script sets anchors off whenever the vocabulary is B2. So all five B2 rounds and all three mixed-size rounds trained on self-play records only. A later section of the same document states this correctly. The earlier section does not.</td><td><code>self_play_robots/DESIGN.md</code> §4 against §4b and <code>jobs/selfplay_iter.slurm</code>. Part 3 §10.7.</td><td><span class="tag t-med">medium</span></td></tr>
+
+<tr><td class="num">17</td><td>The findings log states "the B2 ceiling probe says at least 229 of 232 reachable".</td><td>The probe alone proves 228 of 232 realizable and leaves 4 inconclusive. The 230 of 232 figure comes from a planner run with replay-certified plans, not from the probe. So the ceiling is at least 230 of 232, but the probe is not the evidence for it.</td><td><code>self_play_robots/FINDINGS.md</code> entry 22 against <code>results/ceiling/g24r4_b2.json</code> and <code>results/selfplay/mix_b2mix_iter3/bench_g24r4_astar.json</code>. Part 3 §10.12.</td><td><span class="tag t-low">low</span></td></tr>
+
+<tr><td class="num">18</td><td>The hybrid driver's module docstring names the search function <code>mcts_root_slides</code>.</td><td>No such function exists anywhere in the repository. A search returns only that docstring line. The algorithm is written inline inside the bench entry point.</td><td><code>self_play_robots/variants/v07_hybrid_actions.py</code> line 15. Part 3 §10.1.</td><td><span class="tag t-low">low</span></td></tr>
+
+<tr><td class="num">19</td><td>The hybrid driver's docstring documents the algorithm as four steps at constants 600, 6 and 100.</td><td>The code implements prefix depths 1, 2 and 3, an extension width, a merged candidate list in which depth-1 and depth-2 prefixes compete, and a pruning rule. None of that appears in the docstring, and every landed flagship row uses depth 2 at 500, 8 and 80.</td><td>Same file, against <code>jobs/v07_flagship.slurm</code> and the per-row search block of every hybrid payload. Part 3 §10.2.</td><td><span class="tag t-low">low</span></td></tr>
+
+<tr><td class="num">20</td><td>The hybrid docstring states that its budget satisfies "b0 + m x sub &le; 1200, the arena convention".</td><td>True only for the depth-1 arm, which gives exactly 1200. The flagship depth-2 configuration gives <strong>1140</strong> and the depth-3 probe gives 1160. Both are below the control's 1200, and neither figure is stated anywhere in the project's prose.</td><td>Same file. Part 3 §10.3 and §3.9 caveat 6.</td><td><span class="tag t-low">low</span></td></tr>
+
+<tr><td class="num">21</td><td>No document mentions a pruning rule in the hybrid driver.</td><td>A real behavioural filter exists: skip a candidate whose rank key is at least 3 above the current best. It reduces the number of sub-searches actually run, it compares an abstract plan cost against a strict move count, and its constant of 3 has no derivation. It appears in no design note, no findings entry and no docstring.</td><td><code>self_play_robots/variants/v07_hybrid_actions.py</code> line 177. Part 3 §10.4.</td><td><span class="tag t-low">low</span></td></tr>
+
+<tr><td class="num">22</td><td>The ceiling summary for the extended vocabulary at g24r4 reports 228 realizable and 4 inconclusive.</td><td>The same summary reports 7 capped instances. Reading the rows resolves it: 3 instances hit a cap and still found a realizable plan, so they count as realizable and as capped. Their best-plan value is not proven, which is why the paired floor comparison excludes them.</td><td><code>self_play_robots/results/ceiling/g24r4_b2.json</code>. Part 3 §10.11.</td><td><span class="tag t-low">low</span></td></tr>
+
+</tbody></table></div>
+
+<div class="note">
+<p><strong>The pattern, in one paragraph.</strong> Four kinds of problem appear. First, a feature that was documented as working and never ran, which changes what the label "B2" means in every supervised row. Second, derived numbers computed against a placeholder, which produce a plausible figure with the wrong meaning. Third, denominators that shift between the population a number was averaged over and the population it is quoted against. Fourth, docstrings and design notes that describe an earlier version of code that has since changed. Only the first two change a conclusion. All four make a published number hard to reuse without reading the code.</p>
+</div>
+
+<h2 id="part5">Open questions and things never measured</h2>
+
+<p>These are merged from all three parts. They fall into three groups: measurements that were never made and are cheap, measurements that cannot be made at all, and questions the data does not settle.</p>
+
+<h3 id="p5-cheap">Never measured, and reachable</h3>
+<div class="tw"><table>
+<thead><tr><th>gap</th><th>status</th><th>why it matters</th></tr></thead>
+<tbody>
+<tr><td>The anytime versus prefix-check control away from the base configuration</td><td>Never run at g24r4, g24r8 or g32r4. At the base configuration both variants give exactly 401 of 450, so the confound is empirically null there only.</td><td>This single control would turn the 24x24 negative result from "the extension did not pay for itself" into a clean single-variable statement. It is cheap and unrun.</td></tr>
+<tr><td>A pure screening-width sweep at fixed prefix depth 1</td><td>Does not exist. The hybrid runs change the screening width, the sub-budget and the root budget together with the prefix depth.</td><td>24 of the 31 depth-2 improvements are one-slide plans, so most of the depth-2 gain is probably screening width and not two-slide planning. Nobody has separated the two effects.</td></tr>
+<tr><td>The no-network control at g16r8, g24r4, g24r8 and g32r4</td><td>Never run. The script accepts all four configurations.</td><td>The claim that learned ranking is worth 8 to 23 points rests on the base configuration and g16r6 only.</td></tr>
+<tr><td>A base-vocabulary ceiling on the g24r8 frontier set</td><td>Missing. The job script requests it and the file does not exist.</td><td>It is the one empty cell in the expressibility table.</td></tr>
+<tr><td>A B1 arm at four of six configurations</td><td>Absent. No per-configuration B1 network was ever trained.</td><td>The clean decomposition of the language gain into B1 and B2 exists only at g16r6.</td></tr>
+<tr><td>An equal-concurrency timing of the hybrid against its control</td><td>Never made. The control ran with 8 worker processes on one GPU and the hybrid ran as a single process.</td><td>The five-fold speed advantage the payload columns appear to show is a measurement artefact.</td></tr>
+<tr><td>How often the hybrid's partial deduplication misses a duplicate position</td><td>Nothing measures it.</td><td>A two-slide prefix landing on a one-slide position wastes one of the 8 sub-search slots.</td></tr>
+<tr><td>Separation of expansion-cap failures from wall-time failures in the benchmark metadata</td><td>Not recorded. Only the combined failure count is stored.</td><td>The oracle-failure rates cannot be attributed to a cause.</td></tr>
+<tr><td>Per-instance timing of the exact move oracle</td><td>Not on disk. Only aggregate job timings and the 60 s cap survive. The 24x24 and 32x32 per-instance labelling timings exist as prose only, because the primary file was a session scratchpad.</td><td>Every timing statement about the exact solver is indirect.</td></tr>
+<tr><td>A ceiling of any vocabulary on the fresh unseen exam</td><td>Not measured. The probe has no lean-board path, and the unseen boards are lean.</td><td>The hybrid's unseen result has no language floor to be compared against.</td></tr>
+<tr><td>Ceiling runs at the B1 level in the newer probe</td><td>None on disk. Every stored run uses the base or the extended vocabulary.</td><td>The B1 and B2 shares of the ceiling gain come from the older probe only.</td></tr>
+<tr><td>A pinned exam above 32x32</td><td>Does not exist. Larger sizes were audited only at the level of individual decisions.</td><td>The transfer claim covers 24x24 with 4 and 8 robots and 32x32 with 4 robots, and nothing larger.</td></tr>
+<tr><td>A re-tuned move-by-move planner at 24x24</td><td>Does not exist. A re-tuning at a different configuration gained about 5 graded and 8 frontier puzzles.</td><td>Every move-quality gap quoted against the move planner should be read against a possibly slightly stronger opponent.</td></tr>
+</tbody></table></div>
+
+<h3 id="p5-impossible">Cannot be measured at all</h3>
+<ul>
+<li><strong>Any exact ground truth above 64x64.</strong> The size assertion is compiled into the release build and there is no fallback. The licence argument for using a learned labeller above 64 rests on flat argmin agreement from 24 to 64, and whether it holds at 80 and 96 is by construction untestable.</li>
+<li><strong>Regret and percent optimal on any frontier set.</strong> No reference optimum exists there at any budget. On those sets solving is self-certifying and nothing else is measurable.</li>
+<li><strong>An unbiased quality comparison at the hardest rungs.</strong> Quality metrics live on the graded half, which is by definition the half an exact search finished quickly. At g24r8 that is the easiest 161 of 450 instances.</li>
+</ul>
+
+<h3 id="p5-open">Questions the data does not settle</h3>
+<ul>
+<li><strong>Why the B2 fidelity gauge sits in the collapse band while the exam rows improved.</strong> The loop's B2 labels agree with the exact engine on 0.451 to 0.568 of matched decisions, well inside the band the project's own calibration calls collapse, and yet the loop's exam numbers rose. Either the calibration does not transfer to the extended vocabulary, or the exact side of the comparison is itself weak because of its own caps, or the loop's gains do not depend on label fidelity. The files do not decide between these.</li>
+<li><strong>Whether the loop can ever shorten solutions.</strong> Across five B2 rounds and three mixed-size rounds, no paired move test reached significance in the loop's favour. The only two changes that moved move quality were the network rebuild, which happened before self-play, and the action-space change, which happens at inference and is not in the loop.</li>
+<li><strong>Why nothing in the training pipeline can learn about slides.</strong> The hybrid is a portfolio of independent searches with no shared tree, no slide prior and no slide value head. Both attempts to build one failed. The project's own explanation, that the networks already generalize to post-slide positions and had no gap to close, is plausible and untested.</li>
+<li><strong>Why the depth curve is nearly flat.</strong> Graded regret improves 1.009 to 0.944 to 0.861 across prefix depths 1, 2 and 3, and unseen solves stop at about 188 of 200. No deeper probe was run.</li>
+<li><strong>Why one exam disagrees on solve count.</strong> On the 8-robot frontier exam the control solves 279 of 289 against the hybrid's 276. The difference is not significant at p = 0.45, but the direction is real and unexplained.</li>
+<li><strong>Whether a chain of cold-start rounds reaches the warm-start level.</strong> The cold-start control is one round deep, and its generation still used trained networks. It shows that random weights plus one round of certified data reach the supervised baseline on fresh boards, 132 against 134 of 200. It shows nothing about round two.</li>
+<li><strong>Whether the g24r4 quality loss under the extended language is caused by its cost model.</strong> The pieces are all measured. The plans found are equal in number at 208, three times as many fail realization, both-solved solutions are 1.586 moves longer, and 15 of 28 sampled exact extended-vocabulary labels price plans that physics rejects. No experiment isolates the mechanism at that configuration.</li>
+<li><strong>Whether the by-reference construct is worth anything once a network can name it.</strong> Wired into the driver and run as a matched A/B, it produced +3 frontier solves of 134 and 0 graded solves of 316, at pooled p = 0.61. The supply was 599 candidates per graded instance and 5363 per frontier instance. The nets had never seen such a record and cannot name the referenced cell, so that result is a lower bound on the construct's value.</li>
+</ul>
+
+<hr>
+<p class="src">Sources for this page, all verified against result files and code by the agents that wrote them:
+<a href="walkthrough_part1.md"><code>walkthrough_part1.md</code></a> (setups, metrics, non-learned solvers),
+<a href="walkthrough_part2.md"><code>walkthrough_part2.md</code></a> (the two action spaces and the plan-language extensions),
+<a href="walkthrough_part3.md"><code>walkthrough_part3.md</code></a> (self-play and the action-space result).
+Nothing on this page comes from anywhere else. Where two sources disagree, both are shown and each is named.</p>
+
+</div>
+</body>
+</html>
