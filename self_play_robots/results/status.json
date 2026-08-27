@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-26T22:39:43",
+ "updated": "2026-08-27T08:33:58",
  "project": "self_play_robots",
  "milestones": {
   "M0": {
@@ -90,7 +90,7 @@
     4706184
    ],
    "note": "FINDINGS §19: frontier A* 133->144->139->158->153->153 (it5 vs it0 p=8e-4), graded A* 223->227 at 53->30 exp; MCTS graded 228 flat, regret 1.55->1.46->1.55; frontier MCTS 171->178->174 flat; beats frozen supervised B2 rows p<1e-4; moves on shared solves never improve beyond noise (search distilled into nets, not lower moves)",
-   "plain_note": "Five self-play rounds beat the human-taught baseline by a wide margin. The gains were solve rate and search speed, not shorter solutions."
+   "plain_note": "Five self-play rounds beat the solver-taught baseline by a wide margin. The gains were solve rate and search speed, not shorter solutions."
   },
   "M5": {
    "title": "scale + zero-shot transfer",
@@ -154,7 +154,7 @@
     4680466
    ],
    "note": "spr/fwd: PUCT over slides on MoveNet Guide; F-M0 parity vs comparison_forward.json (candidate_scored 450/450), F-M2 arms (astar/greedy/mcts) on bench450, fwd_iter loop ready.",
-   "plain_note": "The move-by-move planner line: near-perfect moves, high search cost."
+   "plain_note": "The move-by-move planner line: near-perfect moves when it solves, at a high search cost."
   },
   "transfer": {
    "title": "headroom probe: mixed size-free pair zero-shot on g24r4 frontier, g32r4, g24r8 (+ceilings)",
@@ -172,7 +172,7 @@
   },
   "forward_loop_g24r4": {
    "title": "primitive-move arm self-play loop at g24r4 (F-M3/F-M4)",
-   "status": "queued: 2 iterations (jobs 4703446 -> 4703467, qgpu, <=2 nh)",
+   "status": "done",
    "sources": [
     "results/fwd_selfplay/g24r4_iter1/",
     "results/fwd_selfplay/g24r4_iter2/"
@@ -183,8 +183,8 @@
     4703446,
     4703467
    ],
-   "note": "jobs/fwd_iter.slurm generalized to CFG (commit 962ffb3); smoke: eval-distribution instances 106 s/attempt 67% solved, walk instances too shallow -> RAND_MIX=0.5; batch 64 (128/256 OOM at 24x24)",
-   "plain_note": "Self-play for the move-by-move planner at 24x24: better optimality, same solve rate."
+   "note": "2 iterations at 24x24 (jobs 4703446/4703467): optimality 94.1->96.3% (moves p=0.04 vs iteration 1), solve rate at supervised parity (219 vs 220)",
+   "plain_note": "Self-play for the move-by-move planner, two rounds: solutions got closer to perfect (94.1% to 96.3% optimal); the number solved stayed level."
   },
   "variants_lab": {
    "title": "self-play design-variants lab (owner 2026-08-20: many approaches, matched comparisons, unseen-board generalization exam)",

@@ -564,10 +564,14 @@ def h2h_table(entries, ref_labels, note_extra="", dstar=None):
                "the puzzles <em>it</em> solved, so raw means from two systems are NOT comparable "
                "&mdash; the one that solves more hard puzzles looks worse. The "
                "<strong>common-subset moves</strong> column scores every system on the exact same "
-               "puzzles. Each <strong>&Delta;</strong> column is paired on the puzzles both "
-               "systems solved, with win/loss counts and the fluke chance (p, exact sign test). ")
+               "puzzles. Each <strong>&Delta;</strong> column (&Delta; = difference) is "
+               "paired on the puzzles both systems solved, with win/loss counts and the "
+               '<span title="p-value of the exact sign test">fluke chance</span>. ')
         _H2H_WHY_SHOWN = True
     note = why + note_extra
+    if any(e["ok"] and (e.get("mean_exp") or 99) < 5 for e in r["entries"]):
+        note += (" A search-effort of 1 or 2 means the first candidate "
+                 "already works &mdash; that system solves almost instantly.")
     return table(headers, rows_, note=note, cls="wide")
 
 
@@ -591,7 +595,9 @@ def baseline_rows(cfg, rel, cls=""):
                      td_txt(src(disp(SV / rel)))], "bad")]
     out = []
     for name, kind, a, nrows in systems_of(d):
-        if kind == "pending" or not a:
+        if kind == "pending" and not nrows:
+            continue                      # an empty placeholder block, not a run
+        if not a:
             out.append(row([td_txt(esc(cfg)), td_txt("&mdash;"),
                             td_txt(esc(name)),
                             f'<td class="pend" colspan="6" title="no aggregate '
@@ -603,12 +609,19 @@ def baseline_rows(cfg, rel, cls=""):
         sr = (f"{solved}/{n} &middot; {100 * a['solve_rate']:.1f}%"
               if None not in (n, solved) and a.get("solve_rate") is not None
               else None)
+        disp_name = esc(name)
+        if "candidate_scored" in name:
+            disp_name = (f'<span title="{esc(name)}">forward planner, the '
+                         "planner of record</span>")
+        elif "best.ckpt" in name:
+            disp_name = (f'<span title="{esc(name)}">forward planner, an '
+                         "earlier checkpoint (its own validation pick)</span>")
         out.append(row([
             td_txt(esc(cfg)),
             td_txt('<span class="tag">unseen exam</span>' if is_unseen(d)
                    else ('<span class="tag front">frontier</span>' if front
                          else '<span class="tag graded">graded</span>')),
-            td_txt(esc(name)),
+            td_txt(disp_name),
             td_txt(sr) if sr else '<td class="pend">pending</td>',
             td(a.get("mean_moves"), ".2f", cls="hlnum"),
             DASH if front else td(a.get("mean_regret"), ".2f"),
@@ -625,13 +638,13 @@ def ceiling_row(cfg, bench_rel):
     b = bench_stats(bench_rel)
     if b is None:
         return row([td_txt(esc(cfg)), td_txt('<span class="tag graded">graded</span>'),
-                    td_txt("<strong>exact optimum d* (the ceiling)</strong>"),
+                    td_txt("<strong>exact optimum d* (the puzzle's known optimum)</strong>"),
                     '<td class="pend" colspan="6">bench file not on disk</td>'],
                    "ceil")
     return row([
         td_txt(esc(cfg)),
         td_txt('<span class="tag graded">graded</span>'),
-        td_txt("<strong>exact optimum d* (the ceiling)</strong>"),
+        td_txt("<strong>exact optimum d* (the puzzle's known optimum)</strong>"),
         td_txt(f"{b['n_graded']}/{b['n']} &middot; 100.0%"),
         td(b["mean_d_star"], ".2f", cls="hlnum"),
         td_txt("0.00"), td_txt("100.0%"), DASH, DASH,
@@ -777,15 +790,15 @@ def svg_loop() -> str:
     BW, BH = 270, 68
     boxes = [
         (20, 40, "1 &middot; Generate",
-         ["fresh lean boards + instances,", "every iteration (boards ~free)"]),
+         ["fresh random boards + puzzles", "every round (boards cost ~nothing)"]),
         (325, 40, "2 &middot; Search with net k",
          ["MCTS over the chosen action", "space, fixed expansion budget"]),
         (630, 40, "3 &middot; Certify",
          ["replay each solution vs physics;", "uncertified plans are dropped"]),
         (630, 200, "4 &middot; Keep recent data",
-         ["a rolling window of verified", "solutions (origin recorded)"]),
+         ["a rolling window of verified", "solutions (source round noted)"]),
         (325, 200, "5 &middot; Train the next nets",
-         ["start from the last ones;", "collapse alarm; keep best pass"]),
+         ["start from the last ones;", "alarm on; keep the best pass"]),
         (20, 200, "6 &middot; Examine",
          ["test vs the previous nets and", "the fixed baselines"]),
     ]
@@ -938,6 +951,10 @@ def sec_overview() -> str:
         "optimal than forward-supervised, at backward-supervised "
         "compute.&rdquo;<span class='cite'> PROBLEM.md &sect;7</span>"
         "</blockquote>"
+        "<p>In plain words: solve at least as many puzzles as the "
+        "solver-taught planner, with solutions closer to perfect than the "
+        "move-by-move planner&rsquo;s, at the solver-taught planner&rsquo;s "
+        "search cost.</p>"
         "<p class='note'>Results that fall short of the full goal still count "
         "&mdash; every milestone below has its own pass bar. Fixed rules for "
         "every test: score only replayed moves, use only the pinned exams, "
@@ -1028,9 +1045,11 @@ def sec_overview() -> str:
         + len(scan.get("ceiling", [])) + len(scan.get("other", []))
     out.append(f'<p class="note">Result files found under '
                f'{src(disp(RESULTS))}: <strong>{nfiles}</strong> '
-               f"(comparison payloads, ceiling payloads, summaries and "
-               f"anything else). Everything on this page is read from disk at "
-               f"generation time.</p>")
+               f"(benchmark payloads, ceiling payloads, summaries and anything "
+               f"else). This counts <code>self_play_robots/results/</code> only; "
+               f"the page also reads the supervised campaign&rsquo;s files and "
+               f"the pinned exam files, so the banner&rsquo;s total is larger. "
+               f"Everything is read from disk at generation time.</p>")
     out.append("</section>")
     return "\n".join(out)
 
@@ -1044,14 +1063,11 @@ def sec_loop() -> str:
            "collapse alarm on &rarr; examine them against the previous round "
            "and the fixed baselines &rarr; keep or investigate.</p>",
            '<figure class="fig">' + svg_loop() +
-           "<figcaption>The bootstrap (iteration 0) is free: initialize from "
-           "the supervised backward planner pair copied into "
-           + src("self_play_robots/assets/") +
-           " — or, if &sect;6.2 decides on the size-free rebuild, train the "
-           "new architecture on the existing exact corpora first and verify it "
-           "reproduces supervised-level bench numbers <em>before</em> any "
-           "self-play. Never debug architecture and loop dynamics at the same "
-           "time.</figcaption></figure>"]
+           "<figcaption>Round zero is free: the loop starts from the "
+           "solver-taught networks (or from rebuilt networks first checked "
+           "against them). The collapse alarm in step 5: training can "
+           "suddenly forget everything; the alarm stops it and keeps the "
+           "best pass.</figcaption></figure>"]
     out.append(
         '<p>That is the whole idea. The rest of this tab is the original '
         'engineering plan the loop was built from &mdash; kept for auditors, '
@@ -1182,7 +1198,7 @@ def seed_spread_line() -> str:
     sent = []
     for i, (label, ds, do) in enumerate(bits):
         who = ("the exact-taught pair" if "exact" in label
-               else "the NN-taught twin (the same recipe retrained on "
+               else "the network-taught twin (the same recipe retrained on "
                     "network-written labels)" if "twin" in label.lower()
                else label)
         upto = "up to " if i else ""
@@ -1201,8 +1217,8 @@ def seed_spread_line() -> str:
             + (". " if len(sent) > 1 else "")
             + "(Optimality points = percentage-point difference in puzzles "
             "solved with a perfect-length answer.) The gate is set just above "
-            "the measured spread, at 3.5 solve and 6.6 optimality points. Any "
-            "win smaller than this bar is noise.</p>")
+            "the measured spread, at 3.5 solve and 6.6 optimality points. "
+            "Within the band = matches. A win needs the puzzle-by-puzzle paired test.</p>")
 
 
 def g16_runs_line() -> str:
@@ -1211,14 +1227,18 @@ def g16_runs_line() -> str:
     arms -- nearby tabs quote different ones, and side by side they can read
     as the same run disagreeing. Numbers computed from the payloads."""
     runs = [("eval/results/final450_backward_prefix.json",
-             "the pair under the prefix-check rule (quoted here and in M0)"),
+             "the pair under the prefix-check rule &mdash; abandons plans whose "
+             "first moves already fail (quoted in this tab's head-to-head and "
+             "on the supervised tab's ladder)"),
             ("eval/results/final450_backward_anytime.json",
-             "the SAME pair under the anytime rule (quoted on the supervised "
-             "tab's ladder)"),
+             "the SAME pair under the anytime rule &mdash; keeps searching "
+             "after the first answer, returns the best found (the base column "
+             "of the supervised tab's extended-vocabulary table)"),
             ("eval/results/final450_backward_b2.json",
-             "the original B2-vocabulary arm (supervised tab)"),
+             "the original extended-vocabulary arm (same supervised table)"),
             ("eval/results/final450_backward_b2_seed21.json",
-             "the seed-21 B2 replicate (this project's M0 parity target)")]
+             "the seed-21 extended-vocabulary replicate (the M0 tab's parity "
+             "target)")]
     bits = []
     for rel, what in runs:
         _, sy = backward_system(load_sv(rel))
@@ -1242,7 +1262,8 @@ def sec_baselines() -> str:
            "<p>Every row is regenerated from a result JSON on disk; nothing "
            "here is hand-typed. These are the numbers the self-play planner has "
            "to beat, frozen forever (PROBLEM.md &sect;7). The headline column "
-           "is <strong>mean realized moves</strong> — solve rate is the "
+           "is <strong>mean realized moves</strong> (realized = counted after "
+           "replaying the answer against the physics) — solve rate is the "
            "qualifier, compute is the tiebreaker.</p>"]
     # protocol, read from a file rather than asserted
     d = load_sv("scaling/results/g24r4/comparison.json")
@@ -1419,8 +1440,8 @@ def sec_baselines() -> str:
                           "next to solve rate (PROBLEM.md &sect;1).</details>",
                      cls="wide"))
     out.append(
-        "<p class='note'>Reading the 32&times;32 pair the way the project "
-        "brief does: the forward planner is slower but near-optimal when it solves, "
+        "<p class='note'>Reading the 32&times;32 pair the way the project's "
+        "original plan document does: the forward planner is slower but near-optimal when it solves, "
         "the backward planner solves more and faster but further from optimal. "
         "<strong>Beating backward on moves while matching its solve rate "
         "comes close to forward's quality at backward's speed — that "
@@ -1655,13 +1676,15 @@ def sec_m0() -> str:
                             if dreg > 1e-9 else "")
                 except TypeError:
                     dtxt = ""
-                plainv = (f"totals match ({na.get('solved')} solved, "
+                plainv = (f"the totals match ({na.get('solved')} solved, "
                           f"{(na.get('pct_optimal') or 0):.1f}% optimal on both "
-                          f"sides); {len(diffs)} of {len(nrows_)} rows differ "
-                          f"only by floating-point rounding across machines "
-                          f"(re-running with a different number of CPU threads "
-                          f"reproduces exactly these rounding differences)"
-                          f"{dtxt}")
+                          f"sides), which is what the gate asks for. "
+                          f"{len(diffs)} of {len(nrows_)} individual solutions "
+                          f"differ: tiny value-estimate differences across "
+                          f"machines flip which equally-scored plan the search "
+                          f"meets first, so a few solutions differ by a whole "
+                          f"move (re-running with a different number of CPU "
+                          f"threads reproduces exactly this){dtxt}")
             else:
                 plainv = f"{len(diffs)} of {len(nrows_)} rows differ"
             out.append(f'<p class="verdict {vcls}">{chip("pass" if passed else "fail", "parity " + ("PASS" if passed else "FAIL"))} '
@@ -3200,6 +3223,12 @@ def sub_loops() -> str:
            "generation manifest (fresh instances searched, certified, records "
            "written), fidelity gauge (on a sample of decisions: does the loop's "
            "own label pick the same best candidate as the exact solver?), the "
+           "arena benches and gates. <strong>Read the gauge column with "
+           "care:</strong> in the extended vocabulary the gauge's reference "
+           "solver prices plans that cannot actually be played, so its "
+           "readings there are known to be uninformative (FINDINGS &sect;14b). "
+           "The certified exams to its right are the instrument. It stays "
+           "meaningful for the base-vocabulary loop, the "
            "arena benches of the retrained pair on the graded exam (A* and MCTS) "
            "and on the frontier set, and the paired gate against the previous "
            "iteration's nets. Iteration 0 = the M1 nets before any self-play "
@@ -3208,7 +3237,10 @@ def sub_loops() -> str:
     if not loops:
         out.append(pend_note("nothing under results/selfplay/ yet"))
         return "\n".join(out)
-    hdr = ["iteration", "instances", "certified", "records", "gauge (argmin)",
+    hdr = ["iteration", "instances", "certified", "records",
+           '<span title="uninformative in the extended vocabulary: its '
+           'reference solver prices unplayable plans (FINDINGS 14b)">'
+           "label check (gauge)</span>",
            "A* solved", "A* moves", "A* regret", "A* exp",
            "MCTS solved", "MCTS moves", "MCTS regret", "MCTS exp",
            "frontier A* solved", "frontier A* moves", "frontier MCTS solved",
@@ -3323,7 +3355,9 @@ def sub_loops() -> str:
                 td_txt(" ".join(srcs) if srcs else "&mdash;"),
             ], "hl" if k == max(ks) else ""))
         out.append(table(hdr, rows_,
-                         note="<em>instances</em> / <em>certified</em> / <em>records</em> = "
+                         note="Within the band = matches. A win needs the puzzle-by-puzzle paired test. The vs-supervised column&rsquo;s large positive &Delta;s are wins by that paired test, not band passes. "
+                              "<details><summary>Field-by-field (for auditors)"
+                              "</summary><em>instances</em> / <em>certified</em> / <em>records</em> = "
                               "<code>generation.manifest.json</code> <code>instances</code>, "
                               "<code>solved</code>, <code>records</code> (plus its "
                               "<code>search</code> block and per-instance means in the first "
@@ -3344,7 +3378,8 @@ def sub_loops() -> str:
                               "comparable to each other; paired columns = "
                               "<code>gate_vs_prev.json</code> (A = this iteration, B = the "
                               "previous nets) and <code>gate_vs_supervised.json</code> "
-                              "(<code>spr.gate m1</code> against the per-size supervised pair).",
+                              "(<code>spr.gate m1</code> against the per-size supervised "
+                              "pair).</details>",
                          cls="wide"))
     return "\n".join(out)
 
@@ -4335,7 +4370,12 @@ def main() -> int:
         tabs.append(f'<a href="#{anchor}" data-panel="{pid}">{label}</a>')
         panels.append(f'<div class="panel" id="{pid}">\n{body}\n</div>')
     nav = '<nav class="tabs" aria-label="sections">' + "\n".join(tabs) + "</nav>"
+    body_terms = re.compile(r'(<section id="(?!glossary)[a-z0-9-]+"[^>]*>\s*<h2>.*?</h2>)')
+
     body_html = "\n".join(panels)
+    body_html = body_terms.sub(
+        r'\1<p class="cite">Terms: see the '
+        r'<a href="#glossary">Glossary tab</a>.</p>', body_html)
     st = status()
     upd = st.get("updated")
     upd_txt = (f"; status manifest last updated {esc(upd)} "

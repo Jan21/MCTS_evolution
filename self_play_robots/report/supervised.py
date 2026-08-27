@@ -84,7 +84,7 @@ def _ladder_rows():
     """(cfg, backward graded agg, forward graded agg, backward frontier agg,
     forward frontier agg) per rung, from the files of record."""
     rows = []
-    # g16r4: the base rung lives under eval/results (450-puzzle graded exam)
+    # g16r4: the base rung lives under eval/results (450-puzzle standard exam)
     b16 = _sys(_load("eval/results/final450_backward_prefix.json"), "backward")
     f16 = _sys(_load("eval/results/comparison_forward.json"), "forward",
                name_has="candidate_scored")
@@ -141,7 +141,7 @@ def sec_supervised() -> str:
     # ---- the scale ladder ---------------------------------------------------
     out.append("<h3>The scale ladder: who wins as boards grow</h3>")
     out.append(
-        '<p>Per rung: the graded exam (perfect play known) and the frontier '
+        '<p>Per rung: the standard exam (perfect play known) and the frontier '
         'exam (the exact solver failed; solve counts only). '
         '&ldquo;Pooled margin&rdquo; = backward&rsquo;s solve-rate lead over '
         'forward across both exams, in points.</p>')
@@ -149,7 +149,7 @@ def sec_supervised() -> str:
            '<th>rung</th>'
            '<th>backward: solved</th><th>extra moves</th><th>seconds per puzzle</th>'
            '<th>forward: solved</th><th>extra moves</th><th>seconds per puzzle</th>'
-           '<th>frontier: backward / forward solved</th><th>pooled margin (pts)</th>'
+           '<th>hard exam (frontier): backward / forward solved</th><th>pooled margin (pts)</th>'
            '</tr></thead><tbody>')
     body = []
     for cfg, bg, fg, bu, fu in _ladder_rows():
@@ -174,7 +174,7 @@ def sec_supervised() -> str:
         '<p class="note">&dagger; The 24&times;24 4-robot frontier was never '
         'tested with this base-vocabulary pair. Its recorded frontier rows '
         'use the extended vocabulary and sit in the next table. So that cell '
-        'covers the graded exam only, and its &minus;6.5 margin is a '
+        'covers the standard exam only, and its &minus;6.5 margin is a '
         'graded-only number. 24&times;24 with 4 robots is the forward '
         'planner&rsquo;s strongest big board: 220 of 232, at 4.6 minutes per '
         'puzzle against backward&rsquo;s 8 seconds.</p>')
@@ -183,7 +183,7 @@ def sec_supervised() -> str:
         'planner is essentially perfect (450/450, +0.07 moves) and the '
         'backward planner trails. As boards and robot counts grow, the '
         'forward planner&rsquo;s search cost explodes: 23 minutes per '
-        '32&times;32 puzzle, and 2 of 275 frontier puzzles solved there. The '
+        '32&times;32 puzzle, and 2 of 275 hard-exam puzzles solved there. The '
         'backward planner stays at seconds per puzzle. So the pooled margin '
         'swings hard to backward on the crowded and large boards (+44.4, '
         '+21.6, +30.9 points). At 24&times;24 with 4 robots the graded-only '
@@ -265,15 +265,15 @@ def sec_supervised() -> str:
                 f"<td>{_f(g['mean_regret'] if g else None)}</td>"
                 f"<td>{_solved(u)}</td><td>{pooled}</td></tr>")
     out.append('<div class="tw"><table class="t"><thead><tr>'
-               '<th>training run</th><th>graded solved</th><th>extra moves</th>'
-               '<th>frontier solved</th><th>pooled</th></tr></thead><tbody>'
+               '<th>training run</th><th>standard-exam solved</th><th>extra moves</th>'
+               '<th>hard-exam solved</th><th>pooled</th></tr></thead><tbody>'
                + "\n".join(seed_rows) + "</tbody></table></div>")
     out.append(
         '<p class="note">32&times;32 replicates tightly. The 16&times;16 '
         '8-robot runs split into two groups: seed 21 trained into a much '
         'worse network &mdash; training sometimes lands in a bad solution and '
         'stays there &mdash; with 108 of 184 '
-        'frontier solves against 157&ndash;165 for the other two. The '
+        'hard-exam solves against 157&ndash;165 for the other two. The '
         'campaign reports the middle result and shows the bad run, not hides '
         'it.</p>')
 
@@ -297,8 +297,8 @@ def sec_supervised() -> str:
                "forward")
     out.append('<div class="tw"><table class="t"><thead><tr>'
                '<th>forward training run (16&times;16, 8 robots)</th>'
-               '<th>graded solved</th><th>extra moves</th>'
-               '<th>frontier solved</th></tr></thead><tbody>'
+               '<th>standard-exam solved</th><th>extra moves</th>'
+               '<th>hard-exam solved</th></tr></thead><tbody>'
                f"<tr><td>original (its teacher failed on most training examples)</td>"
                f"<td>{_solved(fo)}</td><td>{_f(fo['mean_regret'] if fo else None)}</td>"
                f"<td>{_solved(fou)}</td></tr>"
@@ -312,7 +312,7 @@ def sec_supervised() -> str:
     out.append(
         '<p class="note">The rescue is real but small. The tuned forward '
         'planner takes the graded set perfectly (266/266 &mdash; no backward '
-        'run matches that). But it gains only 8 frontier puzzles, far below '
+        'run matches that). But it gains only 8 hard-exam puzzles, far below '
         'the failure threshold written down before the test ran. Pooled over '
         'both exams against the backward planner&rsquo;s middle-of-three run '
         '(418/450 vs 367/450), the backward lead stands at +11.3 points. The '
