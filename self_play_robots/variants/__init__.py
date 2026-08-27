@@ -101,7 +101,7 @@ PLAIN = {
   "The search no longer always tries the top-ranked candidates. "
   "The lottery lets strong-but-unlucky candidates get tried too. "
   "Then it eliminates candidates in rounds. "
-  "On paper, this improves the policy even with a tiny search budget.",
+  "On paper, this should give better answers even with a tiny search budget.",
   "Published results show the biggest gains at exactly our small budgets."),
  "v07_hybrid_actions": (
   "Our planner thinks in 'subgoals' (mini-objectives like 'park a robot "
