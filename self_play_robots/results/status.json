@@ -39,7 +39,7 @@
    "plain_note": "One size-free network pair replaced the per-size planners and beat the best of them at 24x24 with far less search."
   },
   "M2": {
-   "title": "search beats greed at inference",
+   "title": "tree search beats the one-shot chooser",
    "status": "pass",
    "sources": [
     "results/m2/"
@@ -143,7 +143,7 @@
    "plain_note": "Exhaustive probes measured the best score any sub-goal planner could ever reach."
   },
   "forward_mcts": {
-   "title": "primitive-move MCTS arm at g16r4 (owner: both action spaces)",
+   "title": "the move-by-move planner arm at 16x16",
    "status": "F-M0 pass; F-M2 done (MCTS ≈ A* only at 17x expansions)",
    "sources": [
     "results/fwd_m0/",
@@ -153,11 +153,11 @@
     4680465,
     4680466
    ],
-   "note": "spr/fwd: PUCT over slides on MoveNet Guide; F-M0 parity vs comparison_forward.json (candidate_scored 450/450), F-M2 arms (astar/greedy/mcts) on bench450, fwd_iter loop ready.",
+   "note": "owner: both action spaces. spr/fwd: PUCT over slides on MoveNet Guide; F-M0 parity vs comparison_forward.json (candidate_scored 450/450), F-M2 arms (astar/greedy/mcts) on bench450, fwd_iter loop ready.",
    "plain_note": "The move-by-move planner line: near-perfect moves when it solves, at a high search cost."
   },
   "transfer": {
-   "title": "headroom probe: mixed size-free pair zero-shot on g24r4 frontier, g32r4, g24r8 (+ceilings)",
+   "title": "transfer test: the unchanged networks on new sizes and robot counts",
    "status": "done",
    "jobs": [
     4681264
@@ -167,11 +167,11 @@
     "results/ceiling/g32r4_base.json",
     "results/ceiling/g24r8_base.json"
    ],
-   "note": "mixed size-free pair zero-shot: g32r4 156/175 (=ceiling) regret 1.84/1.63 vs supervised 147, 2.37; g24r8 147/161 vs 144; frontier +9/+14/+17 solves. FINDINGS §9.",
+   "note": "headroom probe, mixed size-free pair zero-shot on g24r4 frontier + g32r4 + g24r8 (+ceilings): g32r4 156/175 (=ceiling) regret 1.84/1.63 vs supervised 147, 2.37; g24r8 147/161 vs 144; frontier +9/+14/+17 solves. FINDINGS §9.",
    "plain_note": "The networks were tested unchanged on board sizes and robot counts they never trained on."
   },
   "forward_loop_g24r4": {
-   "title": "primitive-move arm self-play loop at g24r4 (F-M3/F-M4)",
+   "title": "self-play for the move-by-move planner at 24x24",
    "status": "done",
    "sources": [
     "results/fwd_selfplay/g24r4_iter1/",
@@ -183,11 +183,11 @@
     4703446,
     4703467
    ],
-   "note": "2 iterations at 24x24 (jobs 4703446/4703467): optimality 94.1->96.3% (moves p=0.04 vs iteration 1), solve rate at supervised parity (219 vs 220)",
+   "note": "F-M3/F-M4: 2 iterations at 24x24 (jobs 4703446/4703467): optimality 94.1->96.3% (moves p=0.04 vs iteration 1), solve rate at supervised parity (219 vs 220)",
    "plain_note": "Self-play for the move-by-move planner, two rounds: solutions got closer to perfect (94.1% to 96.3% optimal); the number solved stayed level."
   },
   "variants_lab": {
-   "title": "self-play design-variants lab (owner 2026-08-20: many approaches, matched comparisons, unseen-board generalization exam)",
+   "title": "the experiment lab: design variants, one at a time",
    "status": "COMPLETE, standing down to maintenance (waves 1-5; final ledger pending two control legs): adopted v09/v04/v14/v07-d2; killed v01/v12/v15/v16; three lessons in variants/DESIGN.md §7; ~28/50 nh",
    "sources": [
     "variants/DESIGN.md",
@@ -195,8 +195,8 @@
     "results/variants/"
    ],
    "jobs": [],
-   "note": "no exact labels in the loop (certification only; exact = diagnostic/control arms); unseen exam = fresh lean boards ids>=20000 with backward+forward supervised baselines benched on the same boards",
-   "plain_note": "A controlled lab tested 11 ideas one at a time. Four were adopted. The rest were closed with reasons recorded."
+   "note": "owner 2026-08-20: many approaches, matched comparisons, unseen-board generalization exam. no exact labels in the loop (certification only; exact = diagnostic/control arms); unseen exam = fresh lean boards ids>=20000 with backward+forward supervised baselines benched on the same boards",
+   "plain_note": "The lab ran 15 experiment cards: one control, three never run, eleven tested ideas. Most cards change one thing. Two cards stack proven winners. Four ideas were adopted. The rest were closed with reasons recorded."
   },
   "paper": {
    "title": "joint paper draft (both campaigns)",

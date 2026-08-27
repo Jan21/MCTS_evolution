@@ -170,11 +170,13 @@ def _fig_ceiling() -> str:
   <text x="612" y="90" text-anchor="middle" class="ns">solver-taught +4.22</text>
   <line x1="612" y1="94" x2="612" y2="112" class="lead"/>
 </svg>
-<figcaption><strong>The measured wall.</strong> No sub-goal planner can
-average less than +1.63 extra moves (base vocabulary), or +1.17 (extended:
-extra tricks, such as parking a robot aside first). Training cannot change
-this. It is a limit of the vocabulary itself. (An earlier, shallower probe
-measured +1.72 &mdash; see the <a href="#ceiling">Ceiling tab</a>.)</figcaption>
+<figcaption><strong>The measured wall.</strong> As measured, no sub-goal
+planner can average less than +1.63 extra moves (base vocabulary). The
+extended vocabulary&rsquo;s floor is about +1.17 (extra tricks, such as
+parking a robot aside first). Training cannot change this. It is a limit of
+the vocabulary itself, measured to within a few hundredths of a move. (An
+earlier, shallower probe gave +1.72 &mdash; see the
+<a href="#ceiling">Ceiling tab</a>.)</figcaption>
 </figure>'''
 
 
@@ -214,8 +216,10 @@ The unchanged search stays right of the wall (+1.42). The hybrid is the only
 planner left of it (+0.94, average over its own 231 solves; the unchanged
 search: +1.42 over its 230). On the same puzzles, 40 solutions got shorter
 and none got longer. (The solver-taught dot uses its recorded
-file: +4.22. A re-run on this machine gives +4.20. Tiny value-estimate
-drift flips score-tied plans &mdash; the M0 tab explains this.)</figcaption>
+file: +4.22. A re-run on this machine gives +4.20. Computers on different
+machines round tiny numbers differently. When two plans score as equal, the
+rounding decides which one the search meets first &mdash; see the M0
+tab.)</figcaption>
 </figure>'''
 
 
@@ -399,13 +403,13 @@ def _journey_tree() -> str:
               <span class="why">Two rounds changed nothing, as the wall predicted. A clean negative result.</span>
             <ul>
               <li><span class="chip good">&#10003; step</span> <span class="what">Five rounds, extended vocabulary</span>
-                  <span class="why">Hard-exam solves went 133 &rarr; 144 &rarr; 139 &rarr; 158 &rarr; 153. The loop learned speed: after five rounds, the quick A* search (26 expansions per puzzle) solved what round-0&rsquo;s full tree search (~500 expansions) had reached. Moves did not improve.</span>
+                  <span class="why">Hard-exam solves went 133 &rarr; 144 &rarr; 139 &rarr; 158 &rarr; 153 &rarr; 153. The loop learned speed instead. By round 4 the quick A* search needed only 25.9 expansions per puzzle (A*: a standard shortest-path search). That solved what round 0&rsquo;s full tree search (~500 expansions) had reached. Round 5 held it (30.3 expansions). Moves did not improve.</span>
                 <ul>
                   <li><span class="chip good">&#10003; jump</span> <span class="what">Mixed-size training: 24&times;24 + 32&times;32 + 8 robots</span>
                       <span class="why">One round ended the stall. Hard-exam solves: 170, 235 and 269 &mdash; of 218, 275 and 289 puzzles, one hard exam per board type. Later rounds gave a little back (165, 225, 268).</span>
                     <ul>
-                      <li><span class="what">The experiment lab: 11 ideas, one change each</span>
-                          <span class="why">Same start networks, same budget, a 200-puzzle new-boards exam. Every claim needs a second seed &mdash; a rerun with different random starting conditions.</span>
+                      <li><span class="what">The experiment lab: 15 cards, most changing one thing</span>
+                          <span class="why">One control, three never run, eleven tested ideas. Two cards stack proven winners. Same start networks, same budget, a 200-puzzle new-boards exam. Every claim needs a second seed &mdash; a rerun with different random starting conditions.</span>
                         <ul>
                           <li><span class="chip bad">&#10007; killed</span> <span class="what">v01 &middot; AlphaZero&rsquo;s own policy target</span>
                               <span class="why">v01 replaced our scoring rule (score a candidate by the verified cost of the plans that used it) with AlphaZero&rsquo;s (prefer what the search visited most). Training collapsed on every exam (fluke chance below one in a million). Our rule is what makes the training work.</span></li>
@@ -459,16 +463,21 @@ def sec_story() -> str:
         '<a href="#st-limits">10 limits</a>'
         '</nav>')
     out.append(
-        '<p class="lede">Two hand-built planners came before this project: a '
-        '<em>solver-taught</em> one, trained on an exact solver&rsquo;s '
-        'answers, and a slower <em>move-by-move</em> one that is nearly '
-        'perfect when it solves. Then a small pair of neural networks taught '
-        'itself to '
-        'solve Ricochet Robots puzzles. No human answers were used. On 200 '
+        '<p class="lede">Two planners came before this project: the '
+        '<em>solver-taught</em> planner (called &ldquo;backward '
+        'supervised&rdquo; in result files), trained on an exact '
+        'solver&rsquo;s answers, and a slower <em>move-by-move</em> one that '
+        'is nearly perfect when it solves. Then a small pair of neural '
+        'networks taught itself to solve Ricochet Robots puzzles, starting '
+        'from networks copied from the solver-taught planner. No human '
+        'answers were used during self-play. (A separate control that '
+        'started from random weights still matched the solver-taught '
+        'baseline &mdash; see &sect;7.) On 200 '
         'brand-new puzzles it solves 188. The solver-taught planner '
         'solves 134. We also measured a hard quality limit of the '
         'planner&rsquo;s vocabulary. A small search change then broke that '
-        'limit. '
+        'limit: the planner may stop being a pure sub-goal planner and try '
+        'an ordinary move first. '
         '<code>EXPLAINER.md</code> cites a source for every number here.</p>')
 
     # 1
@@ -501,7 +510,7 @@ def sec_story() -> str:
     out.append(_fig_subgoal())
 
     # 3
-    out.append('<h3 id="st-ceiling"><span class="no">3</span>First, prove the wall exists</h3>')
+    out.append('<h3 id="st-ceiling"><span class="no">3</span>First, measure the wall</h3>')
     out.append(
         '<p>First, measure the limit. How good could a perfect sub-goal '
         'planner be? Enumerate every expressible plan. Replay each one. '
@@ -510,7 +519,10 @@ def sec_story() -> str:
     out.append(
         '<p class="key">This measurement shaped everything after it. It '
         'predicted that base-vocabulary self-play would be useless. It was. '
-        'And it set the breakthrough target: go below +1.17.</p>')
+        'And it set the breakthrough target: go below +1.17. The wall is a '
+        'measured floor, not a mathematical proof. Deeper probes moved it '
+        'only by hundredths of a move (see the '
+        '<a href="#ceiling">Ceiling tab</a>).</p>')
 
     # 4
     out.append('<h3 id="st-referee"><span class="no">4</span>Self-play with a physics referee</h3>')
@@ -536,8 +548,9 @@ def sec_story() -> str:
     out.append(
         '<p>The first networks trained at 16&times;16 and 24&times;24 (the '
         'loop later added 32&times;32 and 8-robot boards). Audited '
-        'at sizes 32, 40, 48, 56 and 64 &mdash; the teacher re-measured with '
-        'the same tool at 56 and 64 &mdash; the loop&rsquo;s starting value '
+        'at sizes 32, 40, 48, 56 and 64 &mdash; its teacher (the '
+        'solver-taught labelling network it was copied from) re-measured '
+        'with the same tool at 56 and 64 &mdash; the loop&rsquo;s starting value '
         'network beats the teacher at every size '
         '(see the far-size audit table in the <a href="#res-audit">Milestone '
         'results tab</a>; later 24&times;24-only '
@@ -574,7 +587,9 @@ def sec_story() -> str:
                '<th>planner</th><th>solved of 200</th><th>solved perfectly*</th>'
                '<th>extra moves vs perfect*</th></tr></thead><tbody>'
                '<tr class="hl"><td>flagship (self-taught + hybrid search)</td><td>188</td><td>57%</td><td class="g">+1.47</td></tr>'
-               '<tr><td>same networks, unchanged search</td><td>182</td><td>50%</td><td>+1.94</td></tr>'
+               '<tr><td>same networks, unchanged search<br><span class="note">the '
+               'same-budget control from the hybrid experiment (Variants '
+               'v07)</span></td><td>182</td><td>50%</td><td>+1.94</td></tr>'
                '<tr><td>the frozen start networks</td><td>175</td><td>47%</td><td>+2.93</td></tr>'
                '<tr><td>label-free, from random weights</td><td>132</td><td>45%</td><td>+2.89</td></tr>'
                '<tr><td>solver-taught backward (the baseline)</td><td>134</td><td>36%</td><td>+4.84</td></tr>'
@@ -595,18 +610,23 @@ def sec_story() -> str:
         '<p><strong>Transfer.</strong> The hybrid search itself was developed '
         'at 24&times;24 with 4 robots only. Run unchanged elsewhere:</p>')
     out.append('<div class="tw"><table class="t"><thead><tr>'
-               '<th>new exam</th><th>hybrid</th><th>matched control</th>'
+               '<th>new exam</th><th>hybrid: solved</th>'
+               '<th>control: solved</th>'
+               '<th>moves on shared solves (hybrid vs control)**</th>'
                '<th>move wins (shorter / longer)**</th></tr></thead><tbody>'
-               '<tr><td>32&times;32 graded</td><td class="g">174/175, +1.60</td><td>172/175, +1.87</td><td>17 / 0</td></tr>'
-               '<tr><td>8 robots, graded</td><td class="g">159/161, +1.24</td><td>159/161, +1.82</td><td>23 / 0</td></tr>'
-               '<tr><td>8 robots, hard exam</td><td class="g">276/289; 14.25 moves on '
-               'shared solves</td>'
-               '<td>279/289; 15.30 moves on shared solves</td>'
-               '<td>82 / 2</td></tr>'
+               '<tr><td>32&times;32 standard exam</td><td class="g">174/175</td>'
+               '<td>172/175</td><td>9.27 vs 9.66</td><td>17 / 0</td></tr>'
+               '<tr><td>8 robots, standard exam</td><td class="g">159/161</td>'
+               '<td>159/161</td><td>6.85 vs 7.43</td><td>23 / 0</td></tr>'
+               '<tr><td>8 robots, hard exam</td><td class="g">276/289</td>'
+               '<td>279/289</td><td>14.25 vs 15.30</td><td>82 / 2</td></tr>'
                '</tbody></table>'
-               '<p class="note">** counted on the puzzles both runs solved. On the '
-               '8-robot hard exam the solver-taught planner solves 161 of '
-               '289.</p></div>')
+               '<p class="note">** counted on the puzzles both runs solved '
+               '(172, 159 and 274 puzzles). On the 8-robot hard exam the '
+               'control solves three more puzzles (279 vs 276) but uses more '
+               'moves where both solve. The solver-taught planner there: 161 '
+               'of 289 with the extended vocabulary, 154 of 289 with the '
+               'base vocabulary.</p></div>')
 
     # 9
     out.append('<h3 id="st-failed"><span class="no">9</span>What failed, and why it mattered</h3>')

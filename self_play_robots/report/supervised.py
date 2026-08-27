@@ -234,6 +234,14 @@ def sec_supervised() -> str:
                    for c, a, b, d, e, f in b2rows)
                + "</tbody></table></div>")
     out.append(
+        '<p class="note">A number-matching note first: this table&rsquo;s '
+        '16&times;16 base column (2.15 extra moves) and the ladder&rsquo;s '
+        '16&times;16 cell (2.14) are the same network pair. They differ '
+        'only in the search rule. The ladder uses the prefix-check rule &mdash; '
+        'abandon plans whose first moves already fail. This column uses the '
+        'anytime rule &mdash; keep searching after the first answer, return '
+        'the best found. The <a href="#baselines">Baselines tab</a> lists '
+        'all four recorded 16&times;16 runs side by side.</p>'
         '<p class="note">At 24&times;24 the B2-trained planner did worse '
         'than the same planner trained on the plain vocabulary (199 vs 205), '
         'despite the richer language. The problem was the training data, not '
@@ -274,8 +282,8 @@ def sec_supervised() -> str:
         'worse network &mdash; training sometimes lands in a bad solution and '
         'stays there &mdash; with 108 of 184 '
         'hard-exam solves against 157&ndash;165 for the other two. The '
-        'campaign reports the middle result and shows the bad run, not hides '
-        'it.</p>')
+        'campaign reports the middle result and shows the bad run instead of '
+        'hiding it.</p>')
 
     # ---- forward rescue -----------------------------------------------------
     out.append("<h3>A fair second chance for the forward planner</h3>")
@@ -283,7 +291,8 @@ def sec_supervised() -> str:
         '<p>The strongest objection to the ladder was &ldquo;weak '
         'opponent&rdquo;: maybe the forward planner just needed tuning. The '
         'campaign answered with a nine-way tuning sweep (3 seeds &times; 3 '
-        'learning rates) at the 16&times;16 8-robot board. The winner was '
+        'learning rates &mdash; a learning rate sets how big each training '
+        'adjustment step is) at the 16&times;16 8-robot board. The winner was '
         'picked on held-out practice puzzles, never on the exam:</p>')
     fc = _sys(_load("scaling/results/g16r8/comparison_forward_control.json"),
               "forward", name_has="forward")
@@ -311,9 +320,11 @@ def sec_supervised() -> str:
                "</tbody></table></div>")
     out.append(
         '<p class="note">The rescue is real but small. The tuned forward '
-        'planner takes the graded set perfectly (266/266 &mdash; no backward '
-        'run matches that). But it gains only 8 hard-exam puzzles, far below '
-        'the failure threshold written down before the test ran. Pooled over '
+        'planner takes the standard exam perfectly (266/266 &mdash; no '
+        'backward run matches that). But it gains only 8 hard-exam puzzles '
+        '(93 &rarr; 101). The kill line written down before the test ran '
+        'said: about 150 hard-exam solves would kill the scale claim. It '
+        'reached 101. Pooled over '
         'both exams against the backward planner&rsquo;s middle-of-three run '
         '(418/450 vs 367/450), the backward lead stands at +11.3 points. The '
         '&ldquo;weak opponent&rdquo; objection was answered with measurement, '

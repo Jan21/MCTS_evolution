@@ -46,6 +46,7 @@ MILESTONE_KEYS = ["M0", "M1", "M2", "M3", "M4", "M5", "M6"]
 STRIP_LINKS = {"M0": "#m0", "M1": "#res-m1", "M2": "#res-m2", "M3": "#res-loops",
                "M4": "#res-loops", "M5": "#res-mix", "M6": "#milestones",
                "ceiling": "#ceiling", "forward_mcts": "#res-fwd",
+               "forward_loop_g24r4": "#res-fwd",
                "transfer": "#res-transfer"}
 
 # Gate text quoted from PROBLEM.md section 8 (the only hand-typed numbers on
@@ -86,11 +87,17 @@ GATES = {
 # C2 (reader round 4): the ceiling's epistemic status, one formulation
 # everywhere it is described.
 CEILING_STATUS = (
-    "A measured limit. We searched everything the sub-goal vocabulary can "
-    "express on these exams. No expressible plan does better. The limit "
-    "binds any planner that speaks only this vocabulary. It is a "
-    "measurement, not a mathematical proof. Deeper probes tightened it "
-    "from 1.72 to 1.63.")
+    "A measured floor, not a mathematical proof. The probes searched "
+    "everything the sub-goal vocabulary can express, under stated search "
+    "budgets. The base-vocabulary probes never hit a budget cap. One risk "
+    "remains: a plan can cost fewer real moves than its plan-step estimate. "
+    "Such a plan could hide beyond where a probe stopped. The slack "
+    "re-runs bound that risk. Deeper probes tightened the 24&times;24 base "
+    "floor from +1.72 to +1.63. The two deepest 16&times;16 probes differ "
+    "by under 0.01 moves. So the measured floor could be off by a few "
+    "hundredths of a move &mdash; not by the quarter-move the hybrid "
+    "later beat it by. The extended-vocabulary (B2) probes hit "
+    "caps on a few puzzles, so the +1.17 B2 floor is approximate.")
 
 # plain-language reading of the dense gate quotes (jargon audit MS3)
 PLAIN_GATE = {
@@ -100,7 +107,7 @@ PLAIN_GATE = {
           "rate.",
     "M6": "self-play on boards so big that no exact checker exists; trust "
           "comes from the accuracy curve measured up to 64&times;64.",
-    "M1": "pass if it matches the hand-built pair within normal run-to-run "
+    "M1": "pass if it matches the solver-taught pair within normal run-to-run "
           "variation.",
     "M3": "pass if the new network beats the previous one beyond run-to-run "
           "noise, and label quality holds.",
@@ -885,7 +892,7 @@ def svg_gap_hist(hist, title) -> str:
         cls = "s1" if g <= 0 else "s2"
         s.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{bw:.1f}" '
                  f'height="{h:.1f}" rx="2" class="{cls}"><title>gap {g}: '
-                 f'{v} instances</title></rect>')
+                 f'{v} puzzle{"s" if v != 1 else ""}</title></rect>')
         s.append(f'<text x="{x + bw / 2:.1f}" y="{H - B + 14}" class="axl" '
                  f'text-anchor="middle">{g:+d}</text>')
     s.append(f'<line x1="{L}" y1="{H - B}" x2="{W - R}" y2="{H - B}" class="axis"/>')
@@ -902,16 +909,19 @@ def sec_overview() -> str:
     st = status()
     out = ['<section id="overview">', "<h2>Overview</h2>"]
     out.append(
-        "<p><strong>The goal, in one line:</strong> beat both hand-taught "
-        "planners on real moves used, on a fixed exam, with the same search "
-        "budget.</p>")
+        "<p><strong>The goal, in one line:</strong> beat both planners that "
+        "came before &mdash; the solver-taught planner (called "
+        "&ldquo;backward supervised&rdquo; in result files) and the "
+        "move-by-move planner &mdash; on real moves used, on a fixed exam, "
+        "with the same search budget.</p>")
     out.append(
         "<p><strong>The north star.</strong> Build a complete "
         "<strong>AlphaZero-style self-play loop</strong> for Ricochet Robots "
         "planning that ends up beating every supervised planner in this "
         "repository — the forward move-level planner and the backward subgoal "
-        "planner — on the one metric that matters: <strong>realized primitive "
-        "moves from the initial state to the terminal state</strong>, on a "
+        "planner — on the one metric that matters: <strong>realized "
+        "primitive moves</strong> — single robot slides, counted by "
+        "replaying the answer — from the start position to the goal, on a "
         "fixed benchmark, under a fixed search budget. Fewer moves wins. "
         "Secondary: solve rate (a planner that solves fewer puzzles does not "
         "get to brag about the ones it solved); compute per puzzle is the "
@@ -919,7 +929,8 @@ def sec_overview() -> str:
     out.append(
         "<p>The supervised campaign proved the pieces exist: a size-free value "
         "net that writes near-optimal labels, planners that train to useful "
-        "strength from those labels, and a full NN-only data pipeline that "
+        "strength from those labels, and a data pipeline built only from "
+        "neural networks (no exact solver) that "
         "matches the exact-solver pipeline. What no one has done is "
         "<em>close the loop</em>: let the network search, learn from its own "
         "search, and iterate past the ceiling of its teacher.</p>")
@@ -1283,11 +1294,13 @@ def sec_baselines() -> str:
            "is <strong>mean realized moves</strong> (realized = counted after "
            "replaying the answer against the physics) — solve rate is the "
            "qualifier, compute is the tiebreaker.</p>"]
-    # protocol, read from a file rather than asserted
+    # protocol, read from a file rather than asserted; rendered below the
+    # ledger banner (owner: machine detail off the reading surface)
     d = load_sv("scaling/results/g24r4/comparison.json")
     p = (d or {}).get("protocol") or {}
+    proto_html = ""
     if p:
-        out.append("<p class='note'>Bench protocol as recorded in "
+        proto_html = ("<p class='note'>Bench protocol as recorded in "
                    + src("supervised_valuenet/scaling/results/g24r4/comparison.json")
                    + f": <strong>{esc(p.get('expansions'))} expansions</strong>, "
                      f"<strong>k={esc(p.get('k'))}</strong> (keep the top "
@@ -1303,6 +1316,7 @@ def sec_baselines() -> str:
                      "actually needed &mdash; using fewer is better. "
                      "<details><summary>Expansion definition</summary>"
                      f"{esc(p.get('expansion_definition'))}</details></p>")
+    # (protocol paragraph placed after the ledger banner below)
     out.append(seed_spread_line())
     out.append(g16_runs_line())
 
@@ -1416,6 +1430,20 @@ def sec_baselines() -> str:
                        "bench_g24r8_frontier_stdmcts.json"))],
         ("solver-taught planner (base vocabulary)", "forward supervised")))
 
+    out.append(
+        "<p class='note'>Reading the 32&times;32 pair the way the project's "
+        "original plan document does: the forward planner is slower but near-optimal when it solves, "
+        "the backward planner solves more and faster but further from optimal. "
+        "<strong>Beating backward on moves while matching its solve rate "
+        "comes close to forward's quality at backward's speed — that "
+        "is the headline chart this project is aiming at.</strong></p>")
+    out.append('<p class="banner">Below this line: the raw run ledger, kept '
+               'for auditors. It holds the bench protocol, each '
+               'system&rsquo;s own aggregates, the pinned exam files and '
+               'the full inventory. The fair races are the head-to-head '
+               'tables above.</p>')
+    if proto_html:
+        out.append(proto_html)
     rows_ = []
     for cfg, rels in OPPONENT_FILES.items():
         bench = {"g16r4": "eval/data/bench450.jsonl",
@@ -1460,14 +1488,6 @@ def sec_baselines() -> str:
                           "being better than optimal — always read mean moves "
                           "next to solve rate (PROBLEM.md &sect;1).</details>",
                      cls="wide"))
-    out.append(
-        "<p class='note'>Reading the 32&times;32 pair the way the project's "
-        "original plan document does: the forward planner is slower but near-optimal when it solves, "
-        "the backward planner solves more and faster but further from optimal. "
-        "<strong>Beating backward on moves while matching its solve rate "
-        "comes close to forward's quality at backward's speed — that "
-        "is the headline chart this project is aiming at.</strong></p>")
-
     # the exact-optimum ceiling table
     brows = []
     for b in BENCH_FILES:
@@ -1528,6 +1548,17 @@ def sec_baselines() -> str:
 
 def sec_m0() -> str:
     out = ['<section id="m0">', "<h2>M0 &mdash; arena parity</h2>",
+           "<p>M0 answers one bookkeeping question. This project's new test "
+           "harness re-ran the recorded exams and had to reproduce the "
+           "recorded totals. It did &mdash; the parity verdicts below say "
+           "PASS.</p>",
+           "<p>A few individual solutions still differ between machines. "
+           "Computers round tiny numbers differently. When two plans score "
+           "as equal, that rounding decides which plan the search meets "
+           "first. The totals do not change.</p>",
+           '<p class="banner">Everything below is raw parity bookkeeping, '
+           'kept for auditors: the gate text, the registered test setups, '
+           'per-row comparisons and file provenance.</p>',
            "<p><strong>Gate</strong> (PROBLEM.md &sect;8): "
            f"{GATES['M0'][1]} Estimated cost {GATES['M0'][0].replace('nh', 'node-hour(s)')}.</p>",
            "<p>The harness is "
@@ -1602,8 +1633,7 @@ def sec_m0() -> str:
                      note="Read live from the harness&rsquo;s own list of "
                           "test setups ("
                           + src("self_play_robots/spr/arena.py")
-                          + "), so this table always matches what actually "
-                            "runs — the same list the job script drives, so this "
+                          + ") — the same list the job script drives, so this "
                             "table cannot drift from what actually runs.",
                      cls="wide"))
 
@@ -1761,30 +1791,21 @@ def sec_ceiling() -> str:
            "<em>solve-rate</em> question on failing instances only. This one "
            "answers the question that matters for the self-play metric, on the "
            "whole pinned bench: <strong>how many primitive moves does the best "
-           "plan the language can express cost, versus the exact optimum "
-           "d*?</strong></p>",
+           "expressible plan cost, versus the exact optimum d*?</strong></p>",
            "<p><strong>How the probe works.</strong> "
            + src("self_play_robots/spr/ceiling.py")
            + " searches every expressible plan in cheapest-plan-first order "
              "(the solver's own safe ordering &mdash; <em>no network "
              "anywhere</em>). It replays every complete plan in the physics "
-             "and records the first and the best plan that works. The result "
-             "is a tight <em>upper bound</em> on the language optimum, not a "
-             "proof. A plan can occasionally cost fewer real moves than its "
-             "plan-step estimate (a robot happens to stand in a useful spot), "
-             "and such a plan could hide beyond where the search stopped.</p>",
+             "and records the first and the best plan that works.</p>",
            '<p class="key">' + CEILING_STATUS + '</p>',
-           '<p class="note">Outcome categories used in the per-run tables '
-           'below: REALIZABLE_EXISTS = the language can write a plan that '
-           'works. NO_REALIZABLE_PLAN = plans exist on paper but none works. '
-           'NO_COMPLETE_PLAN = the generator never finished a plan. '
-           'INCONCLUSIVE = the search hit its cap. ERROR = the puzzle threw '
-           'an error (recorded, never lost). &ldquo;Slack 12&rdquo; in a heading '
-           '= keep searching until every plan within 12 extra plan-cost '
-           'units of the first answer has been checked. More slack = a '
-           'deeper probe = a tighter measured limit. At 24&times;24 the '
-           'three probes gave +1.72 (standard), +1.69 (slack 4) and '
-           '+1.63 (slack 12).</p>']
+           '<p class="note"><strong>How to read the table.</strong> '
+           '&ldquo;Solve ceiling&rdquo; = how many puzzles the vocabulary '
+           'can express a working plan for. &ldquo;With known optimum&rdquo; '
+           '= the solvable puzzles whose exact optimum d* is known. '
+           '&ldquo;Hit a cap&rdquo; = puzzles where the probe gave up '
+           'early. A trailing &ldquo;&ge;&rdquo; means: at least this many '
+           '(a capped probe proves only a lower bound).</p>']
     ss = side_study("ceiling")
     if ss:
         out.append(f'<p class="verdict">{chip(ss.get("status", "unknown"), chip_word(ss.get("status", "unknown")))} '
@@ -1821,13 +1842,15 @@ def sec_ceiling() -> str:
         if caps.get("max_frontier"):
             vbits.append(f"search queue cap {caps['max_frontier'] // 1000}k")
         if capped:
-            reading = (f'<span class="tag front">lower bound</span> probe hit a cap on '
-                       f'{capped} instance(s), {inconclusive} inconclusive: the solve '
-                       f'ceiling is &ge; {s.get("n_realizable")}/{s.get("n")}'
-                       + (" and the best-plan columns are upper bounds on the language optimum"
-                          if not front else ""))
+            reading = (f'<span class="tag front">lower bound</span> '
+                       f'The probe gave up early on {capped} puzzle(s). '
+                       f'{inconclusive} ended with no verdict. So the solve '
+                       f'ceiling is at least {s.get("n_realizable")}/{s.get("n")}.'
+                       + (" Best-plan numbers are upper limits on the "
+                          "language optimum." if not front else ""))
         else:
-            reading = "no cap hit: solve ceiling exact for these caps"
+            reading = ("no cap hit: the probe finished everywhere, so the "
+                       "solve ceiling is exact for these budgets")
         sr = s.get("solve_ceiling")
         rows_.append(row([
             td_txt(f"<strong>{esc(d.get('config'))}</strong> / "
@@ -1859,34 +1882,50 @@ def sec_ceiling() -> str:
         rows_.append(row([td_txt(f"<strong>{esc(c)}</strong> / {esc(v)}"),
                           '<td class="pend" colspan="13">pending</td>',
                           td_txt(src(f"self_play_robots/results/ceiling/{c}_{v}.json"))]))
-    out.append(table(["config / vocab (file, caps)", "set", "n", "solve ceiling",
-                      "graded &amp; realizable", "mean d*", "mean best-plan moves",
-                      "mean gap (best)", "% best = optimal",
-                      "mean first-plan moves", "mean gap (first)",
-                      "% first = optimal", "capped", "verdict in words", "source file"], rows_,
-                     note="Every <code>results/ceiling/*.json</code> carrying a "
-                          "<code>summary</code> (base, B2, slack re-runs, graded and "
-                          "frontier sets). Columns from <code>summary</code>: "
-                          "<code>n</code>, <code>n_realizable</code>/<code>solve_ceiling</code>, "
+    out.append(table(["vocabulary and probe", "exam", "puzzles", "solve ceiling",
+                      "with known optimum", "known optimum d* (mean)",
+                      "best plan (mean moves)", "extra moves (best plan)",
+                      "% best = perfect",
+                      "first plan (mean moves)", "extra moves (first plan)",
+                      "% first = perfect", "hit a cap", "verdict in words",
+                      "source file"], rows_,
+                     note="<em>first</em> = the first working plan the search "
+                          "meets in cheapest-plan-first order (what a simple "
+                          "planner would take). <em>best</em> = the cheapest "
+                          "working plan found before the ordering proves "
+                          "nothing cheaper remains. Hard-exam (frontier) rows "
+                          "carry no known optimum, so those columns are "
+                          "dashed there. "
+                          "<details class='inl'><summary>column sources "
+                          "(for auditors)</summary><span class='note'>Every "
+                          "<code>results/ceiling/*.json</code> carrying a "
+                          "<code>summary</code> is a row. Columns from "
+                          "<code>summary</code>: <code>n</code>, "
+                          "<code>n_realizable</code>/<code>solve_ceiling</code>, "
                           "<code>n_graded_realizable</code>, "
                           "<code>mean_d_star</code>, <code>mean_best_moves</code>, "
                           "<code>mean_gap_best</code>, <code>pct_best_optimal</code>, "
                           "<code>mean_first_moves</code>, <code>mean_gap_first</code>, "
-                          "<code>pct_first_optimal</code>, <code>capped</code>; the "
-                          "<em>reading</em> column turns <code>capped</code> and "
-                          "<code>categories.INCONCLUSIVE</code> into words: a capped "
-                          "probe proves only a lower bound on the solve ceiling "
-                          "(&ge;), which is why the frontier B2 arms must be read as "
-                          "&ldquo;at least&rdquo;. Frontier sets carry no d*, so the "
-                          "moves/gap/optimal columns are dashed there. "
-                          "<em>first</em> = the first working plan the search "
-                          "meets in cheapest-first order (what a simple planner "
-                          "would take). <em>best</em> = the cheapest working "
-                          "plan found before the ordering proves nothing "
-                          "cheaper remains. Caps "
-                          "(<code>caps</code> block: time cap, frontier size, slack) "
-                          "are printed under the arm name.",
+                          "<code>pct_first_optimal</code>, <code>capped</code>. "
+                          "Probe budgets (<code>caps</code> block: time cap, "
+                          "queue size, slack) are printed under the probe "
+                          "name.</span></details>",
                      cls="wide"))
+    out.append('<p class="banner">Below this line: the raw run ledger, kept '
+               'for auditors &mdash; one section per probe file, with outcome '
+               'categories, gap histograms and provenance. The plain reading '
+               'is the paragraph and table above.</p>')
+    out.append('<p class="note">Outcome categories used in the per-run tables '
+               'below: REALIZABLE_EXISTS = the language can write a plan that '
+               'works. NO_REALIZABLE_PLAN = plans exist on paper but none works. '
+               'NO_COMPLETE_PLAN = the generator never finished a plan. '
+               'INCONCLUSIVE = the search hit its cap. ERROR = the puzzle threw '
+               'an error (recorded, never lost). &ldquo;Slack 12&rdquo; in a heading '
+               '= keep searching until every plan within 12 extra plan-cost '
+               'units of the first answer has been checked. More slack = a '
+               'deeper probe = a tighter measured limit. At 24&times;24 the '
+               'three probes gave +1.72 (standard), +1.69 (slack 4) and '
+               '+1.63 (slack 12).</p>')
 
     if not found:
         out.append(pend_note("no file under results/ceiling/ yet; jobs listed in "
@@ -1947,15 +1986,15 @@ def sec_ceiling() -> str:
         if s.get("mean_gap_first") is not None and s.get("mean_gap_best") is not None:
             out.append(
                 f"<p>First-vs-best: a planner that simply takes the first "
-                f"realizable plan in abstract-cost order lands "
+                f"working plan in cheapest-plan-first order lands "
                 f"{s['mean_gap_first']:.2f} moves above d*, while the best plan "
                 f"in the language lands {s['mean_gap_best']:.2f} above. The "
                 f"difference — <strong>{s['mean_gap_first'] - s['mean_gap_best']:.2f} "
                 f"moves</strong> — is the room <em>search inside the existing "
                 f"language</em> has to work with. The "
-                f"{s['mean_gap_best']:.2f}-move residue is the part search can "
-                f"never recover <em>while the planner may only use "
-                f"sub-goals</em>: closing it needs a richer vocabulary or "
+                f"{s['mean_gap_best']:.2f}-move residue is the part search "
+                f"cannot recover, as measured, <em>while the planner may only "
+                f"use sub-goals</em>: closing it needs a richer vocabulary or "
                 f"ordinary moves &mdash; which is what the hybrid search later "
                 f"did (see the <a href='#story'>Story tab</a>).</p>")
         cats = s.get("categories") or {}
@@ -1963,8 +2002,8 @@ def sec_ceiling() -> str:
             out.append(table(["category", "instances"],
                              [row([td_txt(f"<code>{esc(k)}</code>"), td(v, "d")])
                               for k, v in sorted(cats.items())],
-                             note="Outcome categories &mdash; defined once in "
-                                  "the note at the top of this tab."))
+                             note="Outcome categories &mdash; defined once "
+                                  "just below the ledger banner above."))
         svg = svg_gap_hist(s.get("gap_best_hist"),
                            f"{cfg} {voc}: distribution of best-plan gap to d*")
         if svg:
@@ -1991,7 +2030,8 @@ def sec_ceiling() -> str:
                 ("wall seconds", esc(d.get("wall_seconds"))),
                 ("date", esc(d.get("date"))),
                 ("puzzles that hit a cap", esc(s.get("capped"))),
-                ("best plans proven to be the language optimum",
+                ("best plans the search fully bounded (nothing cheaper "
+                 "remains under the budgets)",
                  esc(s.get("best_bounded")))]
         meta = [kv for kv in meta if kv[1] not in (None, "None", "", None)]
         out.append('<details><summary>run provenance (for auditors)</summary>'
@@ -2000,16 +2040,16 @@ def sec_ceiling() -> str:
                            note="Provenance block of " + src(disp(f)) + ".")
                    + "</details>")
     out.append(
-        "<p class='note'><strong>What this bounds.</strong> " + CEILING_STATUS + " "
-        "Everything above is "
-        "measured with <em>no network anywhere</em> — it is a property of the "
-        "plan language and its candidate generator, not of any planner. In the "
-        "subgoal action space the self-play planner can never beat the "
-        "<em>best-plan</em> column on the moves metric, however good its search "
-        "or its net becomes. The distance between the supervised planner's mean "
-        "realized moves (<a href='#baselines'>Baselines</a>) and this ceiling "
-        "is the room the whole project has to play in; the distance between the "
-        "ceiling and mean d* is what would require the primitive-move action "
+        "<p class='note'><strong>What this bounds.</strong> Everything above "
+        "is measured with <em>no network anywhere</em> — it is a property of "
+        "the plan language and its candidate generator, not of any planner. "
+        "As measured, no planner speaking only sub-goals reaches below the "
+        "<em>best-plan</em> column on the moves metric. (The floor's status "
+        "— measured, with hundredths-level uncertainty — is stated at the "
+        "top of this tab.) The distance between the supervised planner's "
+        "mean realized moves (<a href='#baselines'>Baselines</a>) and this "
+        "floor is the room the whole project has to play in. The distance "
+        "between the floor and mean d* would need the primitive-move action "
         "space or a richer generator (PROBLEM.md &sect;6.1).</p>")
     out.append("</section>")
     return "\n".join(out)
@@ -2096,7 +2136,7 @@ def sec_milestones() -> str:
              "key/value table. In plain words: new result files show up on "
              "this page automatically.</p>",
            '<p class="note"><strong>Terms used in every table:</strong> '
-           'mean regret = extra moves over the proven optimum. '
+           'mean regret = extra moves over the known optimum. '
            'mean expansions = search effort per puzzle. '
            'Full definitions: the <a href="#glossary">Glossary tab</a>. '
            '<details class="inl"><summary>how these tables are read</summary>'
@@ -2386,7 +2426,7 @@ M2_VARIANTS = [("greedy", "always take the top candidate (greedy)"),
 
 
 def sub_m2() -> str:
-    out = ['<h3 id="res-m2">M2 &mdash; search beats greed at inference</h3>',
+    out = ['<h3 id="res-m2">M2 &mdash; tree search beats the one-shot chooser</h3>',
            "<p class='note'>Same nets, same exam, same 1200-expansion / k=5 "
            "budget, replay-certified; each variant's <code>.vs_greedy.json</code> "
            "is the paired test against the greedy row (gate: strictly better mean "
@@ -3263,7 +3303,9 @@ def sub_loops() -> str:
            "arena benches of the retrained pair on the graded exam (A* and MCTS) "
            "and on the frontier set, and the paired gate against the previous "
            "iteration's nets. Iteration 0 = the M1 nets before any self-play "
-           "data.</p>"]
+           "data. The move-by-move (forward) loop is a separate arm: its two "
+           "iterations sit in the <a href='#res-fwd'>Forward arm</a> section, "
+           "under <code>fwd_selfplay</code>.</p>"]
     loops = loop_dirs()
     if not loops:
         out.append(pend_note("nothing under results/selfplay/ yet"))
@@ -3625,10 +3667,13 @@ def sec_glossary() -> str:
            "&sect;6.5)."),
         ("certification / replay",
          "Nothing a network reports counts until it is replayed move-by-move "
-         "against <code>simulate.py</code> physics "
-         "(<code>eval/compare.py --dump-moves</code> + "
-         "<code>eval/replay_validate.py</code>; "
-         "<code>spr.arena</code> quarantines a run that fails). In the loop: "
+         "against the game physics. A run that fails the replay check is "
+         "set aside, never reported. "
+         "<details class='inl'><summary>the exact tools</summary>"
+         "<span class='note'><code>simulate.py</code> physics, driven by "
+         "<code>eval/compare.py --dump-moves</code> + "
+         "<code>eval/replay_validate.py</code>; <code>spr.arena</code> "
+         "quarantines a failing run.</span></details> In the loop: "
          "<em>a backup value from an unrealized plan is a hypothesis; only "
          "realized, replayed plans update the record.</em> This is also the "
          "defense against the loop grading its own homework (a network cannot "
@@ -3658,8 +3703,9 @@ def sec_glossary() -> str:
          "aside first). <em>B2</em> adds <em>by-reference</em> steps "
          "(&ldquo;park blue where red currently stands&rdquo;) — more "
          "expressive, far more costly for the exact solver to label. A "
-         "network taught from artificially limited B2 data inherited the "
-         "limitation (main log, entry 68). Vocabulary separation is absolute: "
+         "network taught from B2 training data that was deliberately missing "
+         "some plan tricks inherited the same gaps (main log, entry 68). "
+         "Vocabulary separation is absolute: "
          "base and B2 datasets never mix. <strong>The self-play loop runs the "
          "extended (B2) vocabulary</strong>, with owner approval: the base "
          "vocabulary was measured as already full &mdash; no room left (see the "
@@ -3677,18 +3723,24 @@ def sec_glossary() -> str:
         ("fidelity gauge",
          "At each decision: does the loop's own label pick the same best "
          "candidate as the exact solver would? Cheap to measure on boards up "
-         "to 64&times;64. "
-         "Calibrated by the supervised track: ~91% agreement &rarr; planners "
-         "match exact-taught ones, ~89% keeps solve rate but loses optimality, "
-         "~82% collapses (FINDINGS 74). A slide below ~90% predicts a utility "
-         "slide <em>before</em> the bench shows it — the loop's early-warning "
-         "instrument. PROBLEM.md &sect;4.1."),
+         "to 64&times;64. The supervised track calibrated three reference "
+         "points (FINDINGS 74). About 91% agreement gave planners as good "
+         "as solver-taught ones. About 89% kept the solve rate but lost "
+         "optimality. About 82% collapsed. So a reading that falls toward "
+         "90% is an early warning: planner quality is about to drop before "
+         "the exams show it. Caveat: in the extended (B2) vocabulary the "
+         "gauge's reference solver prices plans that cannot actually be "
+         "played. Its readings there are uninformative (FINDINGS 14b) "
+         "&mdash; the certified exams are the instrument. "
+         "PROBLEM.md &sect;4.1."),
         ("lean boards",
          "Boards generated at any size in seconds by "
-         "<code>nn_labeler/leanboard.py</code> (3.8 s at 96&times;96 vs 11.9 h "
-         "for the eager path), layout-identical to eager boards "
-         "(checked cell for cell against the old, slow generator), computing "
-         "distances only when asked. They make &ldquo;fresh "
+         "<code>nn_labeler/leanboard.py</code>: 3.8 s at 96&times;96, "
+         "against 11.9 h for the old generator. The old "
+         "(&ldquo;eager&rdquo;) generator pre-computed every distance up "
+         "front &mdash; that is what made it slow. Lean boards are "
+         "layout-identical to its boards (checked cell for cell) and "
+         "compute distances only when asked. They make &ldquo;fresh "
          "instances every iteration&rdquo; essentially free — which is where "
          "self-play diversity comes from in a deterministic single-agent game "
          "(&sect;6.4)."),
@@ -3796,7 +3848,7 @@ def sec_glossary() -> str:
          "here: which puzzles each of two planners solved, puzzle by "
          "puzzle."),
         ("regret / extra moves",
-         "How many moves a solution uses beyond the proven optimum, "
+         "How many moves a solution uses beyond the known optimum, "
          "averaged over solved puzzles with a known optimum."),
         ("node-hour (nh)",
          "The cluster's cost unit — one full node for one hour; 1 GPU for 1 h = "
