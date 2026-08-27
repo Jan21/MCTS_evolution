@@ -152,19 +152,19 @@ def _fig_pipeline(b0, top_m, sub, cap) -> str:
   <text x="70" y="142" text-anchor="middle" class="nt">the puzzle</text>
   <text x="70" y="160" text-anchor="middle" class="ns">start position</text>
   <rect x="214" y="40" width="232" height="56" rx="8" class="nbox"/>
-  <text x="330" y="64" text-anchor="middle" class="nt">1 &middot; search the start position</text>
+  <text x="330" y="64" text-anchor="middle" class="nt">search the start position</text>
   <text x="330" y="82" text-anchor="middle" class="ns">{b0} expansions, no slide</text>
   <rect x="170" y="196" width="200" height="56" rx="8" class="nbox"/>
-  <text x="270" y="220" text-anchor="middle" class="nt">2 &middot; list the slides</text>
+  <text x="270" y="220" text-anchor="middle" class="nt">list the slides</text>
   <text x="270" y="238" text-anchor="middle" class="ns">every legal robot move</text>
   <rect x="392" y="196" width="214" height="56" rx="8" class="nbox"/>
-  <text x="499" y="220" text-anchor="middle" class="nt">3 &middot; keep the best {top_m}</text>
+  <text x="499" y="220" text-anchor="middle" class="nt">keep the best {top_m}</text>
   <text x="499" y="238" text-anchor="middle" class="ns">{sub} expansions each</text>
   <rect x="650" y="100" width="240" height="56" rx="8" class="nbox"/>
-  <text x="770" y="124" text-anchor="middle" class="nt">4 &middot; replay in physics</text>
+  <text x="770" y="124" text-anchor="middle" class="nt">replay in physics</text>
   <text x="770" y="142" text-anchor="middle" class="ns">against the original puzzle</text>
   <rect x="650" y="196" width="240" height="56" rx="8" class="nbox"/>
-  <text x="770" y="220" text-anchor="middle" class="nt">5 &middot; cheapest total wins</text>
+  <text x="770" y="220" text-anchor="middle" class="nt">cheapest total wins</text>
   <text x="770" y="238" text-anchor="middle" class="ns">slides pay their own moves</text>
   <path d="M132 138 C 170 138, 176 68, 208 68" class="arr ink" marker-end="url(#bt-ink)"/>
   <path d="M132 156 C 150 156, 148 224, 164 224" class="arr ink" marker-end="url(#bt-ink)"/>
@@ -176,7 +176,8 @@ def _fig_pipeline(b0, top_m, sub, cap) -> str:
 </svg>
 <figcaption><strong>The pipeline.</strong> Two lanes race inside one budget of
 {capt} expansions. Only a plan that survives the physics replay can win, and a
-slid start pays for its slides.</figcaption>
+slid start pays for its slides. The boxes group the nine steps above into
+lanes, so they carry no step numbers.</figcaption>
 </figure>'''
 
 
@@ -358,7 +359,10 @@ def sec_breakthrough() -> str:
     out.append(
         f'<p>The planner runs several independent searches and keeps the '
         f'cheapest answer that really works. The searches share one budget of '
-        f'{_i(cap)} expansions. Here is one puzzle, in order.</p>')
+        f'{_i(cap)} expansions. A plan is <strong>certified</strong> when the '
+        f'physics simulator turns it into a real move sequence that reaches '
+        f'the target. Only a certified plan can win. Here is one puzzle, in '
+        f'order.</p>')
     out.append(
         '<ol class="steps">'
         f'<li><b>Search the start position.</b> The ordinary sub-goal search '
@@ -376,8 +380,9 @@ def sec_breakthrough() -> str:
         f'cost plus one point per slide. The {top_m} cheapest candidates '
         f'stay.</li>'
         f'<li><b>Search each kept candidate.</b> Each one gets {sub} '
-        f'expansions. A candidate is skipped when its score already sits 3 or '
-        f'more above the best answer so far. Its budget is not spent.</li>'
+        f'expansions. A candidate is skipped when its score sits 3 or more '
+        f'moves above the best certified total so far. Its budget is not '
+        f'spent.</li>'
         '<li><b>Pay for the slides.</b> A slid answer costs the number of '
         'slides plus the certified cost of its sub-plan. A two-slide start '
         'therefore pays two extra moves.</li>'
@@ -531,8 +536,9 @@ def sec_breakthrough() -> str:
         f'plans.</b> Depth 2 also raised the kept-candidate count to {top_m}. '
         f'Only {win_u["slide2"]} of the {win_u["slide1"] + win_u["slide2"]} '
         'new-boards slide wins actually used both slides.</li>'
-        '<li><b>The rival move-by-move planner is the original network.</b> A '
-        're-tuned version would likely close part of the measured gap.</li>'
+        '<li><b>The move-by-move planner here is the supervised one of '
+        'record.</b> Nobody re-tuned it for this comparison, and a re-tuned '
+        'version would likely close part of the measured gap.</li>'
         '<li><b>This is a search change only.</b> Nothing here was trained to '
         'slide. Two later attempts to teach slides during training both '
         'failed, and the search change did all the work.</li>'
