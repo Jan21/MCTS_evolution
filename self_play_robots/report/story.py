@@ -153,10 +153,10 @@ def _fig_ceiling() -> str:
     return f'''
 <figure class="fig big">
 <svg viewBox="0 0 760 178" role="img"
-     aria-label="A number line of extra moves versus perfect play. Perfect play is at 0. The move-by-move planner is at +0.07. Two dashed walls mark the sub-goal language limits: +1.17 extended and +1.63 base. The solver-taught sub-goal planner is at +4.22.">
+     aria-label="A number line of extra moves versus perfect play. Perfect play is at 0. The move-by-move planner is at +0.07. Two dashed walls mark the sub-goal language limits: +1.17 extended and +1.63 base. The solver-taught sub-goal planner is at +4.22, over its own 205 solves.">
   <line x1="55" y1="120" x2="715" y2="120" class="axis"/>
   {ticks}
-  <text x="385" y="166" text-anchor="middle" class="cap">extra moves per puzzle, compared with perfect play</text>
+  <text x="385" y="166" text-anchor="middle" class="cap">extra moves per puzzle, compared with perfect play (24&times;24 standard exam)</text>
   <line x1="213.3" y1="40" x2="213.3" y2="120" class="floorln"/>
   <text x="213" y="30" text-anchor="middle" class="bad-t">wall +1.17 (extended)</text>
   <line x1="273.5" y1="68" x2="273.5" y2="120" class="floorln"/>
@@ -169,7 +169,8 @@ def _fig_ceiling() -> str:
   <text x="120" y="90" text-anchor="middle" class="ns">move-by-move +0.07</text>
   <line x1="72" y1="94" x2="70" y2="112" class="lead"/>
   <circle cx="612.8" cy="120" r="6" class="dot"/>
-  <text x="612" y="90" text-anchor="middle" class="ns">solver-taught +4.22</text>
+  <text x="612" y="72" text-anchor="middle" class="ns">solver-taught +4.22</text>
+  <text x="612" y="90" text-anchor="middle" class="cap">over its own 205 solves</text>
   <line x1="612" y1="94" x2="612" y2="112" class="lead"/>
 </svg>
 <figcaption><strong>The measured wall.</strong> As measured, no sub-goal
@@ -178,7 +179,10 @@ extended vocabulary&rsquo;s floor is about +1.17 (extra tricks, such as
 parking a robot aside first). Training cannot change this. It is a limit of
 the vocabulary itself, measured to within a few hundredths of a move. (An
 earlier, shallower probe gave +1.72 &mdash; see the
-<a href="#ceiling">Ceiling tab</a>.)</figcaption>
+<a href="#ceiling">Ceiling tab</a>.) The solver-taught dot averages over its
+own 205 solves. The <a href="#baselines">Baselines tab</a> prints +3.92 for
+the same planner and the same run. It is the same measurement on a smaller
+set: the 198 puzzles every planner in that table solved.</figcaption>
 </figure>'''
 
 
@@ -210,14 +214,17 @@ def _fig_break() -> str:
   <text x="300" y="90" text-anchor="middle" class="ns">unchanged search +1.42</text>
   <line x1="266" y1="94" x2="248" y2="112" class="lead"/>
   <circle cx="612.8" cy="120" r="6" class="dot"/>
-  <text x="612" y="90" text-anchor="middle" class="ns">solver-taught +4.22</text>
+  <text x="612" y="72" text-anchor="middle" class="ns">solver-taught +4.22</text>
+  <text x="612" y="90" text-anchor="middle" class="cap">over its own 205 solves</text>
   <line x1="612" y1="94" x2="612" y2="112" class="lead"/>
 </svg>
 <figcaption><strong>The wall, crossed.</strong> Same networks, same budget.
 The unchanged search stays right of the wall (+1.42). The hybrid is the only
 planner left of it (+0.94, average over its own 231 solves; the unchanged
 search: +1.42 over its 230). On the same puzzles, 40 solutions got shorter
-and none got longer. (The solver-taught dot uses its recorded
+and none got longer. The solver-taught dot averages over its own 205 solves.
+The <a href="#baselines">Baselines tab</a> prints +3.92 for it, on the 198
+shared puzzles. (The solver-taught dot uses its recorded
 file: +4.22. A re-run on this machine gives +4.20. Computers on different
 machines round tiny numbers differently. When two plans score as equal, the
 rounding decides which one the search meets first &mdash; see the M0
@@ -329,7 +336,7 @@ def _fig_heads() -> str:
   <rect x="330" y="16" width="392" height="92" rx="8" class="nbox"/>
   <text x="526" y="40" text-anchor="middle" class="nt">value network head</text>
   <text x="480" y="60" text-anchor="middle" class="ns">reads 5 marked cells</text>
-  <text x="480" y="78" text-anchor="middle" class="ns">output: scores 0&ndash;95 plan-steps</text>
+  <text x="480" y="78" text-anchor="middle" class="ns">output: steps still needed (0&ndash;95)</text>
   <g>
     <rect x="646" y="76" width="10" height="12" fill="var(--mut)"/>
     <rect x="659" y="70" width="10" height="18" fill="var(--mut)"/>
@@ -356,7 +363,10 @@ marked cells &mdash; the mover, the goal, and the candidate&rsquo;s three
 cells (B, S, H) &mdash; and answers: how many steps will this plan still
 cost? Output: a spread over 96 possible costs (&ldquo;probably 6, maybe
 9&rdquo;). The policy head answers: which sub-goal next? It points at real
-board cells, so it works with any candidate count.</figcaption>
+board cells, so it works with any candidate count. One later change moved
+the value head off this scale. The flagship&rsquo;s value network scores
+real robot moves, not plan steps (card v09 in
+<a href="#st-journey">&sect;7</a>).</figcaption>
 </figure>'''
 
 
@@ -500,7 +510,7 @@ def sec_story() -> str:
     out.append('<div class="tw"><table class="t"><thead><tr>'
                '<th>exam</th><th>puzzles</th><th>meaning</th></tr></thead><tbody>'
         '<tr><td>standard (also called graded)</td><td>232</td><td>optimum known (perfect play averages 7.69 moves over all 232)</td></tr>'
-        '<tr><td>hard (frontier)</td><td>218</td><td>the exact solver could not crack these when the exam was frozen. An optimum exists but is not known. Planners have since solved many. (24&times;24 set; other board types have their own)</td></tr>'
+        '<tr><td>hard (frontier)</td><td>218</td><td>the puzzles the exact solver could not crack when the exams were frozen &mdash; an optimum exists but is not known. Planners have since solved many. (24&times;24 set; other board types have their own)</td></tr>'
                '<tr><td>new boards (unseen)</td><td>200</td><td>fresh boards, never trained on (137 have a known optimum)</td></tr>'
                '</tbody></table></div>')
     out.append(
@@ -547,9 +557,15 @@ def sec_story() -> str:
     out.append(_fig_heads())
     out.append('<div class="tw"><table class="t"><thead><tr>'
                '<th>network</th><th>input</th><th>output</th><th>parameters</th></tr></thead><tbody>'
-               '<tr><td>value</td><td>board + one candidate sub-goal</td><td>cost still needed (scores 0&ndash;95 plan-steps &mdash; enough for the largest boards)</td><td>982,944</td></tr>'
+               '<tr><td>value</td><td>board + one candidate sub-goal</td><td>how many plan steps the plan still needs (a score from 0 to 95, enough for the largest boards)</td><td>982,944</td></tr>'
                '<tr><td>policy</td><td>board, no candidate shown</td><td>which sub-goal to try</td><td>1,223,232</td></tr>'
                '</tbody></table></div>')
+    out.append(
+        '<p class="note">One later change replaced the value network&rsquo;s '
+        'output scale. Card v09 retrained it to score real robot moves &mdash; '
+        'the number the project is graded on &mdash; instead of plan steps. '
+        'The flagship uses that retrained network (<a href="#st-journey">'
+        '&sect;7</a>).</p>')
     out.append(
         '<p>The first networks trained at 16&times;16 and 24&times;24 (the '
         'loop later added 32&times;32 and 8-robot boards). The starting '

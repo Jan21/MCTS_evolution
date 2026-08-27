@@ -397,6 +397,39 @@ def chip_class(kind) -> str:
     return "pend"
 
 
+def human_size(text: str) -> str:
+    """Escape, then print board sizes the way the rest of the page does
+    (16x16 -> 16&times;16) -- round-6 item C1-26."""
+    return re.sub(r"\b(\d{1,3})x(\d{1,3})\b", r"\1&times;\2", esc(text))
+
+
+# Plain names for the side-study strip cards; the manifest keys are directory
+# slugs and must never reach the reader (round-6 items C1-2, C1-3, C1-5).
+SIDE_STUDY_NAME = {
+    "ceiling": "Best score any sub-goal planner could reach",
+    "forward_mcts": "Move-by-move planner",
+    "transfer": "Transfer test",
+    "forward_loop_g24r4": "Move-by-move self-play (24&times;24)",
+    "variants_lab": "Experiment lab",
+    "paper": "Paper draft",
+}
+
+# Chip word when the manifest status starts with an internal code (C1-1).
+SIDE_STUDY_CHIP = {
+    "forward_mcts": ("good", "parity checked"),
+}
+
+# Plain one-line subtitles, where the manifest title carries shorthand (C1-26).
+SIDE_STUDY_SUB = {
+    "ceiling": "how good could any sub-goal planner be?",
+    "forward_mcts": "a separate 16&times;16 test line, kept for comparison",
+    "transfer": "the unchanged networks on new sizes and robot counts",
+    "forward_loop_g24r4": "two rounds of self-play at 24&times;24",
+    "variants_lab": "design variants, one at a time",
+    "paper": "a joint draft covering both campaigns",
+}
+
+
 def chip_word(status) -> str:
     """One plain word for a chip label; the full status string belongs in a
     hover, not on the chip (naive-reader audit)."""
@@ -502,9 +535,9 @@ def _pw_cell(pw):
     if pw["delta"] is None:
         return '<td class="pend">no shared solves</td>'
     good = pw["delta"] < 0 and pw["sign_p"] < 0.05
-    return td_txt(f"{pw['delta']:+.2f} moves &middot; {pw['wins']}/{pw['losses']} "
-                  f'&middot; <span title="exact sign test, p={pw["sign_p"]:.2g}, '
-                  f'on the {pw["both_n"]} puzzles both solved">'
+    return td_txt(f"{pw['delta']:+.2f} moves, on the {pw['both_n']} puzzles "
+                  f"both solved &middot; {pw['wins']}/{pw['losses']} "
+                  f'&middot; <span title="exact sign test, p={pw["sign_p"]:.2g}">'
                   f"{fluke(pw['sign_p'])}</span>",
                   cls="hlnum" if good else "")
 
@@ -512,7 +545,7 @@ def _pw_cell(pw):
 _H2H_WHY_SHOWN = False
 
 
-def h2h_table(entries, ref_labels, note_extra="", dstar=None):
+def h2h_table(entries, ref_labels, note_extra="", dstar=None, exam="this exam"):
     """One apples-to-apples table: common-subset moves + paired deltas.
 
     `entries` are compare.CmpEntry objects (label + payload + system filter);
@@ -530,9 +563,9 @@ def h2h_table(entries, ref_labels, note_extra="", dstar=None):
                 f"moves, on the {r['common_n']} puzzles all {n_ok} systems solved"]
                + [f"&Delta; moves vs {esc(rl)} <span class=\"note\">(both-solved; "
                   f"&minus; = fewer = better)</span>" for rl in ref_labels]
-               + ([f"&Delta; vs perfect play <span class=\"note\">(the "
-                   f"{r['perfect_n']} common puzzles with a known optimum; "
-                   f"mean optimum {r['perfect_mean']:.2f})</span>"]
+               + ([f"&Delta; vs perfect play <span class=\"note\">({exam}, "
+                   f"on the {r['perfect_n']} shared puzzles with a known "
+                   f"optimum, mean optimum {r['perfect_mean']:.2f})</span>"]
                   if perfect else [])
                + ["search effort (expansions)"])
     tech_of = {en.label: getattr(en, "tech", None) for en in entries}
@@ -573,7 +606,11 @@ def h2h_table(entries, ref_labels, note_extra="", dstar=None):
                "<strong>common-subset moves</strong> column scores every system on the exact same "
                "puzzles. Each <strong>&Delta;</strong> column (&Delta; = difference) is "
                "paired on the puzzles both systems solved, with win/loss counts and the "
-               '<span title="p-value of the exact sign test">fluke chance</span>. ')
+               '<span title="p-value of the exact sign test">fluke chance</span>. '
+               "The <strong>search effort</strong> column counts expansions. "
+               "One expansion is one step of the search: the two networks "
+               "score the next batch of candidate sub-goals. Fewer is "
+               "better. ")
         _H2H_WHY_SHOWN = True
     note = why + note_extra
     if any(e["ok"] and (e.get("mean_exp") or 99) < 5 for e in r["entries"]):
@@ -581,6 +618,11 @@ def h2h_table(entries, ref_labels, note_extra="", dstar=None):
                  "already works &mdash; that system solves almost instantly.")
     return table(headers, rows_, note=note, cls="wide")
 
+
+# The one agreed wording for the hard exam / frontier set (round-6 fix #4):
+# every surface of the page must say exactly this.
+FRONTIER_DEF = ("the puzzles the exact solver could not crack when the exams "
+                "were frozen &mdash; an optimum exists but is not known")
 
 BASE_HEADERS = ["config", "set", "system", "solve rate", "mean realized moves",
                 "extra moves vs optimum", "% optimal",
@@ -695,7 +737,7 @@ def cfg_label(slug: str, suffix: str = "") -> str:
     if lab is None:
         return esc(slug)
     tail = f" {suffix}" if suffix else ""
-    return f'<span title="{esc(slug)}">{lab}{tail}</span>'
+    return f"{lab}{tail}"
 
 
 def extra_moves(r, n=None, scope="its own solves") -> str:
@@ -736,9 +778,10 @@ def note_html(entry: dict) -> str:
     details block for auditors."""
     plain, raw = entry.get("plain_note"), entry.get("note")
     if plain and raw:
-        return (esc(plain) + ' <details class="inl"><summary>log text</summary>'
+        return (human_size(plain) + ' <details class="inl"><summary>raw log entry '
+                '(engineering shorthand)</summary>'
                 f'<span class="note">{esc(raw)}</span></details>')
-    return esc(plain or raw or "")
+    return human_size(plain or raw or "")
 
 
 def jobs_txt(entry) -> str:
@@ -817,7 +860,7 @@ def svg_loop() -> str:
         (20, 40, "1 &middot; Generate",
          ["fresh random boards + puzzles", "every round (boards cost ~nothing)"]),
         (325, 40, "2 &middot; Search with net k",
-         ["MCTS over the chosen action", "space, fixed expansion budget"]),
+         ["tree search over the chosen kind", "of move, same budget every time"]),
         (630, 40, "3 &middot; Certify",
          ["replay each solution vs physics;", "uncertified plans are dropped"]),
         (630, 200, "4 &middot; Keep recent data",
@@ -828,8 +871,8 @@ def svg_loop() -> str:
          ["test vs the previous nets and", "the fixed baselines"]),
     ]
     s = [f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="The self-play '
-         f'iteration loop: generate, search, certify, buffer, train, gate, '
-         f'promote">',
+         f'round: generate boards, search them, certify the plans, keep the '
+         f'recent data, train the next networks, examine them, promote">',
          '<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" '
          'markerWidth="7" markerHeight="7" orient="auto-start-reverse">'
          '<path d="M 0 0 L 10 5 L 0 10 z" class="ahead"/></marker></defs>']
@@ -856,9 +899,9 @@ def svg_loop() -> str:
     s.append('<text x="34" y="322" class="nt">Worse? Investigate first</text>')
     s.append('<text x="34" y="340" class="ns">bad labels? damaged data?</text>')
     s.append('<text x="156" y="158" class="lbl">promote: net k+1 becomes net k</text>')
-    s.append('<text x="156" y="288" class="lbl">gate not cleared</text>')
+    s.append('<text x="156" y="288" class="lbl">did not pass the exam</text>')
     s.append(f'<text x="{W - 8}" y="18" class="cap" text-anchor="end">'
-             'PROBLEM.md &sect;5 &mdash; iteration k</text>')
+             'one round</text>')
     s.append("</svg>")
     return "".join(s)
 
@@ -1005,11 +1048,11 @@ def sec_overview() -> str:
         stt = m.get("status", "unknown")
         title = m.get("title", "")
         href = STRIP_LINKS.get(k, "#milestones")
-        tip_txt = "; ".join(x for x in (stt, m.get("plain_note") or m.get("note")) if x)
-        tip = f' title="{esc(tip_txt)}"' if tip_txt else ""
+        tip_txt = m.get("plain_note") or ""
+        tip = f' title="{human_size(tip_txt)}"' if tip_txt else ""
         out.append(f'<a class="stripitem" href="{href}"{tip}><span class="mk">'
                    f'{esc(k)}</span>{chip(stt, chip_word(stt))}<span class="mt">'
-                   f'{esc(title)}</span></a>')
+                   f'{human_size(title)}</span></a>')
     out.append("</div>")
     ss = status().get("side_studies") or {}
     if ss:
@@ -1017,11 +1060,14 @@ def sec_overview() -> str:
         for k, v in ss.items():
             stt = (v or {}).get("status", "unknown")
             href = STRIP_LINKS.get(k, "#results")
-            tip_txt = "; ".join(x for x in (stt, (v or {}).get("plain_note") or (v or {}).get("note")) if x)
-            tip = f' title="{esc(tip_txt)}"' if tip_txt else ""
+            tip_txt = (v or {}).get("plain_note") or ""
+            tip = f' title="{human_size(tip_txt)}"' if tip_txt else ""
+            kind, word = SIDE_STUDY_CHIP.get(k, (stt, chip_word(stt)))
             out.append(f'<a class="stripitem" href="{href}"{tip}><span class="mk">'
-                       f'{esc(k)}</span>{chip(stt, chip_word(stt))}<span class="mt">'
-                       f'{esc((v or {}).get("title", ""))}</span></a>')
+                       f'{SIDE_STUDY_NAME.get(k, esc(k))}</span>'
+                       f'{chip(kind, word)}<span class="mt">'
+                       f'{SIDE_STUDY_SUB.get(k, esc((v or {}).get("title", "")))}'
+                       f'</span></a>')
         out.append("</div>")
     upd = st.get("updated")
     nh = st.get("node_hours") or {}
@@ -1033,7 +1079,8 @@ def sec_overview() -> str:
         meta.append(
             f"about {esc(nh.get('spent'))} node-hours of compute used so far"
             + (f", roughly {esc(proj)} planned next" if proj else "")
-            + (f' <details class="inl"><summary>detail</summary>'
+            + (f' <details class="inl"><summary>how the '
+               f'{esc(nh.get("spent"))} node-hours break down</summary>'
                f'<span class="note">{esc(nh.get("note"))}</span></details>'
                if nh.get("note") else ""))
     if not st:
@@ -1059,15 +1106,18 @@ def sec_overview() -> str:
         j = jobs_txt(m)
         bullets.append(
             f"<li>{chip(stt, chip_word(stt))} <strong>{esc(k)} &mdash; "
-            f"{esc(m.get('title', ''))}</strong>: {note_html(m)}"
+            f"{human_size(m.get('title', ''))}</strong>: {note_html(m)}"
             + (f' <span class="note">job(s) {j}</span>' if j != "&mdash;" else "")
             + f'<br><span class="note">sources: {sources_txt(m)}</span></li>')
     for k, v in (status().get("side_studies") or {}).items():
         v = v or {}
         j = jobs_txt(v)
+        stt = v.get("status", "unknown")
+        kind, word = SIDE_STUDY_CHIP.get(k, (stt, chip_word(stt)))
         bullets.append(
-            f"<li>{chip(v.get('status', 'unknown'), chip_word(v.get('status', 'unknown')))} "
-            f"<strong>side study &mdash; {esc(v.get('title', k))}</strong>"
+            f"<li>{chip(kind, word)} "
+            f"<strong>side study &mdash; "
+            f"{SIDE_STUDY_NAME.get(k, human_size(v.get('title', k)))}</strong>"
             + (f": {note_html(v)}" if (v.get("plain_note") or v.get("note")) else "")
             + (f' <span class="note">job(s) {j}</span>' if j != "&mdash;" else "")
             + f'<br><span class="note">sources: {sources_txt(v)}</span></li>')
@@ -1106,7 +1156,8 @@ def sec_loop() -> str:
            "against them). In the boxes, k is the round number &mdash; net "
            "k is round k's network pair. The collapse alarm in step 5: "
            "training can suddenly forget everything. The alarm stops it "
-           "and keeps the best pass.</figcaption></figure>"]
+           "and keeps the best pass. The drawing follows the plan in "
+           "<code>PROBLEM.md</code> &sect;5.</figcaption></figure>"]
     out.append(
         '<p>That is the whole idea. The rest of this tab is the original '
         'engineering plan the loop was built from &mdash; kept for auditors, '
@@ -1344,104 +1395,120 @@ def sec_baselines() -> str:
                "project&rsquo;s size-free network pair instead, because no "
                "self-play loop ran at that size.</p>")
     h2h_specs = [
-        ("g16r4", "16&times;16, 4 robots &mdash; legacy 450-puzzle exam", [
+        ("g16r4", "16&times;16, 4 robots &mdash; the older 450-puzzle standard exam",
+         "the older 450-puzzle standard exam at 16&times;16", [
             CmpEntry("solver-taught planner (base vocabulary)",
                      load_sv("eval/results/final450_backward_prefix.json"),
                      prefer_kind="backward"),
-            CmpEntry("forward supervised",
+            CmpEntry("forward baseline (move-by-move planner)",
                      load_sv("eval/results/comparison_forward.json"),
                      prefer_kind="forward", name_contains="candidate_scored"),
             CmpEntry("size-free pair (this project, M1)",
                      load(RESULTS / "m1" / "mixed_value_warm_s21_g16r4.json"),
-                     tech="M1 size-free pair mixed_value_warm_s21"),
+                     tech="one network pair for every board size, from milestone M1"),
         ]),
-        ("g24r4", "24&times;24, 4 robots &mdash; pinned graded exam", [
+        ("g24r4", "24&times;24, 4 robots &mdash; the standard exam (a fixed puzzle list)",
+         "the standard exam at 24&times;24", [
             CmpEntry("solver-taught planner (base vocabulary)",
                      load_sv("scaling/results/g24r4/comparison.json"),
                      prefer_kind="backward"),
-            CmpEntry("forward supervised",
+            CmpEntry("forward baseline (move-by-move planner)",
                      load_sv("scaling/results/g24r4/comparison.json"),
                      prefer_kind="forward"),
             CmpEntry("this project's self-play planner",
                      load(RESULTS / "selfplay" / "mix_b2mix_iter3" /
                           "bench_g24r4_astar.json"),
-                     tech="mix_b2mix_iter3 nets, B2 anytime A*"),
+                     tech="the mixed-size self-play networks after round 3, run with the "
+                          "quick shortest-path search"),
             CmpEntry("current best planner (flagship)",
                      load(RESULTS / "variants" / "v07_hybrid_actions" /
                           "bench_graded_hybrid_d2.json"),
-                     tech="v09 strict-value nets + depth-2 slide-prefix hybrid search"),
+                     tech="the networks that score real robot moves, with the hybrid "
+                          "search that may make two ordinary moves first"),
         ]),
-        ("g24r8", "24&times;24, 8 robots &mdash; pinned graded exam", [
+        ("g24r8", "24&times;24, 8 robots &mdash; the standard exam (a fixed puzzle list)",
+         "the standard exam at 24&times;24 with 8 robots", [
             CmpEntry("solver-taught planner (base vocabulary)",
                      load_sv("scaling/results/g24r8/comparison.json"),
                      prefer_kind="backward"),
-            CmpEntry("forward supervised",
+            CmpEntry("forward baseline (move-by-move planner)",
                      load_sv("scaling/results/g24r8/comparison.json"),
                      prefer_kind="forward"),
             CmpEntry("this project's self-play planner",
                      load(RESULTS / "selfplay" / "mix_b2mix_iter3" /
                           "bench_g24r8_astar.json"),
-                     tech="mix_b2mix_iter3 nets, B2 anytime A*"),
+                     tech="the mixed-size self-play networks after round 3, run with the "
+                          "quick shortest-path search"),
             CmpEntry("the flagship, never trained at this size",
                      load(RESULTS / "variants" / "v07_transfer" /
                           "bench_g24r8_graded_hybrid_d2.json"),
-                     tech="v09 nets + depth-2 hybrid, zero-shot transfer"),
+                     tech="the same networks and hybrid search, on a board size they "
+                          "never trained on"),
             CmpEntry("same nets, standard search (transfer control)",
                      load(RESULTS / "variants" / "v07_transfer" /
                           "bench_g24r8_graded_stdmcts.json")),
         ]),
-        ("g32r4", "32&times;32, 4 robots &mdash; pinned graded exam", [
+        ("g32r4", "32&times;32, 4 robots &mdash; the standard exam (a fixed puzzle list)",
+         "the standard exam at 32&times;32", [
             CmpEntry("solver-taught planner (base vocabulary)",
                      load_sv("scaling/results/g32r4/comparison.json"),
                      prefer_kind="backward"),
-            CmpEntry("forward supervised",
+            CmpEntry("forward baseline (move-by-move planner)",
                      load_sv("scaling/results/g32r4/comparison.json"),
                      prefer_kind="forward"),
             CmpEntry("this project's self-play planner",
                      load(RESULTS / "selfplay" / "mix_b2mix_iter3" /
                           "bench_g32r4_astar.json"),
-                     tech="mix_b2mix_iter3 nets, B2 anytime A*"),
+                     tech="the mixed-size self-play networks after round 3, run with the "
+                          "quick shortest-path search"),
             CmpEntry("the flagship, never trained at this size",
                      load(RESULTS / "variants" / "v07_transfer" /
                           "bench_g32r4_graded_hybrid_d2.json"),
-                     tech="v09 nets + depth-2 hybrid, zero-shot transfer"),
+                     tech="the same networks and hybrid search, on a board size they "
+                          "never trained on"),
             CmpEntry("same nets, standard search (transfer control)",
                      load(RESULTS / "variants" / "v07_transfer" /
                           "bench_g32r4_graded_stdmcts.json")),
         ]),
     ]
-    for cfg, human, ents in h2h_specs:
-        out.append(f"<h4><code>{esc(cfg)}</code> &mdash; {human}</h4>")
-        out.append(h2h_table(ents, ("solver-taught planner (base vocabulary)", "forward supervised")))
+    for cfg, human, exam, ents in h2h_specs:
+        out.append(f"<h4>{human}</h4>")
+        out.append(h2h_table(ents, ("solver-taught planner (base vocabulary)",
+                                    "forward baseline (move-by-move planner)"),
+                             exam=exam))
         if cfg == "g24r4":
             out.append("<p class='note'>Letting the search try up to three "
-                       "single robot moves before subgoal planning "
-                       "(&ldquo;depth-3 slide prefixes&rdquo;) pushes the "
-                       "flagship further still: 0.861 extra moves over the "
-                       "known optimum, against depth-2&rsquo;s 0.944, with the "
-                       "same 231/232 solves. Those two figures average over "
-                       "each planner&rsquo;s own solves; the table&rsquo;s "
-                       "+0.90 counts only the shared puzzles. The depth study "
-                       "lives on the Variants tab (<code>v07</code>).</p>")
-    out.append("<h4><code>g24r8</code> frontier &mdash; 24&times;24, 8 robots, "
-               "the 289 frontier puzzles</h4>")
-    out.append("<p class='note'>Frontier = "
-               "the puzzles no planner had solved when the exam was frozen; an optimum exists but is not known.</p>")
+                       "single robot moves before subgoal planning pushes "
+                       "the flagship further still. That three-move version "
+                       "needs 0.861 extra moves over the known optimum. The "
+                       "two-move version needs 0.944, with the same 231/232 "
+                       "solves. Those two figures average over "
+                       "each planner&rsquo;s own solves. The table&rsquo;s "
+                       "+0.90 counts only the 198 shared puzzles of this "
+                       "standard exam. The <a href='#variants'>Variants "
+                       "tab</a> prints +0.90 for the flagship too, but that "
+                       "one is a different measurement: the new-boards exam, "
+                       "on its 93 shared puzzles. The depth study lives on "
+                       "the Variants tab (card <code>v07</code>).</p>")
+    out.append("<h4>24&times;24, 8 robots &mdash; the hard exam "
+               "(the 289 frontier puzzles)</h4>")
+    out.append("<p class='note'>Frontier = " + FRONTIER_DEF + ".</p>")
     out.append(h2h_table(
         [CmpEntry("solver-taught planner (base vocabulary)",
                   load_sv("scaling/results/g24r8/comparison_ungraded.json"),
                   prefer_kind="backward"),
-         CmpEntry("forward supervised",
+         CmpEntry("forward baseline (move-by-move planner)",
                   load_sv("scaling/results/g24r8/comparison_ungraded.json"),
                   prefer_kind="forward"),
          CmpEntry("the flagship, never trained at this size",
                   load(RESULTS / "variants" / "v07_transfer" /
                        "bench_g24r8_frontier_hybrid_d2.json"),
-                  tech="v09 nets + depth-2 hybrid, zero-shot transfer"),
+                  tech="the same networks and hybrid search, on a board size they "
+                          "never trained on"),
          CmpEntry("same nets, standard search (transfer control)",
                   load(RESULTS / "variants" / "v07_transfer" /
                        "bench_g24r8_frontier_stdmcts.json"))],
-        ("solver-taught planner (base vocabulary)", "forward supervised")))
+        ("solver-taught planner (base vocabulary)", "forward baseline (move-by-move planner)")))
 
     out.append(
         "<p class='note'>Reading the 32&times;32 pair the way the project's "
@@ -1474,9 +1541,8 @@ def sec_baselines() -> str:
                           "file. A row&rsquo;s moves average covers only the puzzles "
                           "that system solved, so rows here are provenance, not a "
                           "fair race &mdash; compare systems in the head-to-head "
-                          "tables above. &ldquo;frontier&rdquo; = the puzzles no planner had "
-                          "solved when the exam was frozen; an optimum exists "
-                          "but is not known. The <em>exact optimum</em> row is the "
+                          "tables above. &ldquo;frontier&rdquo; = " + FRONTIER_DEF
+                          + ". The <em>exact optimum</em> row is the "
                           "ceiling nothing can beat. "
                           "<details><summary>Column definitions, field by field "
                           "(for auditors)</summary>Columns: <em>solve rate</em> = "
@@ -1858,12 +1924,11 @@ def sec_ceiling() -> str:
                  and bool(s.get("n_realizable"))) or "unsolved" in inst
         capped = s.get("capped") or 0
         inconclusive = cats.get("INCONCLUSIVE", 0)
-        variant = f.stem
         vbits = []
         if caps.get("slack"):
             vbits.append(f"slack {caps['slack']:g}")
         if caps.get("time_cap"):
-            vbits.append(f"{caps['time_cap']:g} s")
+            vbits.append(f"{caps['time_cap']:g} s time cap")
         if caps.get("max_frontier"):
             vbits.append(f'<span title="a memory bound: at most this many '
                          f'part-built plans held at once">search queue cap '
@@ -1881,10 +1946,14 @@ def sec_ceiling() -> str:
             reading = ("no cap hit: the probe finished everywhere, so the "
                        "solve ceiling is exact for these budgets")
         sr = s.get("solve_ceiling")
+        vocab_word = {"base": "base vocabulary",
+                      "b2": "extended vocabulary"}.get(
+                          str(d.get("vocab")), esc(d.get("vocab")))
         rows_.append(row([
-            td_txt(f"<strong>{esc(d.get('config'))}</strong> / "
-                   f"{esc(d.get('vocab'))}<br><span class='note'><code>{esc(variant)}</code>"
-                   + (f" &middot; {' &middot; '.join(vbits)}" if vbits else "") + "</span>"),
+            td_txt(f"<strong>{cfg_label(str(d.get('config')))}</strong> "
+                   f"&mdash; {vocab_word}<br><span class='note'>"
+                   + (" &middot; ".join(vbits) if vbits
+                      else "standard probe settings") + "</span>"),
             td_txt('<span class="tag" title="new-boards exam (unseen)">'
                    'new boards</span>' if is_unseen(d)
                    else ('<span class="tag front" title="hard exam (frontier)">'
@@ -1912,7 +1981,8 @@ def sec_ceiling() -> str:
                           '<td class="pend" colspan="13">pending</td>',
                           td_txt(src(f"self_play_robots/results/ceiling/{c}_{v}.json"))]))
     out.append(table(["vocabulary and probe", "exam", "puzzles", "solve ceiling",
-                      "with known optimum", "known optimum d* (mean)",
+                      "with known optimum",
+                      "shortest possible solution, mean moves",
                       "best plan (mean moves)", "extra moves (best plan)",
                       "% best = perfect",
                       "first plan (mean moves)", "extra moves (first plan)",
@@ -3785,10 +3855,8 @@ def sec_glossary() -> str:
          + (" Measured here: " + "; ".join(dstar_bits) + "."
             if dstar_bits else "")),
         ("frontier set",
-         "The hard exam: the puzzles the exact solver could not crack when "
-         "the exams were frozen. An optimum exists but is not known. No "
-         "planner had solved them then. Planners have since solved many. "
-         "Only solve rate and real move counts "
+         "The hard exam: " + FRONTIER_DEF + ". Planners have since solved "
+         "many of them. Only solve rate and real move counts "
          "mean anything there — this page hides regret and optimality on "
          "frontier rows rather than print a meaningless number."),
         ("graded set",
@@ -3888,10 +3956,12 @@ def sec_glossary() -> str:
          "<em>% optimal</em> = the share of solved puzzles solved in the "
          "fewest possible moves."),
         ("node-hour (nh)",
-         "The cluster's cost unit — one full node for one hour; 1 GPU for 1 h = "
-         "0.125 nh. The whole supervised campaign cost ~27 nh; a self-play loop "
-         "is more expensive by nature, which is why every milestone in "
-         "PROBLEM.md &sect;8 carries an estimate."),
+         "The cluster's cost unit &mdash; one full computer for one hour. "
+         "One graphics card for one hour costs 0.125 nh. The whole supervised "
+         "campaign cost about 37 nh. The self-play loops cost about 13 nh "
+         "more, so the two campaigns together cost about 50 nh. A self-play "
+         "loop is more expensive by nature, so every milestone in "
+         "PROBLEM.md &sect;8 carries a cost estimate."),
     ]
     body = "".join(f"<dt>{k}</dt><dd>{v}</dd>" for k, v in items)
     return ('<section id="glossary"><h2>Glossary</h2>'
@@ -3986,9 +4056,9 @@ def sec_variants() -> str:
         'on every card)</summary><ul class="note">'
         '<li><strong>standard (graded) exam</strong> &mdash; 232 puzzles where the '
         'true shortest solution is known, so we can measure wasted moves.</li>'
-        '<li><strong>hard exam (frontier)</strong> &mdash; 218 puzzles where the '
-        'exact solver failed within its budget. Only solve counts and move '
-        'counts can be compared.</li>'
+        '<li><strong>hard exam (frontier)</strong> &mdash; '
+        + FRONTIER_DEF + '. There are 218 of them. Only solve counts and '
+        'move counts can be compared.</li>'
         '<li><strong>unseen exam</strong> &mdash; 200 puzzles on 50 boards no network '
         'ever trained on; measures generalization, the project goal.</li>'
         '<li><strong>expansions</strong> &mdash; the unit of search effort; every arm '
@@ -4030,7 +4100,8 @@ def sec_variants() -> str:
         STATS["read"].append(str(ds_path))
     uents = [CmpEntry("forward baseline (move-by-move planner)",
                       load(vd / "baselines" / "forward_movenet_unseen.json"),
-                      tech="MoveNet A*")]
+                      tech="the move-by-move planner's network, run with the "
+                           "quick shortest-path search")]
     _gap = {}
     for _lab, _pth in (("v00", vd / "v00_control" / "bench_unseen_astar.json"),
                        ("d2", vd / "v07_hybrid_actions" / "bench_unseen_hybrid_d2.json")):
@@ -4065,7 +4136,7 @@ def sec_variants() -> str:
                   load(vd / "v07_hybrid_actions" / "bench_unseen_hybrid_d3.json"))],
         ("backward baseline (supervised per-size)",
          "forward baseline (move-by-move planner)"),
-        dstar=unseen_dstar,
+        dstar=unseen_dstar, exam="the new-boards exam",
         note_extra="This is the generalization bar of the whole project: fresh "
                    "boards no network ever saw, no exact labels anywhere. The "
                    "project goal reads directly off the two &Delta; columns: beat "
@@ -4075,7 +4146,13 @@ def sec_variants() -> str:
                    "network; a carefully re-tuned forward planner would likely "
                    "solve a few more puzzles and could narrow these gaps slightly "
                    "&mdash; at the size where re-tuning was tried (smaller boards, "
-                   "8 robots) it gained 8 hard puzzles of 184 (see the project log, entry 24)."))
+                   "8 robots) it gained 8 hard puzzles of 184 (see the project log, entry 24). "
+                   "One number needs care: the flagship&rsquo;s +0.90 here is "
+                   "measured on the new-boards exam, over the 93 shared "
+                   "puzzles. The <a href='#baselines'>Baselines tab</a> also "
+                   "prints +0.90 for the flagship, but on the standard "
+                   "24&times;24 exam over its 198 shared puzzles. The two "
+                   "match by coincidence."))
 
     # per-variant cards
     DISPLAY = {                       # plain card titles (naive-reader gate)
@@ -4109,7 +4186,7 @@ def sec_variants() -> str:
             note = vj.get("note", "")
         if v.status in ("parked", "stub"):
             cls, verdict = "pend", v.status
-        out.append(f'<h3 id="var-{esc(vid)}" title="{esc(vid)}">'
+        out.append(f'<h3 id="var-{esc(vid)}">'
                    f'{esc(DISPLAY.get(vid, v.title))} '
                    f'<span class="chip {cls}">{esc(verdict)}</span> '
                    f'<span class="chip">{esc(v.axis)}</span></h3>')
@@ -4153,10 +4230,13 @@ def sec_variants() -> str:
                     pw = r2["entries"][0]["pairwise"].get("ctl")
             if pw and pw["delta"] is not None:
                 both_txt = td_txt(f"{pw['mean_self']:.2f} vs {pw['mean_ref']:.2f} "
-                                  f"<span class=\"note\">(n={pw['both_n']})</span>")
+                                  f"<span class=\"note\">(on {pw['both_n']} "
+                                  f"puzzles)</span>")
             gtxt = "&mdash;"
             if ok(g):
-                gtxt = f"p={g.get('mcnemar_p'):.3g}"
+                gp = g.get("mcnemar_p")
+                gtxt = (f'<span title="McNemar test on the two solved lists, '
+                        f'p={gp:.3g}">{fluke(gp)}</span>')
             return row([
                 td_txt(label_html),
                 td(f"{agg['solved']}/{agg['n']}" if agg.get("n") else None),
