@@ -112,11 +112,13 @@ footer { margin-top: 3.5rem; border-top: 1px solid var(--line);
 </nav>
 
 <p class="lede">This project solves Ricochet Robots puzzles with a tree search
-and two small neural networks. Four planners appear below.</p>
+and two small neural networks. A tree search grows a tree of part-built plans
+and keeps the best it finds. Four planners appear below.</p>
 
 <ul class="plain">
 <li>The <b>move-by-move planner</b> picks one robot slide at a time. An exact
-solver taught it. It is near perfect, and very slow.</li>
+solver taught it, meaning its networks trained on that solver&rsquo;s answers.
+It is near perfect, and very slow.</li>
 <li>The <b>solver-taught sub-goal planner</b> plans in sub-goals. The same
 solver taught it.</li>
 <li>The <b>self-play sub-goal planner</b> is that planner taught by its own
@@ -167,10 +169,11 @@ target cell, so Red slides on to the wall. Right: Blue stands past it, so Red
 stops on the target.</figcaption>
 </figure>
 
-<p>An exact solver exists, but it is too slow for hard puzzles. On a fixed
-24&times;24 benchmark it graded 232 puzzles and failed on 218. Those sets are
-the <b>standard exam</b> and the <b>hard exam</b>. The <b>new-boards exam</b>
-is 200 fresh puzzles.</p>
+<p>An exact solver exists. It returns a guaranteed-shortest solution, but only
+up to a certain board size, and it is too slow for hard puzzles. On a fixed
+24&times;24 benchmark it graded 232 puzzles, meaning it found their shortest
+solutions, and failed on 218. Those sets are the <b>standard exam</b> and the
+<b>hard exam</b>. The <b>new-boards exam</b> is 200 fresh puzzles.</p>
 
 <p>Perfect play on the standard exam averages 7.69 moves. Every score below is
 extra moves on top of that, averaged across the puzzles that planner
@@ -187,19 +190,23 @@ where the mover then stops. The mover is the robot that must travel, and it
 starts as the target robot.</p>
 
 <figure class="w600">
-<svg viewBox="0 0 600 200" role="img" aria-label="One sub-goal on a mini-board. Red is the mover and must reach the target. The sub-goal sends Blue to a cell so that Red stops on the cell beside it. That leaves two smaller puzzles: get Blue to its cell, with Blue as the mover, and get Red to its stop cell, with Red as the mover.">
+<svg viewBox="0 0 600 200" role="img" aria-label="One sub-goal on a mini-board with one wall. Red is the mover and must reach the target. The sub-goal sends Blue along the top row to the wall and then down to the bottom row, so that Red slides right and stops beside it. Red then slides up to the target. Dashed arrows mark the two smaller puzzles this leaves.">
   <text x="111" y="26" text-anchor="middle" class="lbl">one sub-goal</text>
   <rect x="20" y="44" width="182" height="78" class="bgrid"/>
   <path d="M46 44V122 M72 44V122 M98 44V122 M124 44V122 M150 44V122 M176 44V122 M20 70H202 M20 96H202" class="bgrid"/>
+  <line x1="176" y1="44" x2="176" y2="70" class="wallln"/>
   <rect x="124.5" y="44.5" width="25" height="25" class="cellmark"/>
   <text x="137" y="63" text-anchor="middle" class="nb">&#9678;</text>
-  <circle cx="137" cy="83" r="9" fill="none" stroke="#c94436" stroke-width="1.6" stroke-dasharray="3 3"/>
-  <rect x="151.5" y="71.5" width="23" height="23" fill="none" stroke="#3a6fc9" stroke-width="1.6" stroke-dasharray="3 3"/>
+  <circle cx="137" cy="109" r="9" fill="none" stroke="#c94436" stroke-width="1.6" stroke-dasharray="3 3"/>
+  <rect x="151.5" y="97.5" width="23" height="23" fill="none" stroke="#3a6fc9" stroke-width="1.6" stroke-dasharray="3 3"/>
+  <path d="M72 57 H152" class="arr dashed" marker-end="url(#sa-mut)"/>
+  <path d="M163 70 V100" class="arr dashed" marker-end="url(#sa-mut)"/>
+  <path d="M46 109 H122" class="arr dashed" marker-end="url(#sa-mut)"/>
   <circle cx="33" cy="109" r="9" fill="#c94436"/>
   <text x="33" y="113" text-anchor="middle" class="rlbl">R</text>
   <circle cx="59" cy="57" r="9" fill="#3a6fc9"/>
   <text x="59" y="61" text-anchor="middle" class="rlbl">B</text>
-  <line x1="137" y1="78" x2="137" y2="66" class="arr ink" marker-end="url(#sa-ink)"/>
+  <line x1="137" y1="100" x2="137" y2="68" class="arr ink" marker-end="url(#sa-ink)"/>
   <text x="415" y="26" text-anchor="middle" class="lbl">two smaller puzzles</text>
   <rect x="240" y="44" width="350" height="52" rx="8" class="nbox"/>
   <text x="415" y="66" text-anchor="middle" class="nt">get Blue to the dashed square</text>
@@ -211,8 +218,9 @@ starts as the target robot.</p>
 </svg>
 <figcaption><strong>One sub-goal, and the two puzzles it leaves.</strong> The
 dashed ring is where Red will stop, and the dashed square is where Blue must
-stand to stop it. Neither gets there in one move, so each is a smaller puzzle
-with its own mover. Every sub-goal sends a robot somewhere to help.</figcaption>
+stand to stop it. The dashed arrows are the two journeys that leaves, and
+neither is a single move. Every sub-goal sends a robot somewhere to
+help.</figcaption>
 </figure>
 
 <p>The tree is wide but only a few sub-goals deep, so this planner needs 7.8
@@ -234,8 +242,10 @@ the next sub-goal to try.</p>
 
 <p>The exact solver graded the cost network at 20 board sizes, from 17&times;17
 up to its own ceiling. It chose the solver&rsquo;s best candidate 86% to 93% of
-the time, and it never trained on a board wider than 16&times;16. That check
-can only run where the solver still works.</p>
+the time, and it never trained on a board wider than 16&times;16. The low end
+of that range is a single size, 20&times;20. At 24&times;24, where the loop
+trains, it reads 93%. That check can only run where the solver still
+works.</p>
 
 <p>Is that good? Planners trained on answers that agreed 91% of the time
 matched solver-taught ones. At 89% they solved as many puzzles but wrote longer
@@ -266,7 +276,7 @@ One round runs clockwise.</p>
   <text x="500" y="268" text-anchor="middle" class="ns">keep what they learned</text>
   <rect x="100" y="224" width="220" height="60" rx="8" class="nbox"/>
   <text x="210" y="248" text-anchor="middle" class="nt">sit the fixed exams</text>
-  <text x="210" y="268" text-anchor="middle" class="ns">keep only real gains</text>
+  <text x="210" y="268" text-anchor="middle" class="ns">the same puzzles each round</text>
   <line x1="210" y1="72" x2="232" y2="72" class="arr ink" marker-end="url(#sa-ink)"/>
   <line x1="430" y1="72" x2="452" y2="72" class="arr ink" marker-end="url(#sa-ink)"/>
   <line x1="640" y1="72" x2="662" y2="72" class="arr ink" marker-end="url(#sa-ink)"/>
@@ -293,9 +303,13 @@ of 218 to 153. A control that began from scratch, with no teacher, still solved
 132 of 200 new boards after one round.</p>
 <h2 id="s5">The limit that training could not move</h2>
 <p>Self-play never bought shorter solutions. Five rounds left the standard-exam
-score where it started. The solver-taught planner scores far worse, but that
-gap closed earlier, when the networks were rebuilt. The richer plan language
-did not close it: in that language the same planner scores worse.</p>
+score where it started.</p>
+
+<p>The solver-taught sub-goal planner scores +4.22 and the self-play sub-goal
+planner scores +1.42. That jump came from the new networks,
+which were rebuilt before the first round ran. The richer plan language did not
+cause it. In that language the solver-taught sub-goal
+planner scores worse, not better. What self-play bought was solve rate.</p>
 
 <p>The base vocabulary allows only the kind of sub-goal drawn above. The
 extended vocabulary, which self-play uses, allows three more.</p>
@@ -312,18 +326,20 @@ expressible: 228 of the standard exam, against 216 before.</p>
 
 <p>Before any training, a probe measured what those sub-goals can do at best.
 It listed every plan the vocabulary can express and replayed each one. Even the
-best plans cost +1.17 extra moves.</p>
+best extended-vocabulary plans cost +1.17 extra moves, and the best base plans
+cost +1.63.</p>
 
-<p>Read that as a measured limit, not a proof. The probe runs under time and
-memory caps, and it hit them on 7 puzzles. The limit belongs to the plan
-language, so only a change to the planner&rsquo;s moves can score below
-it.</p>
+<p>Read that as a measured limit, not a proof. The probe runs under its own time
+and memory caps. It finished its search on 225 of those 228 puzzles. It ran out
+on the other three, so a cheaper plan may exist there. The limit
+belongs to the plan language, so only a change to the planner&rsquo;s moves can
+score below it.</p>
 <h2 id="s6">The breakthrough, step by step</h2>
 <p>The change is one sentence long. Before the planner starts sub-goal
 planning, let it play one or two ordinary robot moves first. The planner then
-runs two lanes at once and keeps the cheapest answer that really works. A slid
-start is priced by the cheapest opening plan it leads to, and it pays one extra
-move for every slide.</p>
+runs two lanes at once and keeps the cheapest plan that really works. It scores
+each slide by what the puzzle costs after it, before any searching, and keeps
+the cheapest. Every slide a plan uses adds one real move to that plan.</p>
 
 <figure class="w900">
 <svg viewBox="0 0 900 270" role="img" aria-label="The hybrid pipeline. The start position feeds two lanes. One lane searches the untouched puzzle with most of the budget. The other lists the slides, gives the best four a second slide, keeps eight, searches each with a small share, and makes each plan pay for its slides. Both lanes end at one replay, and the cheapest plan that works wins.">
@@ -338,7 +354,7 @@ move for every slide.</p>
   <text x="248" y="242" text-anchor="middle" class="ns">every legal move</text>
   <rect x="366" y="200" width="210" height="56" rx="8" class="nbox"/>
   <text x="471" y="224" text-anchor="middle" class="nt">keep eight, search each</text>
-  <text x="471" y="242" text-anchor="middle" class="ns">a small share each</text>
+  <text x="471" y="242" text-anchor="middle" class="ns">a small part each</text>
   <rect x="596" y="200" width="180" height="56" rx="8" class="nbox"/>
   <text x="686" y="224" text-anchor="middle" class="nt">pay for the slides</text>
   <text x="686" y="242" text-anchor="middle" class="ns">one move each</text>
@@ -354,19 +370,20 @@ move for every slide.</p>
   <path d="M776 228 C 802 228, 792 132, 766 106" class="arr ink" marker-end="url(#sa-ink)"/>
   <path d="M428 64 C 520 64, 560 72, 634 72" class="arr ink" marker-end="url(#sa-ink)"/>
 </svg>
-<figcaption><strong>The pipeline.</strong> Every lane draws on one allowance for
-the whole puzzle.</figcaption>
+<figcaption><strong>The pipeline.</strong> Every lane draws on one budget for
+the whole puzzle. The four cheapest slides get a second slide, and the eight
+cheapest starts of all are the ones searched.</figcaption>
 </figure>
 
-<p>Each planner may spend up to 1,200 search steps on one puzzle, counting
-every lane. The hybrid&rsquo;s lanes together can never reach that cap. It
+<p>Each planner gets a budget of 1,200 search steps per puzzle, counting every
+lane. The hybrid&rsquo;s lanes together can never use it all. It
 still used about a sixth more steps than the self-play sub-goal planner, and
 finished five times faster, at 21 seconds against 103. The solver-taught
 planner&rsquo;s time is not comparable, because it stops at its first working
 plan.</p>
 
 <p>The hybrid solved 231 of 232 standard-exam puzzles at +0.94 extra moves,
-against the other planner&rsquo;s 230 at +1.42. On the puzzles both solved, the
+against the self-play sub-goal planner&rsquo;s 230 at +1.42. On the puzzles both solved, the
 hybrid was shorter on 40 and longer on none.</p>
 
 <figure class="w760">
@@ -413,7 +430,8 @@ stopped improving at two.</p>
 
 <p>It is the idea, not luck. A second, unrelated pair of networks repeated the
 win. The same saved hybrid also transferred, untrained, to bigger and more
-crowded boards: on the 32&times;32 hard exam it solved 251 of 275.</p>
+crowded boards. On 32&times;32 boards the exact solver leaves a hard exam of
+275 puzzles, and the hybrid solved 251.</p>
 
 <p>The new-boards exam sorts them the same way. Of its 200 puzzles the hybrid
 solves 188, the self-play sub-goal planner 182, the solver-taught one 134, and
