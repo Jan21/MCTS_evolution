@@ -40,6 +40,7 @@ ul.plain li { margin: .35rem 0; }
 .key p { margin: .35rem 0; }
 figure { margin: 1.6rem 0; }
 figure svg { width: 100%; height: auto; display: block; }
+figure.w240 svg { max-width: 240px; }
 figure.w600 svg { max-width: 600px; }
 figure.w640 svg { max-width: 640px; }
 figure.w700 svg { max-width: 700px; }
@@ -193,8 +194,8 @@ moves. A sub-goal names a helper robot, the cell to send it to, and the cell
 where the mover then stops. The mover is the robot that must travel, and it
 starts as the target robot.</p>
 
-<figure class="w600">
-<svg viewBox="0 0 600 200" role="img" aria-label="One sub-goal on a mini-board with one wall. Red is the mover and must reach the target. Blue slides along the top row to the wall, pauses on the marked cell, then slides down to the bottom row. Red then slides right and stops beside Blue, and slides up to the target. Blue arrows show the journey for Blue and red arrows the journey for Red.">
+<figure class="w240">
+<svg viewBox="0 0 226 158" role="img" aria-label="One sub-goal on a mini-board with one wall. Red is the mover and must reach the target. Blue slides along the top row to the wall, pauses on the marked cell, then slides down to the bottom row. Red then slides right and stops beside Blue, and slides up to the target. Blue arrows show the journey for Blue and red arrows the journey for Red.">
   <text x="111" y="26" text-anchor="middle" class="lbl">one sub-goal</text>
   <rect x="20" y="44" width="182" height="78" class="bgrid"/>
   <path d="M46 44V122 M72 44V122 M98 44V122 M124 44V122 M150 44V122 M176 44V122 M20 70H202 M20 96H202" class="bgrid"/>
@@ -212,13 +213,6 @@ starts as the target robot.</p>
   <text x="59" y="61" text-anchor="middle" class="rlbl">B</text>
   <line x1="137" y1="100" x2="137" y2="68" class="arr" style="stroke:#c94436" marker-end="url(#sa-red)"/>
   <text x="112" y="146" text-anchor="middle" class="cap">then Red slides up to the target</text>
-  <text x="415" y="26" text-anchor="middle" class="lbl">two smaller puzzles</text>
-  <rect x="240" y="44" width="350" height="52" rx="8" class="nbox"/>
-  <text x="415" y="66" text-anchor="middle" class="nt">get Blue to the dashed square</text>
-  <text x="415" y="84" text-anchor="middle" class="ns">Blue is the mover here</text>
-  <rect x="240" y="110" width="350" height="52" rx="8" class="nbox"/>
-  <text x="415" y="132" text-anchor="middle" class="nt">get Red to the dashed ring</text>
-  <text x="415" y="150" text-anchor="middle" class="ns">Red is the mover here</text>
 </svg>
 <figcaption><strong>One sub-goal, and the two puzzles it leaves.</strong> The
 dashed ring is where Red will stop, and the dashed square is where Blue must
@@ -477,10 +471,6 @@ plans that really use two moves.</p>
 the win. The same saved hybrid also worked on bigger and more crowded boards,
 with no new training. On 32&times;32 boards the exact solver leaves a second
 hard exam, of 275 puzzles. The hybrid solved 251 of them.</p>
-
-<p>The new-boards exam reorders the four planners. The move-by-move planner
-writes the shortest solutions of any planner here, and yet it falls to
-last.</p>
 
 <p>One weakness remains. The move-by-move planner still writes shorter solutions:
 on the 219 puzzles both solve, the hybrid used +0.79 more moves. But the
