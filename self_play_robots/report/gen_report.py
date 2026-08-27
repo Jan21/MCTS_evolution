@@ -637,13 +637,16 @@ def ceiling_row(cfg, bench_rel):
     """The exact-optimum row: mean d* over the graded bench file itself."""
     b = bench_stats(bench_rel)
     if b is None:
-        return row([td_txt(esc(cfg)), td_txt('<span class="tag graded">graded</span>'),
+        return row([td_txt(esc(cfg)),
+                    td_txt('<span class="tag graded" title="standard exam '
+                           '(also called graded)">standard</span>'),
                     td_txt("<strong>exact optimum d* (the puzzle's known optimum)</strong>"),
                     '<td class="pend" colspan="6">bench file not on disk</td>'],
                    "ceil")
     return row([
         td_txt(esc(cfg)),
-        td_txt('<span class="tag graded">graded</span>'),
+        td_txt('<span class="tag graded" title="standard exam '
+               '(also called graded)">standard</span>'),
         td_txt("<strong>exact optimum d* (the puzzle's known optimum)</strong>"),
         td_txt(f"{b['n_graded']}/{b['n']} &middot; 100.0%"),
         td(b["mean_d_star"], ".2f", cls="hlnum"),
@@ -686,6 +689,21 @@ def cfg_label(slug: str, suffix: str = "") -> str:
         return esc(slug)
     tail = f" {suffix}" if suffix else ""
     return f'<span title="{esc(slug)}">{lab}{tail}</span>'
+
+
+def extra_moves(r, n=None, scope="its own solves") -> str:
+    """C3: an extra-moves number never renders bare. The population rides along.
+
+    extra_moves(0.94, 231) -> "0.94 extra moves (average over its own 231 solves)"
+    """
+    if r is None:
+        return "&mdash;"
+    if n is None:
+        pop = scope
+    else:
+        head, _, last = scope.rpartition(" ")
+        pop = f"{head} {n} {last}".strip()
+    return f"{r:.2f} extra moves (average over {pop})"
 
 
 def fluke(p) -> str:
@@ -1246,9 +1264,8 @@ def g16_runs_line() -> str:
         if a.get("solved") is None:
             continue
         r = a.get("mean_regret")
-        bits.append(f"{a['solved']}/{a['n']} &middot; "
-                    + (f"{r:.2f}" if r is not None else "&mdash;")
-                    + f" extra moves &mdash; {what}")
+        bits.append(f"{a['solved']}/{a['n']} solved &middot; "
+                    + extra_moves(r, a.get("solved")) + f" &mdash; {what}")
     if len(bits) < 2:
         return ""
     return ("<p class='note'><strong>Reading 16&times;16 numbers across "
@@ -1812,9 +1829,12 @@ def sec_ceiling() -> str:
             td_txt(f"<strong>{esc(d.get('config'))}</strong> / "
                    f"{esc(d.get('vocab'))}<br><span class='note'><code>{esc(variant)}</code>"
                    + (f" &middot; {' &middot; '.join(vbits)}" if vbits else "") + "</span>"),
-            td_txt('<span class="tag">unseen exam</span>' if is_unseen(d)
-                   else ('<span class="tag front">frontier</span>' if front
-                         else '<span class="tag graded">graded</span>')),
+            td_txt('<span class="tag" title="new-boards exam (unseen)">'
+                   'new boards</span>' if is_unseen(d)
+                   else ('<span class="tag front" title="hard exam (frontier)">'
+                         'hard</span>' if front
+                         else '<span class="tag graded" title="standard exam '
+                              '(also called graded)">standard</span>')),
             td(s.get("n"), "d"),
             td_txt((f"{s.get('n_realizable')}/{s.get('n')} &middot; {100 * sr:.1f}%"
                     + (" <strong>&ge;</strong>" if capped else ""))
@@ -3635,13 +3655,14 @@ def sec_glossary() -> str:
          "<a href='#ceiling'>Ceiling tab</a>), so B2 self-play data is the "
          "training data on this page."),
         ("seed noise bars",
-         "Two runs that differ only in their random start can differ by ~3.4 "
-         "solve and ~6.6 optimality points at 24&times;24 (main log, entries "
-         "67&ndash;71). The M1 gate uses those limits: <strong>3.5 solve "
-         "points / 6.6 optimality points</strong>. Any claimed win must clear "
-         "this bar, or compare puzzle-by-puzzle instead (the McNemar test). "
-         "The measured spread for this repository's own files is computed "
-         "live in the <a href='#baselines'>Baselines</a> tab."),
+         "Two identical runs can differ by up to 3.4 solve points and 6.6 "
+         "optimality points from randomness alone (main log, entries "
+         "67&ndash;71, at 24&times;24). So a new planner only counts as "
+         "matching if it stays within <strong>3.5 solve points / 6.6 "
+         "optimality points</strong> of the old one. And a claimed win must "
+         "pass a puzzle-by-puzzle statistical test (the McNemar test). The "
+         "measured spread for this repository's own files is computed live "
+         "in the <a href='#baselines'>Baselines</a> tab."),
         ("fidelity gauge",
          "At each decision: does the loop's own label pick the same best "
          "candidate as the exact solver would? Cheap to measure on boards up "

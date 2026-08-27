@@ -213,9 +213,9 @@ def _fig_break() -> str:
 The unchanged search stays right of the wall (+1.42). The hybrid is the only
 planner left of it (+0.94, average over its own 231 solves; the unchanged
 search: +1.42 over its 230). On the same puzzles, 40 solutions got shorter
-and none got longer. (The solver-taught dot uses its recorded file,
-+4.22; a re-run on this machine gives +4.20 &mdash; rounding drift explained
-on the M0 tab.)</figcaption>
+and none got longer. (The solver-taught dot uses its recorded
+file: +4.22. A re-run on this machine gives +4.20. Tiny value-estimate
+drift flips score-tied plans &mdash; the M0 tab explains this.)</figcaption>
 </figure>'''
 
 
