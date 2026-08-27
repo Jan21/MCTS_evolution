@@ -396,15 +396,28 @@ the whole puzzle. The four cheapest slides get a second slide, and the eight
 cheapest starts of all are the ones searched.</figcaption>
 </figure>
 
-<p>Three different measurements sit here. Both planners get the same budget,
-meaning the number of sub-goals a search may try on one puzzle. The hybrid uses
-about a sixth more of that budget than the self-play sub-goal planner. It
-nevertheless finishes in a fifth of the wall-clock time, 21 seconds per puzzle
-against 103. This page does not explain that timing gap.</p>
+<p>The budget is the number of sub-goals a search may try on one puzzle. The
+cap is 1,200 for both planners. The hybrid cannot reach that cap. Its lanes
+total 500 for the untouched puzzle plus eight starts of 80 each, which is
+1,140. The self-play sub-goal planner may use all 1,200. The hybrid still
+spends more of what it has, 582 expansions per puzzle against 499. It wins with
+the lower ceiling.</p>
+
+<p>The two runs were never timed at equal concurrency. The control ran eight
+puzzles at a time with two processor threads each. The hybrid ran one puzzle at
+a time with sixteen threads. Seconds per puzzle from those two runs are not
+comparable, so this page makes no wall-clock claim about them.</p>
 
 <p>The hybrid scores +0.94 extra moves against the self-play sub-goal
 planner&rsquo;s +1.42. On the puzzles both solved, the hybrid was shorter on 40
 puzzles and longer on none.</p>
+
+<p>The comparison with the limit is done puzzle by puzzle, on one shared set.
+That set is the 225 standard-exam puzzles where the probe finished its search
+and the optimum is known. On those 225 the best plan the language can express
+costs +0.98 extra moves. The hybrid costs +0.76. It writes a shorter solution
+than the best plan of the language on 27 of the 225 and a longer one on 7. That
+is the headline of this page.</p>
 
 <figure class="w760">
 <svg viewBox="0 0 760 230" role="img" aria-label="A number line of extra moves against perfect play on the standard exam. Perfect play is 0, the move-by-move planner plus 0.07, the hybrid plus 0.94, the sub-goal language limit plus 1.17, the self-play sub-goal planner plus 1.42, the base vocabulary limit plus 1.63, and the solver-taught sub-goal planner plus 4.22.">
@@ -433,35 +446,34 @@ puzzles and longer on none.</p>
   <text x="400" y="124" text-anchor="middle" class="ns">self-play sub-goal planner +1.42</text>
   <line x1="330" y1="130" x2="250" y2="142" class="lead"/>
   <circle cx="246" cy="150" r="6" class="dot"/>
-  <line x1="174" y1="139" x2="174" y2="161" style="stroke:#6d3fc4" stroke-width="2" stroke-dasharray="3 2"/>
   <circle cx="183.1" cy="150" r="8" class="dot acc"/>
   <text x="170" y="196" text-anchor="middle" class="lbl">the hybrid +0.94</text>
   <line x1="172" y1="184" x2="181" y2="160" class="lead"/>
-  <line x1="150" y1="206" x2="172" y2="163" class="lead"/>
-  <text x="110" y="212" text-anchor="middle" class="lbl">+0.87 like for like</text>
   <text x="385" y="220" text-anchor="middle" class="cap">extra moves over perfect play, standard exam</text>
 </svg>
-<figcaption><strong>The limit, and the planner that beat it.</strong> Each dot
-averages across that planner&rsquo;s own solves, so the hybrid and the limit
-cover different sets. The hybrid solves all 228 puzzles the probe reaches. On
-exactly those, it scores +0.87 against the same limit.</figcaption>
+<figcaption><strong>The limit, and the planner that beat it.</strong> Context
+only, not the headline. Each dot averages across that planner&rsquo;s own
+solves, and the two limits average across the puzzles their vocabulary reaches,
+so no two marks here cover the same set. The paired figures above are the ones
+to read.</figcaption>
 </figure>
 
 <div class="scroll">
 <table>
-<thead><tr><th>planner</th><th>extra moves<br>vs perfect play</th><th>standard exam<br>solved of 232</th><th>hard exam<br>solved of 218</th><th>seconds<br>per puzzle</th><th>new boards<br>solved of 200</th></tr></thead>
+<thead><tr><th>planner</th><th>extra moves<br>vs perfect play</th><th>standard exam<br>solved of 232</th><th>hard exam<br>solved of 218</th><th>new boards<br>solved of 200</th></tr></thead>
 <tbody>
-<tr><td>move-by-move planner</td><td class="g">+0.07 over 220</td><td>220</td><td>15</td><td>275</td><td>101</td></tr>
-<tr><td>solver-taught sub-goal planner</td><td>+4.22 over 205</td><td>205</td><td>&mdash;</td><td>7.8</td><td>134</td></tr>
-<tr><td>self-play sub-goal planner</td><td>+1.42 over 230</td><td>230</td><td>174</td><td>103</td><td>182</td></tr>
-<tr class="hl"><td>the hybrid</td><td>+0.94 over 231</td><td>231</td><td class="g">177</td><td>21</td><td class="g">188</td></tr>
+<tr><td>move-by-move planner</td><td class="g">+0.07 over 220</td><td>220</td><td>15</td><td>101</td></tr>
+<tr><td>solver-taught sub-goal planner</td><td>+4.22 over 205</td><td>205</td><td>&mdash;</td><td>134</td></tr>
+<tr><td>self-play sub-goal planner</td><td>+1.42 over 230</td><td>230</td><td>174</td><td>182</td></tr>
+<tr class="hl"><td>the hybrid</td><td>+0.94 over 231</td><td>231</td><td class="g">177</td><td class="g">188</td></tr>
 </tbody>
 </table>
 </div>
-<p class="note">The top two planners stop at their first working plan, so their
-seconds are not comparable with the other two. The dash marks a planner that
-was never run on the hard exam in this setting. Section 4 measures the
-loop&rsquo;s own rounds with a cheaper search than this table uses.</p>
+<p class="note">This table has no seconds column. The four runs used different
+hardware and different numbers of puzzles at a time, so their per-puzzle times
+do not compare. The dash marks a planner that was never run on the hard exam in
+this setting. Section 4 measures the loop&rsquo;s own rounds with a cheaper
+search than this table uses.</p>
 
 <p>One honest note. The two-move setting also raised the number of starts the
 planner keeps. So part of the gain comes from looking at more starts, not from

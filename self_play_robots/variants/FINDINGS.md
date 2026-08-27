@@ -223,7 +223,11 @@ is duplicated there.
    control -- the first break of the subgoal language ceiling (2026-08-21/22,
    jobs 4731286 [unseen leg], 4733005 [graded leg], 4741426 [controls],
    ~1.2 nh incl. two wiring reruns).** Same nets (v09_strict_value_s8), same
-   1200-expansion budget; control = standard arena MCTS best-at-budget.
+   1200-expansion CAP; control = standard arena MCTS best-at-budget.
+   [CORRECTION 2026-08-28, main FINDINGS 28: the cap is shared but the
+   allowance is not. The d1 arm's lanes sum to b0 600 + top_m 6 * sub 100 =
+   1200, so d1 alone matches the control. The landed flagship rows do not --
+   see entry 17.]
    | exam | hybrid | std-MCTS control | paired |
    |---|---|---|---|
    | unseen (200) | **186**, 13.40 mv, 808 exp | 182, 14.13 mv, 689 exp | solves n.s.; **moves 31/1, p=1.5e-8** |
@@ -234,6 +238,12 @@ is duplicated there.
    instances were won by slide-first plans, all replay-certified. Vs the
    forward planner on shared graded solves the gap shrinks to 0.87 mv
    (8.42 vs 7.55, 5/68); on unseen from 2.17 to 1.16 mv (5/31).
+   [CORRECTION 2026-08-28, main FINDINGS 28: 1.01 averages over the hybrid's
+   231 solves and 1.17 over the probe's 228 realizable rows, so as written
+   this is not a paired comparison. The paired form, over the 225 rows the
+   probe finished (uncapped, known d\*), is probe 0.978 vs depth-1 hybrid
+   0.836. The direction holds and the margin grows. The paired flagship
+   (depth-2) numbers are in entry 17.]
    Two wiring bugs found and fixed en route (a None-guard in a progress
    line; ctl() reading $2 after shift 3), both committed with the lesson.
    Conclusion (plain): letting the planner make one ordinary move before
@@ -404,8 +414,22 @@ is duplicated there.
     | graded (232) | **231/232, regret 0.944, 68.4% optimal** | solves all but one; 0.94 extra moves vs perfect -- below the pure-subgoal floor (1.17) |
     | frontier (218) | **177/218, 17.99 mv** | matches the best solver ever on the hard tail, ~1 fewer move than the std search, ~2 fewer than the A\* line |
     | unseen (200) | **188/200; on the 137 with known optima: 134 solved, 57% optimal, +1.47 vs perfect** | best generalization row of the program |
+    [CORRECTION 2026-08-28, main FINDINGS 28. (i) The floor comparison in the
+    graded row mixes denominators: 0.944 is over the hybrid's 231 solves, 1.171 over
+    the probe's 228 realizable rows. The PAIRED headline, over the 225 rows the
+    probe finished (uncapped, known d\*, all solved by both arms), is **probe
+    0.978 vs flagship 0.760**, with the flagship strictly shorter than the
+    language's best plan on **27** of the 225 and strictly longer on 7. The
+    unpaired pair stays as context. (ii) The flagship's search allowance is
+    b0 500 + top_m 8 * sub 80 = **1140**, and the depth-3 probe's is
+    460 + 10*70 = **1160**, both BELOW the 1200 its control may spend. The
+    hybrid wins while unable to reach the control's ceiling. (iii) The two arms
+    were never run at equal concurrency (control 8 instances wide / 2 threads,
+    hybrid 1 wide / 16 threads), so no wall-clock comparison between them is
+    supportable.]
     Perfect-play framing: on brand-new puzzles where perfect play is known
-    (8.71 moves on average), the flagship uses +1.47; the supervised backward
+    (8.71 moves on average), the flagship uses +1.47 over the 134 of those 137
+    it solves; the supervised backward
     baseline uses +4.84 and solves 20 fewer; the forward baseline is
     near-perfect (+0.12) but solves 33 fewer (original network -- retune
     caveat, main FINDINGS 24).

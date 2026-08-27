@@ -127,7 +127,15 @@ def _selfplay_series():
 
 
 def _common_population():
-    """The +0.94-vs-+1.17 comparison redone on one identical puzzle set."""
+    """The hybrid against the language limit, paired on one identical set.
+
+    The set is every standard-exam puzzle where the exhaustive probe finished
+    its search (`capped` false), proved a plan realizable, and the optimum is
+    known, and which the hybrid also solves. Capped rows are dropped because
+    the probe's "best" there is not proven. Returns
+    (n, probe mean, hybrid mean, hybrid strictly shorter, hybrid strictly
+    longer).
+    """
     c = _load(RES / "ceiling" / "g24r4_b2.json")
     h = _rows(_load(V07 / "bench_graded_hybrid_d2.json"))
     if not c or not h:
@@ -138,6 +146,7 @@ def _common_population():
         return None
     idx = [i for i, r in enumerate(cr)
            if r.get("category") == "REALIZABLE_EXISTS"
+           and not r.get("capped")
            and r.get("best_realizable_moves") is not None
            and r.get("d_star") is not None
            and h[i].get("solved") and h[i].get("regret") is not None]
@@ -271,9 +280,12 @@ def _fig_line(hyb, std, fwd, base_lim, b2_lim, taught) -> str:
   <text x="385" y="220" text-anchor="middle" class="cap">extra moves per puzzle against perfect play, 24&times;24 standard exam</text>
 </svg>
 <figcaption><strong>The limit, and the planner that scored below it.</strong>
-Every dot averages over that planner&rsquo;s own solves. The two dashed lines
-are limits of the plan language, not planners. The hybrid is the only planner
-using sub-goals left of +{_n(b2_lim)}.</figcaption>
+Context only, not the headline. Every dot averages over that planner&rsquo;s
+own solves, and each dashed line averages over the puzzles its vocabulary
+reaches, so no two marks here cover the same set. The paired figures in the
+text are the ones to read. The two dashed lines are limits of the plan
+language, not planners. The hybrid is the only planner using sub-goals left of
++{_n(b2_lim)}.</figcaption>
 </figure>'''
 
 
@@ -449,13 +461,15 @@ def sec_breakthrough() -> str:
         '</ol>')
     out.append(_fig_pipeline(b0, top_m, sub, cap))
     out.append(
-        f'<p>The budget arithmetic is honest. The lanes can spend at most '
-        f'{b0} + {top_m} &times; {sub} = {_i(b0 + top_m * sub)} expansions, '
-        f'which stays inside the project&rsquo;s cap of {_i(cap)}. The actual spend is '
-        f'summed per puzzle and reported, and it averages '
-        f'{_n((ah or {}).get("mean_expansions"), 0)} on the standard exam. The '
-        f'control search in section 4 runs under the same cap and averages '
-        f'{_n((as_ or {}).get("mean_expansions"), 0)}.</p>')
+        f'<p>The budget arithmetic runs against the hybrid, not for it. The '
+        f'lanes can spend at most {b0} + {top_m} &times; {sub} = '
+        f'{_i(b0 + top_m * sub)} expansions. The project&rsquo;s cap is '
+        f'{_i(cap)}, so the hybrid cannot reach the ceiling its control may '
+        f'use. The actual spend is summed per puzzle and reported. It averages '
+        f'{_n((ah or {}).get("mean_expansions"), 0)} on the standard exam, '
+        f'against the control&rsquo;s '
+        f'{_n((as_ or {}).get("mean_expansions"), 0)} out of the full '
+        f'{_i(cap)}. The hybrid wins with the lower ceiling.</p>')
     if rep_g:
         out.append(
             f'<p>Replay is not a formality. On the standard exam all '
@@ -501,16 +515,12 @@ def sec_breakthrough() -> str:
         rows,
         note="The hard exam has no known optimum, so it compares solve counts "
              "and solution lengths only."))
-    if ah and as_ and ah.get("mean_seconds") and as_.get("mean_seconds"):
-        ratio = as_["mean_seconds"] / ah["mean_seconds"]
-        out.append(
-            f'<p>The hybrid is also faster in wall clock, at '
-            f'{_n(ah["mean_seconds"], 0)} seconds per puzzle against '
-            f'{_n(as_["mean_seconds"], 0)}. That is about one '
-            f'{"fifth" if 4.5 < ratio < 5.5 else f"{ratio:.1f}th"} of the '
-            f'running time. The two searches spend a similar number of '
-            f'expansions, so the saving comes from shorter searches inside the '
-            f'slid positions, not from a smaller budget.</p>')
+    out.append(
+        '<p>This page makes no wall-clock claim about the hybrid or its '
+        'control. The two runs were never timed at equal concurrency. The control ran '
+        'eight puzzles at a time with two processor threads each. The hybrid '
+        'ran one puzzle at a time with sixteen threads. Seconds per puzzle '
+        'from those two runs are not comparable, so this page omits them.</p>')
     if ad3:
         wins = (g_d3 or {}).get("moves_wins_a")
         out.append(
@@ -530,13 +540,17 @@ def sec_breakthrough() -> str:
     if cp:
         n_cp, probe_m, hyb_m, w, l = cp
         out.append(
-            f'<p>Is the comparison with the limit fair? The two averages cover '
-            f'different puzzle sets. It was therefore redone on one identical '
-            f'set: the {n_cp} puzzles the probe can reach and the hybrid also '
-            f'solves. There the probe&rsquo;s best possible sub-goal plan '
-            f'averages +{_n(probe_m)} extra moves and the hybrid averages '
-            f'+{_n(hyb_m)}. Puzzle by puzzle, the hybrid beats the best '
-            f'possible sub-goal plan on {w} and loses on {l}.</p>')
+            f'<p>The headline comparison with the limit is paired. It runs on '
+            f'one identical set: the {n_cp} standard-exam puzzles where the '
+            f'probe finished its search, proved a plan reachable and knows the '
+            f'optimum, and which the hybrid also solves. There the best plan '
+            f'the language can express averages +{_n(probe_m)} extra moves and '
+            f'the hybrid averages +{_n(hyb_m)}. Puzzle by puzzle, the hybrid '
+            f'writes a shorter solution than the best plan of the language on '
+            f'{w} and a longer one on {l}. The unpaired figures elsewhere on '
+            f'this page, +{_n((ah or {}).get("mean_regret"))} over the '
+            f'hybrid&rsquo;s own solves against +{_n(b2_lim)} over the puzzles '
+            f'the probe reaches, are context. They cover different sets.</p>')
     out.append(_fig_line(
         (ah or {}).get("mean_regret"), (as_ or {}).get("mean_regret"),
         (afwd or {}).get("mean_regret"), base_lim, b2_lim, taught))
@@ -596,7 +610,8 @@ def sec_breakthrough() -> str:
         f'solves {(afwd or {}).get("solved", "?")} of 232 on the standard exam. '
         'On the new-boards exam it solves 101 of 200, against the '
         f'hybrid&rsquo;s {_solved(_agg(hyb_u))}. It also spends 275 seconds '
-        'per puzzle.</li>'
+        'per puzzle in its own recorded run, which used no graphics card. '
+        'That time does not compare with the hybrid&rsquo;s.</li>'
         '<li><b>Part of the depth-2 gain is wider screening, not two-slide '
         f'plans.</b> Depth 2 also raised the kept-candidate count to {top_m}. '
         f'Only {win_u["slide2"]} of the {win_u["slide1"] + win_u["slide2"]} '

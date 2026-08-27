@@ -159,7 +159,7 @@ LOSS = the reverse; everything else FLAT. Flat results are results.
 | v02/v03/v05 | — | parked | judged too incremental; never run |
 | v04 emit-all | data | **ADOPTED** | frontier +11/+21 at two seeds (Fisher 3.4e-5); r8 extraction 6x cost caveat |
 | v06 Gumbel root | search | not replicated | seed-7 moves win reversed at seed 8 |
-| v07 root-slides | action-space | **FLAGSHIP** | wins all exams vs matched controls; regret 0.86 < pure-subgoal floor 1.17; transfers zero-shot (17/0, 23/0); depth saturates ~3 |
+| v07 root-slides | action-space | **FLAGSHIP** | wins all exams vs matched controls under the same cap, which its own lanes cannot reach (1140 of 1200, FINDINGS 28); paired against the pure-subgoal floor over the same 225 graded instances, 0.760 (d2) / 0.676 (d3) vs 0.978; transfers zero-shot (17/0, 23/0); depth saturates ~3 |
 | v08 cold start | control | prior-worth | label-free-from-zero ties the supervised baseline on unseen (132 vs 134) |
 | v09 strict-value | targets | **ADOPTED** | 2-seed frontier win (Fisher 0.0015), best regret, best unseen |
 | v12 curriculum (+x3) | data | **KILLED** | flat at 1 and at 3 chained iterations |

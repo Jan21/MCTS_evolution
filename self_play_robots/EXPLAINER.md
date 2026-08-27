@@ -686,22 +686,33 @@ certified answer wins.
    moves** on top of whatever its sub-plan costs.
 4. Return the cheapest **certified** total.
 
-Budget bookkeeping is honest: `B0 + top_m × sub ≤ 1200`, actual expansions are
-summed and reported per puzzle (measured mean on the graded exam: **582**), and
-the composed move sequence `[slides] + [sub-plan moves]` is replay-validated
-against the **original** position, not the shifted one. The comparison
-throughout is against *the same networks under standard search at the same
-budget*, which is the only fair control.
+Budget bookkeeping runs against the hybrid, not for it: `B0 + top_m × sub` is
+**1140** at depth 2 and **1160** at depth 3, both below the 1200-expansion cap
+that the control may spend in full. Actual expansions are summed and reported
+per puzzle (measured mean on the graded exam: **582**, against the control's
+499 of its 1200). The composed move sequence `[slides] + [sub-plan moves]` is
+replay-validated against the **original** position, not the shifted one. The
+comparison throughout is against *the same networks under standard search under
+the same cap*, which is the fair control — and the hybrid wins it while unable
+to reach that cap (`FINDINGS.md` §28).
 
 Depth results (`variants/FINDINGS.md` entries 8, 14a, 17, 20), graded exam:
 
 | search | mean extra moves vs perfect play | % solved perfectly |
 |---|---|---|
-| standard MCTS, same nets, same budget | 1.42 | 59.6% |
+| standard MCTS, same nets, same cap | 1.42 | 59.6% |
 | hybrid, depth 1 | 1.01 | 66.2% |
 | hybrid, depth 2 (**flagship**) | **0.944** | **68.4%** |
 | hybrid, depth 3 | 0.861 | 70.6% |
 | *the pure sub-goal language's proven floor* | *1.17* | *62.7%* |
+
+Every row above averages over its own solves, and the floor row over the 228
+puzzles the probe reaches, so no two rows share a population. The paired form,
+over the 225 puzzles where the probe finished its search and the optimum is
+known, is the headline: floor **0.978**, standard MCTS 1.191, depth 1 0.836,
+**depth 2 0.760**, depth 3 0.676. The flagship writes a strictly shorter
+solution than the language's best plan on 27 of those 225 and a strictly longer
+one on 7 (`FINDINGS.md` §28).
 
 Depth 2 beats depth 1 on every exam where both ran (graded 10/1, p = 0.012;
 unseen 11/0, p = 0.001; frontier 10/2, p = 0.039) and depth 3 beats depth 2 on
@@ -1057,7 +1068,7 @@ All rows below: 1200 expansions, k = 5, every solved puzzle replay-certified.
 | planner | solved | mean moves | extra vs perfect | % perfect |
 |---|---|---|---|---|
 | **flagship** (v09 nets + depth-2 hybrid) | **231 / 232** | **8.62** | **+0.944** | **68.4%** |
-| same networks, standard search, same budget | 230 / 232 | 9.08 | +1.42 | 59.6% |
+| same networks, standard search, same cap | 230 / 232 | 9.08 | +1.42 | 59.6% |
 | *the pure sub-goal language's proven floor* | *228* | *8.81* | *+1.17* | *62.7%* |
 | supervised backward planner (B2 arm, recorded) | 199 / 232 | 12.33 | +4.89 | 36.7% |
 | supervised backward planner (base arm, recorded) | 205 / 232 | 11.80 | +4.20 | 38.5% |
@@ -1066,15 +1077,19 @@ Perfect play on this exam averages 7.59 moves. The flagship uses 0.94 more —
 **below the proven floor of any pure sub-goal planner**, which is only possible
 because the hybrid search is not a pure sub-goal planner. Against its own
 matched control the paired result is 30/0 move wins at depth 1 (p = 1.9e-9) and
-40/0 at depth 2 (p = 1.8e-12). Mean cost: 582 expansions, 21 seconds per puzzle.
+40/0 at depth 2 (p = 1.8e-12). Mean cost: 582 expansions of the 1140 its lanes
+can reach, against the control's 499 of the full 1200. No wall-clock figure is
+quoted: the two arms were never run at equal concurrency (`FINDINGS.md` §28).
 
 *Two caveats on the floor row, both from the project's own audit
 (`FINDINGS.md` §14 (iii)): the ceiling probe averages over the 228 puzzles it
 proved reachable while the flagship averages over the 231 it solved, and the
 probe's search order assumes realized moves never come in below abstract plan
-cost, which certified plans occasionally violate. The honest reading is
-"the hybrid is below the pure-sub-goal floor by clearly more than the floor's
-own ±0.05 uncertainty", not "below it by exactly 0.23".*
+cost, which certified plans occasionally violate. The paired recomputation in
+`FINDINGS.md` §28 removes the first caveat and strengthens the result: over the
+225 puzzles where the probe finished its search and the optimum is known, the
+floor is +0.978 and the flagship +0.760, and the flagship is strictly shorter
+than the language's best plan on 27 of the 225.*
 
 ### 8.2 The frontier exam — 218 puzzles the exact solver could not crack
 

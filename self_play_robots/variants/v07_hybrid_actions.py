@@ -12,25 +12,35 @@ instance with the same target), certification stays exact (the sub-plan is
 certified against the moved state; total strict = 1 + sub-strict; the dumped
 move sequence [slide] + sub-moves replay-validates against the ORIGINAL state).
 
-Search (mcts_root_slides, used by the standalone driver `python -m
-variants.v07_hybrid_actions bench ...`):
-  1. standard PUCT mcts on the original state, budget B0 (default 600);
-  2. enumerate all legal one-robot slides (move_planner.state.legal_moves);
-     build each moved state's initial plan (forced fixes free, as at any
-     root); rank by abstract initial-plan cost; keep the top M (default 6);
-  3. run standard mcts on each kept moved state, budget SUB each (default
-     100), best-at-budget; a slide result competes as (1 + strict);
-  4. return the best certified result overall.
-Budget: B0 + M*SUB <= 1200 = the arena convention; actual expansions spent are
-summed and reported per row. This is deliberately a PORTFOLIO (no shared tree):
-sound, simple, and it measures the ACTION-SPACE question -- "is one clever
-slide worth more than 600 subgoal expansions?" -- without new estimators. If
-it moves both-solved moves vs forward, wave 4 builds slide-aware training
-(policy/value heads for slides; the v09 strict-unit value already prices
-sub-plans in the metric's units).
+Search: there is no separate search function. The algorithm is written inline
+in `bench_main`, the only entry point, run as
+`python -m variants.v07_hybrid_actions --instances ... --out ...` (no
+subcommand). Steps, in order:
+  1. standard PUCT mcts on the original state, budget --b0 (default 600);
+  2. enumerate all legal one-robot slides (move_planner.state.legal_moves) and
+     build each moved state's initial plan (forced fixes free, as at any root).
+     At --prefix-depth 2 or 3, the --d2-from (default 4) cheapest states of the
+     previous depth each get one more legal slide; repeated positions are
+     dropped. Depth-1, depth-2 and depth-3 prefixes then compete in ONE
+     candidate list, ranked by abstract initial-plan cost plus prefix length;
+  3. keep the --top-m (default 6) cheapest candidates and run standard mcts on
+     each, budget --sub each (default 100), best-at-budget. A candidate whose
+     rank cost is 3 or more above the best certified total so far is skipped
+     and spends nothing (a pruning rule with no derivation, chosen by hand);
+  4. a prefix result competes as (prefix length + strict). Return the best
+     certified result overall.
+Budget: the lanes can spend at most B0 + TOP_M*SUB, and --expansions (default
+1200, the arena convention) is a hard cap on the sum. The defaults give exactly
+1200. The landed configurations do NOT: the flagship depth-2 rows use
+500/8/80 = 1140 and the depth-3 probe uses 460/10/70 = 1160, both BELOW the
+1200 a standard-search control may use. Actual expansions spent are summed and
+reported per row. This is deliberately a PORTFOLIO (no shared tree): sound,
+simple, and it measures the ACTION-SPACE question -- "is one clever slide worth
+more than 600 subgoal expansions?" -- without new estimators.
 
 Bench-only: generation/training are untouched; run with the lab's best nets
-(v09_strict_value_s8) vs the SAME nets under standard mcts.
+(v09_strict_value_s8) vs the SAME nets under standard mcts. Every landed
+flagship row is depth 2 at 500/8/80, not the 600/6/100 defaults below.
 """
 from __future__ import annotations
 

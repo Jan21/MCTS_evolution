@@ -1,6 +1,6 @@
 # self_play_robots — handoff (updated 2026-08-26; supersedes the 2026-08-19 version)
 
-Read: `PROBLEM.md` → this → `FINDINGS.md` §1–§26+ → `variants/FINDINGS.md` (lab, entries 1–22)
+Read: `PROBLEM.md` → this → `FINDINGS.md` §1–§28 (§28 = corrections to the flagship's published claims) → `variants/FINDINGS.md` (lab, entries 1–22)
 → `M6_DESIGN.md`/`M6_FINDINGS.md` (in progress) → `results/status.json`. Report:
 `report/selfplay.html` (LOCAL ONLY). Tracker: pe-hy/experiment_tracker (74+ runs, lineage).
 
@@ -8,8 +8,11 @@ Read: `PROBLEM.md` → this → `FINDINGS.md` §1–§26+ → `variants/FINDINGS
 - **M0–M5 DONE, M4 PASS, breakthrough achieved and replicated**: the flagship planner
   (v14-recipe nets + v07 hybrid depth-2/3 search) is the planner-of-record:
   graded 231/232 at regret 0.944 (d3: 0.861) — BELOW the pure-subgoal language floor
-  (1.17, §3); frontier 177/218; unseen 188/200 (+1.47 vs perfect on the 137 exactly
-  labeled). Ceiling break survives same-budget controls, two net families, and
+  (1.17, §3), and paired over the same 225 instances it is 0.760 vs the floor's 0.978
+  (§28, the headline form); frontier 177/218; unseen 188/200 (+1.47 vs perfect over
+  the 134 of the 137 exactly labeled instances it solves). Ceiling break survives
+  matched controls under the same 1200 cap — which the hybrid cannot reach, its lanes
+  sum to 1140 (§28) — two net families, and
   transfers zero-shot: g32r4 174/175 (17/0 moves p=1.5e-5), g24r8 159/161
   (23/0 p=2.4e-7), g24r8 frontier 276/289 (record). §26 + variants/FINDINGS 19–20.
 - **Variants lab COMPLETE** (waves 1–5, ~28/50 nh): adopted v09 strict-value,

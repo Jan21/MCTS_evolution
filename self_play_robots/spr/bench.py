@@ -237,7 +237,7 @@ def main(argv=None):
         "expansions": a.expansions, "k": a.k, "instances_file": a.instances,
         "instances_sha256": sha, "n_instances": len(instances), "instances_meta": meta,
         "checkpoints": ckpt_info, "device": dev, "d_star_placeholder": placeholder,
-        "count_slides": False, "dump_moves": a.dump_moves, "byref": False,
+        "count_slides": False, "dump_moves": a.dump_moves, "byref": byref,
         "byref_pool": None, "date": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "results_file": a.out, "search": a.search, "arch": a.arch, "vocab": a.vocab,
         "search_options": {"prefix_check": a.prefix_check, "anytime": a.anytime,

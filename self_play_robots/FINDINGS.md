@@ -956,12 +956,16 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     net-independent, and holds on all three exams; the "current best
     planner" row is frozen (2026-08-23).** Flagship = v09 strict-value nets
     + depth-2 root-slides, all solutions replay-certified: graded
-    **231/232, regret 0.944, 68.4% optimal** (pure-subgoal floor 1.17);
+    **231/232, regret 0.944, 68.4% optimal** (pure-subgoal floor 1.17 — those
+    two averages cover different sets; the paired headline over the same 225
+    instances is **0.760 vs 0.978**, §28);
     frontier **177/218** with 47/2 shared-solve move wins vs its matched
-    same-budget control (p=4e-12), d2>d1 10/2 (p=0.039; caveat: most d2
+    control under the same 1200 cap (which the hybrid cannot reach: its lanes
+    sum to 1140, §28) (p=4e-12), d2>d1 10/2 (p=0.039; caveat: most d2
     gain is broader slide screening — genuine two-slide plans are a
-    minority); unseen **188/200, +1.47 moves vs perfect** on the 137
-    exactly-labeled instances (57% solved optimally). Robustness: with a
+    minority); unseen **188/200, +1.47 moves vs perfect** over the **134**
+    of the 137 exactly-labeled instances that it solves (57% of those 134
+    solved optimally). Robustness: with a
     different net family (v14) the hybrid beats its control 33/0 graded /
     36/0 unseen — the break is a property of the search space, not a
     checkpoint. Negative results logged honestly: v15 slide-training flat
@@ -976,7 +980,8 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     entries 1–22; program total ≈30.4 of 50 nh): the transfer matrix ends with
     every cell in the hybrid's favor — the last leg, the 32×32 frontier (never
     practiced), is the strongest of the study: 251/275 solved (program record;
-    prior best 235; same-budget standard search 239) with moves won on 77 of 80
+    prior best 235; standard search under the same cap 239 — the hybrid's own
+    lanes reach only 1140 of that 1200, §28) with moves won on 77 of 80
     differing shared solutions (20.31 vs 21.48, p=1.4e-19) — more solves AND
     fewer moves at a size the method never trained on (2026-08-27, jobs
     4829780/4835373).** Standing record: 16 matched-protocol arms — 4 adopted
@@ -988,3 +993,65 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     everything the search examined; search in subgoals plus ordinary moves.
     The lab stands down to maintenance; the main line consumes the adopted
     recipe; M6 continues separately.
+
+28. **Correction pass on the flagship's published claims (2026-08-28, no new
+    compute; recomputed from payloads already on disk).** A line-by-line audit
+    of the code against the payloads
+    (`self_play_robots/report/walkthrough_part3.md` §10) found published claims
+    the data does not support. All of them are fixed in the report
+    generators, `report/story.html`, this log, `variants/FINDINGS.md` and
+    `results/variants/v07_hybrid_actions/VERDICT.json`.
+    (a) **The wall-clock claim was an artifact — withdrawn.** The report said
+    "the hybrid is also faster in wall clock, at 21 seconds per puzzle against
+    103 … about one fifth of the running time". The two runs were never timed
+    at equal concurrency. The control's payload records `spr.width` 8 and
+    `spr.omp_threads` 2 (`bench_graded_stdmcts.json`, job 4741426,
+    `spr.wall_seconds` 3618.3 for 232 instances, so its 232 × 103.36 s of
+    process time ran 8-wide). The hybrid ran as ONE process with
+    `OMP_NUM_THREADS=16` and no width flag at all — `jobs/v07_wave4.slurm` and
+    the driver, which has no width or pool code (job log 4763976: 4957 s for
+    the same 232 instances, ≈ its 232 × 21.11 s plus replay). Per-instance
+    `mean_seconds` therefore measures different amounts of hardware. Job
+    throughput in fact favours the CONTROL: 3618/232 = 15.6 s per puzzle
+    against 4898/232 = 21.1 s. No wall-clock claim between these two arms is
+    supportable. Every surface now says so, the seconds column was dropped from
+    the story page's planner table, and `report/gen_report.py` now prints
+    `spr.width`/`spr.omp_threads` on every protocol line and warns that
+    `s/inst` does not compare across rows.
+    (b) **Denominator error on the unseen row — fixed.** "+1.47 extra moves on
+    the 137 puzzles with known optima" is an average over the **134** of those
+    137 that the flagship solves (recomputed: 1.4701 over 134, 56.7% optimal;
+    `bench_unseen_hybrid_d2.json` rows aligned by index with
+    `results/variants/exam/g24r4_unseen.dstar.jsonl`).
+    (c) **The floor comparison is now paired, and stronger.** The published
+    form set 0.944 (over the hybrid's 231 solves) against 1.171 (over the
+    probe's 228 realizable rows) — different populations. Paired over the 225
+    graded rows where `results/ceiling/g24r4_b2.json` reports
+    `REALIZABLE_EXISTS`, `capped == false` and a known d\*, all of which both
+    arms solve: exhaustive B2 optimum **0.978**, standard PUCT 1.191, hybrid d1
+    0.836, **hybrid d2 0.760**, hybrid d3 0.676. The flagship is strictly
+    shorter than the language's best plan on **27** of the 225 and strictly
+    longer on 7. Over the wider 228 (capped rows included) the same table reads
+    1.171 / 1.351 / 0.939 / 0.873 / 0.789. The paired numbers are the headline;
+    the unpaired pair is kept as labelled context.
+    (d) **Budget asymmetry, against the result — now stated.** Both arms run
+    under the 1200-expansion arena cap, but the hybrid's lanes sum to
+    `b0 + top_m * sub`: **1140** at depth 2 (500 + 8*80) and **1160** at depth 3
+    (460 + 10*70). The payload rows confirm it — the largest `expansions` in
+    `bench_graded_hybrid_d2.json` is 1140 and in `..._d3.json` is 1160, while
+    the control reaches 1200. The hybrid wins while unable to reach the
+    control's ceiling. The same 1140 applies to every transfer leg (§27).
+    (e) **Two smaller items.** The `variants/v07_hybrid_actions.py` module
+    docstring named a function that does not exist (`mcts_root_slides`) and
+    described only the depth-1 defaults; it now describes the inline algorithm,
+    the depth-2/3 frontier, the undocumented `cost0 >= best + 3` pruning rule
+    and the real budgets. And `spr/bench.py` hard-coded `"byref": False` into
+    every protocol block while `spr/search.py::run` sets `byref = vocab ==
+    "b2"`; the field is now written from the vocabulary. **Every B2 payload on
+    disk that `spr.bench` wrote — which includes every `spr.arena` payload,
+    since the arena shells out to the bench — carries `protocol.byref: false`
+    and that value is wrong.** By-reference helper resolution was active in all
+    of them. (The `variants/v07_hybrid_actions.py` payloads are unaffected: that
+    driver writes `"byref": True` itself.) Read the vocabulary from
+    `protocol.vocab` (or `search_options`), never from `byref`, on any
+    bench/arena payload dated before 2026-08-28.

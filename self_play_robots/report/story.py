@@ -218,10 +218,14 @@ def _fig_break() -> str:
   <text x="612" y="90" text-anchor="middle" class="cap">over its own 205 solves</text>
   <line x1="612" y1="94" x2="612" y2="112" class="lead"/>
 </svg>
-<figcaption><strong>The wall, crossed.</strong> Same networks, same budget.
+<figcaption><strong>The wall, crossed.</strong> Same networks, same cap of
+1,200 expansions, and the hybrid reaches only 1,140 of it.
 The unchanged search stays right of the wall (+1.42). The hybrid is the only
 planner left of it (+0.94, average over its own 231 solves; the unchanged
-search: +1.42 over its 230). On the same puzzles, 40 solutions got shorter
+search: +1.42 over its 230). Each dot averages over a different set, and the
+wall averages over the 228 puzzles the probe reaches, so read the dots as
+context. Paired on the 225 puzzles the probe finished, the wall is +0.98 and
+the hybrid is +0.76. On the same puzzles, 40 solutions got shorter
 and none got longer. The solver-taught dot averages over its own 205 solves.
 The <a href="#baselines">Baselines tab</a> prints +3.92 for it, on the 198
 shared puzzles. (The solver-taught dot uses its recorded
@@ -596,7 +600,9 @@ def sec_story() -> str:
     # 8
     out.append('<h3 id="st-scoreboard"><span class="no">8</span>The scoreboard</h3>')
     out.append(
-        '<p>Every row: same budget, every solve replay-certified.</p>')
+        '<p>Every row: same cap of 1,200 expansions, every solve '
+        'replay-certified. The flagship cannot reach that cap. Its lanes total '
+        '1,140. It wins with less search than its control may use.</p>')
     out.append(_fig_break())
     out.append(
         '<p>Allowing a third ordinary move first improves the flagship&rsquo;s '
@@ -610,8 +616,9 @@ def sec_story() -> str:
                '<th>extra moves vs perfect*</th></tr></thead><tbody>'
                '<tr class="hl"><td>flagship (self-taught + hybrid search)</td><td>188</td><td>57%</td><td class="g">+1.47</td></tr>'
                '<tr><td>same networks, unchanged search<br><span class="note">the '
-               'same-budget control from the hybrid experiment (Variants '
-               'v07)</span></td><td>182</td><td>50%</td><td>+1.94</td></tr>'
+               'control from the hybrid experiment (Variants v07), under the '
+               'same cap and able to spend more of it</span></td><td>182</td>'
+               '<td>50%</td><td>+1.94</td></tr>'
                '<tr><td>the frozen start networks</td><td>175</td><td>47%</td><td>+2.93</td></tr>'
                '<tr><td>label-free, from random weights</td><td>132</td><td>45%</td><td>+2.89</td></tr>'
                '<tr><td>solver-taught backward (the baseline)</td><td>134</td><td>36%</td><td>+4.84</td></tr>'
@@ -619,9 +626,11 @@ def sec_story() -> str:
                '</tbody></table>'
                '<p class="note">* both starred columns count only the 137 puzzles '
                'with a known optimum, restricted to the ones that system '
-               'solved. The Variants tab shows +0.90 for the same planner: '
-               'that counts only the 93 puzzles every system solved &mdash; a '
-               'smaller, easier set. Both are true.</p></div>')
+               'solved. The flagship solves 134 of those 137, so its +1.47 is '
+               'an average over 134 puzzles, not over 137. The Variants tab '
+               'shows +0.90 for the same planner: that counts only the 93 '
+               'puzzles every system solved &mdash; a smaller, easier set. '
+               'Both are true.</p></div>')
     out.append(
         '<p>The move-by-move planner is almost perfect when it solves. But '
         'it solves barely half the exam. And it spends 688 expansions per '

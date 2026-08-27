@@ -511,6 +511,7 @@ def is_frontier(payload, aggregate) -> bool:
 
 def protocol_bits(payload) -> str:
     p = (payload.get("protocol") or {}) if ok(payload) else {}
+    sp = (payload.get("spr") or {}) if ok(payload) else {}
     bits = []
     if p.get("expansions") is not None:
         bits.append(f"{p['expansions']} expansions")
@@ -524,6 +525,14 @@ def protocol_bits(payload) -> str:
                     f"fingerprint {esc(str(sha)[:8])}&hellip;</span>")
     if p.get("device"):
         bits.append(esc(p["device"]))
+    if sp.get("width") is not None:
+        bits.append(f'<span title="how the run was parallelised &mdash; '
+                    f'per-instance seconds are not comparable across runs '
+                    f'with different values here">{esc(sp["width"])} '
+                    f'instances at a time'
+                    + (f', {esc(sp["omp_threads"])} threads each'
+                       if sp.get("omp_threads") is not None else "")
+                    + "</span>")
     if p.get("date"):
         bits.append(esc(p["date"]))
     return " &middot; ".join(bits)
@@ -2191,7 +2200,11 @@ def comparison_table(files, note):
                           f"{protocol_bits(d)}</td>"]))
     return table(["source file", "system", "n", "solve rate",
                   "mean realized moves", "mean regret", "% optimal",
-                  "mean expansions", "mean s/inst"], rows_, note=note,
+                  "mean expansions", "mean s/inst"], rows_,
+                 note=note + " <strong>The s/inst column does not compare "
+                 "across rows.</strong> Runs differ in how many puzzles ran at "
+                 "a time and how many processor threads each had. Each "
+                 "protocol line states that where the payload records it.",
                  cls="wide")
 
 
@@ -2385,7 +2398,10 @@ AGG_NOTE = ("<em>solved / rate</em> = <code>aggregate.solved</code>/<code>n</cod
             "frontier sets, where <code>d_star_placeholder</code> is set); "
             "<em>mean exp</em> / <em>s/inst</em> = <code>mean_expansions</code> / "
             "<code>mean_seconds</code> over all rows — the same fields "
-            "<code>spr.arena.summarize()</code> reports.")
+            "<code>spr.arena.summarize()</code> reports. <strong>Seconds per "
+            "puzzle do not compare across rows.</strong> Runs differ in how "
+            "many puzzles ran at a time and how many processor threads each "
+            "had, and the field measures one instance inside its own process.")
 
 
 def paired_cells(pr):
@@ -4062,8 +4078,10 @@ def sec_variants() -> str:
         'move counts can be compared.</li>'
         '<li><strong>unseen exam</strong> &mdash; 200 puzzles on 50 boards no network '
         'ever trained on; measures generalization, the project goal.</li>'
-        '<li><strong>expansions</strong> &mdash; the unit of search effort; every arm '
-        'gets the same budget (1200 per puzzle) so comparisons are fair.</li>'
+        '<li><strong>expansions</strong> &mdash; the unit of search effort. Every arm '
+        'gets the same cap of 1200 per puzzle. The hybrid search cannot reach that '
+        'cap: its lanes total 1140 at depth 2 and 1160 at depth 3, so it wins '
+        'against controls that may spend more than it can.</li>'
         '<li><strong>moves</strong> &mdash; actual robot moves in the final, replayed '
         'solution; the headline metric. <strong>regret</strong> = extra moves beyond '
         'the known optimum (standard exam only).</li>'
@@ -4265,7 +4283,8 @@ def sec_variants() -> str:
                 rows.append(_arm_cells(
                     arm_p, ctl_p,
                     esc(label) + ' <span class="note">(two ordinary moves first '
-                    'vs same-budget standard search)</span>',
+                    'vs the standard search under the same cap; the hybrid&rsquo;s '
+                    'lanes reach only 1140 of the 1200 the control may spend)</span>',
                     _var_agg(load(arm_p)), g))
                 continue
             arm_p = res / f"bench_{t}_astar.json"
