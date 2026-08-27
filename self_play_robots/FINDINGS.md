@@ -971,3 +971,20 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     level, entry 11/174-vs-177 n.s.). Wave 5 approved (~3 nh): cross-size
     transfer of the ceiling break (g32r4/g24r8), depth-3 probe, v16
     search-ranked slide training, program closeout.
+
+27. **Variants lab CLOSED (final cross-reference; full record `variants/FINDINGS.md`
+    entries 1–22; program total ≈30.4 of 50 nh): the transfer matrix ends with
+    every cell in the hybrid's favor — the last leg, the 32×32 frontier (never
+    practiced), is the strongest of the study: 251/275 solved (program record;
+    prior best 235; same-budget standard search 239) with moves won on 77 of 80
+    differing shared solutions (20.31 vs 21.48, p=1.4e-19) — more solves AND
+    fewer moves at a size the method never trained on (2026-08-27, jobs
+    4829780/4835373).** Standing record: 16 matched-protocol arms — 4 adopted
+    (v04 emit-all, v09 strict-value, v14 stack, v07 hybrid search), 3 killed,
+    2 training bets closed as clean double negatives; every claim behind
+    replication or a matched control; the unseen exam and its exact-optima
+    sidecar remain as permanent instruments; the three durable lessons in
+    variants/DESIGN.md §7: train on the number you are graded on; keep
+    everything the search examined; search in subgoals plus ordinary moves.
+    The lab stands down to maintenance; the main line consumes the adopted
+    recipe; M6 continues separately.
