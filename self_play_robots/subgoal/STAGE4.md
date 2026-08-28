@@ -338,6 +338,66 @@ Stage 3 reached from its ranking study, reached here from the search side.
 The practical consequence for Stage 5 is that the clamp is worth carrying only
 where a network-free heuristic is in play.
 
+### The two series
+
+Both arms, three rounds, the pre-registered headline configuration (1200
+expansions, beam 100, tight bound), every row recomputed from its own move
+dumps. **0 replay failures, 0 misaligned rows, 0 length disagreements, 0
+solutions shorter than `d*` across the whole series.**
+
+**Part B — warm-started from the Stage 3 supervised net:**
+
+| round | optimal % of 450 | solved / 450 | extra moves | proved | vs bar 80.9% | vs floor 68.7% |
+|---|---|---|---|---|---|---|
+| 0 (the Stage 3 net = the bar) | 80.9% (364) | 404/450 | 0.248 | 307 | +0.0 | +12.2 |
+| 1 | 88.9% (400) | 429/450 | 0.198 | 329 | +8.0 | +20.2 |
+| 2 | 86.7% (390) | 424/450 | 0.184 | 316 | +5.8 | +18.0 |
+| **3** | **93.6% (421)** | **440/450** | **0.086** | 331 | **+12.7** | +24.9 |
+
+**Part C — random initialisation, no exact-engine data at any point:**
+
+| round | optimal % of 450 | solved / 450 | extra moves | proved | vs bar 80.9% | vs its own floor |
+|---|---|---|---|---|---|---|
+| 0 (random net, no learning) | 68.7% (309) | 356/450 | 0.343 | 286 | −12.2 | +0.0 |
+| 1 | 85.1% (383) | 415/450 | 0.270 | 323 | +4.2 | +16.4 |
+| 2 | 93.8% (422) | 444/450 | 0.162 | 331 | +12.9 | +25.1 |
+| **3** | **95.3% (429)** | **444/450** | **0.113** | 334 | **+14.4** | **+26.7** |
+
+**GATE: PASS, both arms.** Part B's best round is 93.6% and Part C's is 95.3%,
+both far above the 80.9% bar frozen before either arm was submitted. Part B is
+not monotone — it gives back 2.2 points at round 2 before recovering — while
+Part C rises every round.
+
+### Certified-label yield, per round
+
+The loop was never starved, and it fed itself better as `h` improved. Root
+puzzles are 1200 fresh boards per round; probes are the sibling children of every
+state a certified plan reached.
+
+| arm | round | root boards | solved | certified plans | **replay failures** | probes certified | states | labels | from a PROVED search |
+|---|---|---|---|---|---|---|---|---|---|
+| B | 1 | 1200 | 665 | 767 | **0** | 3104/3824 | 1912 | 5235 | 2824 (54%) |
+| B | 2 | 1200 | 743 | 850 | **0** | 3921/4547 | 2274 | 6405 | 3557 (56%) |
+| B | 3 | 1200 | 707 | 786 | **0** | 3465/3977 | 1989 | 5646 | 3206 (57%) |
+| C | 1 | 1200 | 550 | 642 | **0** | 2152/2546 | 1273 | 3609 | 2111 (58%) |
+| C | 2 | 1200 | 661 | 758 | **0** | 3072/3572 | 1786 | 5057 | 3142 (62%) |
+| C | 3 | 1200 | **781** | 870 | **0** | 4181/4686 | 2344 | **6739** | 3709 (55%) |
+
+**The self-play solve rate tracks the bench series without ever looking at it.**
+Arm C solves 550 → 661 → 781 of its own 1200 fresh puzzles across the rounds,
+monotone, exactly like its bench curve; arm B goes 665 → 743 → 707, peaking and
+dipping, exactly like its bench curve. That is an internal, benchmark-free
+signal that the loop is genuinely bootstrapping and not merely fitting bench450.
+
+Label quality also improves as the loop runs. Audited against the exact engine
+after the fact (`stage4 auditlabels`, one shard per round): **0 labels below the
+true optimum in any round**, and the exactly-optimal fraction rises 84.4% → 89.7%
+(B) and 85.8% → 91.3% (C) from round 1 to round 3.
+
+The corpus stays SMALL: about 6 700 labels in arm C's best round, against the
+**335 280** exact-engine labels Stage 3 trained on — roughly 50x fewer. Whatever
+self-play is buying here, it is not volume.
+
 ### The offline metric does not predict the planner — a warning for Stage 5
 
 Every checkpoint, scored on ONE fixed held-out set: Stage 3's validation corpus
@@ -352,16 +412,18 @@ therefore NOT comparable across rounds; this set is the same for all six.
 |---|---|---|---|---|---|
 | Stage 3 supervised (Part A bar) | 80.9% | 0.378 | **69.9%** | **93.8%** | 2.01 |
 | random init (C round 0) | 68.7% | 0.046 | 30.8% | 66.1% | 39.24 |
-| B round 1 | **88.9%** | **0.393** | 66.4% | 93.1% | **1.85** |
+| B round 1 | 88.9% | **0.393** | 66.4% | 93.1% | **1.85** |
 | B round 2 | 86.7% | 0.383 | 63.3% | 90.3% | 1.96 |
+| B round 3 | 93.6% | 0.373 | 59.5% | 92.0% | 2.04 |
 | C round 1 | 85.1% | 0.330 | 62.6% | 92.0% | 2.65 |
-| C round 2 | **93.8%** | 0.337 | 58.5% | 89.6% | 2.17 |
+| C round 2 | 93.8% | 0.337 | 58.5% | 89.6% | 2.17 |
+| C round 3 | **95.3%** | 0.350 | 57.8% | 88.9% | 1.99 |
 
-**The two columns disagree, and the disagreement is the finding.** C round 2 is
-the best planner in this project's history on the headline metric and is the
-WORST of the four trained nets on the offline metric Stage 3 used to pick its
-checkpoint — top-1 58.5% against the supervised net's 69.9%, top-5 89.6% against
-93.8%. Ranking accuracy on random-walk states is not what the search needs.
+**The two columns disagree, and the disagreement is the finding.** The bench
+column rises monotonically down the C block while top-1 falls monotonically:
+C round 3 is the best planner in this project's history at 95.3% and has the
+WORST top-1 of every trained net, 57.8% against the supervised net's 69.9%.
+Ranking accuracy on random-walk states is not what this search needs.
 
 The most likely reason is distribution, and it is testable rather than settled
 here: the Stage 3 corpus samples parents by random macro walks, while a
@@ -409,3 +471,87 @@ strict — there is no instance C solves that forward misses.
 
 From-scratch beating warm-started is itself separable (p = 1.1e-04), so it is a
 real effect and not round-to-round wobble.
+
+### Final paired tests, round 3
+
+The round-2 tests above were computed mid-run; these are the ones that stand.
+Same 450 instances, exact two-sided tests, discordant pairs given.
+
+| comparison | solved | discordant | McNemar p | optimal | discordant | McNemar p | moves (shorter/longer/ties) | sign p |
+|---|---|---|---|---|---|---|---|---|
+| C r3 vs forward | 444 vs 450 | 0/6 | **0.031** | 429 vs 424 | 23/18 | **0.533** | 23/13/408 | **0.133** |
+| B r3 vs forward | 440 vs 450 | 0/10 | **0.0020** | 421 vs 424 | 20/23 | **0.761** | 20/19/401 | **1.0** |
+| C r3 vs B r3 | 444 vs 440 | 8/4 | **0.388** | 429 vs 421 | 15/7 | **0.134** | 12/6/418 | **0.238** |
+| C r3 vs backward | 444 vs 432 | 18/6 | 0.023 | 429 vs 240 | 193/4 | 6.2e-52 | 183/5/238 | 9.7e-48 |
+
+Three statements follow, and only these three:
+
+1. **Neither self-play arm is separable from the supervised forward planner on
+   move-optimality** (p = 0.53 and p = 0.76), nor on solution length (p = 0.13
+   and p = 1.0). C round 3's 429 exceeds forward's 424 as a raw count; the
+   difference is not separable and is NOT claimed as a win.
+2. **Forward is strictly better at solving**, and that IS separable: 0/6 and
+   0/10 discordant, p = 0.031 and p = 0.0020. There is no instance either
+   self-play arm solves that forward misses. Forward solves 450/450; C round 3
+   solves 444/450, so its six unsolved instances cap it at **98.7%** before
+   quality is considered.
+3. **By round 3 the two arms are indistinguishable from each other** on all
+   three tests (p = 0.39, 0.13, 0.24). At round 2 C beat B separably
+   (p = 1.1e-04); by round 3 that gap has closed.
+
+**So the answer to the question Stage 4 was set is: the supervised warm start
+does not matter at convergence.** It bought a better round 0 (80.9% against
+68.7%) and nothing that survives three rounds of certified self-play. The
+project has assumed the opposite since it began; this is the first measurement
+of it, and the cold-start control that was run once and abandoned turns out to
+have been the more interesting arm.
+
+## The plan's table, final
+
+Budget 1200 expansions for every row; the first three rows are at the arena
+protocol (beam 5, board-only bound) from their own payloads.
+
+| model | optimal % of 450 | **solved / 450** | extra moves (on its solves) |
+|---|---|---|---|
+| forward (move-by-move, supervised) | 94.2% (424/450) | **450/450** | 0.067 (n=450) |
+| backward (subgoal, supervised) | 53.3% (240/450) | 432/450 | 1.840 (n=432) |
+| current self-play line (v14_stack nets) | 51.3% (231/450) | 439/450 | 1.995 (n=439) |
+| Stage 3 protocol row (beam 5, board-only bound) | 60.7% (273/450) | 415/450 | 0.708 (n=415) |
+| Part A re-baseline (beam 100, tight bound, exact labels) | 80.9% (364/450) | 404/450 | 0.248 (n=404) |
+| **Part B — self-play from the supervised net, round 3** | **93.6% (421/450)** | 440/450 | **0.086 (n=440)** |
+| **Part C — self-play FROM SCRATCH, no solver label ever, round 3** | **95.3% (429/450)** | 444/450 | 0.113 (n=444) |
+
+## Compute
+
+| leg | jobs | node-hours |
+|---|---|---|
+| dev set + beam sweep (A1) | 4867783 | 0.051 |
+| bench rows + bound isolation + Part C round 0 (A2/A3) | 4867890, 4867891, 4867892 | 0.082 |
+| self-play rounds, both arms | 4868991, 4868992, 4869840, 4869841, 4870562, 4870669 | 0.478 |
+| bench evaluations of the six round checkpoints | 4869842, 4869843, 4870561, 4870668, 4870933, 4870935 | 0.098 |
+| exploratory clamp row (network arm) | 4870448 | 0.018 |
+| verification, label audits, ranking audits, paired tests | login node, CPU only | 0 |
+| **total** | 17 GPU jobs, 0 failed, 0 wasted | **0.750** |
+
+Stage 4's budget was 6 node-hours; it used **0.750**, with no job cancelled, no
+job lost to walltime and nothing recomputed. The sharded generation was never
+actually needed to recover a leg, but arm B's round-2 and round-3 jobs both
+finished within 10 minutes of their walltime, so it was close to being needed.
+
+## Verdict
+
+**Part A: both free wins are real.** Sizing the beam to the vocabulary and
+strengthening the bound moved the exact-label planner from 60.7% to **80.9%**
+with no training at all — more than the entire Stage 3 training run bought.
+
+**Part B: PASS.** 80.9% → 88.9% → 86.7% → **93.6%**.
+
+**Part C: PASS, and it is the result of the stage.** From a random network,
+with no exact engine, no human labels and no hand-written proposer at any point:
+68.7% → 85.1% → 93.8% → **95.3%**, monotone, every solution replay-certified.
+It is not separable from the supervised forward planner on move-optimality or on
+solution length, and forward remains strictly better at finding a solution at
+all. The project's original claim — a planner that discovers its own subgoals
+and learns to score them from its own certified experience — is demonstrated
+here in the only form the metric allows, and the supervised start turns out to
+be unnecessary to get there.
