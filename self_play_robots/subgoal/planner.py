@@ -528,13 +528,17 @@ class Search:
 
     def _path(self, goal_state):
         """(moves, steps) for the best known path to `goal_state`.
-        steps = [(parent_state, robot, cell, child_state), ...] root first."""
+        steps = [(parent_state, robot, cell, child_state, edge_cost), ...] root
+        first. The edge cost is carried explicitly and the caller sums it: a
+        state's `best_g` can be improved by a different route AFTER this path
+        was built, so `best_g` is not the cost of THIS plan's prefix and using
+        it would mislabel the remaining cost."""
         seq, steps = [], []
         cur = goal_state
         while self.parent[cur] is not None:
             prev, i, dirs = self.parent[cur]
             seq.extend([[COLOR_ORDER[i], DIRECTIONS[d]] for d in dirs][::-1])
-            steps.append((prev, i, cur[i], cur))
+            steps.append((prev, i, cur[i], cur, len(dirs)))
             cur = prev
         seq.reverse()
         steps.reverse()
@@ -552,10 +556,11 @@ class Search:
         out = []
         for gs in self.goal_states:
             moves, steps = self._path(gs)
-            out.append(dict(cost=self.best_g[gs], moves=moves, steps=steps,
+            out.append(dict(cost=sum(st[4] for st in steps), moves=moves,
+                            steps=steps,
                             proved=(self.reason ==
                                     "proved optimal in the pruned graph"
-                                    and gs is self.best_state)))
+                                    and gs == self.best_state)))
         return out
 
     def row(self):

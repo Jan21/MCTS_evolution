@@ -258,10 +258,11 @@ def selfplay(a):
                 stat["replay_failures"] += 1
                 continue           # a plan that fails replay labels NOTHING
             stat["certified"] += 1
-            D = pl["cost"]
-            for parent, r, cell, child in pl["steps"]:
-                put((s.env_id, parent, s.tidx, s.goal), r, cell,
-                    D - s.best_g[child], proved)
+            D, spent = pl["cost"], 0
+            for parent, r, cell, _child, edge in pl["steps"]:
+                spent += edge
+                put((s.env_id, parent, s.tidx, s.goal), r, cell, D - spent,
+                    proved)
 
     t0 = time.time()
     P.run(insts, heur, a.k, a.expansions, concurrency=a.concurrency,
@@ -580,6 +581,58 @@ def beam(a):
                                   date=time.strftime("%Y-%m-%dT%H:%M:%S")))
 
 
+def auditlabels(a):
+    """Every self-play label must be the cost of a plan that exists, so it can
+    never be BELOW the true optimum. Checked against the exact engine on a
+    sample -- the engine is used to AUDIT the corpus, never to build it, and
+    this runs after the round it audits."""
+    from subgoal import rustexact
+    rng = random.Random(a.seed)
+    z = np.load(a.corpus, allow_pickle=False)
+    ctg, cost, pos = z["ctg"], z["cost"], z["positions"]
+    n = SIZE
+    items = [(s, r, c) for s in range(ctg.shape[0]) for r in range(ROBOTS)
+             for c in np.flatnonzero(ctg[s, r] >= 0)]
+    rng.shuffle(items)
+    items = items[:a.n]
+    q = []
+    for s, r, c in items:
+        child = [list(map(int, p)) for p in pos[s]]
+        child[r] = [int(c) % n, int(c) // n]
+        q.append((int(z["env_id"][s]), child, int(z["target_idx"][s]),
+                  [int(z["target"][s][0]), int(z["target"][s][1])]))
+    vals = rustexact.ctg_batch(q, a.sidecars, a.work, threads=a.threads,
+                               tag="audit4")
+    below = tight = checked = 0
+    slack = []
+    for (s, r, c), v in zip(items, vals):
+        if v is None:
+            continue
+        lab = int(ctg[s, r, c])
+        checked += 1
+        slack.append(lab - v)
+        if lab < v:
+            below += 1
+            if below < 5:
+                print(f"  IMPOSSIBLE label {lab} < true {v} at state {s} "
+                      f"robot {r} cell {c}")
+        tight += lab == v
+    sl = np.array(slack, float)
+    print(f"[auditlabels] {a.corpus}: {checked} labels audited, {below} below "
+          f"the true optimum (must be 0), {tight} exactly optimal "
+          f"({100 * tight / max(checked, 1):.1f}%), mean slack {sl.mean():.3f}, "
+          f"max {sl.max():.0f}")
+    if a.out:
+        _atomic_json(a.out, dict(corpus=str(a.corpus), checked=checked,
+                                 below_true=below, exactly_optimal=int(tight),
+                                 mean_slack=float(sl.mean()),
+                                 max_slack=float(sl.max()),
+                                 date=time.strftime("%Y-%m-%dT%H:%M:%S")))
+    if below:
+        raise SystemExit("STAGE4 AUDITLABELS FAILED: a label is below the optimum")
+    print("SPR SUBGOAL STAGE4 AUDITLABELS DONE")
+
+
 def stops(a):
     """Row-by-row diff of two payloads of the SAME instance set: what the
     stronger bound converted, and whether it changed any solution."""
@@ -875,6 +928,16 @@ def main(argv=None):
     bm.add_argument("--json", dest="json_out", default=None)
     bm.add_argument("--pick", default=None, help="write the chosen width here")
     bm.set_defaults(fn=beam)
+
+    al = sub.add_parser("auditlabels")
+    al.add_argument("--corpus", required=True)
+    al.add_argument("--n", type=int, default=3000)
+    al.add_argument("--seed", type=int, default=5)
+    al.add_argument("--threads", type=int, default=16)
+    al.add_argument("--sidecars", default=SIDE)
+    al.add_argument("--work", default=WORK)
+    al.add_argument("--out", default=None)
+    al.set_defaults(fn=auditlabels)
 
     st = sub.add_parser("stops")
     st.add_argument("--before", required=True)
