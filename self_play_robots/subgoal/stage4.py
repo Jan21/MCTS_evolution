@@ -730,32 +730,85 @@ def report(a):
 
 
 def series(a):
-    """The per-round series of one self-play arm, with denominators."""
+    """The per-round series of one self-play arm, with denominators, against BOTH
+    reference points: the Part A bar (what learning must beat) and the
+    no-learning floor (the randomly initialised network at the same
+    configuration, which is what this search does with no heuristic at all)."""
     from subgoal import table as T
     bench = load_bench(a.instances)
     bar = json.loads(BAR_FILE.read_text()) if BAR_FILE.exists() else None
+    floor = T.score(a.floor, bench) if a.floor and Path(a.floor).exists() else None
     out = []
     for spec in a.row:
         lbl, _, path = spec.partition("=")
-        if not Path(path).exists():
-            out.append((lbl, None))
-            continue
-        out.append((lbl, T.score(path, bench)))
-    print("| round | optimal % of 450 | solved / 450 | extra moves | proved | "
-          "vs Part A bar |")
-    print("|---|---|---|---|---|---|")
+        out.append((lbl, T.score(path, bench) if Path(path).exists() else None))
+    hb = "vs Part A bar" + (f" ({bar['pct_optimal']:.1f}%)" if bar else "")
+    hf = "vs no-learning floor" + (f" ({floor['pct_optimal']:.1f}%)" if floor else "")
+    print(f"| round | optimal % of 450 | solved / 450 | extra moves | proved | "
+          f"{hb} | {hf} |")
+    print("|---|---|---|---|---|---|---|")
     for lbl, s in out:
         if s is None:
-            print(f"| {lbl} | — | — | — | — | — |")
+            print(f"| {lbl} | — | — | — | — | — | — |")
             continue
         pay = json.loads(Path(s["path"]).read_text())
         agg = list(pay["systems"].values())[0]["aggregate"]
-        d = "" if bar is None else f"{s['pct_optimal'] - bar['pct_optimal']:+.1f}"
+        db = "—" if bar is None else f"{s['pct_optimal'] - bar['pct_optimal']:+.1f}"
+        df = "—" if floor is None else f"{s['pct_optimal'] - floor['pct_optimal']:+.1f}"
         print(f"| {lbl} | {s['pct_optimal']:.1f}% ({s['optimal']}/{s['n']}) "
               f"| {s['solved']}/{s['n']} | {s['mean_extra']:.3f} "
-              f"| {agg['proved_optimal_in_pruned_graph']} | {d} |")
+              f"| {agg['proved_optimal_in_pruned_graph']} | {db} | {df} |")
+    print(f"\nreplay failures across the series: "
+          f"{sum(len(s['replay_failures']) for _l, s in out if s)}")
+    if a.gate and bar is not None:
+        best = max((s for _l, s in out if s), key=lambda s: s["pct_optimal"])
+        v = "PASS" if best["pct_optimal"] > bar["pct_optimal"] else "FAIL"
+        print(f"Stage 4 gate (must EXCEED the Part A bar "
+              f"{bar['pct_optimal']:.1f}% of {bar['n']}): best round "
+              f"{best['pct_optimal']:.1f}% -> {v}")
     if a.json_out:
-        _atomic_json(a.json_out, [{"label": l, **(s or {})} for l, s in out])
+        _atomic_json(a.json_out, dict(
+            bar=bar, floor=None if floor is None else
+            {k: floor[k] for k in ("path", "pct_optimal", "optimal", "solved")},
+            rows=[{"label": l, **(s or {})} for l, s in out]))
+
+
+def yields(a):
+    """The certified-label yield of every self-play round: boards attempted,
+    plans that replayed clean, states labelled. Recorded per round, because a
+    stalled loop is only diagnosable if you can tell starvation from
+    uninformative labels."""
+    import glob
+    rows = []
+    for arm in a.arms:
+        for r in range(1, a.rounds + 1):
+            for kind in ("train", "val"):
+                files = sorted(glob.glob(str(OUT / f"sp_{arm}_r{r}_{kind}*.npz.meta.json")))
+                if not files:
+                    continue
+                t = dict(arm=arm, round=r, kind=kind, shards=len(files))
+                for f in files:
+                    d = json.loads(Path(f).read_text())
+                    for k in ("searches", "solved", "plans", "certified",
+                              "replay_failures", "proved", "probe_searches",
+                              "probe_solved", "probe_replay_failures", "n_states",
+                              "n_labels", "label_pairs_proved", "seconds"):
+                        t[k] = t.get(k, 0) + d.get(k, 0)
+                rows.append(t)
+    print("| arm | round | set | root boards | solved | certified plans | replay "
+          "failures | probe searches certified | states labelled | labels | "
+          "labels from a PROVED search | gen s |")
+    print("|---|---|---|---|---|---|---|---|---|---|---|---|")
+    for t in rows:
+        print(f"| {t['arm']} | {t['round']} | {t['kind']} | {t['searches']} "
+              f"| {t['solved']} | {t['certified']} "
+              f"| **{t['replay_failures'] + t['probe_replay_failures']}** "
+              f"| {t['probe_solved']}/{t['probe_searches']} | {t['n_states']} "
+              f"| {t['n_labels']} | {t['label_pairs_proved']} "
+              f"({100 * t['label_pairs_proved'] / max(t['n_labels'], 1):.0f}%) "
+              f"| {t['seconds']:.0f} |")
+    if a.json_out:
+        _atomic_json(a.json_out, rows)
 
 
 # ---------------------------------------------------------------------------
@@ -964,7 +1017,16 @@ def main(argv=None):
     se.add_argument("--instances", default=str(BENCH))
     se.add_argument("--row", action="append", default=[])
     se.add_argument("--json", dest="json_out", default=None)
+    se.add_argument("--floor", default=str(OUT / "round_c_r0.json"),
+                    help="the no-learning reference: the random net, same config")
+    se.add_argument("--gate", action="store_true")
     se.set_defaults(fn=series)
+
+    yl = sub.add_parser("yields")
+    yl.add_argument("--arms", nargs="+", default=["b", "c"])
+    yl.add_argument("--rounds", type=int, default=3)
+    yl.add_argument("--json", dest="json_out", default=None)
+    yl.set_defaults(fn=yields)
 
     v = sub.add_parser("verify")
     v.add_argument("--instances", default=str(BENCH))
