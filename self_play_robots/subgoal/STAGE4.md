@@ -286,3 +286,30 @@ worth running.
 **80.9% (364/450)**, frozen into `results/subgoal/stage4/partA_bar.json` and
 committed (b8f50db) before the first self-play job (4868991) was submitted.
 Parts B and C must EXCEED it.
+
+## B and C. Certified self-play, warm-started and from scratch
+
+### What the loop actually did, and how it was checked
+
+Both arms run the identical loop; they differ only in what round 1 starts from.
+Per round: 1200 fresh root puzzles on train-split boards 1000–1799 searched with
+sigma = 0.5 exploration noise at 400 expansions, then every state a certified
+plan passed through is re-searched through `--probe 2` of its sibling children
+at 200 expansions, then `h` is retrained warm-started on a two-round rolling
+buffer, checkpoint selected by `val_mae_all` on that round's own self-play
+validation corpus (boards 1850–1899). No exact-engine label enters either arm at
+any point.
+
+Four checks, all of which had to pass before any round was scored:
+
+| check | how | result |
+|---|---|---|
+| no benchmark board is ever generated on | env ids of every corpus vs bench450 and dev200 | arm B 541 distinct boards, arm C 479, all in 1000–1899; **overlap with bench450 = 0, with dev200 = 0** |
+| a plan that fails replay labels nothing | `table.py::replay` on every finished plan, length checked against the search's own cost | **0 replay failures** across every round of both arms, roots and probes |
+| the labels are not fantasy | `stage4 auditlabels` re-solves a sample with the exact engine — used to AUDIT the corpus, never to build it, and run after the round it audits | **0 labels below the true optimum**; 84.4% (B) / 85.8% (C) exactly optimal, mean slack 0.48 / 0.33 |
+| the evaluated net is the one the round trained | L1 weight delta against the initialisation | B round 1 vs Stage 3 supervised = 2206 (not identical); C round 1 vs its random init = 6328; C round 1 vs the supervised net = 41409, i.e. nowhere near it |
+
+Every bench row below is the pre-registered headline configuration — 1200
+expansions, beam 100, the tight bound, no clamp — and is recomputed from its own
+move dumps by `subgoal/table.py`: **0 replay failures, 0 misaligned rows, 0
+length disagreements, 0 solutions shorter than `d*`** across the whole series.
