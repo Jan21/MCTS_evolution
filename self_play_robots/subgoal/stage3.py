@@ -294,12 +294,14 @@ def beam(a):
                          candidates_scored=agg["h_candidates_total"],
                          proved=agg["proved_optimal_in_pruned_graph"],
                          wall_seconds=proto.get("wall_seconds")))
-    recs.sort(key=lambda r: (r["arm"], r["k"]))
-    print("| h | beam k | optimal % of 450 | solved / 450 | extra moves | mean expansions | encoder passes | wall s |")
-    print("|---|---|---|---|---|---|---|---|")
+    recs.sort(key=lambda r: (-r["expansions"], r["arm"], r["k"]))
+    print("| h | budget | beam k | optimal % of 450 | solved / 450 | extra moves "
+          "| mean expansions used | heuristic queries | wall s |")
+    print("|---|---|---|---|---|---|---|---|---|")
     for r in recs:
         me = "—" if r["mean_extra"] is None else f"{r['mean_extra']:.3f}"
-        print(f"| {r['arm']} | {r['k']} | {r['pct']:.1f}% ({r['optimal']}/450) "
+        print(f"| {r['arm']} | {r['expansions']} | {r['k']} "
+              f"| {r['pct']:.1f}% ({r['optimal']}/450) "
               f"| {r['solved']}/450 | {me} | {r['mean_expansions']:.0f} "
               f"| {r['encoder_passes']} | {r['wall_seconds']} |")
     bad = [r for r in recs if r["replay_failures"]]

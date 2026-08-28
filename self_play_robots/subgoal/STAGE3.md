@@ -115,4 +115,261 @@ afterwards is labelled exploratory and reported separately from the headline.
 
 ## Results
 
-_(to be filled in by the run)_
+Every number below is recomputed this session from the payloads' own move
+dumps: `subgoal/table.py` replays each solution under the real joint-game rules
+(`simulate.slide`, a no-op slide illegal — the physics of
+`eval/replay_validate.py`) and counts a puzzle optimal only when the replayed
+length equals its `d*`. **0 replay failures across all 14 planner payloads**, 0
+misaligned rows, 0 length disagreements, 0 solutions shorter than `d*`.
+
+## Verdict
+
+**Gate: PASS.** At the pre-registered protocol — 1200 expansions, k = 5, all 450
+instances — the learned-`h` planner solves **60.7% of the 450 move-optimally
+(273/450)** against the backward supervised planner's 53.3% (240/450). It is
+also the best-quality subgoal planner in the project by a wide margin on its
+solves (mean 0.708 extra moves against 1.840 and 1.995).
+
+Two findings matter more than the gate.
+
+1. **The learned `h` is worth about twenty points over the non-learned one, at
+   every beam width.** Same search, same physics edges, same budget, only `h`
+   changes: 60.7% vs **41.1%** at k = 5, 71.6% vs 59.3% at k = 10, 74.9% vs
+   65.3% at 20, 79.6% vs 66.7% at 50, 79.8% vs 67.1% unpruned. This is the
+   comparison the stage was told to make, and it is the clearest positive
+   result the project has for a learned component: the network is not
+   decorating a search that already worked.
+2. **k = 5 is the wrong beam for this space, exactly as the plan suspected.**
+   The arena's k = 5 was calibrated for a vocabulary of ~50 candidates; this one
+   offers 1024, of which ~148 are physically reachable. Widening the beam at
+   *identical* network cost (the candidate cell is read out, not encoded, so an
+   expansion always costs 4 encoder passes whatever k is) lifts the learned
+   planner from 60.7% to **79.8% (359/450)** and drops its mean extra moves from
+   0.708 to 0.265.
+
+## 1. The plan's table
+
+`python -m subgoal.stage3 report --row ...`, which is `subgoal/table.py` with a
+fourth row. Budget 1200 expansions, k = 5 for every row.
+
+| model | optimal % of 450 | solved / 450 | extra moves (on its solves) |
+|---|---|---|---|
+| forward (move-by-move, supervised) | 94.2% (424/450) | 450/450 | 0.067 (n=450) |
+| backward (subgoal, supervised) | 53.3% (240/450) | 432/450 | 1.840 (n=432) |
+| current self-play line (v14_stack nets) | 51.3% (231/450) | 439/450 | 1.995 (n=439) |
+| **new: learned subgoal discovery** | **60.7% (273/450)** | 415/450 | **0.708 (n=415)** |
+
+The first three rows reproduce their payload aggregates exactly (Stage 0 gate
+PASS, PASS, PASS), so the fourth is measured on the same scale as the others.
+At the beam this space actually wants the fourth row is **79.8% (359/450),
+404/450 solved, 0.265 extra** — reported as a separate row in §3, never
+substituted for the protocol row.
+
+The forward move-by-move planner is still far ahead at 94.2%. Stage 3 does not
+change that; it changes the standing of *subgoal* planning, which went from
+53.3% to 60.7% at protocol and to 79.8% at the beam width proportionate to the
+vocabulary.
+
+## 2. Learned `h` against the non-learned one
+
+### As planners (the comparison the stage was told to make)
+
+Identical search, identical physics edges, identical budget and beam; the only
+difference is `h`.
+
+| | learned `CtgNet` `h` | relaxed any-stop `h` (no network) | difference |
+|---|---|---|---|
+| optimal % of 450, k=5 / 1200 exp | **60.7% (273)** | 41.1% (185) | **+19.6 pts** |
+| solved / 450 | 415 | 381 | +34 |
+| mean extra moves on its solves | 0.708 | 1.381 | −0.673 |
+| optimal % at k=10 | 71.6% (322) | 59.3% (267) | +12.3 |
+| optimal % at k=20 | 74.9% (337) | 65.3% (294) | +9.6 |
+| optimal % at k=50 | 79.6% (358) | 66.7% (300) | +12.9 |
+| optimal % at k=200 (unpruned) | 79.8% (359) | 67.1% (302) | +12.7 |
+
+The gap is largest exactly where the plan predicted the difficulty is — a hard
+top-5 prune — and it never closes. Per `d*` at k = 5, the learned `h` is even
+with the relaxed one on the trivial instances (`d*` ≤ 3: 50/55 vs 50/55) and
+pulls away as the puzzle deepens (`d*` = 6: 49/73 vs 26/73; `d*` = 8: 37/73 vs
+20/73; `d*` = 9: 17/62 vs 13/62).
+
+### As rankers, with no search at all
+
+`python -m subgoal.stage3 rank`, on the validation corpus (boards 1800–1849, no
+training state came from them). One decision = one state's whole candidate set,
+all four robots pooled, exactly as the beam sees it; the true ordering is
+`f = c + ctg` with the exact edge cost and the exact cost-to-go.
+
+| scorer | Spearman rho vs the true cost-to-go | **top-1 of f = c + h** | **top-5 of f = c + h** | MAE (moves) |
+|---|---|---|---|---|
+| **learned `CtgNet` h** | 0.378 | **69.9%** | **93.8%** | **2.01** |
+| any-stop relaxation h (no network) | **0.518** | 47.8% | 83.4% | 5.44 |
+| h = 0 (rank by the edge cost alone) | — (constant) | 34.3% | 79.9% | 7.86 |
+
+289 decisions, mean 39.3 labelled children per (state, robot) group.
+
+This is the sharpest statement of what the network bought. The relaxed
+heuristic is *more monotone* in the true cost-to-go than the network
+(rho 0.518 vs 0.378) — but it under-estimates it by 5.4 moves on average,
+unevenly. The beam does not rank `h`; it ranks `g + c + h` with an EXACT `c`,
+so an `h` that is off by five moves in a way that varies across candidates
+destroys the ordering however well it correlates. The learned `h` is
+calibrated (MAE 2.01), and that is what turns 47.8% into 69.9% at the top of
+the list and 83.4% into 93.8% inside a top-5 beam. Ranking by the edge cost
+alone — the Stage 2 design, with no remaining-distance term at all — is worst
+at 34.3% / 79.9%, which is the same ordering Stage 2's beam table found.
+
+## 3. The beam-width study
+
+Every row is all 450 instances, replay-certified. **The network arm spends four
+encoder passes per expansion at every k**, because the candidate cell is read
+out rather than encoded — so within a budget the k rows are matched on network
+calls and differ only in the prune. The 300-expansion block is the *backward
+planner's own* network-call budget: it spends one network pass per expansion,
+1200 per instance, and this planner spends four, so 300 expansions is the
+call-matched row.
+
+| h | budget | beam k | optimal % of 450 | solved / 450 | extra moves | mean expansions used | heuristic queries | wall s |
+|---|---|---|---|---|---|---|---|---|
+| net | 1200 | 5 | 60.7% (273/450) | 415/450 | 0.708 | 581 | 1042562 | 462.5 |
+| net | 1200 | 10 | 71.6% (322/450) | 394/450 | 0.312 | 779 | 1399052 | 624.9 |
+| net | 1200 | 20 | 74.9% (337/450) | 386/450 | 0.332 | 853 | 1533459 | 699.0 |
+| net | 1200 | 50 | 79.6% (358/450) | 402/450 | 0.291 | 891 | 1600604 | 768.0 |
+| net | 1200 | 200 | 79.8% (359/450) | 404/450 | 0.265 | 898 | 1613270 | 924.4 |
+| relaxed | 1200 | 5 | 41.1% (185/450) | 381/450 | 1.381 | 557 | 997420 | 92.6 |
+| relaxed | 1200 | 10 | 59.3% (267/450) | 349/450 | 0.479 | 696 | 1250841 | 119.9 |
+| relaxed | 1200 | 20 | 65.3% (294/450) | 345/450 | 0.348 | 687 | 1234515 | 131.8 |
+| relaxed | 1200 | 50 | 66.7% (300/450) | 351/450 | 0.365 | 682 | 1225692 | 159.4 |
+| relaxed | 1200 | 200 | 67.1% (302/450) | 354/450 | 0.379 | 679 | 1219133 | 270.6 |
+| net | 300 | 5 | 54.7% (246/450) | 345/450 | 0.643 | 186 | 333296 | 155.0 |
+| net | 300 | 20 | 60.0% (270/450) | 324/450 | 0.441 | 236 | 424630 | 199.5 |
+| relaxed | 300 | 5 | 39.1% (176/450) | 308/450 | 1.159 | 195 | 349395 | 38.8 |
+| relaxed | 300 | 20 | 52.2% (235/450) | 295/450 | 0.522 | 211 | 378284 | 46.9 |
+
+Three things to read out of it.
+
+* **Widening the beam is free in network calls and worth 19 points to the
+  learned planner** (60.7 → 79.8) and 26 to the relaxed one (41.1 → 67.1).
+  k = 5 was simply mis-sized for a 1024-candidate space.
+* **Solved-count and optimality trade off, and only for the weak heuristic.**
+  The relaxed arm *loses* solves as k grows (381 → 345) because a wider beam
+  spends the same 1200 expansions on a broader, shallower tree and can no
+  longer reach deep solutions. The learned arm does not pay that price above
+  k = 10 (394 → 404): a better `h` keeps the extra breadth pointed the right
+  way.
+* **Even at the backward planner's own network-call budget the learned planner
+  wins**: 54.7% at k = 5 and 60.0% at k = 20 with 300 expansions, against 53.3%.
+
+The residual failure is depth, not vocabulary. At k = 50 the learned planner is
+perfect on every instance with `d*` ≤ 5 (148/148) and 68/73 at `d*` = 6, then
+falls to 46/73 at `d*` = 8 and 28/62 at `d*` = 9; 312 of its 450 searches end on
+the expansion budget rather than with an optimality proof.
+
+## 4. Diagnostic: is the search or the heuristic at fault?
+
+EXACT_PLACEHOLDER
+
+## 5. The heuristic itself
+
+Target, corpus and architecture are as pre-registered. The exact engine
+(`move_planner/oracle.py` through its gate-verified Rust port) labelled
+**421 208** reachable children of 2400 parent states on train-split boards
+1000–1699 and **53 012** on validation boards 1800–1849; **335 280 (79.6%)** and
+**44 486 (83.9%)** got an exact cost-to-go, the rest hit the 400 000-expansion
+cap and carry no label at all. Mean labelled cost-to-go 7.58 / 7.40, max 20 /
+15. Board overlap: train↔val **0**, train↔bench450 **0**, val↔bench450 **0**
+(699 and 50 distinct boards).
+
+**No collapse this time.** At the pre-registered recurrence 4 the net trained
+normally: `val_group_spread` 0.83–1.86 throughout (Stage 2's collapsed runs sat
+at exactly 0.00), and the beam metric rose from 0.817 at epoch 0 to its maximum
+**0.9377 at epoch 11**, i.e. 93.8% of held-out decisions keep a truly optimal
+child inside a top-5 beam.
+
+| epoch | 0 | 5 | **11** | 20 | 30 | 39 |
+|---|---|---|---|---|---|---|
+| `val_top5` (pooled decision) | 0.817 | 0.924 | **0.938** | 0.900 | 0.900 | 0.855 |
+| `val_top1` | 0.488 | 0.671 | **0.699** | 0.637 | 0.581 | 0.609 |
+| `val_mae_group` (moves) | 1.86 | 1.78 | 2.01 | 2.11 | 2.45 | 3.07 |
+| `val_group_spread` | 1.05 | 0.92 | 1.17 | 1.15 | 1.57 | 1.59 |
+
+After epoch ~25 the net overfits (MAE climbs steadily while the ranking metric
+drifts down), so the checkpoint is a best-of-40 selection on a validation set
+disjoint from both the training boards and the benchmark boards. That is
+legitimate early stopping, but it should be said plainly: the reported planner
+uses epoch 11, not the last epoch, and the last epoch would have scored `val_top5`
+0.855 rather than 0.938.
+
+## 6. Compute
+
+| what | job | partition | GPUs | elapsed | node-hours |
+|---|---|---|---|---|---|
+| exact-engine labelling of 474 220 children | 4863820 | qgpu_exp | 2 | 38 m 05 s | 0.159 |
+| timing smoke (sizing the plan legs) | 4863872 | qgpu_exp | 1 | 3 m 15 s | 0.007 |
+| train the cost-to-go net, 40 epochs | 4863894 | qgpu_exp | 1 | 12 m 52 s | 0.027 |
+| plan leg A (gate row + control + relaxed beam study) | 4863895 | qgpu_exp | 1 | 21 m 12 s | 0.044 |
+| plan leg B (learned beam study) | 4863896 | qgpu_exp | 1 | 51 m 01 s | 0.106 |
+| plan leg C (call-matched 300-expansion rows) | 4863903 | qgpu_exp | 1 | 7 m 52 s | 0.016 |
+| exact-`h` diagnostic, first attempt (deadlocked, cancelled) | 4863897 | qgpu_exp | 2 | 34 m 57 s | 0.146 |
+| exact-`h` diagnostic | EXACTJOB | qgpu_exp | 2 | EXACTELAPSED | EXACTNH |
+| ranking analysis | RANKJOB | qgpu_exp | 1 | RANKELAPSED | RANKNH |
+| **total** | | | | | **TOTALNH** |
+
+Stage 3's budget was 3 node-hours. The one avoidable cost is job 4863897: the
+streaming driver for the exact engine wrote a whole round of ~9500 queries
+before reading any result, filled the engine's stdout pipe and deadlocked both
+sides. Fixed by draining stdout on a dedicated reader thread
+(`subgoal/rustexact.py::ExactCTG`).
+
+---
+
+## Provenance appendix
+
+Every number above, with the file it came from and how it was read.
+
+### Code (all committed before the runs that used it)
+
+| file | what it fixes |
+|---|---|
+| `self_play_robots/subgoal/planner.py` | the search, the three heuristics, the lockstep driver, the payload format |
+| `self_play_robots/subgoal/ctgnet.py` | the cost-to-go target, the net, the two losses, the pooled beam metric |
+| `self_play_robots/subgoal/rustexact.py` | the exact-engine driver: board sidecars, bulk labelling, the streaming diagnostic |
+| `self_play_robots/subgoal/stage3.py` | `gen` / `train` / `plan` / `rank` / `beam` / `report` / `verify`; `GATE_BACKWARD_PCT = 53.3` |
+| `self_play_robots/subgoal/table.py` | the four-row table, unchanged from Stage 0 |
+| `self_play_robots/jobs/subgoal_stage3_{gen,train,plan,exact,rank,smoke}.slurm` | the legs |
+
+The gate, the headline configuration, the tie-breaking rule and the checkpoint
+criterion were committed (f807931, dab9d1a, 03c8872, 243d800) **before any
+Stage 3 training or planning job was submitted**. Nothing was changed after a
+result was read.
+
+### Physics
+
+| claim | how it was checked |
+|---|---|
+| the search's fast slide is `simulate.slide` | `python -m subgoal.stage3 verify --n 20 --states 10`: 800 (state, robot) groups compared cell-for-cell and cost-for-cost against Stage 1's `subgoal/space.py::rest_cells`, **0 mismatches** |
+| the fast physics does not change any result | the 20-instance relaxed smoke run before and after the rewrite is byte-identical on move sequences, expansions and replay lengths (2.5x faster) |
+| every reported solution is legal and its length is what is counted | `subgoal/table.py::replay` on every row of every payload: **0 replay failures in 14 payloads** |
+| the exact labeller agrees with the reference oracle | the Rust engine's `cost_to_go` on the first 12 bench450 roots equals their `d*` (12, 4, 7, 1, 4, 6, 2, 4, 10, 6, 1, 7) |
+
+### Data
+
+| number | file | how it was read |
+|---|---|---|
+| the three reference rows | `results/fwd_m0/astar_candidate_scored.json`, `results/m0/g16r4_b1s21_b2flags.json`, `results/subgoal/v14_stack_g16r4_bench450_astar.json` | `python -m subgoal.table`, replaying every move dump; Stage 0 gate PASS on all three |
+| the fourth row and the whole beam study | `results/subgoal/stage3/plan_{net,relaxed}_k{5,10,20,50,200}_e{1200,300}.json` | `python -m subgoal.stage3 beam`, `... report --gate`; summary dumped to `results/subgoal/stage3/beam_summary.json` and `table4.json` |
+| stop reasons and the per-`d*` breakdown | the same payloads | `subgoal/_stage3_diag.py` |
+| training and validation corpora | `results/subgoal/stage3/{train_b1000-1699,val_b1800-1849}.npz` | `python -m subgoal.stage3 gen`; label counts, cost-to-go statistics and the three board-overlap checks read directly off the arrays |
+| the training curve | `runs/spr/subgoal/stage3_rec4/lightning_logs/version_0/metrics.csv` | per-epoch `val_top5` / `val_top1` / `val_mae_group` / `val_group_spread` |
+| the checkpoint | `runs/spr/subgoal/stage3_rec4/ctg-epoch=11-val_top5=0.9377.ckpt` | selected by `ModelCheckpoint(monitor="val_top5", mode="max")` |
+| the ranking comparison | `results/subgoal/stage3/rank_val.json` | `python -m subgoal.stage3 rank --data val_b1800-1849.npz` (36 s of login-node CPU, no GPU) |
+| the exact-`h` diagnostic | `results/subgoal/stage3/plan_exact_k5_e200.json` | `python -m subgoal.stage3 plan --arm exact` |
+| job elapsed times | `sacct -j ... -X` | the compute table |
+
+### Logs
+
+`runs/spr/spr-sg3-gen-4863820.out`, `spr-sg3-smoke-4863872.out`,
+`spr-sg3-train-4863894.out`, `spr-sg3-planA-4863895.out`,
+`spr-sg3-planB-4863896.out`, `spr-sg3-planC-4863903.out`,
+`spr-sg3-exact-4863897.out` (the deadlock), `spr-sg3-exact-EXACTJOB.out`,
+`spr-sg3-rank-RANKJOB.out`.

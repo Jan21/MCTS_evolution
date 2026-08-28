@@ -10,10 +10,10 @@
 # Cost basis: 89 ms of one core per exact solve; with an exact h every optimal
 # child carries the minimal f, so the search terminates in a handful of
 # expansions (cap 200). ~450 x ~5 x ~148 = ~330k solves = ~29 000 core-seconds
-# = ~15 min on 32 cores. Walltime 55 min -> at most 0.23 node-hours.
+# = ~19 min on 16 cores. Walltime 55 min -> at most 0.115 node-hours.
 #SBATCH -A open-37-42
 #SBATCH -p qgpu_exp
-#SBATCH --gpus 2
+#SBATCH --gpus 1
 #SBATCH --nodes=1
 #SBATCH --time=00:55:00
 #SBATCH --output=/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/%x-%j.out
@@ -36,7 +36,7 @@ if [ -s "$out" ]; then
 else
   t0=$SECONDS
   python -m subgoal.stage3 plan --arm exact --k "$K" --expansions "$EXP" \
-      --concurrency 64 --threads 32 --sidecars "$D/boards" \
+      --concurrency 64 --threads 16 --sidecars "$D/boards" \
       --name "exact_k${K}_e${EXP}" --out "$out" \
       || echo "SPR SG3-EXACT FAILED"
   echo "SPR SG3-EXACT took $((SECONDS-t0))s"
