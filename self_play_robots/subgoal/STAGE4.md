@@ -313,3 +313,27 @@ Every bench row below is the pre-registered headline configuration — 1200
 expansions, beam 100, the tight bound, no clamp — and is recomputed from its own
 move dumps by `subgoal/table.py`: **0 replay failures, 0 misaligned rows, 0
 length disagreements, 0 solutions shorter than `d*`** across the whole series.
+
+### Exploratory (NOT the headline, and not part of any gate)
+
+The admissible bound of A2 can also be used as a FLOOR on the ranking score —
+rank by `max(h, h_adm)` instead of `h`, since a heuristic can never truthfully
+be below an admissible bound. This was implemented before any Part A number was
+read (commit 84d6737) but run afterwards, so it is exploratory by the stage's
+own rule and the pre-registered rows stand as the headline. All rows are the
+headline configuration, replay-certified:
+
+| `h`, beam 100, 1200 expansions, tight bound | plain | with the clamp | change |
+|---|---|---|---|
+| any-stop relaxation (no network) | 67.8% (305/450) | **73.6% (331/450)** | **+5.8** |
+| learned `CtgNet` (Stage 3 checkpoint) | 80.9% (364/450) | 80.9% (364/450) | **+0.0** |
+
+The learned arm's two payloads are the same search: 0 solutions changed, and one
+expansion of difference in 236 023. **The clamp is a repair for a weak heuristic,
+not an improvement to a good one.** The relaxation sits below the admissible
+bound often enough that forcing it up is worth six points; the learned `h` is
+already at or above the bound essentially everywhere, which is independent
+evidence that what the network bought is calibration — the same conclusion
+Stage 3 reached from its ranking study, reached here from the search side.
+The practical consequence for Stage 5 is that the clamp is worth carrying only
+where a network-free heuristic is in play.
