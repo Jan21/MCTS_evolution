@@ -1,10 +1,13 @@
-# Learned subgoal discovery — Stage 3 (PRE-REGISTRATION)
+# Learned subgoal discovery — Stage 3
 
-`PLAN_SUBGOAL_DISCOVERY.md` §4, revised Stage 3, run 2026-08-28. This file is
-committed **before any Stage 3 training or planning job is submitted**, so the
-gate, the headline configuration and the tie-breaking rule are on record ahead
-of any number. Results are appended below afterwards; nothing above the
-"Results" line is edited once a result has been read.
+`PLAN_SUBGOAL_DISCOVERY.md` §4, revised Stage 3, run 2026-08-28.
+
+**Everything down to the "Results" line was committed before any Stage 3
+training or planning job was submitted** (f807931, dab9d1a, 03c8872, 243d800),
+so the gate, the headline configuration, the tie-breaking rule and the
+checkpoint criterion are on record ahead of any number, and none of it has been
+edited since a result was read. Deviations from it are listed under the
+verdict.
 
 ## What Stage 3 builds
 
@@ -119,7 +122,7 @@ Every number below is recomputed this session from the payloads' own move
 dumps: `subgoal/table.py` replays each solution under the real joint-game rules
 (`simulate.slide`, a no-op slide illegal — the physics of
 `eval/replay_validate.py`) and counts a puzzle optimal only when the replayed
-length equals its `d*`. **0 replay failures across all 14 planner payloads**, 0
+length equals its `d*`. **0 replay failures across all 15 planner payloads**, 0
 misaligned rows, 0 length disagreements, 0 solutions shorter than `d*`.
 
 ## Verdict
@@ -146,6 +149,18 @@ Two findings matter more than the gate.
    expansion always costs 4 encoder passes whatever k is) lifts the learned
    planner from 60.7% to **79.8% (359/450)** and drops its mean extra moves from
    0.708 to 0.265.
+
+### Deviations from the pre-registration
+
+One, and it concerns the diagnostic row only. Row **D** (`arm=exact`) was
+pre-registered at 1200 expansions and was run at **20**. Reason, measured, in
+§4: with an exact `h` the first solution the search finds is already optimal and
+further expansions cannot improve it, but the generic early stop proves
+optimality with the weak admissible relaxation and cannot see that, so the arm
+burns its whole budget breaking ties — 16.4 s per instance, about two hours for
+the benchmark (job 4864344, cancelled at 50/450). No other row deviates, and no
+knob was touched after a number was read. Everything explored beyond the
+pre-registered set is labelled as such.
 
 ## 1. The plan's table
 
@@ -227,7 +242,8 @@ out rather than encoded — so within a budget the k rows are matched on network
 calls and differ only in the prune. The 300-expansion block is the *backward
 planner's own* network-call budget: it spends one network pass per expansion,
 1200 per instance, and this planner spends four, so 300 expansions is the
-call-matched row.
+call-matched row. (The exact-`h` diagnostic row is in §4, not here — it is not
+a system.)
 
 | h | budget | beam k | optimal % of 450 | solved / 450 | extra moves | mean expansions used | heuristic queries | wall s |
 |---|---|---|---|---|---|---|---|---|
@@ -267,7 +283,40 @@ the expansion budget rather than with an optimality proof.
 
 ## 4. Diagnostic: is the search or the heuristic at fault?
 
-EXACT_PLACEHOLDER
+With an EXACT `h` every child's `f = g + c + h` is the true cost of the best
+solution through that child, so the optimality-preserving children always carry
+the minimal `f` and always survive the prune. That makes `arm=exact` a clean
+ceiling on the SEARCH: whatever it fails at is the search's fault, not the
+heuristic's. It is not a system — one exact engine solve per candidate child,
+1 230 492 of them for this row.
+
+| h | beam k | expansions | optimal % of 450 | solved / 450 | extra moves |
+|---|---|---|---|---|---|
+| exact engine cost-to-go | 5 | 20 | **88.4% (398/450)** | 400/450 | **0.005** |
+
+**The search is sound and the heuristic is the binding constraint.** At the same
+k = 5 that gives the learned planner 60.7% and the relaxed one 41.1%, an exact
+`h` reaches 88.4% — and of the 400 puzzles it solves at all, **398 are optimal**
+(99.5%). Per `d*` it is perfect through `d*` = 6 (221/221) and 67/69 at 7.
+
+The 20-expansion cap is the whole of its remaining shortfall, and it is a cap on
+*finding* a solution, never on its quality: 322 of the 450 searches end on the
+budget, and the 50 unsolved instances are the deep ones (`d*` = 9: 39/62,
+`d*` = 10: 8/21). 88.4% is therefore a LOWER bound on what an exact `h` would
+reach at the protocol's 1200 expansions. The cap is 20 rather than 1200 because
+the generic early stop proves optimality with the weak admissible relaxation and
+cannot see that this `h` is exact, so the arm otherwise burns its whole budget
+breaking ties between equally-optimal nodes — measured at 16.4 s per instance,
+about two hours for the benchmark (job 4864344, cancelled at 50/450). Twenty
+expansions is far above the 1–5 macro moves an optimal solution needs (Stage 1),
+and with an exact `h` extra expansions cannot improve a solution that has
+already been found.
+
+Read together with §2 and §3: the search finds and certifies the optimum
+whenever the ranking puts an optimal child in the beam, the learned `h` puts it
+there 93.8% of the time on a held-out decision against the relaxation's 83.4%,
+and the gap between 88.4% (exact `h`) and 79.8% (learned `h`, unpruned) is what
+a better heuristic is still worth.
 
 ## 5. The heuristic itself
 
@@ -310,16 +359,20 @@ uses epoch 11, not the last epoch, and the last epoch would have scored `val_top
 | plan leg A (gate row + control + relaxed beam study) | 4863895 | qgpu_exp | 1 | 21 m 12 s | 0.044 |
 | plan leg B (learned beam study) | 4863896 | qgpu_exp | 1 | 51 m 01 s | 0.106 |
 | plan leg C (call-matched 300-expansion rows) | 4863903 | qgpu_exp | 1 | 7 m 52 s | 0.016 |
-| exact-`h` diagnostic, first attempt (deadlocked, cancelled) | 4863897 | qgpu_exp | 2 | 34 m 57 s | 0.146 |
-| exact-`h` diagnostic | EXACTJOB | qgpu_exp | 2 | EXACTELAPSED | EXACTNH |
-| ranking analysis | RANKJOB | qgpu_exp | 1 | RANKELAPSED | RANKNH |
-| **total** | | | | | **TOTALNH** |
+| exact-`h` diagnostic | 4864942 | qgpu_exp | 1 | 20 m 56 s | 0.044 |
+| *wasted:* exact-`h`, first attempt (pipe deadlock) | 4863897 | qgpu_exp | 2 | 34 m 57 s | 0.146 |
+| *wasted:* exact-`h`, second attempt (200-expansion cap, too slow) | 4864344 | qgpu_exp | 1 | 23 m 30 s | 0.049 |
+| ranking analysis (`rank`) | — | login node, 4 cores | 0 | 36 s | 0 |
+| **total** | | | | **4 h 47 m of A100 GPU time** | **0.598** |
 
-Stage 3's budget was 3 node-hours. The one avoidable cost is job 4863897: the
-streaming driver for the exact engine wrote a whole round of ~9500 queries
+Stage 3's budget was 3 node-hours; it used **0.598**, of which 0.195 was wasted
+on two failed attempts at the diagnostic leg (jobs 4864209 and 4864210 were
+cancelled before starting and cost nothing). The first failure was a real bug:
+the streaming driver for the exact engine wrote a whole round of ~9500 queries
 before reading any result, filled the engine's stdout pipe and deadlocked both
-sides. Fixed by draining stdout on a dedicated reader thread
-(`subgoal/rustexact.py::ExactCTG`).
+sides; fixed by draining stdout on a dedicated reader thread
+(`subgoal/rustexact.py::ExactCTG`). The second was a mis-sized budget, described
+in §4.
 
 ---
 
@@ -349,7 +402,7 @@ result was read.
 |---|---|
 | the search's fast slide is `simulate.slide` | `python -m subgoal.stage3 verify --n 20 --states 10`: 800 (state, robot) groups compared cell-for-cell and cost-for-cost against Stage 1's `subgoal/space.py::rest_cells`, **0 mismatches** |
 | the fast physics does not change any result | the 20-instance relaxed smoke run before and after the rewrite is byte-identical on move sequences, expansions and replay lengths (2.5x faster) |
-| every reported solution is legal and its length is what is counted | `subgoal/table.py::replay` on every row of every payload: **0 replay failures in 14 payloads** |
+| every reported solution is legal and its length is what is counted | `subgoal/table.py::replay` on every row of every payload: **0 replay failures in 15 payloads** |
 | the exact labeller agrees with the reference oracle | the Rust engine's `cost_to_go` on the first 12 bench450 roots equals their `d*` (12, 4, 7, 1, 4, 6, 2, 4, 10, 6, 1, 7) |
 
 ### Data
@@ -363,7 +416,7 @@ result was read.
 | the training curve | `runs/spr/subgoal/stage3_rec4/lightning_logs/version_0/metrics.csv` | per-epoch `val_top5` / `val_top1` / `val_mae_group` / `val_group_spread` |
 | the checkpoint | `runs/spr/subgoal/stage3_rec4/ctg-epoch=11-val_top5=0.9377.ckpt` | selected by `ModelCheckpoint(monitor="val_top5", mode="max")` |
 | the ranking comparison | `results/subgoal/stage3/rank_val.json` | `python -m subgoal.stage3 rank --data val_b1800-1849.npz` (36 s of login-node CPU, no GPU) |
-| the exact-`h` diagnostic | `results/subgoal/stage3/plan_exact_k5_e200.json` | `python -m subgoal.stage3 plan --arm exact` |
+| the exact-`h` diagnostic | `results/subgoal/stage3/plan_exact_k5_e20.json` | `python -m subgoal.stage3 plan --arm exact --k 5 --expansions 20` |
 | job elapsed times | `sacct -j ... -X` | the compute table |
 
 ### Logs
@@ -371,5 +424,5 @@ result was read.
 `runs/spr/spr-sg3-gen-4863820.out`, `spr-sg3-smoke-4863872.out`,
 `spr-sg3-train-4863894.out`, `spr-sg3-planA-4863895.out`,
 `spr-sg3-planB-4863896.out`, `spr-sg3-planC-4863903.out`,
-`spr-sg3-exact-4863897.out` (the deadlock), `spr-sg3-exact-EXACTJOB.out`,
-`spr-sg3-rank-RANKJOB.out`.
+`spr-sg3-exact-4863897.out` (the deadlock), `spr-sg3-exact-4864344.out`
+(the mis-sized cap) and `spr-sg3-exact-4864942.out` (the reported diagnostic).

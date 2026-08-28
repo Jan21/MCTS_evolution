@@ -7,10 +7,16 @@
 #
 #   sbatch -J spr-sg3-exact self_play_robots/jobs/subgoal_stage3_exact.slurm
 #
-# Cost basis: 89 ms of one core per exact solve; with an exact h every optimal
-# child carries the minimal f, so the search terminates in a handful of
-# expansions (cap 200). ~450 x ~5 x ~148 = ~330k solves = ~29 000 core-seconds
-# = ~19 min on 16 cores. Walltime 55 min -> at most 0.115 node-hours.
+# Budget note. With an EXACT h every child's f = g + c + h is the true cost of
+# the best solution through it, so the optimal children always carry the
+# minimal f and always survive the prune: the first solution the search finds
+# is optimal and further expansions cannot improve it. The generic early stop
+# cannot SEE that (it proves optimality with the weak admissible relaxation),
+# so at a 200-expansion cap the arm burns the whole budget on ties -- measured
+# 16.4 s per instance, 2 h for the bench (job 4864344, cancelled at 50/450).
+# The cap is therefore 20 expansions, which is far above the 1-5 macro moves
+# an optimal solution needs (Stage 1) and costs ~12 min on 16 cores.
+# Walltime 55 min -> at most 0.115 node-hours.
 #SBATCH -A open-37-42
 #SBATCH -p qgpu_exp
 #SBATCH --gpus 1
@@ -26,7 +32,7 @@ cd "$REPO/self_play_robots"
 export PYTHONPATH="$REPO/supervised_valuenet:$REPO/self_play_robots" \
        PYTHONUNBUFFERED=1 OMP_NUM_THREADS=1
 D="$REPO/self_play_robots/results/subgoal/stage3"
-EXP="${SG3_EXP:-200}"
+EXP="${SG3_EXP:-20}"
 K="${SG3_K:-5}"
 out="$D/plan_exact_k${K}_e${EXP}.json"
 mkdir -p "$D"

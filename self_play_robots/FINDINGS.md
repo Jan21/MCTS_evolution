@@ -1281,3 +1281,112 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     Sources: `results/variants/v07_supervised_nets/{SUMMARY.json,
     bench_graded_{stdmcts,hybrid_d1,hybrid_d2}.json, gate_graded_*.json}`,
     `jobs/v07_supnets{,_smoke}.slurm`.
+
+31. **Subgoal-discovery plan, Stage 3 PASSES its gate: a best-first search over
+    STATE subgoals with physics edges and a LEARNED cost-to-go heuristic solves
+    60.7% of bench450 move-optimally against the backward supervised planner's
+    53.3%, and 79.8% once the beam is sized for the space — and the learned `h`
+    beats the board-only relaxation by 10-20 points at every beam width
+    (2026-08-28, jobs 4863820 / 4863872 / 4863894 / 4863895 / 4863896 / 4863903
+    / 4864942, plus 4863897 and 4864344 cancelled = 0.598 node-hours of a
+    3 node-hour budget; full
+    write-up `subgoal/STAGE3.md`).** Design, per the revised Stage 3: children
+    of a state are `(robot, cell)` pairs from the exact joint-state slide BFS
+    with the other robots frozen, carrying their TRUE slide counts as edge
+    costs (physics, never a network — Stage 2 showed the network was learning a
+    quantity the expansion computes anyway); the beam ranks by `f = g + c + h`;
+    the network learns only `h`, the exact moves still needed from the CHILD
+    state, on exact-engine labels.
+    | model (bench450, 1200 expansions, k=5) | optimal % of 450 | solved / 450 | extra moves on its solves |
+    |---|---|---|---|
+    | forward (move-by-move, supervised) | **94.2%** (424/450) | 450/450 | 0.067 |
+    | backward (subgoal, supervised) | 53.3% (240/450) | 432/450 | 1.840 |
+    | self-play line (v14_stack nets) | 51.3% (231/450) | 439/450 | 1.995 |
+    | **NEW: state subgoals + learned cost-to-go** | **60.7%** (273/450) | 415/450 | **0.708** |
+    Every row is recomputed by `subgoal/table.py` from the payloads' own move
+    dumps under the real joint-game rules; **0 replay failures, 0 misaligned
+    rows, 0 length disagreements, 0 solutions shorter than `d*` across all 15
+    planner payloads**. Gate was `> 53.3%`, committed (f807931, dab9d1a,
+    03c8872, 243d800) before any Stage 3 training or planning job was submitted.
+    (a) **The learned `h` is what does the work, not the search.** Identical
+    search, identical physics edges, identical budget; only `h` differs:
+    | beam k (1200 expansions) | 5 | 10 | 20 | 50 | 200 (unpruned) |
+    |---|---|---|---|---|---|
+    | learned `CtgNet` h | **60.7%** | **71.6%** | **74.9%** | **79.6%** | **79.8%** |
+    | any-stop relaxation h (Stage 1's, no network) | 41.1% | 59.3% | 65.3% | 66.7% | 67.1% |
+    The relaxed control never reaches the learned planner's protocol number even
+    with no prune at all. Solved counts: 415/394/386/402/404 (learned) against
+    381/349/345/351/354 (relaxed) — a wider beam COSTS the weak heuristic solves
+    (it spends the same 1200 expansions on a broader, shallower tree) and does
+    not cost the learned one.
+    (b) **k=5 was mis-sized for this space, and widening it is free in network
+    calls.** The candidate cell is read out rather than encoded, so one
+    expansion costs exactly 4 encoder passes at every k; the k rows above are
+    matched on network calls and differ only in the prune. k=5 was calibrated
+    for a ~50-candidate hand-written vocabulary; a state has ~148 physically
+    reachable candidates of the 1024. Widening to k=200 lifts the learned
+    planner from 60.7% to 79.8% (359/450) and drops its mean extra moves from
+    0.708 to 0.265. At the BACKWARD planner's own network-call budget (it spends
+    one pass per expansion, 1200 per instance; this one spends four, so 300
+    expansions) the learned planner still wins: 54.7% at k=5 and 60.0% at k=20.
+    (c) **Why the learned `h` wins is measurable without any search, and it is
+    calibration and not correlation.** On 289 held-out decisions (boards
+    1800-1849, all four robots pooled as the beam sees them), ranking by
+    `f = c + h` with the exact `c`:
+    | scorer | rho vs true cost-to-go | top-1 | top-5 | MAE |
+    |---|---|---|---|---|
+    | learned `CtgNet` h | 0.378 | **69.9%** | **93.8%** | **2.01** |
+    | any-stop relaxation h | **0.518** | 47.8% | 83.4% | 5.44 |
+    | h = 0 (edge cost alone, the Stage 2 ranking) | — | 34.3% | 79.9% | 7.86 |
+    The relaxed heuristic is the MORE monotone of the two and still the worse
+    ranker, because the beam adds `h` to an exact `c` and the relaxation
+    under-estimates by 5.4 moves unevenly. This is the concrete form of Stage
+    2's §8 advice ("the object worth learning is the remaining distance") and it
+    also reproduces Stage 2's finding that cost-only ranking is worst.
+    (d) **No collapse at recurrence 4, and the corpus is exact.** 421 208
+    reachable children of 2400 parent states on train boards 1000-1699 and
+    53 012 on val boards 1800-1849 were labelled by the project's own exact
+    oracle through its gate-verified Rust port (`rust_datagen`
+    `forward_instance`, cap 400k): **335 280 (79.6%)** and **44 486 (83.9%)**
+    got an exact cost-to-go, the rest hit the cap and carry NO label. Board
+    overlap train/val/bench450 = 0/0/0. `val_group_spread` stayed 0.83-1.86
+    (Stage 2's collapsed runs sat at exactly 0.00) and the pooled top-5 beam
+    metric peaked at **0.9377 at epoch 11** of 40, after which the net overfits
+    (MAE 1.86 -> 3.07); the reported checkpoint is that best-of-40 selection on
+    boards disjoint from training and from the benchmark.
+    (e) **The search is sound; the heuristic is the binding constraint.** The
+    same search with the EXACT engine cost-to-go as `h` -- a ceiling, not a
+    system, at one exact solve per candidate child -- reaches **88.4%
+    (398/450)** at k=5 with only a 20-expansion cap, and of the 400 puzzles it
+    solves at all **398 are optimal** (mean extra 0.005). It is perfect through
+    `d*` = 6 (221/221). Its shortfall is entirely the cap on FINDING a solution
+    (322 of 450 searches end on the budget; the 50 unsolved are the deep ones),
+    so 88.4% is a lower bound on an exact `h` at the protocol budget. The cap is
+    20 because the generic early stop proves optimality with the weak admissible
+    relaxation and cannot see that this `h` is exact, so the arm otherwise burns
+    its whole budget breaking ties between equally optimal nodes (16.4 s per
+    instance; job 4864344 cancelled at 50/450). The gap 88.4% (exact) vs 79.8%
+    (learned, unpruned) is what a better heuristic is still worth.
+    (f) **The residual failure is depth, not vocabulary.** At k=50 the learned
+    planner is perfect on every instance with `d*` <= 5 (148/148) and 68/73 at
+    `d*` = 6, then 46/73 at `d*` = 8 and 28/62 at `d*` = 9; 312 of 450 searches
+    end on the expansion budget rather than with an optimality proof. The
+    forward move-by-move planner (94.2%) is still ahead; what Stage 3 changes is
+    the standing of SUBGOAL planning, from 53.3% to 60.7% at protocol and 79.8%
+    at a beam proportionate to the vocabulary.
+    (g) **Engineering notes.** The search runs on a precomputed-ray slide that
+    is verified cell-for-cell against `simulate.slide` via Stage 1's
+    `space.py::rest_cells` (800 groups, 0 mismatches) and is 2.5x faster with
+    byte-identical results. The first exact-`h` diagnostic job (4863897) hung
+    for 35 min and was cancelled: the streaming driver wrote a whole round of
+    ~9500 queries before reading any result and deadlocked on the engine's
+    stdout pipe; fixed with a dedicated reader thread.
+    Sources: `subgoal/STAGE3.md` (provenance appendix gives every number a
+    path), `subgoal/{planner,ctgnet,rustexact,stage3,table}.py`,
+    `jobs/subgoal_stage3_{gen,train,plan,exact,rank,smoke}.slurm`,
+    `results/subgoal/stage3/{plan_*_k*_e*.json,plan_exact_k5_e20.json,
+    beam_summary.json,table4.json,
+    rank_val.json,train_b1000-1699.npz,val_b1800-1849.npz}`,
+    `runs/spr/subgoal/stage3_rec4/{best.txt,lightning_logs/version_0/metrics.csv}`,
+    `runs/spr/spr-sg3-{gen-4863820,smoke-4863872,train-4863894,planA-4863895,
+    planB-4863896,planC-4863903,exact-4864942}.out`.
