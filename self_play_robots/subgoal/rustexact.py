@@ -134,22 +134,44 @@ def ctg_batch(queries, sidecar_dir, work_dir, threads=16,
 class ExactCTG:
     """The engine kept alive on a pipe, for the oracle-heuristic diagnostic.
 
-    One `ask()` writes a whole round of queries and reads exactly that many
-    result lines back, so the pipe never deadlocks on a partially-filled
-    buffer. Results are reassociated by their `id`, because the engine's worker
-    threads may reorder them.
+    A DEDICATED READER THREAD drains stdout continuously. Without it the driver
+    deadlocks the moment one round's queries exceed the pipe buffer: the writer
+    fills the engine's stdin, the engine fills its stdout, neither side can make
+    progress. (Observed: job 4863897 hung for 34 minutes on the first round of
+    ~9500 queries and was cancelled.)
     """
 
     def __init__(self, sidecar_dir, threads=16, max_expansions=MAX_EXPANSIONS):
+        import threading
         self.sidecar_dir = str(sidecar_dir)
         self.max_expansions = max_expansions
         self.n_calls = 0
+        self._seq = 0
         self.p = subprocess.Popen(
             [str(DATAGEN), "run", "--work", "-", "--out", "-",
              "--sidecar-dir", self.sidecar_dir, "--threads", str(threads),
              "--quiet"],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
-        self._seq = 0
+        self._got = {}
+        self._cv = threading.Condition()
+        self._dead = False
+        self._reader = threading.Thread(target=self._drain, daemon=True)
+        self._reader.start()
+
+    def _drain(self):
+        try:
+            for line in self.p.stdout:
+                if not line.strip():
+                    continue
+                d = json.loads(line)
+                v = d.get("d_star") if d.get("status") == "solved" else None
+                with self._cv:
+                    self._got[d["id"]] = v
+                    self._cv.notify_all()
+        finally:
+            with self._cv:
+                self._dead = True
+                self._cv.notify_all()
 
     def ask(self, queries, sidecars):
         """queries: [(env_id, positions, target_idx, target)]; -> [int|None]."""
@@ -164,21 +186,18 @@ class ExactCTG:
                                                      pos, tidx, tgt,
                                                      self.max_expansions)) + "\n")
         self.p.stdin.flush()
-        got = {}
-        while len(got) < len(ids):
-            line = self.p.stdout.readline()
-            if not line:
-                raise RuntimeError("rust engine closed its output early")
-            if not line.strip():
-                continue
-            d = json.loads(line)
-            got[d["id"]] = d.get("d_star") if d.get("status") == "solved" else None
+        with self._cv:
+            while not all(i in self._got for i in ids):
+                if self._dead:
+                    raise RuntimeError("rust engine closed its output early")
+                self._cv.wait(timeout=10.0)
+            out = [self._got.pop(i) for i in ids]
         self.n_calls += len(ids)
-        return [got[i] for i in ids]
+        return out
 
     def close(self):
         try:
             self.p.stdin.close()
-            self.p.wait(timeout=30)
+            self.p.wait(timeout=60)
         except Exception:
             self.p.kill()
