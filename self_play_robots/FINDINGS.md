@@ -1055,3 +1055,72 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     driver writes `"byref": True` itself.) Read the vocabulary from
     `protocol.vocab` (or `search_options`), never from `byref`, on any
     bench/arena payload dated before 2026-08-28.
+
+29. **Subgoal-discovery plan, Stages 0–1: the 16×16 table is rebuilt from move
+    dumps and both gates PASS — but two corrections fall out of it, and the
+    state subgoal space ("robot R comes to rest on cell C") reaches the exact
+    optimum on 40/40 probed instances where the hand-written language cannot
+    (2026-08-28, job 4862862 = 0.028 nh + 412 CPU-seconds on the login node;
+    full write-up `subgoal/STAGE01.md`).** Harness `subgoal/table.py`: every
+    number is recomputed by replaying each payload row's own move dump under
+    the joint-game rules (`simulate.slide`, a no-op slide illegal — the physics
+    of `eval/replay_validate.py`) and requiring the replayed length to equal
+    `d*`; no aggregate field and no document was copied. Headline = percent of
+    all 450 solved move-optimally.
+    | model (bench450, 1200 exp, k=5) | optimal % of 450 | solved / 450 | extra moves on its solves |
+    |---|---|---|---|
+    | forward (move-by-move, supervised, `candidate_scored.ckpt`) | **94.2%** (424/450) | 450/450 | 0.067 |
+    | backward (subgoal, supervised, B1-s21 pair under B2 flags) | 53.3% (240/450) | 432/450 | 1.840 |
+    | self-play, v14_stack nets (benched at 16×16 for the first time) | 51.3% (231/450) | 439/450 | 1.995 |
+    | self-play, mix_b2mix_iter3 nets (same) | 52.4% (236/450) | 438/450 | 2.011 |
+    Every row reproduces its payload exactly: 0 misaligned rows, 0 replay
+    failures, 0 length disagreements against `realized_strict`, 0 rows shorter
+    than `d*`, mean extra == `mean_regret` to machine precision. The two rows
+    with recorded references also match them row for row (`comparison_forward.json`
+    candidate_scored system, `final450_backward_b2_seed21.json`).
+    (a) **`pct_optimal` is a percentage of SOLVES, not of n.**
+    `eval/compare.py::aggregate` divides by `len(solved)` (lines 507–509). The
+    recorded 16×16 backward figure "55.6% optimal" is 240/432; per 450 it is
+    **53.3%**. The forward row is unaffected only because it solves all 450.
+    Nothing on disk is wrong, but no optimal-% figure in this log is comparable
+    across arms with different solve counts without restating the denominator.
+    (b) **No self-play checkpoint had ever been benched at 16×16.** Of the 493
+    payloads under `results/`, 28 are on `bench450` and all 28 are supervised /
+    M1 / M2 arms; every `results/selfplay/` and `results/variants/` payload is
+    g24r4, g24r8 or g32r4. The size-free nets were therefore run unchanged at
+    g16r4 under the backward row's own protocol (arena A\*, B2, anytime,
+    replay-certified; `jobs/subgoal_stage0_selfplay16.slurm`, job 4862862,
+    qgpu_exp, 13 min). Result: at 16×16 the self-play line solves MORE than the
+    supervised backward planner it grew out of (439/438 vs 432) and is slightly
+    WORSE on move quality (231/236 vs 240 optimal; 1.995/2.011 vs 1.840 extra)
+    — the same "search was distilled, moves were not" pattern §19 recorded at
+    24×24, now measured on the graded 16×16 exam as well.
+    (c) **Stage 1 PASS, at the ceiling.** `subgoal/space.py` searches the state
+    subgoal space exhaustively with no network: a node is the joint state, a
+    child is any (robot, cell) the joint-state slide BFS says that robot can
+    come to rest on (all 1024 candidates realized against the real rules, true
+    slide counts as edge costs), ordered by an admissible "any-stop" relaxation
+    of the target robot's distance, so the first goal popped is optimal IN THE
+    SPACE. Two deterministic 20-instance samples (the first 20; every 23rd,
+    spanning the bench):
+    | sample | state space | hand-written base (§3) | hand-written B2 (§3) |
+    |---|---|---|---|
+    | first 20 | **0.000 extra, 20/20 optimal** | 2.000 over 20, 13/20 | 1.000 over 19, 13/20 |
+    | stride 23 | **0.000 extra, 20/20 optimal** | 2.059 over 17, 11/20 | 0.632 over 19, 15/20 |
+    All 40 solutions are replay-certified and all 40 equal `d*`. The
+    hand-written language is strictly worse on 7/20 and 9/20 (base) and 7/20
+    and 5/20 (B2, inconclusive rows counted), and **better on none of the 40**;
+    the gaps are large (base needs 15 where `d*` is 5, 28 where it is 7, 22
+    where it is 3). The §3 floor of +1.42 / +0.90 is a property of that
+    vocabulary, not of subgoal planning: in the state space the floor is 0.00.
+    The optimal solutions use 1–5 subgoals (mean 2.0 / 2.45), so a planner here
+    makes very few decisions per puzzle. Caveat carried into Stage 2/3: this
+    probe popped up to 60,685 nodes with a perfect admissible heuristic, while
+    the arena budget is 1200 expansions at k=5 — "the space contains the
+    optimum" is not "a k=5 beam over network scores finds it".
+    Sources: `subgoal/STAGE01.md` (provenance appendix gives every number a
+    path), `subgoal/{table,space}.py`,
+    `results/subgoal/{stage0_table,stage1_state_space_first20,
+    stage1_state_space_stride23,v14_stack_g16r4_bench450_astar,
+    mix_b2mix_iter3_g16r4_bench450_astar}.json`,
+    `runs/spr/spr-sg-stage0-4862862.out`.
