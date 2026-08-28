@@ -164,3 +164,125 @@ question it answers is whether the supervised start matters at convergence.
 ---
 
 ## Results
+
+Every number below is recomputed this session from the payloads' own move dumps
+by `subgoal/table.py`, which replays each solution under the real joint-game
+rules and counts a puzzle optimal only when the replayed length equals its `d*`.
+**0 replay failures, 0 misaligned rows, 0 length disagreements, 0 solutions
+shorter than `d*`** across every Stage 4 payload.
+
+## A. The re-baselined planner
+
+### A1 result — the beam width
+
+The rule was committed before the sweep ran and applied mechanically by
+`subgoal/stage4.py::beam --pick`. All six widths, 200 held-out dev instances on
+boards 1900–1999 (mean `d*` 7.12, **zero** board overlap with bench450, with
+Stage 3's training boards 1000–1699, or with Stage 3's validation boards
+1800–1849), 1200 expansions, the A2 bound:
+
+| beam k | dev optimal % of 200 | solved / 200 | extra moves | wall s |
+|---|---|---|---|---|
+| 5 | 54.0% (108) | 167 | 0.808 | 173 |
+| 10 | 67.0% (134) | 154 | 0.383 | 211 |
+| 20 | 69.0% (138) | 156 | 0.423 | 229 |
+| 50 | 73.0% (146) | 159 | 0.264 | 239 |
+| **100** | **74.5% (149)** | **161** | **0.255** | **261** |
+| 1024 (no prune) | 74.5% (149) | 161 | 0.255 | 285 |
+
+Best is 74.5%; within 1.0 point are `{100, 1024}`; the smallest is **k = 100**.
+`k = 100` and no-prune are identical row for row — same optimal count, same
+solved count, same mean extra — so the chosen width IS the unpruned beam, at 8%
+less wall time. `results/subgoal/stage4/beam_choice.json`.
+
+### A2 result — the stronger bound
+
+**It is admissible.** `subgoal/stage4.py verify` drew 2819 random reachable
+states of benchmark boards and compared `h_tight(s)` against the exact engine's
+true cost-to-go of `s`: **0 violations**. It is strictly stronger than Stage 3's
+bound — `h_tight - h_free` averages **+1.05** moves, is positive on **92.4%** of
+states and reaches +3 (`results/subgoal/stage4/verify_bound.txt`).
+
+**Nothing else moved.** With `bound="weak"` the search reproduces Stage 3's
+stored payload rows field for field on 60 instances — same expansions, same
+encoder passes, same move sequence, same stop reason — so every Stage 3 number
+this stage compares against is still what that code produces.
+
+**What it converts.** Same checkpoint, same beam, same 1200-expansion budget;
+only the bound differs (`subgoal/stage4.py stops`):
+
+| | beam 5 | **beam 100 (headline)** |
+|---|---|---|
+| budget-limited, board-only bound | 171 | **325** |
+| budget-limited, tight bound | 68 | **143** |
+| **converted to a proved-optimal stop** | **103** | **182** |
+| expansions spent, board-only | 261 570 | 404 165 |
+| expansions spent, tight | 162 550 | 236 023 |
+| **expansions saved** | **37.9%** | **41.6%** |
+| optimal of 450 | 273 → 276 | 358 → **364** |
+| solutions improved / worsened | 8 / 0 | 6 / 0 |
+| solved of 450 | 415 → 415 | 404 → 404 |
+
+Stage 3 reported 312 budget-limited searches at k=50; at the matched k=100
+headline configuration that number is 325, and the stronger bound converts
+**182 of them** into searches that terminate with an optimality proof. The
+budget it frees is not wasted: because a node whose `g + h_tight` already reaches
+the incumbent is skipped rather than expanded, six more instances reach their
+optimum and none regress. At the unpruned beam a proof "in the pruned graph" is
+a proof full stop, because nothing is pruned.
+
+### A3 result — the re-baselined table
+
+Budget 1200 expansions for every row. The first three rows are the project's
+reference models at the arena protocol (beam 5, board-only bound), reproduced
+from their own payloads; the Stage 3 row is shown so 60.7% stays visible.
+
+| model | optimal % of 450 | **solved / 450** | extra moves (on its solves) |
+|---|---|---|---|
+| forward (move-by-move, supervised) | 94.2% (424/450) | **450/450** | 0.067 (n=450) |
+| backward (subgoal, supervised) | 53.3% (240/450) | **432/450** | 1.840 (n=432) |
+| current self-play line (v14_stack nets) | 51.3% (231/450) | **439/450** | 1.995 (n=439) |
+| Stage 3 protocol row (beam 5, board-only bound) | 60.7% (273/450) | **415/450** | 0.708 (n=415) |
+| **NEW headline — beam 100, tight bound** | **80.9% (364/450)** | **404/450** | **0.248 (n=404)** |
+
+**Read the solved column with the headline.** The configuration buys optimality
+with coverage: going from beam 5 to beam 100 gains 91 move-optimal instances
+(273 → 364) and LOSES 11 solves (415 → 404), and at 404/450 the new headline row
+is the WORST of the five at simply finding a solution at all. The headline metric
+already charges for that — an unsolved puzzle is not optimal, which is why 46
+unsolved instances cap this row at 89.8% before quality is even considered — and
+the metric and the beam rule were both fixed before any of these numbers were
+read. The trade is real and it is the honest way to describe what widening the
+beam does: a wider beam spends the same 1200 expansions on a broader, shallower
+tree, so the deepest instances stop being reached.
+
+**Controls at the same configuration.** Identical search, identical physics
+edges, identical budget and beam and bound; only `h` differs:
+
+| `h` at beam 100, 1200 expansions, tight bound | optimal % of 450 | solved / 450 | extra |
+|---|---|---|---|
+| **learned `CtgNet`** | **80.9% (364)** | 404 | 0.248 |
+| randomly initialised `CtgNet` (Part C's round 0) | 68.7% (309) | 356 | 0.343 |
+| any-stop relaxation, board only, no network | 67.8% (305) | 354 | 0.401 |
+
+The learned `h` is worth **+12.1 points** over a random network and **+13.1**
+over the relaxation, and the whole of that margin is depth. Optimal by `d*`:
+
+| `d*` | ≤5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|
+| learned `h` | 148/148 | 71/73 | 58/69 | **48/73** | **29/62** | 9/21 |
+| random net | 146/148 | 65/73 | 49/69 | 31/73 | 12/62 | 6/21 |
+| relaxation | 145/148 | 67/73 | 46/69 | 28/73 | 12/62 | 6/21 |
+
+A randomly initialised network predicts a near-constant `h`, which turns the
+search into a uniform-cost search over macro edges — sound, and at an unpruned
+beam already good enough for 68.7%. That it lands *above* the hand-built
+relaxation is the sharpest statement of how much of Stage 3's k=5 result was
+beam mis-sizing rather than heuristic quality, and it is why Part C's control is
+worth running.
+
+### The bar
+
+**80.9% (364/450)**, frozen into `results/subgoal/stage4/partA_bar.json` and
+committed (b8f50db) before the first self-play job (4868991) was submitted.
+Parts B and C must EXCEED it.
