@@ -326,7 +326,9 @@ class GoalCostNet(pl.LightningModule):
             if m.sum() < 2:
                 continue
             self._val.append(group_metrics(v[i][m], yy[i][m].astype(np.float64))
-                             | dict(reach_acc=float(((pr[i] > .5) == m).mean())))
+                             | dict(reach_acc=float(((pr[i] > .5) == m).mean()),
+                                    spread=float(v[i][m].std()),
+                                    reach_spread=float(pr[i].std())))
 
     def on_validation_epoch_end(self):
         if not self._val:
@@ -335,6 +337,10 @@ class GoalCostNet(pl.LightningModule):
         out = {f"val_{k}": float(np.mean([d[k] for d in self._val
                                           if d[k] == d[k]])) for k in keys}
         out["val_reach_acc"] = float(np.mean([d["reach_acc"] for d in self._val]))
+        # collapse detector, as in SizeFreeValueNet.on_validation_epoch_end:
+        # a net on the constant-value plateau has ~zero within-group spread.
+        out["val_group_spread"] = float(np.mean([d["spread"] for d in self._val]))
+        out["val_reach_spread"] = float(np.mean([d["reach_spread"] for d in self._val]))
         self.log_dict(out, prog_bar=True)
         self._val.clear()
 

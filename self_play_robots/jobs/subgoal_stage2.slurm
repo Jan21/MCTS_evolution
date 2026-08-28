@@ -17,13 +17,18 @@
 # The .npz corpora are produced beforehand on the login node (seconds of CPU):
 #   python -m subgoal.stage2 gen --boards 1000-1699 --per-board 4 --walk 3 --seed 11 --out ...
 # Cost basis: fp32, 1.02 M params, 11 200 train groups (= 2.9 M labelled
-# candidates) at batch 16 -> 700 steps/epoch = 59 s/epoch measured (job 4863328); 30 epochs plus optset and eval fit
-# well inside 2 h on one A100 = 0.25 node-hours worst case, ~0.15 expected.
+# candidates) at batch 16 -> 700 steps/epoch = 59 s/epoch measured (job 4863328);
+# 30 epochs therefore train
+# in ~30 min on one A100; with optset (~5 min) and eval/beam (~3 min) the leg
+# fits the 1 h qgpu_exp cap = 0.115 node-hours worst case, ~0.09 expected.
+# (qgpu itself is unusable today: 63 of 72 GPU nodes are in maintenance and
+# sinfo/squeue put a 2 h qgpu job's start at 2026-08-30; qgpu_exp still runs
+# on the two idle nodes immediately.)
 #SBATCH -A open-37-42
-#SBATCH -p qgpu
+#SBATCH -p qgpu_exp
 #SBATCH --gpus 1
 #SBATCH --nodes=1
-#SBATCH --time=02:00:00
+#SBATCH --time=00:55:00
 #SBATCH --output=/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/%x-%j.out
 set -uo pipefail
 ml purge
@@ -34,9 +39,19 @@ cd "$REPO/self_play_robots"
 export PYTHONPATH="$REPO/supervised_valuenet:$REPO/self_play_robots" \
        PYTHONUNBUFFERED=1 OMP_NUM_THREADS=2
 D="$REPO/self_play_robots/results/subgoal/stage2"
-RUN="$REPO/runs/spr/subgoal/stage2_cost"
+# Arm knobs. The first submission ran the pre-registered production recipe
+# (TAG=cost, REC=12, PE=none) and COLLAPSED onto the constant-value plateau
+# (job 4863358: val_spearman ~ 0 for 30 epochs, reachability head stuck at the
+# base rate). Job 4863393 isolated the cause -- 4 epochs at recurrence 4 reach
+# rho 0.58 with either positional signal, 12 steps reach 0.00/0.06 -- so the
+# second submission is TAG=rec4, REC=4, same everything else.
+TAG="${S2_TAG:-cost}"
+REC="${S2_REC:-12}"
+PE="${S2_PE:-none}"
+EPOCHS="${S2_EPOCHS:-30}"
+RUN="$REPO/runs/spr/subgoal/stage2_$TAG"
 mkdir -p "$D" "$RUN"
-echo "SPR SG-STAGE2 start $(date +%F' '%T) job=${SLURM_JOB_ID:-none}"
+echo "SPR SG-STAGE2 start $(date +%F' '%T) job=${SLURM_JOB_ID:-none} tag=$TAG rec=$REC pe=$PE epochs=$EPOCHS"
 nvidia-smi -L
 
 # --- 1. optimal-preserving subgoal sets (CPU) -------------------------------
@@ -57,7 +72,8 @@ else
   t0=$SECONDS
   python -m subgoal.stage2 train \
       --train "$D/train_b1000-1699.npz" --val "$D/val_b1800-1849.npz" \
-      --run "$RUN" --epochs 30 --batch 16 --workers 8 --max-minutes 70 \
+      --run "$RUN" --epochs "$EPOCHS" --batch 16 --workers 8 --max-minutes 35 \
+      --recurrence "$REC" --pe "$PE" \
       || echo "SPR SG-STAGE2 FAILED train"
   echo "SPR SG-STAGE2 train took $((SECONDS-t0))s"
 fi
@@ -67,7 +83,7 @@ echo "SPR SG-STAGE2 checkpoint $CK"
 
 # --- 3. held-out evaluation --------------------------------------------------
 ev () {   # <tag> <npz>
-  out="$D/eval_$1.json"
+  out="$D/eval_${TAG}_$1.json"
   if [ -s "$out" ]; then echo "SPR SG-STAGE2 skip eval $1 (exists)"; return; fi
   t0=$SECONDS
   python -m subgoal.stage2 eval --ckpt "$CK" --data "$2" --batch 8 --out "$out" \
@@ -78,12 +94,12 @@ ev bench450_roots "$D/test_bench450_roots.npz"
 ev b1900-1999     "$D/test_b1900-1999.npz"
 
 # --- 4. beam survival --------------------------------------------------------
-if [ -s "$D/beam.json" ]; then
+if [ -s "$D/beam_$TAG.json" ]; then
   echo "SPR SG-STAGE2 skip beam (exists)"
 else
   t0=$SECONDS
   python -m subgoal.stage2 beam --ckpt "$CK" --optsets "$D/optsets.json" \
-      --out "$D/beam.json" || echo "SPR SG-STAGE2 FAILED beam"
+      --out "$D/beam_$TAG.json" || echo "SPR SG-STAGE2 FAILED beam"
   echo "SPR SG-STAGE2 beam took $((SECONDS-t0))s"
 fi
 

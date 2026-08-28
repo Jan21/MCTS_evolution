@@ -490,6 +490,62 @@ def beam(a):
 
 
 # ---------------------------------------------------------------------------
+# verify: the corpora are disjoint by board, and the labels are right
+# ---------------------------------------------------------------------------
+
+def verify(a):
+    """Two independent checks on the corpora, printed for the provenance table.
+
+    1. board-id disjointness: no evaluation board appears in the training set.
+    2. the exact labels: for `--groups` (state, robot) groups of the first eval
+       file, brute-force EVERY direction sequence up to length `--depth` and
+       require the set of cells reachable in <= depth slides, with their minimum
+       lengths, to equal {cell : 0 < cost <= depth} from the stored label. This
+       re-derives the labels without the BFS that produced them.
+    """
+    import itertools
+    from simulate import DIRECTIONS, slide
+    sets = {}
+    for path in [a.train] + a.eval:
+        z = np.load(path, allow_pickle=False)
+        ids = {int(i) for i in z["env_id"]}
+        sets[Path(path).name] = ids
+        print(f"[verify] {Path(path).name}: {len(z['env_id'])} states, "
+              f"{len(ids)} boards {min(ids)}-{max(ids)}, "
+              f"{100 * float((z['cost'] >= 0).mean()):.2f}% of candidates reachable")
+    tr = sets[Path(a.train).name]
+    for k, v in sets.items():
+        if k != Path(a.train).name:
+            print(f"[verify] board overlap train vs {k}: {len(tr & v)}")
+    z = np.load(a.eval[0], allow_pickle=False)
+    bad = chk = 0
+    for i in range(min(a.groups, len(z["env_id"]))):
+        eid = int(z["env_id"][i])
+        wr, wd = board(eid)
+        pos = [tuple(p) for p in z["positions"][i]]
+        for r in range(ROBOTS):
+            blockers = frozenset(p for j, p in enumerate(pos) if j != r)
+            brute = {}
+            for L in range(1, a.depth + 1):
+                for seq in itertools.product(DIRECTIONS, repeat=L):
+                    c, ok = pos[r], True
+                    for d in seq:
+                        nxt = slide(c, d, blockers, wr, wd, SIZE)
+                        if nxt == c:
+                            ok = False
+                            break
+                        c = nxt
+                    if ok and c != pos[r]:
+                        brute[c] = min(brute.get(c, 99), L)
+            row = z["cost"][i, r]
+            got = {(k % SIZE, k // SIZE): int(row[k]) for k in range(SIZE * SIZE)
+                   if 0 <= row[k] <= a.depth}
+            bad += int(got != brute)
+            chk += 1
+    print(f"[verify] brute-force groups checked {chk}, mismatches {bad}")
+
+
+# ---------------------------------------------------------------------------
 # report: the markdown tables of STAGE2.md, printed from the payloads
 # ---------------------------------------------------------------------------
 
@@ -607,6 +663,13 @@ def main(argv=None):
     rp.add_argument("--eval", nargs="*", default=[])
     rp.add_argument("--beam", default=None)
     rp.set_defaults(fn=report)
+
+    v = sub.add_parser("verify")
+    v.add_argument("--train", required=True)
+    v.add_argument("--eval", nargs="+", required=True)
+    v.add_argument("--groups", type=int, default=60)
+    v.add_argument("--depth", type=int, default=3)
+    v.set_defaults(fn=verify)
 
     a = p.parse_args(argv)
     a.fn(a)

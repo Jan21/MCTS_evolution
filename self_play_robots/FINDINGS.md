@@ -1124,3 +1124,94 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     stage1_state_space_stride23,v14_stack_g16r4_bench450_astar,
     mix_b2mix_iter3_g16r4_bench450_astar}.json`,
     `runs/spr/spr-sg-stage0-4862862.out`.
+
+30. **Subgoal-discovery plan, Stage 2: the goal-conditioned cost net FAILS its
+    gate — it beats the plan's named baseline by +0.32 Spearman but only ties
+    the stronger learning-free one (−0.02) — and the beam measurement shows the
+    binding constraint is the plan's selection rule, not the network: ranking
+    1024 candidate subgoals by their EXACT cost keeps an optimality-preserving
+    subgoal in a top-5 beam at only 61.2% of roots (2026-08-28, jobs 4863328 /
+    4863358 / 4863393 / 4863454 = 0.097 node-hours of a 1 node-hour budget;
+    full write-up `subgoal/STAGE2.md`).**
+    Cost target, fixed in `subgoal/costnet.py` and binding on Stage 3:
+    `c(s, R, C)` = slides for robot R to come to rest on cell C with every other
+    robot FROZEN — i.e. `subgoal/space.py::rest_cells`, the exact edge weight of
+    the macro expansion. The "other robots may move" variant was rejected
+    because it names no unique successor state and therefore is not an edge
+    weight at all. Labels are exact (240 groups re-derived by brute-force
+    enumeration of all slide sequences to length 3, 0 mismatches). Architecture:
+    the size-free `LoopedLayer` encoder unchanged; conditioning moved to two
+    input channels (query robot / other robots) with the GOAL CELL MOVED OUT OF
+    THE ENCODER INTO THE READOUT, so one encoder pass scores all 256 goals of a
+    robot and four score a decision's 1024; the 96-bin HL-Gauss cost head kept
+    with a 3-token gather instead of 5; one 1-logit reachability head added.
+    Trained on 2800 states from train-split boards 1000-1699 only (2.87 M
+    labelled candidates); zero board overlap with either eval set.
+    (a) **The pre-registered production recipe COLLAPSED, and the cause is
+    recurrence depth, not the positional signal.** At recurrence 12 the net sat
+    on the constant-value plateau for 30 epochs: `val_group_spread` exactly
+    0.00, rho ~ 0, top-1 at the 0.083 random rate, and the reachability head
+    predicted "unreachable" for all 460 800 bench450-root candidates. A
+    four-arm diagnostic (job 4863393, 4 epochs each) gives rho after 4 epochs of
+    0.004 (pe=none, rec 12) / 0.056 (sin2d, rec 12) / **0.583** (none, rec 4) /
+    **0.556** (sin2d, rec 4), with spread 0.00 / 0.00 / 1.91 / 1.84. Twelve
+    weight-tied steps over a field whose non-robot cells start from identical
+    embeddings drive every token to one vector, and a readout that must separate
+    256 goal cells then has nothing to read. This is the collapse mode of
+    section 53/61 on a new task with an unambiguous cause. The reported run is
+    identical except `--recurrence 4`; both payloads are kept.
+    (b) **Gate FAIL, on both held-out board sets.** Spearman over a state's
+    truly reachable candidates, all four robots pooled:
+    | scorer | 450 bench450 roots (boards 2400-2549) | 400 states, boards 1900-1999 |
+    |---|---|---|
+    | goal-conditioned cost net | 0.749 (top-1 100.0%, MAE 2.83) | 0.723 (100.0%, 2.83) |
+    | B1 any-stop relaxation (the plan's baseline) | 0.431 (97.6%, 2.82) | 0.392 (95.8%, 3.06) |
+    | B2 lone-robot exact slide BFS | **0.773** (98.0%, 2.70) | **0.739** (97.5%, 3.20) |
+    Required margin over the better baseline was +0.05, committed (d9032e1)
+    before either job was submitted; measured **-0.024** and **-0.016**. The net
+    is the better ranker at the head of the list (top-1 100% vs 98.0/97.5) and
+    the worse regressor (MAE 2.83 vs 2.70; a constant predictor scores 2.49).
+    Where B2 is defined, B2 reaches rho 0.905 / MAE 0.50 against 0.791 / 2.86 —
+    the other robots usually do not change the answer.
+    (c) **The beam number, which predicts Stage 3 better than any of the above.**
+    `subgoal/optset.py` recomputes, for each of the 39 distinct Stage 1
+    instances, the FULL set of optimality-preserving next subgoals at every
+    state of a fewest-subgoal optimal path (A* restricted to f <= d*, all tight
+    parents kept, reverse pass from the goal states; 0 capped, all 39 reproduce
+    d*, and all 40 Stage 1 rows agree). 4.34 of 1024 candidates preserve
+    optimality on average, so a random top-5 survives 2.1%. Expected survival
+    under uniform random tie-breaking, k=5, over 86 decisions / 39 roots /
+    chained over a whole optimal path:
+    | ranking | per decision | at the root | whole path |
+    |---|---|---|---|
+    | network cost | 59.3% | 66.7% | 30.8% |
+    | EXACT cost (the oracle for this net) | 54.3% | 61.2% | 28.0% |
+    | network cost + relaxed h of the child | 62.8% | 71.8% | 38.5% |
+    | EXACT cost + relaxed h (Stage 1's A* priority) | **74.2%** | **77.3%** | **54.6%** |
+    | B1 + relaxed h | 43.8% | 42.1% | 34.3% |
+    Because k=5 is a HARD prune, the root column is an upper bound on Stage 3's
+    optimal-% and the chained column a lower bound. Three consequences.
+    (i) Cost-only ranking caps Stage 3 in the low 60s however good the network
+    is; the learned ranking is actually BETTER than the exact one at k<=5
+    (66.7 vs 61.2 at the root) purely because continuous scores break the
+    massive cost ties better than chance. (ii) Adding a remaining-distance term
+    is worth more than learning the cost, and costs one board-only BFS per
+    instance. (iii) Stage 3's bar is 53.3% of 450 (section 29); the best ranking
+    measured here brackets it at 54.6-77.3%, the network's at 38.5-71.8% — not
+    excluded, no margin.
+    (d) **The target was the wrong object.** At 10.9 ms per decision the exact
+    cost is cheaper than the network that predicts it, and a Stage 3 expansion
+    must compute it anyway to build children. What is worth learning in this
+    space is the remaining distance to the final goal, not the subgoal's own
+    cost. Budget: 0.097 node-hours (job 4863331 on `qgpu` was cancelled
+    unstarted — 63 of 72 GPU nodes in maintenance, start estimated 2026-08-30 —
+    and the leg re-cut to the 1 h `qgpu_exp` cap).
+    Sources: `subgoal/STAGE2.md` (provenance appendix gives every number a
+    path), `subgoal/{costnet,stage2,optset}.py`,
+    `jobs/subgoal_stage2{,_smoke,_diag}.slurm`,
+    `results/subgoal/stage2/{optsets,eval_rec4_bench450_roots,
+    eval_rec4_b1900-1999,beam_rec4,eval_cost_bench450_roots,
+    eval_cost_b1900-1999,beam_cost}.json`,
+    `results/subgoal/stage2/*.npz`,
+    `runs/spr/spr-sg-stage2{-4863358,r4-4863454}.out`,
+    `runs/spr/spr-sg-s2diag-4863393.out`.
