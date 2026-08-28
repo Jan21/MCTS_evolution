@@ -1282,7 +1282,7 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     bench_graded_{stdmcts,hybrid_d1,hybrid_d2}.json, gate_graded_*.json}`,
     `jobs/v07_supnets{,_smoke}.slurm`.
 
-31. **Subgoal-discovery plan, Stage 3 PASSES its gate: a best-first search over
+32. **Subgoal-discovery plan, Stage 3 PASSES its gate: a best-first search over
     STATE subgoals with physics edges and a LEARNED cost-to-go heuristic solves
     60.7% of bench450 move-optimally against the backward supervised planner's
     53.3%, and 79.8% once the beam is sized for the space — and the learned `h`
