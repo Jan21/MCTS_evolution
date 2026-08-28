@@ -1,0 +1,250 @@
+{
+ "question": "Does the v07 root-slides hybrid help the ORIGINAL solver-taught (supervised, per-size) sub-goal planner, or only self-play-trained nets?",
+ "protocol": {
+  "exam": "supervised_valuenet/scaling/data/g24r4/bench.solved.jsonl (232 graded 24x24 4-robot instances)",
+  "budget": "1200 expansions, k=5, B2 vocabulary, best-at-budget, PUCT c=1.5 min-backup",
+  "nets": "scaling/runs/g24r4/backward-{policy,value} -- the pair recorded in scaling/results/g24r4/comparison.json (per-size PolicyTF / LoopedValueNet, loaded with --arch persize)",
+  "arms": {
+   "control": "spr.arena bench --driver spr --flags '--search mcts --best-at-budget --vocab b2 --anytime --arch persize'",
+   "hybrid_d1": "variants.v07_hybrid_actions --prefix-depth 1 --b0 600 --top-m 6 --sub 100  (600 + 6*100 = 1200, exactly budget-matched)",
+   "hybrid_d2": "variants.v07_hybrid_actions --prefix-depth 2 --b0 500 --top-m 8 --sub 80   (500 + 8*80 = 1140, the flagship constants)"
+  },
+  "off_budget_note": "The slide screen (legal_moves -> _initial_plan -> forced_fixes) calls the exact shortest-path engine and is NOT charged to the 1200-expansion cap: measured 13.7 slide states / 29.7 exact calls per instance at depth 1 and 61.8 / 133.1 at depth 2 over this exam.",
+  "asymmetry_note": "The control runs spr.bench's default f_mode='child'; the hybrid's inner mcts uses f_mode='parent'. This asymmetry is identical in the landed self-play flagship rows, so the two deltas are comparable."
+ },
+ "supervised_nets": {
+  "arms": {
+   "control": {
+    "file": "self_play_robots/results/variants/v07_supervised_nets/bench_graded_stdmcts.json",
+    "system": "spr mcts per-size planner [B2 vocabulary] (anytime) (best-at-budget) [c=1.5 backup=min]",
+    "n": 232,
+    "solved": 200,
+    "mean_moves_over_solved": 12.01,
+    "mean_regret_over_solved": 4.595,
+    "regret_denominator": 200,
+    "pct_optimal_over_solved": 36.5,
+    "mean_expansions_over_all_rows": 780.5775862068965,
+    "max_expansions": 1200,
+    "slide_lane_winners": null
+   },
+   "hybrid_d1": {
+    "file": "self_play_robots/results/variants/v07_supervised_nets/bench_graded_hybrid_d1.json",
+    "system": "v07 root-slides hybrid d1 [B2] per-size nets (b0=600 top_m=6 sub=100) policy=epoch=1-step=1654.ckpt",
+    "n": 232,
+    "solved": 203,
+    "mean_moves_over_solved": 11.187192118226601,
+    "mean_regret_over_solved": 3.7241379310344827,
+    "regret_denominator": 203,
+    "pct_optimal_over_solved": 40.39408866995074,
+    "mean_expansions_over_all_rows": 797.1163793103449,
+    "max_expansions": 1200,
+    "slide_lane_winners": 48
+   },
+   "hybrid_d2": {
+    "file": "self_play_robots/results/variants/v07_supervised_nets/bench_graded_hybrid_d2.json",
+    "system": "v07 root-slides hybrid d2 [B2] per-size nets (b0=500 top_m=8 sub=80) policy=epoch=1-step=1654.ckpt",
+    "n": 232,
+    "solved": 203,
+    "mean_moves_over_solved": 10.926108374384237,
+    "mean_regret_over_solved": 3.4532019704433496,
+    "regret_denominator": 203,
+    "pct_optimal_over_solved": 41.87192118226601,
+    "mean_expansions_over_all_rows": 761.4870689655172,
+    "max_expansions": 1140,
+    "slide_lane_winners": 56
+   }
+  },
+  "paired": {
+   "hybrid_d1_vs_control": {
+    "a": "bench_graded_hybrid_d1.json",
+    "b": "bench_graded_stdmcts.json",
+    "solved_a": 203,
+    "solved_b": 200,
+    "a_only": 6,
+    "b_only": 3,
+    "mcnemar_p": 0.5078125,
+    "both_solved": 197,
+    "mean_moves_a_both": 10.756345177664974,
+    "mean_moves_b_both": 11.761421319796954,
+    "moves_saved_by_a": 1.0050761421319798,
+    "moves_wins_a": 44,
+    "moves_wins_b": 0,
+    "sign_test_p": 1.1368683772161603e-13,
+    "paired_regret_a": 3.3553299492385786,
+    "paired_regret_b": 4.3604060913705585
+   },
+   "hybrid_d2_vs_control": {
+    "a": "bench_graded_hybrid_d2.json",
+    "b": "bench_graded_stdmcts.json",
+    "solved_a": 203,
+    "solved_b": 200,
+    "a_only": 6,
+    "b_only": 3,
+    "mcnemar_p": 0.5078125,
+    "both_solved": 197,
+    "mean_moves_a_both": 10.50253807106599,
+    "mean_moves_b_both": 11.761421319796954,
+    "moves_saved_by_a": 1.2588832487309638,
+    "moves_wins_a": 52,
+    "moves_wins_b": 0,
+    "sign_test_p": 4.440892098500626e-16,
+    "paired_regret_a": 3.1015228426395938,
+    "paired_regret_b": 4.3604060913705585
+   },
+   "hybrid_d2_vs_hybrid_d1": {
+    "a": "bench_graded_hybrid_d2.json",
+    "b": "bench_graded_hybrid_d1.json",
+    "solved_a": 203,
+    "solved_b": 203,
+    "a_only": 1,
+    "b_only": 1,
+    "mcnemar_p": 1.0,
+    "both_solved": 202,
+    "mean_moves_a_both": 10.891089108910892,
+    "mean_moves_b_both": 11.138613861386139,
+    "moves_saved_by_a": 0.24752475247524686,
+    "moves_wins_a": 12,
+    "moves_wins_b": 1,
+    "sign_test_p": 0.00341796875,
+    "paired_regret_a": 3.4306930693069306,
+    "paired_regret_b": 3.6782178217821784
+   }
+  }
+ },
+ "self_play_nets_reference": {
+  "arms": {
+   "v09s8_control": {
+    "file": "self_play_robots/results/variants/v07_hybrid_actions/bench_graded_stdmcts.json",
+    "system": "spr mcts size-free planner [B2 vocabulary] (anytime) (best-at-budget) [c=1.5 backup=min]",
+    "n": 232,
+    "solved": 230,
+    "mean_moves_over_solved": 9.082608695652175,
+    "mean_regret_over_solved": 1.4173913043478261,
+    "regret_denominator": 230,
+    "pct_optimal_over_solved": 59.56521739130435,
+    "mean_expansions_over_all_rows": 498.9741379310345,
+    "max_expansions": 1200,
+    "slide_lane_winners": null
+   },
+   "v09s8_hybrid_d1": {
+    "file": "self_play_robots/results/variants/v07_hybrid_actions/bench_graded_hybrid.json",
+    "system": "v07 root-slides hybrid [B2] (b0=600 top_m=6 sub=100) policy=epoch=0-step=41.ckpt",
+    "n": 232,
+    "solved": 231,
+    "mean_moves_over_solved": 8.688311688311689,
+    "mean_regret_over_solved": 1.0086580086580086,
+    "regret_denominator": 231,
+    "pct_optimal_over_solved": 66.23376623376623,
+    "mean_expansions_over_all_rows": 569.6939655172414,
+    "max_expansions": 1200,
+    "slide_lane_winners": 30
+   },
+   "v09s8_hybrid_d2": {
+    "file": "self_play_robots/results/variants/v07_hybrid_actions/bench_graded_hybrid_d2.json",
+    "system": "v07 root-slides hybrid d2 [B2] (b0=500 top_m=8 sub=80) policy=epoch=0-step=41.ckpt",
+    "n": 232,
+    "solved": 231,
+    "mean_moves_over_solved": 8.623376623376624,
+    "mean_regret_over_solved": 0.9437229437229437,
+    "regret_denominator": 231,
+    "pct_optimal_over_solved": 68.3982683982684,
+    "mean_expansions_over_all_rows": 581.5818965517242,
+    "max_expansions": 1140,
+    "slide_lane_winners": 40
+   },
+   "v14_control": {
+    "file": "self_play_robots/results/variants/v07_hybrid_actions/bench_graded_stdmcts_v14nets.json",
+    "system": "spr mcts size-free planner [B2 vocabulary] (anytime) (best-at-budget) [c=1.5 backup=min]",
+    "n": 232,
+    "solved": 229,
+    "mean_moves_over_solved": 9.16593886462882,
+    "mean_regret_over_solved": 1.5109170305676856,
+    "regret_denominator": 229,
+    "pct_optimal_over_solved": 59.38864628820961,
+    "mean_expansions_over_all_rows": 466.5689655172414,
+    "max_expansions": 1200,
+    "slide_lane_winners": null
+   },
+   "v14_hybrid_d1": {
+    "file": "self_play_robots/results/variants/v07_hybrid_actions/bench_graded_hybrid_v14nets.json",
+    "system": "v07 root-slides hybrid d1 [B2] (b0=600 top_m=6 sub=100) policy=epoch=4-step=1035.ckpt",
+    "n": 232,
+    "solved": 230,
+    "mean_moves_over_solved": 8.839130434782609,
+    "mean_regret_over_solved": 1.1695652173913043,
+    "regret_denominator": 230,
+    "pct_optimal_over_solved": 66.52173913043478,
+    "mean_expansions_over_all_rows": 589.2931034482758,
+    "max_expansions": 1200,
+    "slide_lane_winners": 34
+   }
+  },
+  "paired": {
+   "v09s8_d1_vs_control": {
+    "a": "bench_graded_hybrid.json",
+    "b": "bench_graded_stdmcts.json",
+    "solved_a": 231,
+    "solved_b": 230,
+    "a_only": 1,
+    "b_only": 0,
+    "mcnemar_p": 1.0,
+    "both_solved": 230,
+    "mean_moves_a_both": 8.643478260869566,
+    "mean_moves_b_both": 9.082608695652175,
+    "moves_saved_by_a": 0.4391304347826086,
+    "moves_wins_a": 30,
+    "moves_wins_b": 0,
+    "sign_test_p": 1.862645149230957e-09,
+    "paired_regret_a": 0.9782608695652174,
+    "paired_regret_b": 1.4173913043478261
+   },
+   "v09s8_d2_vs_control": {
+    "a": "bench_graded_hybrid_d2.json",
+    "b": "bench_graded_stdmcts.json",
+    "solved_a": 231,
+    "solved_b": 230,
+    "a_only": 1,
+    "b_only": 0,
+    "mcnemar_p": 1.0,
+    "both_solved": 230,
+    "mean_moves_a_both": 8.578260869565218,
+    "mean_moves_b_both": 9.082608695652175,
+    "moves_saved_by_a": 0.5043478260869563,
+    "moves_wins_a": 40,
+    "moves_wins_b": 0,
+    "sign_test_p": 1.8189894035458565e-12,
+    "paired_regret_a": 0.9130434782608695,
+    "paired_regret_b": 1.4173913043478261
+   },
+   "v14_d1_vs_control": {
+    "a": "bench_graded_hybrid_v14nets.json",
+    "b": "bench_graded_stdmcts_v14nets.json",
+    "solved_a": 230,
+    "solved_b": 229,
+    "a_only": 1,
+    "b_only": 0,
+    "mcnemar_p": 1.0,
+    "both_solved": 229,
+    "mean_moves_a_both": 8.698689956331878,
+    "mean_moves_b_both": 9.16593886462882,
+    "moves_saved_by_a": 0.4672489082969431,
+    "moves_wins_a": 33,
+    "moves_wins_b": 0,
+    "sign_test_p": 2.3283064365386963e-10,
+    "paired_regret_a": 1.0436681222707425,
+    "paired_regret_b": 1.5109170305676856
+   }
+  }
+ },
+ "cost": {
+  "smoke_job": 4862104,
+  "smoke_elapsed": "00:13:13",
+  "run_job": 4862446,
+  "run_elapsed": "05:01:46",
+  "cancelled_first_attempt_job": 4862149,
+  "cancelled_elapsed": "00:25:43",
+  "node_hours_total": 0.71,
+  "note": "1 GPU = 0.125 node-hours per hour. The first attempt was cancelled after 26 min because its hybrid arms wrote only at the end and so were not walltime-safe; the landed run shards each hybrid arm into 4 resumable pieces."
+ },
+ "answer": "YES -- and by MORE than on the self-play nets. On the same pinned graded exam, against its own matched control, the hybrid saves 1.005 (depth 1) / 1.259 (depth 2) strict moves per shared solve for the supervised pair (44/0 and 52/0 puzzle wins over 197 both-solved, sign p=1.1e-13 and 4.4e-16) against 0.439 / 0.504 for the flagship self-play pair (30/0 and 40/0 over 230 both-solved) and 0.467 for the second self-play pair. It also adds 3 solves (203 vs 200) where the self-play arms added 1. The hybrid is therefore a general improvement to sub-goal planning, not a self-play-specific effect. It does NOT close the gap between the two families: the supervised hybrid at 203/232 and 3.45 mean extra moves stays far behind the self-play CONTROL at 230/232 and 1.42."
+}

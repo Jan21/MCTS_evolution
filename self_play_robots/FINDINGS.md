@@ -1217,3 +1217,67 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     `results/subgoal/stage2/*.npz`,
     `runs/spr/spr-sg-stage2{-4863358,r4-4863454}.out`,
     `runs/spr/spr-sg-s2diag-4863393.out`.
+
+31. **The hybrid is a GENERAL improvement to sub-goal planning, not a
+    self-play-net effect: run on the original solver-taught (supervised)
+    backward pair it helps about 2.5x MORE than on the self-play nets
+    (2026-08-28, jobs 4862104 smoke + 4862446, 0.71 nh).** The flagship
+    root-slides hybrid (`variants/v07_hybrid_actions.py`, a search-time change
+    that needs no training — the slide screen uses no network at all) had only
+    ever been benched with self-play-trained pairs (v09_strict_value_s8,
+    v14_stack, mix_b2mix_iter3). This entry adds the missing control: the same
+    three arms, same pinned graded exam
+    (`scaling/data/g24r4/bench.solved.jsonl`, 232 instances, sha 0e8a5bad…),
+    same 1200-expansion / k=5 / B2 budget, driven by the g24r4 exact-taught
+    per-size pair recorded in `scaling/results/g24r4/comparison.json`
+    (`backward-policy/…/epoch=1-step=1654.ckpt`,
+    `backward-value/…/epoch=22-step=38019.ckpt`, loaded through
+    `spr.nets --arch persize`; the only code change was adding that existing
+    `arch` flag to the v07 driver). All rows replay-certified.
+
+    | arm (supervised pair) | solved | mean moves | mean extra moves / denom | % optimal | mean expansions |
+    |---|---|---|---|---|---|
+    | standard PUCT sub-goal search (control) | 200/232 | 12.010 | 4.595 over 200 | 36.50 | 780.6 (max 1200) |
+    | hybrid d1, b0 600 / top-m 6 / sub 100 = **1200** | 203/232 | 11.187 | 3.724 over 203 | 40.39 | 797.1 (max 1200) |
+    | hybrid d2, b0 500 / top-m 8 / sub 80 = 1140 | 203/232 | 10.926 | 3.453 over 203 | 41.87 | 761.5 (max 1140) |
+
+    Paired, over the **197** instances both arms solve: d1 beats the control on
+    moves **44–0** (10.756 vs 11.761, −1.005; exact sign test p=1.1e-13) and d2
+    **52–0** (10.503 vs 11.761, −1.259; p=4.4e-16); paired extra-moves 3.355
+    (d1) / 3.102 (d2) against 4.360. Solve counts 203 vs 200 (6 hybrid-only,
+    3 control-only, McNemar p=0.51 — not significant). d2 > d1 12–1 on the 202
+    both solve (p=0.0034), the same depth-monotonicity §26 found. The winning
+    plan came from a slide lane on 48/203 (d1) and 56/203 (d2) solves, against
+    30/231 and 40/231 for the self-play flagship.
+
+    **Comparison with the self-play arms** (same exam, same statistics,
+    `results/variants/v07_hybrid_actions/`): v09_strict_value_s8 hybrid vs its
+    control saves 0.439 (d1) / 0.504 (d2) moves per shared solve, 30–0 and
+    40–0 over 230 both-solved (p=1.9e-9, 1.8e-12); v14_stack d1 saves 0.467,
+    33–0 over 229 (p=2.3e-10). So the hybrid's move saving is **2.3–2.5x
+    larger on the supervised pair** than on either self-play pair, and it adds
+    3 solves where they added 1. **This makes the hybrid a general result about
+    the action space, not a self-play-specific one** — consistent with §26's
+    "property of the search space, not a checkpoint", now demonstrated across
+    the training-recipe boundary, on the net family the whole self-play program
+    was built to replace.
+
+    What it does NOT do is close the gap between the families: the supervised
+    hybrid (203/232, 3.453 extra moves) remains far behind the self-play
+    **control** (230/232, 1.417) — the hybrid improves a planner, it does not
+    substitute for better nets. Two caveats, both against the hybrid and both
+    identical to the landed flagship rows, so the two deltas stay comparable:
+    (a) the budget asymmetry of §28(d) — d2's lanes sum to 1140 while the
+    control reaches 1200; (b) the control runs `spr.bench`'s default
+    `f_mode='child'` while the hybrid's inner mcts uses `f_mode='parent'`.
+    Third, the slide screen's calls to the exact shortest-path engine are
+    **not** charged to the expansion budget: measured over this exam,
+    13.7 slide states / 29.7 exact calls per instance at depth 1 and
+    61.8 / 133.1 at depth 2 (`forced_fixes` is called there with `acct=None`,
+    so it is not even counted in the accounting block). For scale, the
+    published base-vocabulary arena row for this same pair is 205/232 at 4.220
+    extra moves (`scaling/results/g24r4/comparison.json`); this B2/MCTS control
+    is 200/232 at 4.595, i.e. the control is not a straw man.
+    Sources: `results/variants/v07_supervised_nets/{SUMMARY.json,
+    bench_graded_{stdmcts,hybrid_d1,hybrid_d2}.json, gate_graded_*.json}`,
+    `jobs/v07_supnets{,_smoke}.slurm`.
