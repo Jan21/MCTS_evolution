@@ -374,6 +374,52 @@ sides; fixed by draining stdout on a dedicated reader thread
 (`subgoal/rustexact.py::ExactCTG`). The second was a mis-sized budget, described
 in §4.
 
+## 7. What this says about Stage 4
+
+The plan's Stage 4 replaces the exact-engine labels with certified self-play
+labels and asks whether the optimal percentage rises across rounds. On this
+stage's evidence that is **worth running, and the interesting version of it is
+not the one the plan describes**.
+
+For it:
+
+* the fourth row is real and beats both subgoal baselines, so there is a
+  working planner to run self-play *inside*, which is the thing Stage 2 could
+  not offer;
+* the learned `h` is the component doing the work (§2), and `h` is exactly what
+  self-play produces labels for: every certified plan the planner finishes
+  gives the true replayed cost-to-go of every state on it, with no oracle. The
+  label the loop would generate is the same object the supervised run just
+  trained on, which is the cleanest possible setting for a self-play round;
+* the supervised checkpoint peaked at epoch 11 of 40 on 335 280 labels and then
+  overfitted, so this `h` is data-limited rather than capacity-limited — more
+  labels are the obvious lever, and self-play makes them for free.
+
+Against it, and this is the part that should shape the design:
+
+* **the exact-`h` ceiling is 88.4% and the learned `h` already reaches 79.8%.**
+  The whole remaining headroom for a better heuristic at this budget is under
+  nine points. A self-play loop that improves `h` cannot do better than that
+  unless the search changes too;
+* **the biggest single win in this stage cost nothing and was not learning at
+  all**: sizing the beam to the vocabulary moved the learned planner 19 points
+  (60.7 → 79.8) at identical network cost. Before another training loop, the
+  arena convention (`k = 5`, inherited from a ~50-candidate vocabulary) should
+  be re-set for this space;
+* **the failures are depth failures.** 312 of 450 searches at k = 50 end on the
+  expansion budget, and the exact-`h` arm loses its 50 unsolved instances to a
+  budget on *finding* a solution, not on its quality. More accurate `h` does not
+  fix a search that runs out of expansions on `d*` ≥ 9;
+* the early stop is weak: it proves optimality with the board-only relaxation,
+  which is why even a perfect `h` cannot terminate. A tighter bound would
+  convert expansions into solved instances at no learning cost.
+
+**Judgement.** Run Stage 4, but re-order it: first re-size the beam and
+strengthen the optimality bound (both free, both measured here to be worth more
+than the last training run), then run self-play against *that* planner, and gate
+it on beating 79.8% rather than 60.7%. Running self-play against the k = 5
+configuration would be measuring a 19-point handicap.
+
 ---
 
 ## Provenance appendix
