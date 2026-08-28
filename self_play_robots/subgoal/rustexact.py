@@ -145,7 +145,7 @@ class ExactCTG:
         self.max_expansions = max_expansions
         self.n_calls = 0
         self.p = subprocess.Popen(
-            [str(DATAGEN), "replay", "--work", "-", "--out", "-",
+            [str(DATAGEN), "run", "--work", "-", "--out", "-",
              "--sidecar-dir", self.sidecar_dir, "--threads", str(threads),
              "--quiet"],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
@@ -160,8 +160,9 @@ class ExactCTG:
             self._seq += 1
             qid = f"q{self._seq}"
             ids.append(qid)
-            self.p.stdin.write(json.dumps(item(qid, eid, sidecars[int(eid)], pos,
-                                               tidx, tgt, self.max_expansions)) + "\n")
+            self.p.stdin.write(json.dumps(solve_item(qid, eid, sidecars[int(eid)],
+                                                     pos, tidx, tgt,
+                                                     self.max_expansions)) + "\n")
         self.p.stdin.flush()
         got = {}
         while len(got) < len(ids):
@@ -171,7 +172,7 @@ class ExactCTG:
             if not line.strip():
                 continue
             d = json.loads(line)
-            got[d["id"]] = d.get("cost_to_go")
+            got[d["id"]] = d.get("d_star") if d.get("status") == "solved" else None
         self.n_calls += len(ids)
         return [got[i] for i in ids]
 

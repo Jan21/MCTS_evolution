@@ -240,22 +240,149 @@ def plan(a):
 # ---------------------------------------------------------------------------
 
 def report(a):
+    """The plan's one table, recomputed from move dumps by `subgoal/table.py`,
+    with the Stage 3 rows appended and the gate verdict printed."""
     from subgoal import table as T
     bench = load_bench(a.bench)
-    rows = list(T.DEFAULT_ROWS) + [(lbl, path) for lbl, _, path in
-                                   (s.partition("=") for s in a.row)]
+    rows = [] if a.only_rows else list(T.DEFAULT_ROWS)
+    for spec in a.row:
+        lbl, _, path = spec.partition("=")
+        rows.append((lbl, path))
     scored = [(lbl, T.score(p, bench)) for lbl, p in rows]
     print(T.markdown(scored))
     print()
     for lbl, s in scored:
-        print(f"[{lbl}] {s['path']} system={s['system']!r} exp={s['expansions']} "
-              f"k={s['k']}\n    {s['optimal']}/450 optimal, {s['solved']}/450 solved, "
-              f"mean extra {s['mean_extra']}, replay failures "
-              f"{len(s['replay_failures'])}, misaligned {len(s['misaligned'])}")
+        print(f"[{lbl}] {s['path']}\n    system={s['system']!r} exp={s['expansions']} "
+              f"k={s['k']}: {s['optimal']}/450 optimal, {s['solved']}/450 solved, "
+              f"mean extra {s['mean_extra']}\n    checks: replay failures "
+              f"{len(s['replay_failures'])}, misaligned {len(s['misaligned'])}, "
+              f"length disagreements {len(s['length_disagreements'])}, "
+              f"below d* {len(s['below_d_star'])}")
+    if a.gate:
+        g = [s for lbl, s in scored if s["path"] == a.gate]
+        if g:
+            pct = g[0]["pct_optimal"]
+            verdict = "PASS" if pct > GATE_BACKWARD_PCT else "FAIL"
+            print(f"\nStage 3 gate ({GATE_BACKWARD_PCT}% of 450, the backward "
+                  f"supervised planner): {pct:.1f}% -> {verdict}")
     if a.json_out:
         Path(a.json_out).write_text(json.dumps(
             {"bench": a.bench, "gate_backward_pct": GATE_BACKWARD_PCT,
              "rows": [{"label": l, **s} for l, s in scored]}, indent=1) + "\n")
+
+
+def beam(a):
+    """The beam-width study: every `plan_<arm>_k<k>_e<exp>.json` in a directory,
+    recomputed the same way -- percent of all 450 solved move-optimally."""
+    from subgoal import table as T
+    bench = load_bench(a.bench)
+    found = sorted(Path(a.dir).glob("plan_*_k*_e*.json"))
+    recs = []
+    for f in found:
+        stem = f.stem.split("_")
+        arm, k, exp = stem[1], int(stem[2][1:]), int(stem[3][1:])
+        s = T.score(f, bench)
+        pay = json.loads(f.read_text())
+        proto = pay["protocol"]
+        agg = list(pay["systems"].values())[0]["aggregate"]
+        recs.append(dict(arm=arm, k=k, expansions=exp, path=str(f),
+                         optimal=s["optimal"], pct=s["pct_optimal"],
+                         solved=s["solved"], mean_extra=s["mean_extra"],
+                         replay_failures=len(s["replay_failures"]),
+                         mean_expansions=agg["expansions_mean"],
+                         encoder_passes=agg["h_queries_total"],
+                         candidates_scored=agg["h_candidates_total"],
+                         proved=agg["proved_optimal_in_pruned_graph"],
+                         wall_seconds=proto.get("wall_seconds")))
+    recs.sort(key=lambda r: (r["arm"], r["k"]))
+    print("| h | beam k | optimal % of 450 | solved / 450 | extra moves | mean expansions | encoder passes | wall s |")
+    print("|---|---|---|---|---|---|---|---|")
+    for r in recs:
+        me = "—" if r["mean_extra"] is None else f"{r['mean_extra']:.3f}"
+        print(f"| {r['arm']} | {r['k']} | {r['pct']:.1f}% ({r['optimal']}/450) "
+              f"| {r['solved']}/450 | {me} | {r['mean_expansions']:.0f} "
+              f"| {r['encoder_passes']} | {r['wall_seconds']} |")
+    bad = [r for r in recs if r["replay_failures"]]
+    print(f"\nreplay failures across all {len(recs)} payloads: "
+          f"{sum(r['replay_failures'] for r in recs)}"
+          + (f"  ({[r['path'] for r in bad]})" if bad else ""))
+    if a.json_out:
+        Path(a.json_out).write_text(json.dumps(recs, indent=1) + "\n")
+
+
+# ---------------------------------------------------------------------------
+# heuristic quality, independent of any search
+# ---------------------------------------------------------------------------
+
+def rank(a):
+    """Learned h vs the non-learned one as RANKERS, on a labelled corpus.
+
+    For every (state, robot) group the beam orders children by f = c + h with
+    the exact edge cost c. This scores the two h's against the true f = c + ctg
+    with the exact cost-to-go: Spearman, top-1, and top-5 survival (does the
+    beam's five best contain a child with the truly minimal f). It isolates the
+    heuristic from the search, and needs no planning run.
+    """
+    import torch
+    from subgoal.ctgnet import CtgNet, CtgDataset, collate, group_metrics
+    from subgoal.space import board as _board, relaxed_h
+    store = np.load(a.data, allow_pickle=False)
+    ds = CtgDataset(store, ENV_DIR, SIZE)
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    net = CtgNet.load_from_checkpoint(a.ckpt, map_location=dev).eval().to(dev)
+    n = SIZE
+    dl = torch.utils.data.DataLoader(ds, batch_size=a.batch, shuffle=False,
+                                     collate_fn=collate, num_workers=2)
+    preds = []
+    with torch.no_grad():
+        for b in dl:
+            logits = net(b["x"].to(dev), b["A_all"].to(dev), b["A_ind"].to(dev), n)
+            preds.append(net.ctg_hat(logits).float().cpu().numpy())
+    preds = np.concatenate(preds, 0)
+    Hcache = {}
+    out = {"net": [], "relaxed": [], "zero": []}
+    for j, (si, r) in enumerate(ds.index):
+        eid = int(ds.env_id[si])
+        tidx = int(ds.tidx[si])
+        tgt = (int(ds.target[si][0]), int(ds.target[si][1]))
+        key = (eid, tgt)
+        H = Hcache.get(key)
+        if H is None:
+            wr, wd = _board(eid)
+            Hd = relaxed_h(tgt, wr, wd, n)
+            H = Hcache[key] = [Hd.get((c % n, c // n), 1e6) for c in range(n * n)]
+        y = ds.ctg[si, r].astype(np.float64)
+        c = ds.cost[si, r].astype(np.float64)
+        m = ds.ctg[si, r] >= 0
+        cells = np.flatnonzero(m)
+        if r == tidx:
+            hrel = np.array([H[int(cc)] for cc in cells], np.float64)
+        else:
+            hrel = np.full(len(cells), float(H[int(ds.positions[si][tidx][1]) * n
+                                               + int(ds.positions[si][tidx][0])]))
+        out["net"].append(group_metrics(preds[j][m], y[m], c[m]))
+        out["relaxed"].append(group_metrics(hrel, y[m], c[m]))
+        out["zero"].append(group_metrics(np.zeros(len(cells)), y[m], c[m]))
+    summary = {}
+    for k, v in out.items():
+        summary[k] = {m: float(np.nanmean([d[m] for d in v]))
+                      for m in ("mae", "spearman", "top1", "top5")}
+        summary[k]["groups"] = len(v)
+    print(f"[rank] {a.data}  ({len(ds)} groups, mean "
+          f"{np.mean([d['n'] for d in out['net']]):.1f} labelled children)")
+    print("| scorer | Spearman rho vs true cost-to-go | top-1 of f=c+h | top-5 of f=c+h | MAE |")
+    print("|---|---|---|---|---|")
+    for k, lbl in (("net", "learned CtgNet h"),
+                   ("relaxed", "any-stop relaxation h (no network)"),
+                   ("zero", "h = 0 (rank by edge cost alone)")):
+        d = summary[k]
+        print(f"| {lbl} | {d['spearman']:.3f} | {d['top1'] * 100:.1f}% | "
+              f"{d['top5'] * 100:.1f}% | {d['mae']:.2f} |")
+    if a.out:
+        Path(a.out).write_text(json.dumps(
+            dict(data=a.data, ckpt=str(a.ckpt), summary=summary,
+                 date=time.strftime("%Y-%m-%dT%H:%M:%S")), indent=1) + "\n")
+        print(f"SPR SUBGOAL STAGE3 RANK DONE {a.out}")
 
 
 # ---------------------------------------------------------------------------
@@ -359,8 +486,23 @@ def main(argv=None):
     r = sub.add_parser("report")
     r.add_argument("--bench", default=str(BENCH))
     r.add_argument("--row", action="append", default=[])
+    r.add_argument("--only-rows", action="store_true")
+    r.add_argument("--gate", default=None, help="path of the row the gate judges")
     r.add_argument("--json", dest="json_out", default=None)
     r.set_defaults(fn=report)
+
+    rk = sub.add_parser("rank")
+    rk.add_argument("--ckpt", required=True)
+    rk.add_argument("--data", required=True)
+    rk.add_argument("--batch", type=int, default=16)
+    rk.add_argument("--out", default=None)
+    rk.set_defaults(fn=rank)
+
+    bm = sub.add_parser("beam")
+    bm.add_argument("--dir", default=str(SPR / "results/subgoal/stage3"))
+    bm.add_argument("--bench", default=str(BENCH))
+    bm.add_argument("--json", dest="json_out", default=None)
+    bm.set_defaults(fn=beam)
 
     a = p.parse_args(argv)
     a.fn(a)
