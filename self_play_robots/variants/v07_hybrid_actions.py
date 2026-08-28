@@ -86,6 +86,10 @@ def bench_main(argv=None):
     p.add_argument("--d2-from", type=int, default=4)
     p.add_argument("--k", type=int, default=5)
     p.add_argument("--boards", choices=["pkl", "lean"], default="pkl")
+    p.add_argument("--arch", choices=["sizefree", "persize"], default="sizefree",
+                   help="net family (spr.nets loaders): size-free self-play "
+                        "ckpts, or the supervised per-size PolicyTF/"
+                        "LoopedValueNet pair (train/*.py)")
     p.add_argument("--device", default="cpu")
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--out", required=True)
@@ -105,8 +109,8 @@ def bench_main(argv=None):
     from spr.search import Evaluator, mcts, forced_fixes
     import random
 
-    policy = load_policy(a.policy, a.device)
-    value_net = load_value(a.value, a.device)
+    policy = load_policy(a.policy, a.device, a.arch)
+    value_net = load_value(a.value, a.device, a.arch)
     ev = Evaluator(policy, value_net, a.device, byref=True)
     solver = make_solver("b2")
     load_env = leanboard.from_env if a.boards == "lean" else GridEnv.from_env
@@ -221,12 +225,14 @@ def bench_main(argv=None):
                   flush=True)
 
     name = (f"v07 root-slides hybrid d{a.prefix_depth} [B2] "
+            f"{'per-size' if a.arch == 'persize' else 'size-free'} nets "
             f"(b0={a.b0} top_m={a.top_m} sub={a.sub}) policy={Path(a.policy).name}")
     payload = {"protocol": {"expansions": a.expansions, "k": a.k,
                             "instances_file": str(a.instances), "instances_sha256": sha,
                             "n_instances": len(instances), "instances_meta": meta,
                             "checkpoints": {a.policy: "", a.value: ""},
-                            "device": a.device, "d_star_placeholder": placeholder,
+                            "device": a.device, "arch": a.arch,
+                            "d_star_placeholder": placeholder,
                             "dump_moves": True, "byref": True,
                             "date": time.strftime("%Y-%m-%dT%H:%M:%S"),
                             "expansion_definition":

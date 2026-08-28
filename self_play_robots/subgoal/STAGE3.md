@@ -43,10 +43,12 @@ constant lives in `subgoal/stage3.py::GATE_BACKWARD_PCT`.
 |---|---|---|---|---|---|
 | **A** | `net` | learned `CtgNet` | **5** | **1200** | **the headline / gate row** |
 | **B** | `relaxed` | any-stop relaxation, board only, no network | 5 | 1200 | the control: is the learned `h` worth anything at all? |
-| C | `net` / `relaxed` | as above | 10, 20, 50, 1024 | 1200 | the beam-width study |
+| C | `net` / `relaxed` | as above | 10, 20, 50, 200 | 1200 | the beam-width study |
 | D | `exact` | the true cost-to-go from the engine | 5 | 1200 | diagnostic ceiling: search or heuristic? |
 
-`k = 1024` means no prune. The network arm spends **4 encoder passes per
+`k = 200` is effectively no prune: a 16x16 four-robot state has on average
+only ~148 physically reachable candidates across all four robots, so a beam of
+200 keeps essentially all of them. The network arm spends **4 encoder passes per
 expansion at every k**, because the candidate cell is read out rather than
 encoded, so every row of the beam study uses *identical* network calls
 (4 × expansions per instance) and only the beam changes — which is exactly the
