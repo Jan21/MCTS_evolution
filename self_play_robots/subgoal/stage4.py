@@ -773,6 +773,79 @@ def series(a):
             rows=[{"label": l, **(s or {})} for l, s in out]))
 
 
+def _exact_binom_two_sided(k, n):
+    """Two-sided exact binomial p-value against p = 0.5 (no scipy dependency).
+    By symmetry of the null this is 2 * P(X <= min(k, n-k)), capped at 1."""
+    import math
+    if n == 0:
+        return 1.0
+    m = min(k, n - k)
+    tail = sum(math.comb(n, j) for j in range(m + 1)) / 2.0 ** n
+    return min(1.0, 2.0 * tail)
+
+
+def paired(a):
+    """Paired comparisons on the SAME 450 instances -- the only way to compare
+    two planners whose counts are close.
+
+      * McNemar (exact binomial, two-sided) on the SOLVED indicator and on the
+        OPTIMAL indicator, which is the headline metric;
+      * exact sign test (two-sided) on replayed move counts over the
+        both-solved subset, ties dropped as the test requires.
+
+    Discordant-pair counts are printed, because they are the whole content of a
+    McNemar test and a p-value without them is unreadable.
+    """
+    from subgoal import table as T
+    bench = load_bench(a.instances)
+    base = T.score(a.base, bench)["per_instance"]
+    rows = []
+    for spec in a.against:
+        lbl, _, path = spec.partition("=")
+        oth = T.score(path, bench)["per_instance"]
+        d = [r["d_star"] for r in bench]
+        sa = [r["ok"] for r in base]
+        sb = [r["ok"] for r in oth]
+        oa = [r["ok"] and r["replayed"] == r["d_star"] for r in base]
+        ob = [r["ok"] and r["replayed"] == r["d_star"] for r in oth]
+        rec = dict(label=lbl, path=path, n=len(bench))
+        for name, va, vb in (("solved", sa, sb), ("optimal", oa, ob)):
+            b = sum(1 for x, y in zip(va, vb) if x and not y)   # base only
+            c = sum(1 for x, y in zip(va, vb) if y and not x)   # other only
+            rec[name] = dict(base=sum(va), other=sum(vb), base_only=b,
+                             other_only=c, discordant=b + c,
+                             p=_exact_binom_two_sided(b, b + c))
+        both = [(x["replayed"], y["replayed"]) for x, y in zip(base, oth)
+                if x["ok"] and y["ok"]]
+        plus = sum(1 for x, y in both if x < y)      # base shorter
+        minus = sum(1 for x, y in both if x > y)     # other shorter
+        rec["moves"] = dict(both_solved=len(both), base_shorter=plus,
+                            other_shorter=minus, ties=len(both) - plus - minus,
+                            discordant=plus + minus,
+                            p=_exact_binom_two_sided(plus, plus + minus))
+        rows.append(rec)
+    bl = a.base_label or Path(a.base).stem
+    print(f"base = {bl}  ({a.base})\n")
+    print("| comparison | n | solved (base vs other) | discordant b/c | McNemar p "
+          "| optimal (base vs other) | discordant b/c | McNemar p |")
+    print("|---|---|---|---|---|---|---|---|")
+    for r in rows:
+        s_, o_ = r["solved"], r["optimal"]
+        print(f"| {bl} vs {r['label']} | {r['n']} "
+              f"| {s_['base']} vs {s_['other']} | {s_['base_only']}/{s_['other_only']} "
+              f"| {s_['p']:.4g} | {o_['base']} vs {o_['other']} "
+              f"| {o_['base_only']}/{o_['other_only']} | {o_['p']:.4g} |")
+    print("\n| comparison | both solved | base shorter | other shorter | ties "
+          "| sign-test p |")
+    print("|---|---|---|---|---|---|")
+    for r in rows:
+        m = r["moves"]
+        print(f"| {bl} vs {r['label']} | {m['both_solved']} | {m['base_shorter']} "
+              f"| {m['other_shorter']} | {m['ties']} | {m['p']:.4g} |")
+    if a.json_out:
+        _atomic_json(a.json_out, dict(base=a.base, base_label=bl, rows=rows))
+
+
 def yields(a):
     """The certified-label yield of every self-play round: boards attempted,
     plans that replayed clean, states labelled. Recorded per round, because a
@@ -1021,6 +1094,14 @@ def main(argv=None):
                     help="the no-learning reference: the random net, same config")
     se.add_argument("--gate", action="store_true")
     se.set_defaults(fn=series)
+
+    pr = sub.add_parser("paired")
+    pr.add_argument("--base", required=True)
+    pr.add_argument("--base-label", default=None)
+    pr.add_argument("--against", action="append", default=[], required=True)
+    pr.add_argument("--instances", default=str(BENCH))
+    pr.add_argument("--json", dest="json_out", default=None)
+    pr.set_defaults(fn=paired)
 
     yl = sub.add_parser("yields")
     yl.add_argument("--arms", nargs="+", default=["b", "c"])

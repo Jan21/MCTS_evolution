@@ -337,3 +337,75 @@ evidence that what the network bought is calibration — the same conclusion
 Stage 3 reached from its ranking study, reached here from the search side.
 The practical consequence for Stage 5 is that the clamp is worth carrying only
 where a network-free heuristic is in play.
+
+### The offline metric does not predict the planner — a warning for Stage 5
+
+Every checkpoint, scored on ONE fixed held-out set: Stage 3's validation corpus
+(boards 1800–1849, exact-engine cost-to-go). This is an **audit computed after
+the rounds**, never used to select or train anything in either arm — the same
+standing the exact engine has in `auditlabels` — so Part C's "no exact-engine
+data" claim is untouched. It is here because the per-round `val_mae_all` figures
+are each measured on a corpus regenerated from that round's own policy and are
+therefore NOT comparable across rounds; this set is the same for all six.
+
+| checkpoint | bench450 optimal % | Spearman | top-1 | top-5 | MAE vs true cost-to-go |
+|---|---|---|---|---|---|
+| Stage 3 supervised (Part A bar) | 80.9% | 0.378 | **69.9%** | **93.8%** | 2.01 |
+| random init (C round 0) | 68.7% | 0.046 | 30.8% | 66.1% | 39.24 |
+| B round 1 | **88.9%** | **0.393** | 66.4% | 93.1% | **1.85** |
+| B round 2 | 86.7% | 0.383 | 63.3% | 90.3% | 1.96 |
+| C round 1 | 85.1% | 0.330 | 62.6% | 92.0% | 2.65 |
+| C round 2 | **93.8%** | 0.337 | 58.5% | 89.6% | 2.17 |
+
+**The two columns disagree, and the disagreement is the finding.** C round 2 is
+the best planner in this project's history on the headline metric and is the
+WORST of the four trained nets on the offline metric Stage 3 used to pick its
+checkpoint — top-1 58.5% against the supervised net's 69.9%, top-5 89.6% against
+93.8%. Ranking accuracy on random-walk states is not what the search needs.
+
+The most likely reason is distribution, and it is testable rather than settled
+here: the Stage 3 corpus samples parents by random macro walks, while a
+self-play corpus samples exactly the states this planner reaches, so the
+self-play nets are better where the beam actually spends its expansions and
+worse where it never goes. Whatever the cause, the practical consequence is
+concrete: **`val_top5` on an exact-labelled random-walk corpus should not be
+used to select checkpoints for this search again**, and Stage 3's epoch-11
+selection was made on a proxy this stage has now shown to be unreliable.
+
+### Paired tests, because the counts are close
+
+Percent-of-450 differences of a few instances cannot be read off two counts.
+Every comparison below is on the SAME 450 instances
+(`subgoal/stage4.py paired`): McNemar with an exact two-sided binomial on the
+solved indicator and on the optimal indicator, and an exact two-sided sign test
+on replayed move counts over the both-solved subset with ties dropped.
+Discordant-pair counts are given, because they are the entire content of the
+test.
+
+**C round 2 (random init, no labels anywhere) against the supervised forward
+planner:**
+
+| test | base vs other | discordant (C-only / other-only) | p | verdict |
+|---|---|---|---|---|
+| McNemar, solved | 444 vs 450 | 0 / 6 | **0.031** | **forward is better** |
+| McNemar, optimal | 422 vs 424 | 22 / 24 | 0.883 | **not separable** |
+| sign test, moves (n=444 both-solved) | — | 22 / 20, 402 ties | 0.878 | **not separable** |
+
+So: **on move-optimality and on solution length the two are not separable on
+this benchmark; forward is significantly better at solving at all.** 422 against
+424 is not a tie and is not written as one here. Forward solves 450/450 while C
+round 2 solves 444/450, so C's six unsolved instances cap it at **98.7%** before
+quality is considered, and the 0/6 discordance says forward's advantage is
+strict — there is no instance C solves that forward misses.
+
+**The other comparisons are separable, all favouring C round 2:**
+
+| against | optimal | discordant | McNemar p | moves: shorter / longer / ties | sign-test p |
+|---|---|---|---|---|---|
+| backward (subgoal, supervised) | 422 vs 240 | 186 / 4 | 6.9e-50 | 181 / 7 / 238 | 7.8e-45 |
+| B round 1 (warm start, its best) | 422 vs 400 | 27 / 5 | 1.1e-04 | 17 / 4 / 406 | 0.0072 |
+| B round 2 | 422 vs 390 | 38 / 6 | 9.4e-07 | 24 / 5 / 394 | 5.5e-04 |
+| Part A bar (Stage 3 net) | 422 vs 364 | 60 / 2 | 8.5e-16 | 29 / 2 / 371 | 4.6e-07 |
+
+From-scratch beating warm-started is itself separable (p = 1.1e-04), so it is a
+real effect and not round-to-round wobble.
