@@ -53,7 +53,8 @@ mkdir -p "$D" "$RUN"
 echo "SPR SG4-ROUND start $(date +%F' '%T) job=${SLURM_JOB_ID:-none} arm=$ARM round=$R k=$K ckpt=$CK"
 nvidia-smi -L
 [ -s "$CK" ] || { echo "SPR SG4-ROUND FAILED: no checkpoint $CK"; exit 1; }
-SEED=$((7000 + 100 * R + $(printf '%d' "'$ARM")))
+# the SAME roots for both arms in a given round, so B and C are paired
+SEED=$((7000 + 100 * R))
 
 for sh in $(seq 0 $((SHARDS-1))); do
   f="$D/sp_${ARM}_r${R}_train_s${sh}.npz"
@@ -73,7 +74,7 @@ if [ ! -s "$VA" ]; then
   python -m subgoal.stage4 selfplay --arm net --ckpt "$CK" \
       --boards 1850-1899 --per-board 6 --n "$NVAL" --k "$K" \
       --probe "$PROBE" --probe-expansions "$PEXP" \
-      --seed "$((9000 + 100 * R + $(printf '%d' "'$ARM")))" \
+      --seed "$((9000 + 100 * R))" \
       --concurrency "$CONC" --net-batch "$CONC" --out "$VA" \
       || { echo "SPR SG4-ROUND FAILED gen-val"; exit 1; }
   echo "SPR SG4-ROUND gen-val took $((SECONDS-t0))s"
