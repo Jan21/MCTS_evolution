@@ -186,9 +186,42 @@ rounds, reported beside Part B's. The existing cold-start control ran a single
 round and was never taken further, so nobody knows whether the supervised start
 matters at convergence.
 
+**Stage 4 RESULT (2026-08-28): both gates PASS.** Part A re-baselined the
+planner from 60.7% to 80.9% with no training (beam 100 chosen on held-out
+boards; a robot-position-aware admissible bound that converts 182 of 325
+budget-limited searches into optimality proofs). Part B reached 93.6% and
+Part C — random initialisation, no exact engine, no human labels, no
+hand-written proposer at any point — reached **95.3% (429/450)**, monotone
+across three rounds. Paired tests on the same 450 instances put neither arm
+separably apart from the supervised forward planner on move-optimality
+(p = 0.53, p = 0.76), while forward stays separably better at solving at all
+(0/6 discordant, p = 0.031). The two arms are not separable from each other by
+round 3, so **the supervised warm start is unnecessary at convergence**.
+Full write-up `subgoal/STAGE4.md`; FINDINGS 33. Cost 0.750 of 6 node-hours.
+
 ### Stage 5 — scale (only after Stage 4 passes)
 Then, and only then: 24x24, the frontier sets, transfer, seeds, and the
 comparison against the hybrid search. Nothing here matters if Stage 1 or 3 fails.
+
+**What Stage 4 says Stage 5 must carry.** Four things, all measured above:
+1. **The search settings are worth more than the training run and must be
+   re-derived per configuration, not inherited.** k = 5 was mis-sized for a
+   1024-candidate vocabulary; at 24x24 the candidate count grows again, so the
+   beam rule must be re-run on held-out boards of the new size before anything
+   is trained. The same applies to the admissible bound, which is size-free as
+   written but whose value should be re-verified.
+2. **Do not select checkpoints on `val_top5` over a random-walk corpus.** It
+   anti-correlates with planner quality here: the best planner has the worst
+   top-1. Select on a self-play validation corpus, or on the planner itself.
+3. **The from-scratch arm is the one to scale.** It needs no exact engine, which
+   is the component that will not scale — labelling cost grows with the state
+   space, and Stage 3 already lost 20% of its labels to the expansion cap at
+   16x16.
+4. **The open problem is coverage, not quality.** Both arms are optimal on
+   essentially everything they solve; what separates them from the forward
+   planner is the handful of instances they never solve at all (0/6 and 0/10
+   discordant). At 24x24 that gap will widen first, so Stage 5's metric work
+   should start there.
 
 ## 5. Rules
 
