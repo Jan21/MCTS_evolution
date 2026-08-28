@@ -45,6 +45,7 @@ constant lives in `subgoal/stage3.py::GATE_BACKWARD_PCT`.
 | **B** | `relaxed` | any-stop relaxation, board only, no network | 5 | 1200 | the control: is the learned `h` worth anything at all? |
 | C | `net` / `relaxed` | as above | 10, 20, 50, 200 | 1200 | the beam-width study |
 | D | `exact` | the true cost-to-go from the engine | 5 | 1200 | diagnostic ceiling: search or heuristic? |
+| E | `net` / `relaxed` | as above | 5, 20 | **300** | the backward planner's own network-call budget: it spends one network pass per expansion, 1200 per instance; this planner spends four, so 300 expansions is the call-matched row |
 
 `k = 200` is effectively no prune: a 16x16 four-robot state has on average
 only ~148 physically reachable candidates across all four robots, so a beam of
