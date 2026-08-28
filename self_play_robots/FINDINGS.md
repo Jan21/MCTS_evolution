@@ -1390,3 +1390,100 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     `runs/spr/subgoal/stage3_rec4/{best.txt,lightning_logs/version_0/metrics.csv}`,
     `runs/spr/spr-sg3-{gen-4863820,smoke-4863872,train-4863894,planA-4863895,
     planB-4863896,planC-4863903,exact-4864942}.out`.
+
+33. **Subgoal-discovery plan, Stage 4 PASSES both gates, and the from-scratch
+    arm is the result: certified self-play from a RANDOM network — no exact
+    engine, no human labels, no hand-written proposer at any point — reaches
+    95.3% of bench450 move-optimally (429/450), which is NOT statistically
+    separable from the supervised forward planner's 94.2%; and the supervised
+    warm start turns out to be unnecessary at convergence (2026-08-28, 17 GPU
+    jobs 4867783–4870935, 0.750 node-hours of a 6 node-hour budget; full
+    write-up `subgoal/STAGE4.md`).** Stage 4 was re-ordered before it ran
+    (committed 243c5ed): take the two free wins Stage 3 measured and left, then
+    gate the learning on the re-baselined number.
+    | model (bench450, 1200 expansions) | optimal % of 450 | solved / 450 | extra moves |
+    |---|---|---|---|
+    | forward (move-by-move, supervised), beam 5 | 94.2% (424/450) | **450/450** | 0.067 |
+    | backward (subgoal, supervised), beam 5 | 53.3% (240/450) | 432/450 | 1.840 |
+    | Stage 3 row (beam 5, board-only bound) | 60.7% (273/450) | 415/450 | 0.708 |
+    | Part A re-baseline (beam 100, tight bound, exact labels) | 80.9% (364/450) | 404/450 | 0.248 |
+    | Part B self-play from the supervised net, round 3 | 93.6% (421/450) | 440/450 | **0.086** |
+    | **Part C self-play FROM SCRATCH, round 3** | **95.3% (429/450)** | 444/450 | 0.113 |
+    All rows recomputed by `subgoal/table.py` from their own move dumps under
+    the real joint-game rules: **0 replay failures, 0 misaligned rows, 0 length
+    disagreements, 0 solutions shorter than `d*`** across every Stage 4 payload.
+    (a) **The two free wins were worth more than Stage 3's whole training run.**
+    (i) The beam: an expansion costs exactly 4 encoder passes at EVERY k, so the
+    prune buys nothing. Width chosen by a rule fixed before the sweep — smallest
+    k within 1.0 point of the best on 200 held-out instances (boards 1900–1999,
+    0 overlap with bench450) — which selected **k = 100**; k=100 and no-prune are
+    identical row for row. (ii) The bound: Stage 3's is board-only, so even an
+    exact `h` could not terminate. Adding the two robot-position terms
+    (`min(d_frozen, h_free + max(1, r))`, `subgoal/planner.py::_h2`) gives a
+    bound that is **admissible on 2819 benchmark-board states, 0 violations**
+    against the exact engine, +1.05 moves on average, and converts **182 of 325**
+    budget-limited searches at beam 100 into terminating optimality proofs while
+    saving 41.6% of expansions and gaining 6 optimal solutions with 0 regressions
+    (103 of 171 at beam 5). Together: 60.7% → **80.9%**, no training.
+    (b) **Both self-play arms pass the pre-registered gate, which was frozen to
+    `results/subgoal/stage4/partA_bar.json` and committed (b8f50db) before the
+    first self-play job was submitted.** Part B 80.9 → 88.9 → 86.7 → **93.6**;
+    Part C 68.7 → 85.1 → 93.8 → **95.3**, monotone.
+    (c) **Paired tests, not raw counts.** Same 450 instances, McNemar exact
+    binomial on solved and on optimal, exact sign test on move counts
+    (`subgoal/stage4.py paired`): C round 3 vs forward is **not separable on
+    optimality (429 vs 424, discordant 23/18, p = 0.53)** nor on move counts
+    (p = 0.13); forward IS separably better at solving (444 vs 450, discordant
+    **0/6**, p = 0.031 — no instance C solves that forward misses), so C's six
+    unsolved cap it at 98.7% before quality. B round 3 vs forward likewise not
+    separable on optimality (p = 0.76). **C round 3 vs B round 3 is not
+    separable on any of the three tests** (p = 0.39 / 0.13 / 0.24), though C beat
+    B separably at round 2 (p = 1.1e-04). So the supervised warm start bought a
+    better round 0 (80.9% vs 68.7%) and **nothing that survives three rounds** —
+    the first measurement of an assumption the project has held throughout.
+    (d) **The labels are sound and the loop was never starved.** Every finished
+    plan is replayed under the real rules and a plan that fails replay labels
+    nothing: **0 replay failures across all six rounds**, roots and probes. An
+    exact-engine audit run AFTER each round (`stage4 auditlabels`, never used to
+    build the corpus) found **0 labels below the true optimum**, with the
+    exactly-optimal fraction rising 84.4% → 89.7% (B) and 85.8% → 91.3% (C).
+    Yield per round is small — about 6 700 labels at best against Stage 3's
+    **335 280** exact labels, ~50x fewer — so this is not a volume effect.
+    (e) **A benchmark-free signal confirms the loop bootstraps.** The self-play
+    solve rate on each round's own 1200 fresh puzzles tracks the bench curve
+    without ever seeing bench450: arm C 550 → 661 → 781 (monotone, like its
+    bench series), arm B 665 → 743 → 707 (peak-and-dip, like its bench series).
+    (f) **The offline metric does NOT predict the planner, which invalidates
+    Stage 3's selection criterion.** All eight checkpoints scored on one fixed
+    held-out set (Stage 3's exact-labelled val corpus, boards 1800–1849, used
+    post hoc as an audit only): bench optimal% rises monotonically down the C
+    block while top-1 falls monotonically — C round 3 is the best planner at
+    95.3% with the **worst** top-1 of any trained net (57.8% vs the supervised
+    net's 69.9%; top-5 88.9% vs 93.8%). `val_top5` on a random-walk corpus
+    should not be used to select checkpoints for this search again.
+    (g) **Exploratory, labelled as such (run after the headline was fixed).**
+    Clamping `h` to the admissible bound — rank by `max(h, h_adm)` — is worth
+    **+5.8 points to the network-free relaxation** (67.8% → 73.6%) and is a
+    **no-op for the learned `h`** (80.9% → 80.9%, 0 solutions changed, 1
+    expansion of difference in 236 023). The learned `h` already sits at or above
+    the admissible bound everywhere; the clamp repairs a weak heuristic, it does
+    not improve a good one.
+    (h) **Costs and honesty notes.** 0.750 node-hours of a 6 node-hour budget,
+    17 GPU jobs, none cancelled or lost. The pre-registration (gate, beam rule,
+    bound, self-play design, collapse guard) was committed before the run it
+    judges; the Part A bar was frozen and committed before Parts B and C were
+    submitted; three rounds were run as pre-registered and no fourth was added
+    despite Part C still rising. One bug was found and fixed before any
+    self-play round ran: labels initially used `best_g` for a plan's prefix
+    cost, which a later cheaper route to the same state can lower, mislabelling
+    the remaining cost; fixed to carry each edge's own cost
+    (78375f0). The collapse guard never fired (`val_spread_reach` 0.57–2.41
+    against a 0.05 floor).
+    Sources: `subgoal/STAGE4.md`, `subgoal/{planner,ctgnet,stage4,table}.py`,
+    `jobs/subgoal_stage4_{dev,plan,round,eval}.slurm`,
+    `results/subgoal/stage4/{partA_bar.json,beam_choice.json,dev_beam.json,
+    verify_bound.txt,bound_diff_k5.json,bound_diff_k100.json,series_b.json,
+    series_c.json,paired_final.json,paired_c_r2.json,paired_c_r3.json,
+    yields.json,fixedval_summary.json,table4_final.json,round_*.json,
+    partA_*.json,explor_*.json,audit_*.json,sp_*_r*_train_s*.npz}`,
+    `runs/spr/subgoal/stage4_{b,c}_r{1,2,3}/`, `runs/spr/spr-sg4-*.out`.
