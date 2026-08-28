@@ -27,8 +27,9 @@ Two things were learned that matter more than the gate itself:
    constant-value plateau for 30 epochs — within-group prediction spread exactly
    0.00, ρ ≈ 0, reachability head frozen at the 82.4% base rate. At 4 steps it
    learns (spread ≈ 1.9, ρ ≈ 0.75) with either positional signal. This is the
-   collapse mode FINDINGS 53/61 already record for this net family, now
-   reproduced on a new task with an unambiguous cause.
+   collapse mode `supervised_valuenet/FINDINGS.md` §50 and §57 already record
+   for this net family (7 of 8 cold trainings on the plateau; `val_group_spread`
+   exactly 0.00), now reproduced on a new task with an unambiguous cause.
 2. **Ranking 1024 candidate subgoals by their cost — even by their EXACT cost —
    does not keep the optimal subgoal inside a top-5 beam.** With exact costs the
    optimal-preserving subgoal survives a k=5 prune at the root of only **61.2%**
@@ -163,8 +164,10 @@ fraction of a group's reachable candidates that carry its minimum cost is
 
 A four-arm diagnostic (job 4863393, 9.5 min, 4 epochs each on the same corpora,
 only two structural knobs moved) isolates the cause. `val_group_spread` is the
-collapse detector `SizeFreeValueNet.on_validation_epoch_end` already computes:
-the mean within-group standard deviation of the predictions.
+collapse detector `SizeFreeValueNet.on_validation_epoch_end` already computes —
+the mean within-group standard deviation of the predictions — introduced after
+the battery-1 collapses of `supervised_valuenet/FINDINGS.md` §50 and the one
+that caught §57's mid-training fall.
 
 | arm | val ρ, epochs 0–3 | val_group_spread | val reach-acc |
 |---|---|---|---|

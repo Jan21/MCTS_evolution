@@ -1157,8 +1157,10 @@ Milestones/gates: `PROBLEM.md` §8. House rules: `PROBLEM.md` §10.
     **0.556** (sin2d, rec 4), with spread 0.00 / 0.00 / 1.91 / 1.84. Twelve
     weight-tied steps over a field whose non-robot cells start from identical
     embeddings drive every token to one vector, and a readout that must separate
-    256 goal cells then has nothing to read. This is the collapse mode of
-    section 53/61 on a new task with an unambiguous cause. The reported run is
+    256 goal cells then has nothing to read. This is the constant-value-plateau
+    mode of `supervised_valuenet/FINDINGS.md` sections 50 and 57 (7 of 8 cold
+    trainings; `val_group_spread` exactly 0.00) on a new task and with an
+    unambiguous cause. The reported run is
     identical except `--recurrence 4`; both payloads are kept.
     (b) **Gate FAIL, on both held-out board sets.** Spearman over a state's
     truly reachable candidates, all four robots pooled:
