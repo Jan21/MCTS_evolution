@@ -145,11 +145,46 @@ it cannot beat a hand-written proposer while using exact-engine labels, the
 search or the heuristic is wrong, and self-play will not rescue it.
 
 ### Stage 4 — does self-play work in this space? (hours, 1 GPU)
-Replace the exact-engine labels with certified self-play labels. Run at least
-three rounds from the Stage 3 checkpoint, and separately at least one run from
-random initialisation, so we learn whether the supervised start is needed.
-**Gate:** the optimal percentage must rise across rounds and beat Stage 3.
-Report the per-round series with denominators.
+**Re-ordered 2026-08-28 after Stage 3 passed.** Stage 3 measured two free wins
+and left them on the table, and both are worth more than the training run that
+produced its 60.7% (`subgoal/STAGE3.md` §7). Running self-play against the
+`k = 5` configuration would be measuring a 19-point handicap, so Stage 4 takes
+them first and gates the learning on the re-baselined number. Three parts, in
+this order; the pre-registration is `subgoal/STAGE4.md`.
+
+**Part A — take the free wins, and re-baseline.** Neither is learning.
+1. **Re-size the beam.** An expansion costs exactly four encoder passes at every
+   `k`, so the prune buys nothing in network cost and only discards children.
+   The width is chosen by a rule fixed in advance on a HELD-OUT dev set of fresh
+   boards (1900–1999), never on bench450, and becomes the headline
+   configuration. The inherited protocol row (1200 expansions, `k = 5`) is
+   reported beside it so 60.7% stays visible.
+2. **Strengthen the optimality bound.** Stage 3's is board-only, which is why
+   even an exact `h` runs to the budget. A bound that also accounts for the
+   robots' positions is added, proved admissible against the exact engine, and
+   used both for the stop and to skip nodes that cannot improve the incumbent.
+   Report how many of the 312 budget-limited searches it converts.
+Then the four-row table again at the new headline configuration. **That number,
+not 60.7%, is the bar Stage 4's learning must beat**; it is frozen to a file and
+committed before any self-play job is submitted.
+
+**Part B — self-play in this space.** Fresh boards, never a benchmark board or a
+pinned exam id. Search with exploration noise; replay every finished plan under
+the real rules, and a plan that fails replay produces no training record; for
+every state on a certified plan the label for `h` is that plan's true remaining
+cost from that state, measured and never predicted. Retrain `h` on a rolling
+buffer, warm-started, with the collapse guard Stage 2 needed. At least three
+rounds, per-round series with denominators.
+**Gate:** the self-play planner must beat Part A's re-baselined number. If three
+rounds cannot, report the negative plainly — that is a real result about whether
+certified self-play can improve a heuristic that exact labels already trained
+well.
+
+**Part C — the question the project never answered.** One arm from random
+initialisation with no exact-engine data at any point, the same number of
+rounds, reported beside Part B's. The existing cold-start control ran a single
+round and was never taken further, so nobody knows whether the supervised start
+matters at convergence.
 
 ### Stage 5 — scale (only after Stage 4 passes)
 Then, and only then: 24x24, the frontier sets, transfer, seeds, and the

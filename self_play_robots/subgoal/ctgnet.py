@@ -123,6 +123,7 @@ class CtgNet(pl.LightningModule):
         self._val = []
         self._pool = {}
         self._pe_cache = {}
+        self._all, self._alln, self._reach = [], 0, []
 
     def _encode(self, x, A_all, A_ind, n):
         X = self.enc(x)
@@ -211,6 +212,16 @@ class CtgNet(pl.LightningModule):
         sid = batch["sid"]
         for i in range(v.shape[0]):
             m = y[i] >= 0
+            # Stage 4: self-play labels are SPARSE (often one certified child per
+            # group), so the group-shaped ranking metrics below are undefined for
+            # them. These two are not: MAE over every labelled child, and the
+            # collapse detector taken over every PHYSICALLY REACHABLE child.
+            if m.any():
+                self._all.append((np.abs(v[i][m] - y[i][m].astype(np.float64))).sum())
+                self._alln += int(m.sum())
+            reach = c[i] >= 0
+            if reach.sum() >= 2:
+                self._reach.append(float(v[i][reach].std()))
             if m.sum() < 2:
                 continue
             pred = v[i][m]
@@ -220,9 +231,17 @@ class CtgNet(pl.LightningModule):
             self._pool.setdefault(int(sid[i]), []).append((pred, true, cost))
 
     def on_validation_epoch_end(self):
-        if not self._val:
-            return
         out = {}
+        if self._alln:
+            out["val_mae_all"] = float(np.sum(self._all) / self._alln)
+            out["val_labels"] = float(self._alln)
+        if self._reach:
+            out["val_spread_reach"] = float(np.mean(self._reach))
+        self._all, self._alln, self._reach = [], 0, []
+        if not self._val:
+            if out:
+                self.log_dict(out, prog_bar=True)
+            return
         for k in ("mae", "spearman", "top1", "top5", "spread"):
             vals = [d[k] for d in self._val if d[k] == d[k]]
             out[f"val_{k}_group"] = float(np.mean(vals)) if vals else 0.0
@@ -278,7 +297,7 @@ class CtgDataset(torch.utils.data.Dataset):
     """One item = one (parent state, query robot) pair = up to 256 labelled
     children. `store` is the npz produced by `stage3.py gen`."""
 
-    def __init__(self, store, env_dir, n):
+    def __init__(self, store, env_dir, n, min_labels=2):
         self.env_id = np.asarray(store["env_id"])
         self.pos = np.asarray(store["positions"])
         self.tidx = np.asarray(store["target_idx"])
@@ -290,7 +309,7 @@ class CtgDataset(torch.utils.data.Dataset):
         S, R = self.ctg.shape[0], self.ctg.shape[1]
         # drop groups with no usable label at all
         self.index = [(s, r) for s in range(S) for r in range(R)
-                      if (self.ctg[s, r] >= 0).sum() >= 2]
+                      if (self.ctg[s, r] >= 0).sum() >= min_labels]
 
     def __len__(self):
         return len(self.index)
