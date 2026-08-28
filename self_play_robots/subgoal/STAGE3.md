@@ -99,9 +99,13 @@ Corpus: parents are drawn on **train-split boards 1000–1699 only** (2 random
 puzzles per board, 2 parent states per puzzle, each 0–3 random macro moves from
 the drawn placement — Stage 2's recipe), validation on boards **1800–1849**.
 Zero overlap with the benchmark boards 2400–2549. Checkpoint selected by the
-best `val_top5` — the fraction of validation `(state, robot)` groups whose five
-best-predicted children contain a child with the truly minimal `c + h` — which
-is the beam's own criterion, computed on boards no training state came from.
+best `val_top5` — the fraction of validation DECISIONS whose five
+best-predicted children contain a child with the truly minimal `c + h`, where a
+decision pools all four robots' candidates exactly as the beam does. (Amended
+2026-08-28 before any Stage 3 training job was submitted: the metric was first
+written per `(state, robot)` group, which saturates near 100% for every scorer
+because a single robot offers only ~37 children; the pooled version is the
+beam's own decision.) Computed on boards no training state came from.
 
 **No knob is touched after a gate number is read.** Anything explored
 afterwards is labelled exploratory and reported separately from the headline.

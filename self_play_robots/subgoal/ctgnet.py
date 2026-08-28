@@ -121,6 +121,7 @@ class CtgNet(pl.LightningModule):
                                   nn.Linear(d_model, num_classes))
         self.register_buffer("bins", torch.arange(num_classes, dtype=torch.float32))
         self._val = []
+        self._pool = {}
         self._pe_cache = {}
 
     def _encode(self, x, A_all, A_ind, n):
@@ -207,12 +208,16 @@ class CtgNet(pl.LightningModule):
             v = self.ctg_hat(self(x, A_all, A_ind, n)).float().cpu().numpy()
         y = batch["ctg"].cpu().numpy()
         c = batch["cost"].cpu().numpy()
+        sid = batch["sid"]
         for i in range(v.shape[0]):
             m = y[i] >= 0
             if m.sum() < 2:
                 continue
-            self._val.append(group_metrics(v[i][m], y[i][m].astype(np.float64),
-                                           c[i][m].astype(np.float64)))
+            pred = v[i][m]
+            true = y[i][m].astype(np.float64)
+            cost = c[i][m].astype(np.float64)
+            self._val.append(group_metrics(pred, true, cost))
+            self._pool.setdefault(int(sid[i]), []).append((pred, true, cost))
 
     def on_validation_epoch_end(self):
         if not self._val:
@@ -220,10 +225,23 @@ class CtgNet(pl.LightningModule):
         out = {}
         for k in ("mae", "spearman", "top1", "top5", "spread"):
             vals = [d[k] for d in self._val if d[k] == d[k]]
-            out[f"val_{k}"] = float(np.mean(vals)) if vals else 0.0
-        out["val_group_spread"] = out.pop("val_spread")     # the collapse detector
+            out[f"val_{k}_group"] = float(np.mean(vals)) if vals else 0.0
+        out["val_group_spread"] = out.pop("val_spread_group")   # collapse detector
+        # The DECISION the beam actually makes pools all four robots of a state
+        # into one candidate set, so the selection metric does too.
+        t1, t5 = [], []
+        for parts in self._pool.values():
+            g = group_metrics(np.concatenate([x[0] for x in parts]),
+                              np.concatenate([x[1] for x in parts]),
+                              np.concatenate([x[2] for x in parts]))
+            t1.append(g["top1"])
+            t5.append(g["top5"])
+        out["val_top1"] = float(np.mean(t1)) if t1 else 0.0
+        out["val_top5"] = float(np.mean(t5)) if t5 else 0.0
+        out["val_decisions"] = float(len(t5))
         self.log_dict(out, prog_bar=True)
         self._val.clear()
+        self._pool.clear()
 
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=self.hparams.lr,
@@ -281,7 +299,7 @@ class CtgDataset(torch.utils.data.Dataset):
         s, r = self.index[i]
         return dict(x=state_features(self.pos[s], r, int(self.tidx[s]),
                                      self.target[s], self.n),
-                    ctg=self.ctg[s, r], cost=self.cost[s, r],
+                    ctg=self.ctg[s, r], cost=self.cost[s, r], sid=s,
                     env_id=int(self.env_id[s]), n=self.n, env_dir=self.env_dir)
 
 
@@ -296,4 +314,4 @@ def collate(items):
         aa.append(torch.as_tensor(np.asarray(A_all, np.float32)))
         ai.append(torch.as_tensor(np.asarray(A_ind, np.float32)))
     return dict(x=xs, A_all=torch.stack(aa), A_ind=torch.stack(ai),
-                ctg=ctg, cost=cost, n=n)
+                ctg=ctg, cost=cost, n=n, sid=[it["sid"] for it in items])

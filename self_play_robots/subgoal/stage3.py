@@ -341,6 +341,7 @@ def rank(a):
     preds = np.concatenate(preds, 0)
     Hcache = {}
     out = {"net": [], "relaxed": [], "zero": []}
+    pool = {"net": {}, "relaxed": {}, "zero": {}}
     for j, (si, r) in enumerate(ds.index):
         eid = int(ds.env_id[si])
         tidx = int(ds.tidx[si])
@@ -358,26 +359,41 @@ def rank(a):
         if r == tidx:
             hrel = np.array([H[int(cc)] for cc in cells], np.float64)
         else:
-            hrel = np.full(len(cells), float(H[int(ds.positions[si][tidx][1]) * n
-                                               + int(ds.positions[si][tidx][0])]))
-        out["net"].append(group_metrics(preds[j][m], y[m], c[m]))
-        out["relaxed"].append(group_metrics(hrel, y[m], c[m]))
-        out["zero"].append(group_metrics(np.zeros(len(cells)), y[m], c[m]))
+            hrel = np.full(len(cells), float(H[int(ds.pos[si][tidx][1]) * n
+                                               + int(ds.pos[si][tidx][0])]))
+        for key, hh in (("net", preds[j][m]), ("relaxed", hrel),
+                        ("zero", np.zeros(len(cells)))):
+            out[key].append(group_metrics(hh, y[m], c[m]))
+            pool[key].setdefault(si, []).append((hh, y[m], c[m]))
     summary = {}
     for k, v in out.items():
-        summary[k] = {m: float(np.nanmean([d[m] for d in v]))
+        summary[k] = {m + "_group": float(np.nanmean([d[m] for d in v]))
                       for m in ("mae", "spearman", "top1", "top5")}
         summary[k]["groups"] = len(v)
+        # the real decision pools all four robots of a state
+        dec = [group_metrics(np.concatenate([x[0] for x in parts]),
+                             np.concatenate([x[1] for x in parts]),
+                             np.concatenate([x[2] for x in parts]))
+               for parts in pool[k].values()]
+        summary[k]["decisions"] = len(dec)
+        summary[k]["top1"] = float(np.mean([d["top1"] for d in dec]))
+        summary[k]["top5"] = float(np.mean([d["top5"] for d in dec]))
+        summary[k]["mae"] = summary[k]["mae_group"]
+        summary[k]["spearman"] = summary[k]["spearman_group"]
     print(f"[rank] {a.data}  ({len(ds)} groups, mean "
           f"{np.mean([d['n'] for d in out['net']]):.1f} labelled children)")
-    print("| scorer | Spearman rho vs true cost-to-go | top-1 of f=c+h | top-5 of f=c+h | MAE |")
-    print("|---|---|---|---|---|")
+    print("| scorer | Spearman rho vs true cost-to-go | top-1 of f=c+h | "
+          "top-5 of f=c+h | MAE | (per (state,robot) group: top-1 / top-5) |")
+    print("|---|---|---|---|---|---|")
     for k, lbl in (("net", "learned CtgNet h"),
                    ("relaxed", "any-stop relaxation h (no network)"),
                    ("zero", "h = 0 (rank by edge cost alone)")):
         d = summary[k]
         print(f"| {lbl} | {d['spearman']:.3f} | {d['top1'] * 100:.1f}% | "
-              f"{d['top5'] * 100:.1f}% | {d['mae']:.2f} |")
+              f"{d['top5'] * 100:.1f}% | {d['mae']:.2f} | "
+              f"{d['top1_group'] * 100:.1f}% / {d['top5_group'] * 100:.1f}% |")
+    print(f"\n(top-1 / top-5 are over the WHOLE decision: all four robots' "
+          f"candidates pooled, {summary['net']['decisions']} decisions)")
     if a.out:
         Path(a.out).write_text(json.dumps(
             dict(data=a.data, ckpt=str(a.ckpt), summary=summary,
