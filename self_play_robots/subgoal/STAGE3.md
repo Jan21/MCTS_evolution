@@ -340,7 +340,7 @@ child inside a top-5 beam.
 | `val_top5` (pooled decision) | 0.817 | 0.924 | **0.938** | 0.900 | 0.900 | 0.855 |
 | `val_top1` | 0.488 | 0.671 | **0.699** | 0.637 | 0.581 | 0.609 |
 | `val_mae_group` (moves) | 1.86 | 1.78 | 2.01 | 2.11 | 2.45 | 3.07 |
-| `val_group_spread` | 1.05 | 0.92 | 1.17 | 1.15 | 1.57 | 1.59 |
+| `val_group_spread` | 1.05 | 0.92 | 1.17 | 1.24 | 1.57 | 1.59 |
 
 After epoch ~25 the net overfits (MAE climbs steadily while the ranking metric
 drifts down), so the checkpoint is a best-of-40 selection on a validation set
