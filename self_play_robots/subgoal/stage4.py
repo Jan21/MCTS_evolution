@@ -166,11 +166,11 @@ def plan(a):
     heur, extra = _heuristic(a, env_ids)
     t0 = time.time()
     rows = P.run(inst, heur, a.k, a.expansions, concurrency=a.concurrency,
-                 bound=a.bound)
+                 bound=a.bound, clamp=a.clamp)
     wall = time.time() - t0
     pay = P.payload(rows, inst, a.name or f"{a.arm}_k{a.k}_e{a.expansions}",
                     a.k, a.expansions,
-                    extra=dict(**extra, arm=a.arm, bound=a.bound,
+                    extra=dict(**extra, arm=a.arm, bound=a.bound, clamp=a.clamp,
                                instances_file=str(a.instances),
                                wall_seconds=round(wall, 1),
                                concurrency=a.concurrency,
@@ -580,6 +580,58 @@ def beam(a):
                                   date=time.strftime("%Y-%m-%dT%H:%M:%S")))
 
 
+def stops(a):
+    """Row-by-row diff of two payloads of the SAME instance set: what the
+    stronger bound converted, and whether it changed any solution."""
+    from subgoal import table as T
+    inst = load_bench(a.instances)
+    A = list(json.loads(Path(a.before).read_text())["systems"].values())[0]["rows"]
+    B = list(json.loads(Path(a.after).read_text())["systems"].values())[0]["rows"]
+    sa, sb = T.score(a.before, inst), T.score(a.after, inst)
+    trans, conv, worse, better = {}, 0, 0, 0
+    exp_a = exp_b = 0
+    for x, y in zip(A, B):
+        key = (x["stop_reason"], y["stop_reason"])
+        trans[key] = trans.get(key, 0) + 1
+        if x["stop_reason"] == "expansion budget" and \
+                y["stop_reason"] == "proved optimal in the pruned graph":
+            conv += 1
+        exp_a += x["expansions"]
+        exp_b += y["expansions"]
+        la = x["realized_strict"] if x["solved"] else None
+        lb = y["realized_strict"] if y["solved"] else None
+        if la is None and lb is not None:
+            better += 1
+        elif la is not None and lb is None:
+            worse += 1
+        elif la is not None and lb is not None:
+            better += lb < la
+            worse += lb > la
+    print(f"before {a.before}\n  {sa['optimal']}/{sa['n']} optimal, "
+          f"{sa['solved']} solved, {exp_a} expansions")
+    print(f"after  {a.after}\n  {sb['optimal']}/{sb['n']} optimal, "
+          f"{sb['solved']} solved, {exp_b} expansions")
+    print(f"\nbudget-limited BEFORE: "
+          f"{sum(1 for x in A if x['stop_reason'] == 'expansion budget')}; "
+          f"AFTER: {sum(1 for y in B if y['stop_reason'] == 'expansion budget')}; "
+          f"converted budget-limited -> proved: {conv}")
+    print(f"solutions improved {better}, worsened {worse}; "
+          f"expansions saved {exp_a - exp_b} ({100 * (exp_a - exp_b) / exp_a:.1f}%)")
+    print("\n| stop reason before | after | n |\n|---|---|---|")
+    for (x, y), n in sorted(trans.items(), key=lambda kv: -kv[1]):
+        print(f"| {x} | {y} | {n} |")
+    if a.json_out:
+        _atomic_json(a.json_out, dict(
+            before=a.before, after=a.after, converted=conv,
+            budget_before=sum(1 for x in A if x["stop_reason"] == "expansion budget"),
+            budget_after=sum(1 for y in B if y["stop_reason"] == "expansion budget"),
+            improved=better, worsened=worse,
+            expansions_before=exp_a, expansions_after=exp_b,
+            optimal_before=sa["optimal"], optimal_after=sb["optimal"],
+            solved_before=sa["solved"], solved_after=sb["solved"],
+            transitions={f"{x} -> {y}": n for (x, y), n in trans.items()}))
+
+
 def report(a):
     from subgoal import table as T
     bench = load_bench(a.instances)
@@ -754,6 +806,8 @@ def main(argv=None):
     pl_.add_argument("--k", type=int, default=1024)
     pl_.add_argument("--expansions", type=int, default=1200)
     pl_.add_argument("--bound", default="tight", choices=["weak", "tight"])
+    pl_.add_argument("--clamp", action="store_true",
+                     help="exploratory: rank by max(h, admissible bound)")
     pl_.add_argument("--limit", type=int, default=None)
     pl_.add_argument("--concurrency", type=int, default=64)
     pl_.add_argument("--net-batch", type=int, default=64)
@@ -821,6 +875,13 @@ def main(argv=None):
     bm.add_argument("--json", dest="json_out", default=None)
     bm.add_argument("--pick", default=None, help="write the chosen width here")
     bm.set_defaults(fn=beam)
+
+    st = sub.add_parser("stops")
+    st.add_argument("--before", required=True)
+    st.add_argument("--after", required=True)
+    st.add_argument("--instances", default=str(BENCH))
+    st.add_argument("--json", dest="json_out", default=None)
+    st.set_defaults(fn=stops)
 
     r = sub.add_parser("report")
     r.add_argument("--instances", default=str(BENCH))

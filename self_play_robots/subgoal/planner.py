@@ -266,7 +266,7 @@ def blocker_cells(goal, wr, wd, n=SIZE):
 class Search:
     def __init__(self, inst, idx, k, max_expansions, size=SIZE,
                  bound="weak", noise=0.0, rng=None, collect=False,
-                 refine_cap=48):
+                 refine_cap=48, clamp=False):
         self.inst = inst
         self.idx = idx
         self.k = k
@@ -277,6 +277,9 @@ class Search:
         self.rng = rng
         self.collect = collect
         self.refine_cap = refine_cap
+        # exploratory (Stage 4 section E): a learned h can never truthfully be
+        # BELOW an admissible bound, so rank by max(h, h_adm) instead of h
+        self.clamp = clamp
         self.env_id = int(inst["env_id"])
         self.RAY, self.PIR = rays(self.env_id, size)
         wr, wd = board(self.env_id)
@@ -475,17 +478,26 @@ class Search:
         cands = []
         tidx, goal = self.tidx, self.goal
         sigma, rng = self.noise, self.rng
+        clamp = self.clamp
         for (i, cells), hs in zip(groups, hvals):
             is_t = (i == tidx)
+            if clamp:
+                base = None if is_t else self.H[st[tidx]]
             for (cell, rec), h in zip(cells.items(), hs):
                 ng = g + rec[0]
                 if is_t and cell == goal:
                     cands.append((float(ng), ng, i, cell, True))
-                elif sigma:
-                    cands.append((ng + float(h) + rng.gauss(0.0, sigma),
-                                  ng, i, cell, False))
-                else:
-                    cands.append((ng + float(h), ng, i, cell, False))
+                    continue
+                h = float(h)
+                if clamp:
+                    child = st[:i] + (cell,) + st[i + 1:]
+                    hf = self.H[cell] if is_t else base
+                    lo = BIG if hf >= BIG else hf + self._rblock(child)
+                    if lo > h:
+                        h = float(lo)
+                if sigma:
+                    h += rng.gauss(0.0, sigma)
+                cands.append((ng + h, ng, i, cell, False))
         # deterministic order: score, cheaper g, robot slot, cell index
         cands.sort()
         keep = cands[:self.k] + [c for c in cands[self.k:] if c[4]]
@@ -690,7 +702,8 @@ class ExactHeuristic:
 # ---------------------------------------------------------------------------
 
 def run(instances, heuristic, k, max_expansions, concurrency=64, log_every=50,
-        bound="weak", noise=0.0, seed=0, collect=False, on_done=None):
+        bound="weak", noise=0.0, seed=0, collect=False, on_done=None,
+        clamp=False):
     """Run one search per instance; returns the payload rows in bench order.
 
     `on_done(search)` is called once per finished search before its state is
@@ -705,7 +718,7 @@ def run(instances, heuristic, k, max_expansions, concurrency=64, log_every=50,
         while todo and len(pool) < concurrency:
             i, inst = todo.pop(0)
             pool.append(Search(inst, i, k, max_expansions, bound=bound,
-                               noise=noise, collect=collect,
+                               noise=noise, collect=collect, clamp=clamp,
                                rng=_random.Random(seed * 1000003 + i)
                                if noise else None))
         qs, spans = [], []
