@@ -222,6 +222,8 @@ def selfplay(a):
     insts = _puzzles(parse_ids(a.boards), a.per_board, rng, walk=a.walk)
     if a.n:
         insts = insts[:a.n]
+    if a.shards > 1:
+        insts = insts[a.shard::a.shards]      # sharded so a killed leg resumes
     env_ids = sorted({int(r["env_id"]) for r in insts})
     heur, _extra = _heuristic(a, env_ids)
 
@@ -363,6 +365,7 @@ def _write_corpus(labels, out, stat, a, n=SIZE):
                 mean_ctg=float(ctg[lab].mean()) if lab.any() else None,
                 max_ctg=int(ctg[lab].max()) if lab.any() else None,
                 boards=a.boards, seed=a.seed, noise=a.noise, k=a.k,
+                shard=a.shard, shards=a.shards, probe=a.probe,
                 expansions=a.expansions, harvest=a.harvest, arm=a.arm,
                 ckpt=str(getattr(a, "ckpt", None)),
                 slurm_job_id=os.environ.get("SLURM_JOB_ID"),
@@ -886,6 +889,8 @@ def main(argv=None):
     sp.add_argument("--concurrency", type=int, default=64)
     sp.add_argument("--net-batch", type=int, default=64)
     sp.add_argument("--seed", type=int, default=101)
+    sp.add_argument("--shards", type=int, default=1)
+    sp.add_argument("--shard", type=int, default=0)
     sp.add_argument("--out", required=True)
     sp.set_defaults(fn=selfplay)
 
