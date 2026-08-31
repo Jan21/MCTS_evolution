@@ -1,0 +1,133 @@
+{
+ "bench": "supervised_valuenet/scaling/data/g24r4/bench.solved.jsonl",
+ "n": 29,
+ "stride": 8,
+ "size": 24,
+ "env_dir": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/environments_g24r4",
+ "shard": 15,
+ "shards": 16,
+ "instance_indices": [
+  120
+ ],
+ "caps": {
+  "max_pops": 200000,
+  "time_cap": 900.0
+ },
+ "base_ceiling": "self_play_robots/results/ceiling/g24r4_base.json",
+ "b2_ceiling": "self_play_robots/results/ceiling/g24r4_b2.json",
+ "slurm_job_id": "4908943",
+ "date": "2026-08-31T22:43:03",
+ "summary": {
+  "n": 1,
+  "state_space": {
+   "n": 1,
+   "mean_extra": 0.0,
+   "n_optimal": 1
+  },
+  "hand_written_base": {
+   "n": 1,
+   "mean_extra": 9.0,
+   "n_optimal": 0
+  },
+  "hand_written_b2": {
+   "n": 1,
+   "mean_extra": 0.0,
+   "n_optimal": 1
+  },
+  "state_all_proved_optimal": true,
+  "state_all_certified": true,
+  "mean_d_star": 10.0,
+  "mean_subgoals": 3.0,
+  "wall_seconds": 191.2
+ },
+ "rows": [
+  {
+   "idx": 120,
+   "env_id": 977,
+   "d_star": 10,
+   "pops": 101729,
+   "expansions": 100445,
+   "edges_generated": 35892795,
+   "seconds": 187.49,
+   "capped": false,
+   "proved_optimal": true,
+   "moves": 10,
+   "n_subgoals": 3,
+   "subgoals": [
+    [
+     "Yellow",
+     [
+      6,
+      14
+     ]
+    ],
+    [
+     "Red",
+     [
+      7,
+      14
+     ]
+    ],
+    [
+     "Blue",
+     [
+      8,
+      14
+     ]
+    ]
+   ],
+   "seq": [
+    [
+     "Yellow",
+     "left"
+    ],
+    [
+     "Yellow",
+     "up"
+    ],
+    [
+     "Red",
+     "right"
+    ],
+    [
+     "Red",
+     "down"
+    ],
+    [
+     "Red",
+     "left"
+    ],
+    [
+     "Blue",
+     "right"
+    ],
+    [
+     "Blue",
+     "down"
+    ],
+    [
+     "Blue",
+     "left"
+    ],
+    [
+     "Blue",
+     "down"
+    ],
+    [
+     "Blue",
+     "left"
+    ]
+   ],
+   "path_len_matches_g": true,
+   "certified": true,
+   "certify_reason": "ok",
+   "certified_moves": 10,
+   "base_moves": 19,
+   "base_category": "REALIZABLE_EXISTS",
+   "base_capped": false,
+   "b2_moves": 10,
+   "b2_category": "REALIZABLE_EXISTS",
+   "b2_capped": false
+  }
+ ]
+}

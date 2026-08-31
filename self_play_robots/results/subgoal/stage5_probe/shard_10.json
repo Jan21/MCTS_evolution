@@ -1,0 +1,218 @@
+{
+ "bench": "supervised_valuenet/scaling/data/g24r4/bench.solved.jsonl",
+ "n": 29,
+ "stride": 8,
+ "size": 24,
+ "env_dir": "/scratch/project/open-37-42/petrhyner/MCTS_evolution/supervised_valuenet/environments_g24r4",
+ "shard": 10,
+ "shards": 16,
+ "instance_indices": [
+  80,
+  208
+ ],
+ "caps": {
+  "max_pops": 200000,
+  "time_cap": 900.0
+ },
+ "base_ceiling": "self_play_robots/results/ceiling/g24r4_base.json",
+ "b2_ceiling": "self_play_robots/results/ceiling/g24r4_b2.json",
+ "slurm_job_id": "4908943",
+ "date": "2026-08-31T22:41:55",
+ "summary": {
+  "n": 2,
+  "state_space": {
+   "n": 2,
+   "mean_extra": 0.0,
+   "n_optimal": 2
+  },
+  "hand_written_base": {
+   "n": 2,
+   "mean_extra": 4.0,
+   "n_optimal": 0
+  },
+  "hand_written_b2": {
+   "n": 2,
+   "mean_extra": 3.5,
+   "n_optimal": 0
+  },
+  "state_all_proved_optimal": true,
+  "state_all_certified": true,
+  "mean_d_star": 9.5,
+  "mean_subgoals": 3.0,
+  "wall_seconds": 123.0
+ },
+ "rows": [
+  {
+   "idx": 80,
+   "env_id": 952,
+   "d_star": 8,
+   "pops": 16369,
+   "expansions": 16343,
+   "edges_generated": 6936127,
+   "seconds": 37.29,
+   "capped": false,
+   "proved_optimal": true,
+   "moves": 8,
+   "n_subgoals": 3,
+   "subgoals": [
+    [
+     "Green",
+     [
+      9,
+      23
+     ]
+    ],
+    [
+     "Red",
+     [
+      7,
+      20
+     ]
+    ],
+    [
+     "Green",
+     [
+      7,
+      19
+     ]
+    ]
+   ],
+   "seq": [
+    [
+     "Green",
+     "left"
+    ],
+    [
+     "Green",
+     "down"
+    ],
+    [
+     "Red",
+     "right"
+    ],
+    [
+     "Red",
+     "up"
+    ],
+    [
+     "Red",
+     "left"
+    ],
+    [
+     "Green",
+     "up"
+    ],
+    [
+     "Green",
+     "left"
+    ],
+    [
+     "Green",
+     "down"
+    ]
+   ],
+   "path_len_matches_g": true,
+   "certified": true,
+   "certify_reason": "ok",
+   "certified_moves": 8,
+   "base_moves": 11,
+   "base_category": "REALIZABLE_EXISTS",
+   "base_capped": false,
+   "b2_moves": 10,
+   "b2_category": "REALIZABLE_EXISTS",
+   "b2_capped": false
+  },
+  {
+   "idx": 208,
+   "env_id": 1029,
+   "d_star": 11,
+   "pops": 54307,
+   "expansions": 54212,
+   "edges_generated": 13312505,
+   "seconds": 83.07,
+   "capped": false,
+   "proved_optimal": true,
+   "moves": 11,
+   "n_subgoals": 3,
+   "subgoals": [
+    [
+     "Yellow",
+     [
+      20,
+      0
+     ]
+    ],
+    [
+     "Red",
+     [
+      23,
+      2
+     ]
+    ],
+    [
+     "Green",
+     [
+      21,
+      0
+     ]
+    ]
+   ],
+   "seq": [
+    [
+     "Yellow",
+     "up"
+    ],
+    [
+     "Red",
+     "down"
+    ],
+    [
+     "Red",
+     "right"
+    ],
+    [
+     "Red",
+     "up"
+    ],
+    [
+     "Green",
+     "left"
+    ],
+    [
+     "Green",
+     "down"
+    ],
+    [
+     "Green",
+     "right"
+    ],
+    [
+     "Green",
+     "up"
+    ],
+    [
+     "Green",
+     "left"
+    ],
+    [
+     "Green",
+     "up"
+    ],
+    [
+     "Green",
+     "left"
+    ]
+   ],
+   "path_len_matches_g": true,
+   "certified": true,
+   "certify_reason": "ok",
+   "certified_moves": 11,
+   "base_moves": 16,
+   "base_category": "REALIZABLE_EXISTS",
+   "base_capped": false,
+   "b2_moves": 16,
+   "b2_category": "REALIZABLE_EXISTS",
+   "b2_capped": false
+  }
+ ]
+}
