@@ -74,10 +74,11 @@ def board(env_id):
 # physics
 # ---------------------------------------------------------------------------
 
-def rest_cells(start, blockers, wr, wd, size=SIZE):
+def rest_cells(start, blockers, wr, wd, size=None):
     """{cell: (slides, direction, from_cell)} -- every cell one robot can come
     to rest on with `blockers` frozen, and the cheapest way in. Exact BFS over
     the real slide rule; a slide that does not move the robot is not an edge."""
+    size = SIZE if size is None else size
     out = {start: (0, None, None)}
     q = deque([start])
     while q:
@@ -93,10 +94,11 @@ def rest_cells(start, blockers, wr, wd, size=SIZE):
     return out
 
 
-def relaxed_h(target, wr, wd, size=SIZE):
+def relaxed_h(target, wr, wd, size=None):
     """Admissible lower bound: BFS from `target` where one move goes to ANY
     cell of the row/column segment (walls only, robots ignored). Real moves are
     a subset of these, so this never over-estimates."""
+    size = SIZE if size is None else size
     seg = {}
     for y in range(size):
         for x in range(size):
@@ -238,7 +240,11 @@ def certify(inst, seq):
 # ---------------------------------------------------------------------------
 
 def language_ceiling(path):
-    """{idx: row} of spr.ceiling output (`best_realizable_moves` per instance)."""
+    """{idx: row} of spr.ceiling output (`best_realizable_moves` per instance).
+    An empty/none path or a missing file yields {} so a configuration without a
+    recorded hand-written ceiling still runs (its columns read None)."""
+    if not path or str(path).lower() == "none" or not Path(path).exists():
+        return {}
     d = json.loads(Path(path).read_text())
     return {r["idx"]: r for r in d["rows"]}
 
@@ -259,12 +265,33 @@ def main(argv=None):
     p.add_argument("--b2-ceiling",
                    default=str(SPR / "results/ceiling/g16r4_b2.json"))
     p.add_argument("--out", default=None)
+    p.add_argument("--shards", type=int, default=1,
+                   help="split the selected instances into SHARDS disjoint "
+                        "slices so they can run as parallel processes")
+    p.add_argument("--shard", type=int, default=0, help="which slice, 0-based")
+    p.add_argument("--size", type=int, default=None,
+                   help="board edge; default is subgoal.table.SIZE (16)")
+    p.add_argument("--env-dir", default=None,
+                   help="board pickle directory; default is subgoal.table.ENV_DIR")
     a = p.parse_args(argv)
+
+    # Rebind the module globals BEFORE any board is read or any search runs.
+    # board(), certify(), rest_cells() and relaxed_h() all read them at call
+    # time, and _BOARDS is keyed by env_id alone, so this must happen once,
+    # here, and never mid-run.
+    global SIZE, ENV_DIR
+    if a.size is not None:
+        SIZE = a.size
+    if a.env_dir is not None:
+        ENV_DIR = Path(a.env_dir)
+    assert not _BOARDS, "boards were cached before the configuration was set"
 
     full = load_bench(a.bench)
     for i, inst in enumerate(full):
         inst["idx"] = i
     bench = full[::a.stride][:a.n]
+    if a.shards > 1:
+        bench = bench[a.shard::a.shards]
     base = language_ceiling(a.base_ceiling)
     b2 = language_ceiling(a.b2_ceiling)
 
@@ -317,6 +344,8 @@ def main(argv=None):
         out.parent.mkdir(parents=True, exist_ok=True)
         payload = dict(
             bench=a.bench, n=a.n, stride=a.stride,
+            size=SIZE, env_dir=str(ENV_DIR),
+            shard=a.shard, shards=a.shards,
             instance_indices=[r["idx"] for r in rows],
             caps=dict(max_pops=a.max_pops, time_cap=a.time_cap),
             base_ceiling=a.base_ceiling, b2_ceiling=a.b2_ceiling,
