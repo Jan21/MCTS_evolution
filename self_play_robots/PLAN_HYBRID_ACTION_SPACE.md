@@ -382,3 +382,64 @@ internally valid but not cross-comparable.
 
 Payloads: `results/ceiling/prefix_g16r4_b2.json`,
 `results/ceiling/prefix_g24r4_b2.json`, both with per-instance winning prefixes.
+
+# STAGE 2 RESULT, ranking leg (2026-09-01, 8 core-minutes, no GPU)
+
+The cheap form of Stage 2: rank the old planner's abstract plan cost as a
+heuristic on the SAME held-out corpus FINDINGS 32(c) used (289 pooled decisions,
+1132 (state, robot) groups, boards 1800-1849), with no planner search at all.
+
+| scorer | rho vs true cost-to-go | top-1 of `f = c + h` | top-5 | MAE |
+|---|---|---|---|---|
+| learned `CtgNet` h (recorded, needs a GPU and training) | 0.378 | **69.9%** | 93.8% | **2.01** |
+| **old planner abstract cost (NEW, no network)** | **0.608** | **62.3%** | 85.1% | 3.80 |
+| `max(struct, relaxation)` (NEW) | 0.608 | 62.3% | 85.1% | 3.80 |
+| any-stop relaxation (recomputed control) | 0.518 | 47.8% | 83.4% | 5.44 |
+| `h = 0`, edge cost alone (recorded) | - | 34.3% | 79.9% | 7.86 |
+
+**Harness check: the recomputed relaxation control reproduces the recorded
+0.518 / 47.8% / 83.4% / 5.44 exactly**, on all four metrics.
+
+### Gate: PASS, by 14.5 points
+
+The pre-registered gate was "beat the relaxation's top-1 by at least 5 points".
+Measured: **62.3% against 47.8%**. The old planner's abstract cost is better than
+the network-free control on every metric at once: more monotone (0.608 vs 0.518),
+better top-1 (+14.5), better top-5 (+1.7), and a third less error (3.80 vs 5.44).
+
+**Family A survives.** The old vocabulary's value is NOT only in its action
+space; its cost estimate is a genuinely better heuristic than anything
+network-free the project had.
+
+### Three things worth recording beyond the gate
+
+1. **`max(struct, relaxation)` is identical to `struct`, row for row.** So the
+   abstract plan cost **dominates the any-stop relaxation pointwise**: it is
+   never the looser of the two. That is what one would expect, since the abstract
+   plan pins exact shortest paths wherever the engine can and falls back to the
+   relaxed bound otherwise, but it had not been measured. It also means the
+   combination is not worth carrying as a separate arm.
+2. **It does not reach the learned net, and the reason is calibration, not
+   monotonicity.** `struct` has much the better rank correlation (0.608 vs
+   0.378) yet the worse top-1 (62.3% vs 69.9%). This is the same trap FINDINGS
+   32(c) identified for the relaxation: the beam ranks `c + h` with an EXACT `c`,
+   so a heuristic that under-estimates unevenly loses to one that is
+   well-calibrated even if it orders states better on its own. `struct`'s MAE is
+   3.80 against the net's 2.01.
+3. **The two are complementary in exactly the way that suggests combining them**:
+   the structural estimate is the more monotone, the learned one the better
+   calibrated. That is bench item A2, and its precondition ("h_struct passes but
+   does not reach the learned h") is now met, so it is the next thing to run.
+
+### What this predicts, and what it does not
+
+Placing top-1 against the recorded planner numbers: relaxation 47.8% top-1 gave
+67.1% optimal, learned 69.9% gave 79.8%. `struct` at 62.3% interpolates to
+roughly 75% optimal. **That is an interpolation, not a measurement**, and the
+planner leg of Stage 2 is what would test it. It needs the search integration
+with lazy evaluation (78 ms per child means the estimate cannot be afforded on
+all ~150 children of every expansion) and a GPU-partition slot for the arms that
+use the net.
+
+Payload: `results/subgoal/stage3/rank_struct/merged.json`, per-group and
+per-decision metrics for every arm.
