@@ -310,7 +310,7 @@ def main(argv=None):
             r[f"{tag}_category"] = row.get("category")
             r[f"{tag}_capped"] = row.get("capped")
         rows.append(r)
-        print(f"[stage1] idx {inst['idx']:3d} env {inst['env_id']} d*={inst['d_star']:2d} "
+        print(f"[stage1] idx {inst['idx']:3d} env {inst['env_id']} d*={str(inst['d_star']):>4s} "
               f"state={r['certified_moves']} (subgoals {r['n_subgoals']}, "
               f"opt={r['proved_optimal']}, cert={r['certified']}) "
               f"base={r['base_moves']} b2={r['b2_moves']} "
@@ -318,7 +318,8 @@ def main(argv=None):
 
     def summ(key, only=None):
         vals = [(r[key] - r["d_star"]) for r in rows
-                if r.get(key) is not None and (only is None or only(r))]
+                if r.get(key) is not None and r.get("d_star") is not None
+                and (only is None or only(r))]
         return dict(n=len(vals),
                     mean_extra=(sum(vals) / len(vals)) if vals else None,
                     n_optimal=sum(1 for v in vals if v == 0))
@@ -330,7 +331,8 @@ def main(argv=None):
         "hand_written_b2": summ("b2_moves"),
         "state_all_proved_optimal": all(r["proved_optimal"] for r in rows),
         "state_all_certified": all(r["certified"] for r in rows),
-        "mean_d_star": sum(r["d_star"] for r in rows) / len(rows),
+        "mean_d_star": (lambda v: (sum(v) / len(v)) if v else None)(
+            [r["d_star"] for r in rows if r["d_star"] is not None]),
         "mean_subgoals": sum(r["n_subgoals"] for r in rows if r["n_subgoals"] is not None)
                          / max(1, sum(1 for r in rows if r["n_subgoals"] is not None)),
         "wall_seconds": round(time.time() - t0, 1),
