@@ -443,3 +443,29 @@ use the net.
 
 Payload: `results/subgoal/stage3/rank_struct/merged.json`, per-group and
 per-decision metrics for every arm.
+
+## Stage 2, bench item A2: combining the two heuristics (2026-09-01)
+
+Precondition met (struct passed its gate but did not reach the learned net), so
+A2 was run as the plan specified. Same corpus, one extra arm.
+
+| scorer | rho | top-1 of `f = c + h` | top-5 | MAE |
+|---|---|---|---|---|
+| learned `CtgNet` h (recomputed) | 0.378 | 69.9% | 93.8% | 2.01 |
+| **`max(struct, learned)`** | 0.381 | **70.9%** | **94.1%** | 2.06 |
+| old planner abstract cost | 0.608 | 62.3% | 85.1% | 3.80 |
+| any-stop relaxation (control) | 0.518 | 47.8% | 83.4% | 5.44 |
+
+**Second harness check: the recomputed learned arm reproduces the recorded
+0.378 / 69.9% / 93.8% / 2.01 exactly**, this time through a different code path
+than the recorded run used.
+
+**Verdict: A2 is not worth carrying.** The combination buys **+1.0 point of
+top-1**, which over 289 decisions is about three decisions changed, and it costs
+78 ms per child inside a search that scores ~150 children per expansion. The
+learned net already subsumes almost everything the structural estimate knows.
+
+The useful reading is the other one: **the structural estimate's value is as a
+REPLACEMENT for the network, not as an addition to it.** Standalone it is 62.3%
+against the network-free control's 47.8%, and it needs no training, no
+checkpoint and no GPU. That is what Stage 3a will use.

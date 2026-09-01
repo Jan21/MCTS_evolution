@@ -28,6 +28,10 @@ def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--data", required=True)
     p.add_argument("--vocab", choices=["base", "b1", "b2"], default="b2")
+    p.add_argument("--ckpt", default=None,
+                   help="CtgNet checkpoint; adds the learned arm and the\n"
+                        "max(struct, net) combination. Requires --shards 1, since\n"
+                        "predictions are indexed by position in the dataset.")
     p.add_argument("--shards", type=int, default=1,
                    help="shard by STATE index, so a decision never spans shards")
     p.add_argument("--shard", type=int, default=0)
@@ -39,7 +43,7 @@ def main(argv=None):
     a = p.parse_args(argv)
 
     from subgoal.table import ENV_DIR, SIZE, COLOR_ORDER
-    from subgoal.ctgnet import CtgDataset, group_metrics
+    from subgoal.ctgnet import CtgDataset, group_metrics, collate
     from subgoal.space import board as _board, relaxed_h
     from GridEnv import State, Robot_at
     from skeleton.astar import AStar, _initial_plan
@@ -85,11 +89,28 @@ def main(argv=None):
         pcache[key] = v
         return v
 
+    preds = None
+    if a.ckpt:
+        assert a.shards == 1, "--ckpt needs --shards 1 (preds are indexed by dataset order)"
+        import torch
+        from subgoal.ctgnet import CtgNet
+        dev = "cuda" if torch.cuda.is_available() else "cpu"
+        net = CtgNet.load_from_checkpoint(a.ckpt, map_location=dev).eval().to(dev)
+        dl = torch.utils.data.DataLoader(ds, batch_size=16, shuffle=False,
+                                        collate_fn=collate, num_workers=2)
+        chunks = []
+        with torch.no_grad():
+            for b in dl:
+                lg = net(b["x"].to(dev), b["A_all"].to(dev), b["A_ind"].to(dev), n)
+                chunks.append(net.ctg_hat(lg).float().cpu().numpy())
+        preds = np.concatenate(chunks, 0)
+        print(f"[rank-struct] learned arm on {dev}, preds {preds.shape}", flush=True)
+
     index = ds.index if a.limit_groups is None else ds.index[:a.limit_groups]
     if a.shards > 1:
         # by si, so all four robots of one decision stay together
         index = [(si, r) for (si, r) in index if int(si) % a.shards == a.shard]
-    ARMS = ("struct", "relaxed", "combo")
+    ARMS = ("struct", "relaxed", "combo") + (("net", "max_sn") if a.ckpt is not None else ())
     out, pool = {k: [] for k in ARMS}, {k: {} for k in ARMS}
     t0 = time.time(); ncalls = 0
     for gi, (si, r) in enumerate(index):
@@ -116,8 +137,12 @@ def main(argv=None):
             hrel = np.full(len(cells), float(H[pos[tidx][1] * n + pos[tidx][0]]))
         # combo: both are optimistic estimates of the same quantity, so the
         # larger is the tighter one and still under-estimates if both do
-        for key, hh in (("struct", hs), ("relaxed", hrel),
-                        ("combo", np.maximum(hs, hrel))):
+        arms = [("struct", hs), ("relaxed", hrel), ("combo", np.maximum(hs, hrel))]
+        if preds is not None:
+            hnet = preds[gi][m]
+            # both estimate the same quantity from below; the larger is tighter
+            arms += [("net", hnet), ("max_sn", np.maximum(hs, hnet))]
+        for key, hh in arms:
             out[key].append(group_metrics(hh, y[m], c[m]))
             pool[key].setdefault(si, []).append((hh, y[m], c[m]))
         if (gi + 1) % 100 == 0:
@@ -158,9 +183,13 @@ def main(argv=None):
     summary = {k: summarize(v) for k, v in per.items()}
     print("\n| scorer | rho vs true cost-to-go | top-1 of f=c+h | top-5 | MAE |")
     print("|---|---|---|---|---|")
-    for k, lbl in (("struct", "old planner abstract cost (NEW)"),
-                   ("combo", "max(struct, relaxation) (NEW)"),
-                   ("relaxed", "any-stop relaxation (recomputed control)")):
+    for k, lbl in (("net", "learned CtgNet h (recomputed)"),
+                   ("max_sn", "max(struct, learned) (NEW)"),
+                   ("struct", "old planner abstract cost"),
+                   ("combo", "max(struct, relaxation)"),
+                   ("relaxed", "any-stop relaxation (control)")):
+        if k not in summary:
+            continue
         d = summary[k]
         print(f"| {lbl} | {d['spearman']:.3f} | {d['top1']*100:.1f}% | "
               f"{d['top5']*100:.1f}% | {d['mae']:.2f} |")
