@@ -469,3 +469,60 @@ The useful reading is the other one: **the structural estimate's value is as a
 REPLACEMENT for the network, not as an addition to it.** Standalone it is 62.3%
 against the network-free control's 47.8%, and it needs no training, no
 checkpoint and no GPU. That is what Stage 3a will use.
+
+# STAGE 3a RESULT (2026-09-01, 16x16 bench450, 6 CPU-minutes, NO NETWORK)
+
+The portfolio form of the mixed action space, `subgoal/hybrid.py`: finish from
+the start with the old vocabulary; enumerate every macro move by physics; rank
+them; finish from the best M; keep the shortest total. Network-free end to end.
+Both arms share the identical internal baseline, so the comparison is inside one
+payload and does not depend on any recorded row.
+
+| arm (450 puzzles, `b0` 400, `b_sub` 200, top 8 of ~181 candidates) | solved | optimal | mean extra |
+|---|---|---|---|
+| old vocabulary alone (the internal baseline, same caps) | 431 | 294 = **65.3%** | **0.824** |
+| **+ macro head start, ranked by the structural estimate** | **441** | **332 = 73.8%** | **0.571** |
+| + macro head start, ranked by the relaxation | 439 | 331 = 73.6% | 0.565 |
+
+**The architecture works.** +8.5 points of move-optimality, a 31% cut in extra
+moves, and 10 more puzzles solved, from an action-space change alone with no
+learned component anywhere. 57 of 441 solutions were strictly improved by a head
+start.
+
+### The heuristic did not matter, and that is a real finding
+
+Stage 2 measured the structural estimate at **62.3% top-1 against the
+relaxation's 47.8%**, a 14.5-point gap. In this search that gap is worth
+**one puzzle** (332 vs 331).
+
+The explanation is in the shape of the two tasks. Stage 2 measured ranking at
+every node of a deep search, where an error compounds. Here the ranker gets one
+shot at putting a good prefix in the top 8 of 181, and only 13% of instances have
+a helpful prefix at all. Both rankers clear that bar about equally often.
+
+**This is a warning about the plan's own logic.** Stage 2's gate treated ranking
+quality as the thing that matters, and at this stage of this design it is nearly
+irrelevant. A better heuristic is worth buying only where the search is deep.
+
+### How much of Stage 1's ceiling survives
+
+| | mean extra |
+|---|---|
+| old vocabulary alone | 0.824 |
+| **achieved here** | **0.571** |
+| Stage 1 ceiling (perfect chooser, all 181 prefixes, exhaustive finish) | 0.108 |
+
+**The real planner captures 35% of the available gap.** The shortfall is budget,
+not concept: the ceiling tried every one of ~181 prefixes with a 30-second
+exhaustive finish from each, this arm tries 8 with 200 iterations each. Whether
+the rest is buyable, and at what price, is the sweep below.
+
+### Cost
+
+Mean 320.8 iterations per puzzle, **median 57**, running 8.6 searches (one at the
+start, 7.6 sub-searches) against the baseline's one, at 2.87 s per puzzle.
+
+Note the unit: these are the old vocabulary's own exhaustive-search iterations,
+NOT the arena's network expansions, and this arm has no network to count. It is
+therefore comparable with its own internal baseline, which is the comparison
+made above, and **not** with the recorded 53.3% network-guided backward row.
