@@ -78,4 +78,80 @@ about expressiveness.
 
 ## Result
 
-_Appended after the run._
+**Job 4910255, 2026-09-01. The run did NOT answer its primary question, for two
+separate reasons, one of them my error. Reported here rather than re-run and
+quietly replaced.**
+
+### What went wrong
+
+**12 of the 16 shards were killed by the out-of-memory reaper** (`sacct` state
+`OUT_OF_MEMORY`, 12 `oom_kill` events). The cause is in the pre-registered design
+above: I raised `max_pops` from the graded run's 200,000 to 500,000 while keeping
+16 concurrent shards. The search's `best_g` and `parent` dictionaries grow with
+pops, so per-shard memory grew by the same factor and 16 copies exceeded the
+job's allowance. The graded run was safe at 200,000; this one was not, and I did
+not check it before submitting.
+
+**4 shards survived and covered 8 of the 32 pre-registered instances.**
+
+### What the 8 completed instances say
+
+| measurement | value |
+|---|---|
+| instances resolved | **0 of 8** |
+| instances capped | 8 of 8 |
+| mean seconds | 879.6 (median 900.0, the cap) |
+| mean nodes popped | 412,752 |
+| subgoal depth | **not measurable, nothing resolved** |
+| new optima established | 0 |
+| falsification test | could not run: no instance where both vocabularies have an answer |
+
+Six hit the 900-second time cap; two hit the 500,000-pop cap first, at 779 s and
+882 s. Not one produced a certified solution.
+
+### The primary question is still open, and the secondary one is answered
+
+**Open: how deep is an optimal frontier plan.** Nothing resolved, so there is no
+subgoal count. The extrapolation from the graded probe (roughly 5 to 6 subgoals)
+remains an extrapolation.
+
+**Answered: whether this space is searchable at the frontier with a weak
+heuristic. It is not.** Eight instances, 400,000 nodes each, fifteen minutes
+each, zero solutions. Set against the graded exam, where the median instance
+resolved in 37 seconds, the difficulty cliff between the two exams is steep.
+
+The comparison that matters is with the OLD vocabulary on the same exam. Its own
+exhaustive probe (`results/ceiling/g24r4_frontier_b2.json`, job 4685187)
+resolved **114 of 218** frontier instances with a 120-second cap and 200,000
+iterations, and finished all 218 in 481 seconds of 8-worker wall clock. On this
+exam the hand-written vocabulary is cheap to search and the complete one is not.
+
+**So at the frontier the trade reverses.** On the graded exam the complete space
+costs about 6x more search and returns perfect solutions. On the frontier, with
+this heuristic, it returns nothing at all while the lossy vocabulary keeps
+working. Expressiveness bought at this price is not usable, and the binding
+constraint is the heuristic, not the action space: FINDINGS §32(e) already
+measured that substituting the exact engine's cost-to-go collapses the same
+search from 1200 expansions to 20.
+
+### What should happen instead of re-running this
+
+Re-running the same design with fewer shards would cost another node-hour and,
+on the evidence of the 8 completed instances, would most likely return the same
+"0 resolved". Two better instruments, both cheaper than a corrected re-run:
+
+1. **Measure depth without searching for it.** Any certified move sequence
+   decomposes into macro-moves by grouping consecutive moves of the same robot,
+   so an existing good frontier solution gives its subgoal depth for free. This
+   needs a planner run that emits move dumps: I checked
+   `results/variants/v07_hybrid_actions/bench_frontier_*.json` and
+   `results/selfplay/*/bench_g24r4_frontier_astar.json` and **none of the stored
+   24x24 frontier payloads carry a move list**, only aggregate counts.
+2. **Give the probe a real heuristic.** The point of the frontier probe was
+   depth, not cost, and the trivial relaxation is the wrong instrument for a
+   frontier search. Running it with the learned cost-to-go, or with the exact
+   engine as a diagnostic ceiling, would resolve instances and yield the depth
+   distribution.
+
+Payload: `results/subgoal/stage5_frontier/merged.json`, 8 rows, plus the 4
+surviving shard logs. The 12 killed shards left no payload.
