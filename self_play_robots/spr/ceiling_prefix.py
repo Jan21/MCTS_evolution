@@ -75,7 +75,10 @@ def main(argv=None):
         u = set()
         for q in a.idx_from.split(","):
             d = json.loads(Path(q).read_text())
-            u |= set(d.get("instance_indices") or d.get("idx_list") or [])
+            # older payloads (and my own merged ones) have no index list;
+            # the rows always carry idx, so fall back to those
+            u |= set(d.get("instance_indices") or d.get("idx_list")
+                     or [r["idx"] for r in d.get("rows", [])])
         sel = sorted(u)
     elif a.idx_list:
         sel = [int(x) for x in a.idx_list.split(",")]
