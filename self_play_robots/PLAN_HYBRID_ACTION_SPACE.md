@@ -298,3 +298,87 @@ which still resolves instances on the 24x24 frontier where the pure macro search
 resolved none. Failing that, the most likely useful outcome is Stage 1's: that
 the whole gap was one nameable structure, and the fix is a small vocabulary
 extension rather than a new search.
+
+---
+
+# STAGE 0 RESULT (2026-09-01)
+
+The plan-shape decomposition of §2 holds at BOTH sizes, which it had to, since
+every later stage runs at 16x16 while the finding was discovered at 24x24.
+
+| | 16x16 (40 optimal plans) | 24x24 (28 optimal plans) |
+|---|---|---|
+| shapes the old vocabulary can express | 32 (80%) | 22 (79%) |
+| **need intermediate target parking** | **8 (20%)** | **6 (21%)** |
+
+16x16 inexpressible shapes: T-H-T (3), H-T-H-T (3), T-H-H-T (1), T-H-H-H-T (1).
+
+**Harness validation.** A first run of Stage 1 accidentally used only the
+stride-23 sample (the `first20` payload predates the `instance_indices` field and
+my own stage5 merge dropped it; `--idx-from` now falls back to the rows' own
+`idx`). That accident is useful: its baseline arm reproduced the recorded
+stride-23 B2 ceiling of **0.632 exactly**, from scratch, under the same language,
+caps and certification.
+
+# STAGE 1 RESULT (2026-09-01, jobs 4911145 / 4911146, 42 CPU-minutes total)
+
+Paired on the instances every arm resolved. 7,597 candidate probes at 16x16 and
+11,374 at 24x24. **No arm ever produced a solution shorter than `d*`**, the check
+that would catch a physics or accounting bug.
+
+| arm | 16x16, extra moves | 16x16 optimal % | 24x24, extra moves | 24x24 optimal % |
+|---|---|---|---|---|
+| old vocabulary alone (baseline) | 0.838 | 73.0% | **1.276** | 55.2% |
+| + one **target-robot** macro-move head start | **0.459** | 83.8% | **0.586** | 75.9% |
+| + one **any-robot** macro-move head start | **0.108** | 94.6% | **0.172** | 93.1% |
+
+n = 37 paired at 16x16, 29 at 24x24. The 24x24 baseline reproduces the recorded
++1.276 of `STAGE5_PROBE.md` exactly.
+
+### The gate reads BAND 2: proceed to Stage 2
+
+The pre-registered gate is about **target parking**, the structure §2 named. That
+arm lands at +0.459 and +0.586, inside the "+0.2 to +0.7, a real but partial
+explanation" band. Per the rule: proceed to Stage 2, and carry these as the bar.
+
+So target parking explains **45% of the gap at 16x16 and 54% at 24x24**. Real,
+and not the whole story. Family C (a targeted vocabulary extension) is NOT
+sufficient on its own and the programme continues.
+
+### The finding the plan did not anticipate
+
+**One macro-move head start by ANY robot removes 87% of the ceiling gap at both
+sizes** (0.838 to 0.108; 1.276 to 0.172) and lifts move-optimality from 55.2% to
+93.1% at 24x24. That is a broader hypothesis than the pre-registered one and it
+is not a tuning of it, so it is recorded here as a new result rather than
+folded into the gate.
+
+Target-only helps 7 instances at 24x24; any-robot helps 11. The 4 extra are
+helper-robot head starts, which is exactly the H-T-H-T shape §2 found and which a
+target-only prefix cannot reach.
+
+Worked examples (24x24), old vocabulary versus one head start:
+
+| idx | `d*` | old vocabulary | with head start | head start length |
+|---|---|---|---|---|
+| 176 | 10 | 15 | **10** | 3 |
+| 208 | 11 | 16 | **11** | 2 |
+| 128 | 14 | 18 | **14** | 5 |
+| 32 | 9 | 11 | **9** | 3 |
+
+### What this does to the rest of the plan
+
+**It measures the ceiling of the Stage 3 design before Stage 3 is built.** "A
+short forward prefix, then the old vocabulary finishes" is exactly the B1 option
+design, and its ceiling is now known: **+0.172 at 24x24, +0.108 at 16x16**,
+against 0.000 for the full macro space and +1.276 for the old vocabulary alone.
+Stage 3 therefore has a concrete target and a strong prior.
+
+Two cautions carried forward. These are **ceilings**, computed by trying every
+prefix with a perfect chooser; a real planner must FIND the right prefix among
+150 to 360 candidates inside its budget. And the caps differ between the two legs
+(30 s / 100k iters at 16x16, 20 s / 50k at 24x24), so the two baselines are each
+internally valid but not cross-comparable.
+
+Payloads: `results/ceiling/prefix_g16r4_b2.json`,
+`results/ceiling/prefix_g24r4_b2.json`, both with per-instance winning prefixes.
