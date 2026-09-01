@@ -28,6 +28,9 @@ def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--data", required=True)
     p.add_argument("--vocab", choices=["base", "b1", "b2"], default="b2")
+    p.add_argument("--shards", type=int, default=1,
+                   help="shard by STATE index, so a decision never spans shards")
+    p.add_argument("--shard", type=int, default=0)
     p.add_argument("--limit-groups", type=int, default=None,
                    help="time/smoke on the first N (state,robot) groups")
     p.add_argument("--max-iters", type=int, default=20000)
@@ -83,6 +86,9 @@ def main(argv=None):
         return v
 
     index = ds.index if a.limit_groups is None else ds.index[:a.limit_groups]
+    if a.shards > 1:
+        # by si, so all four robots of one decision stay together
+        index = [(si, r) for (si, r) in index if int(si) % a.shards == a.shard]
     ARMS = ("struct", "relaxed", "combo")
     out, pool = {k: [] for k in ARMS}, {k: {} for k in ARMS}
     t0 = time.time(); ncalls = 0
@@ -125,20 +131,31 @@ def main(argv=None):
     print(f"[rank-struct] projected for all {len(ds.index)} groups: "
           f"{el*len(ds.index)/len(index)/60:.1f} min single-core")
 
-    summary = {}
+    def as_floats(d):
+        return {kk: (None if vv is None else float(vv)) for kk, vv in d.items()}
+
+    per = {}
     for k, v in out.items():
-        summary[k] = {mm + "_group": float(np.nanmean([d[mm] for d in v]))
-                      for mm in ("mae", "spearman", "top1", "top5")}
-        summary[k]["groups"] = len(v)
         dec = [group_metrics(np.concatenate([x[0] for x in parts]),
                              np.concatenate([x[1] for x in parts]),
                              np.concatenate([x[2] for x in parts]))
                for parts in pool[k].values()]
-        summary[k]["decisions"] = len(dec)
-        summary[k]["top1"] = float(np.mean([d["top1"] for d in dec]))
-        summary[k]["top5"] = float(np.mean([d["top5"] for d in dec]))
-        summary[k]["mae"] = summary[k]["mae_group"]
-        summary[k]["spearman"] = summary[k]["spearman_group"]
+        per[k] = dict(groups=[as_floats(d) for d in v],
+                      decisions=[as_floats(d) for d in dec])
+
+    def summarize(per_arm):
+        g, dec = per_arm["groups"], per_arm["decisions"]
+        s_ = {mm + "_group": float(np.nanmean([d[mm] for d in g]))
+              for mm in ("mae", "spearman", "top1", "top5")}
+        s_["groups"] = len(g)
+        s_["decisions"] = len(dec)
+        s_["top1"] = float(np.mean([d["top1"] for d in dec]))
+        s_["top5"] = float(np.mean([d["top5"] for d in dec]))
+        s_["mae"] = s_["mae_group"]
+        s_["spearman"] = s_["spearman_group"]
+        return s_
+
+    summary = {k: summarize(v) for k, v in per.items()}
     print("\n| scorer | rho vs true cost-to-go | top-1 of f=c+h | top-5 | MAE |")
     print("|---|---|---|---|---|")
     for k, lbl in (("struct", "old planner abstract cost (NEW)"),
@@ -153,11 +170,58 @@ def main(argv=None):
     if a.out and a.out != "/dev/null":
         Path(a.out).parent.mkdir(parents=True, exist_ok=True)
         Path(a.out).write_text(json.dumps(
-            dict(data=a.data, vocab=a.vocab, groups=len(index), children=ncalls,
-                 seconds=round(el, 1), summary=summary,
+            dict(data=a.data, vocab=a.vocab, shard=a.shard, shards=a.shards,
+                 groups=len(index), children=ncalls, seconds=round(el, 1),
+                 per_arm=per, summary=summary,
                  date=time.strftime("%Y-%m-%dT%H:%M:%S")), indent=1) + "\n")
         print(f"SPR RANK STRUCT DONE {a.out}")
 
 
+def merge(paths, out=None):
+    """Concatenate shard payloads. Decisions never span shards (sharded by si),
+    so pooling is a plain concatenation and the averages are exact."""
+    import numpy as np
+    per, meta = {}, None
+    for q in paths:
+        d = json.loads(Path(q).read_text())
+        meta = meta or {k: v for k, v in d.items() if k not in ("per_arm", "summary", "shard")}
+        for arm, v in d["per_arm"].items():
+            t = per.setdefault(arm, {"groups": [], "decisions": []})
+            t["groups"] += v["groups"]; t["decisions"] += v["decisions"]
+
+    def summarize(v):
+        g, dec = v["groups"], v["decisions"]
+        s_ = {mm + "_group": float(np.nanmean([d[mm] for d in g]))
+              for mm in ("mae", "spearman", "top1", "top5")}
+        s_.update(groups=len(g), decisions=len(dec),
+                  top1=float(np.mean([d["top1"] for d in dec])),
+                  top5=float(np.mean([d["top5"] for d in dec])))
+        s_["mae"] = s_["mae_group"]; s_["spearman"] = s_["spearman_group"]
+        return s_
+
+    summary = {k: summarize(v) for k, v in per.items()}
+    print("| scorer | rho vs true cost-to-go | top-1 of f=c+h | top-5 | MAE |")
+    print("|---|---|---|---|---|")
+    for k, lbl in (("struct", "old planner abstract cost (NEW)"),
+                   ("combo", "max(struct, relaxation) (NEW)"),
+                   ("relaxed", "any-stop relaxation (recomputed control)")):
+        if k not in summary:
+            continue
+        d = summary[k]
+        print(f"| {lbl} | {d['spearman']:.3f} | {d['top1']*100:.1f}% | "
+              f"{d['top5']*100:.1f}% | {d['mae']:.2f} |")
+    print(f"\n(recorded reference, FINDINGS 32(c), same corpus: learned CtgNet "
+          f"0.378 / 69.9% / 93.8% / 2.01; relaxation 0.518 / 47.8% / 83.4% / 5.44)")
+    print(f"\ndecisions pooled: {summary['struct']['decisions']}, "
+          f"groups: {summary['struct']['groups']}")
+    if out:
+        meta["summary"] = summary
+        Path(out).write_text(json.dumps(meta | {"summary": summary}, indent=1) + "\n")
+        print(f"MERGED {out}")
+
+
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == "merge":
+        merge(sys.argv[2:-1], sys.argv[-1])
+    else:
+        main()
