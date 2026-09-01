@@ -526,3 +526,64 @@ Note the unit: these are the old vocabulary's own exhaustive-search iterations,
 NOT the arena's network expansions, and this arm has no network to count. It is
 therefore comparable with its own internal baseline, which is the comparison
 made above, and **not** with the recorded 53.3% network-guided backward row.
+
+## Stage 3a cost/quality sweep (2026-09-01, 450 puzzles, network-free throughout)
+
+`b0` 400 in every row. "screen" is how many of the ~181 macro-move prefixes get
+a finish; "finish" is the iteration cap on each. Cost is in the old vocabulary's
+own exhaustive-search iterations.
+
+| arm | solved | optimal of 450 | mean extra | mean iters | median iters |
+|---|---|---|---|---|---|
+| old vocabulary alone (internal baseline) | 431 | 294 = 65.3% | 0.824 | - | - |
+| screen 4, finish 200 | 439 | 325 = 72.2% | 0.649 | 183 | 30 |
+| screen 8, finish 200 | 441 | 332 = 73.8% | 0.571 | 321 | 57 |
+| screen 16, finish 200 | 443 | 359 = 79.8% | 0.451 | 591 | 131 |
+| screen 16, finish **800** | 446 | 361 = 80.2% | 0.453 | 1296 | 131 |
+| **screen 32, finish 200** | **446** | **370 = 82.2%** | **0.348** | 1166 | 264 |
+
+### Widening the screen buys quality; deepening each finish does not
+
+Screen 16 to 32 at the same finish: 79.8% to 82.2%. Screen 16 with the finish
+**quadrupled** to 800: 79.8% to 80.2%, **+0.4 points for 2.2x the iterations**.
+
+So the binding constraint is how many prefixes get looked at, not how hard each
+one is worked. This reproduces, in a different design and a different action
+space, the project's own v07 finding that "most of the depth-2 gain is wider
+screening, not two-slide plans" (walkthrough part 3, caveat 1). Two independent
+systems now say the same thing about this domain.
+
+### Where it sits against the systems that use networks
+
+Quality is directly comparable (same 450 puzzles, same optimum, same physics
+certification). **Cost is not**: these are the old vocabulary's exhaustive
+iterations, while the rows below spend arena expansions costing one to four
+network passes each.
+
+| system | solved | optimal of 450 | network? |
+|---|---|---|---|
+| old vocabulary, network-guided (recorded) | 432 | 53.3% | yes |
+| new macro search, first build (recorded) | 415 | 60.7% | yes |
+| new macro search, tuned, no training (recorded Part A) | 404 | 80.9% | yes |
+| **this arm, screen 32** | **446** | **82.2%** | **no** |
+| new macro search + self-play (recorded Part C) | 444 | 95.3% | yes |
+| forward move-by-move, supervised (recorded) | 450 | 94.2% | yes |
+
+**A network-free hybrid solves 42 more puzzles than the tuned network-based
+macro search and is 6 puzzles more move-optimal.** It does not approach the
+self-play system's 95.3%, so the networks still win at the top end, but they are
+not what gets you to 80%.
+
+Two caveats, both against this arm. Its mean extra on its own solves (0.348) is
+worse than Part A's (0.248), because it solves 42 more puzzles and those are the
+harder ones. And its internal baseline (65.3%) is already **stronger** than the
+project's recorded network-guided backward row (53.3%), because a bounded
+exhaustive search beats a network-guided one in a vocabulary that is only about
+one decision deep; the gains above are therefore measured over a stronger
+baseline than the project's own, not a weaker one.
+
+### Fraction of Stage 1's ceiling captured
+
+0.824 to 0.348 against a ceiling of 0.108: **66% of the available gap**, up from
+35% at screen 8. The curve has not flattened, so the next runs screen every
+candidate to find where it does.
