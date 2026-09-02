@@ -656,3 +656,64 @@ here, by the knee of the curve rather than by its best point:
 points better for 2.2x the cost, so 64 is the honest operating point.
 
 The 24x24 run under that frozen configuration is the confirmatory test.
+
+# 24x24 CONFIRMATORY RESULT (2026-09-02, 21 CPU-minutes, NO NETWORK)
+
+The configuration was frozen and committed (56c4a6f) **before** this ran:
+screen 64, finish 200, `b0` 400, structural ranking, chosen at the knee of the
+16x16 curve rather than its best point. Different board size, different exam,
+nothing re-tuned. Graded exam, 232 instances, every one with a known `d*`.
+
+| arm | solved | optimal of 232 | mean extra |
+|---|---|---|---|
+| old vocabulary alone (internal baseline, same caps) | 223 | 143 = **61.6%** | **1.027** |
+| **+ macro head start, screen 64** | **227** | **193 = 83.2%** | **0.348** |
+
+**+21.6 points of move-optimality and a 66% cut in extra moves**, from the
+action-space change alone, with no learned component anywhere. 65 of 227
+solutions were strictly improved by a head start. Cost 2,327 iterations mean,
+566 median, 35.5 s per instance.
+
+The 16x16 result transferred: 84.9% there, 83.2% here, on a board with twice the
+area and twice the candidate count (372 mean against 181).
+
+### Against the recorded systems on this exact exam
+
+Quality is comparable (same 232 puzzles, same optima, same physics
+certification). **Compute is not**: the rows below spend 1,200 arena expansions
+at one to four network passes each, this arm spends exhaustive-search
+iterations and has no network to count.
+
+| system | solved | optimal of 232 | mean extra | network? |
+|---|---|---|---|---|
+| standard sub-goal search (recorded control) | 230 | 59.6% | 1.417 | yes |
+| old vocabulary's exhaustive ceiling (recorded) | 228 | 62.7% | 1.171 | no |
+| **v07 head-start hybrid, the project's flagship** | **231** | **68.4%** | **0.944** | **yes** |
+| **this arm, frozen config** | 227 | **83.2%** | **0.348** | **no** |
+| supervised forward move planner (recorded) | 220 | 94.1% | 0.068 | yes |
+
+**It beats the flagship by 14.8 points of move-optimality and cuts its extra
+moves by 63%, without a network.** The flagship still solves 4 more puzzles
+(231 against 227), and that is a real loss, not a rounding difference.
+
+### Why it beats the flagship, measured
+
+Winning head-start lengths, in slides:
+
+| slides in the winning head start | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|
+| instances | 33 | 20 | 11 | 1 |
+
+**Half the wins (32 of 65) used a head start of two or more slides by a single
+robot.** The flagship's head start is one primitive slide (two at depth 2), and
+each extra slide costs it a whole extra search lane. Here a robot's entire run
+to a rest cell is ONE action at its true cost, so multi-slide head starts come
+free. That is the concrete mechanical reason the macro framing wins, and it is
+the same "helper journeys costed as one decision" structure `STAGE01.md` named.
+
+### What this does not settle
+
+Compute is not comparable, so "better and cheaper" is NOT claimed; only "better,
+at a cost measured in a different currency". The 4 unsolved puzzles are a real
+deficit against the flagship. And the residual analysis at 16x16 says the
+remaining gap is prefix LENGTH, which two-move prefixes would test.
