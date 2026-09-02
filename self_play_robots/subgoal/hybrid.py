@@ -156,6 +156,9 @@ def main(argv=None):
     p.add_argument("--top-m", type=int, default=8, help="how many prefixes get a finish")
     p.add_argument("--frontier", type=int, default=100_000)
     p.add_argument("--limit", type=int, default=None)
+    p.add_argument("--idx-list", default=None,
+                   help="comma-separated instance indices; runs only those, "
+                        "keeping their original idx so rows join other payloads")
     p.add_argument("--workers", type=int, default=16)
     p.add_argument("--out", required=True)
     a = p.parse_args(argv)
@@ -172,9 +175,13 @@ def main(argv=None):
     if not ip.is_absolute():
         ip = SV / ip
     insts = [json.loads(l) for l in ip.read_text().splitlines() if l.strip()]
-    if a.limit:
-        insts = insts[:a.limit]
-    items = sorted(enumerate(insts), key=lambda t: t[1]["env_id"])
+    items = list(enumerate(insts))
+    if a.idx_list:
+        keep = {int(x) for x in a.idx_list.split(",")}
+        items = [t for t in items if t[0] in keep]
+    elif a.limit:
+        items = items[:a.limit]
+    items = sorted(items, key=lambda t: t[1]["env_id"])
     print(f"[hybrid] {a.config} vocab={a.vocab} h={a.h} b0={a.b0} b_sub={a.b_sub} "
           f"top_m={a.top_m} n={len(items)} workers={a.workers}", flush=True)
 

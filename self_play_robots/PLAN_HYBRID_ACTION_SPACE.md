@@ -587,3 +587,72 @@ baseline than the project's own, not a weaker one.
 0.824 to 0.348 against a ceiling of 0.108: **66% of the available gap**, up from
 35% at screen 8. The curve has not flattened, so the next runs screen every
 candidate to find where it does.
+
+## CORRECTION and the completed Stage 3a picture (2026-09-02)
+
+### I was comparing against a ceiling measured on a different instance set
+
+Earlier entries said the planner "captures 35% / 66% / 71% of Stage 1's ceiling
+gap". **That was wrong.** It set a full-450 achieved number against a ceiling
+measured on Stage 1's 37 paired instances. Different sets, so the fraction was
+meaningless. Restricted to the same 37:
+
+| on Stage 1's 37 paired instances | mean extra | optimal |
+|---|---|---|
+| old vocabulary alone, exhaustive | 0.838 | 27/37 |
+| **Stage 1 ceiling** (+1 macro prefix, exhaustive finish, perfect chooser) | **0.108** | **35/37** |
+| **achieved, screen ALL, finish 200** | **0.108** | **35/37** |
+| achieved, screen 8, finish 200 | 0.459 | 31/37 |
+
+**The real planner reaches the ceiling exactly wherever the ceiling was
+measured.** There is no shortfall to explain. The full-450 figure (0.284) is
+simply the honest number on a harder, larger set for which no ceiling has ever
+been computed.
+
+### The full curve, 450 puzzles, network-free throughout
+
+| arm | solved | optimal of 450 | mean extra | mean iters |
+|---|---|---|---|---|
+| old vocabulary alone | 431 | 294 = 65.3% | 0.824 | - |
+| screen 4, finish 200 | 439 | 325 = 72.2% | 0.649 | 183 |
+| screen 16, finish 200 | 443 | 359 = 79.8% | 0.451 | 591 |
+| screen 16, finish 800 | 446 | 361 = 80.2% | 0.453 | 1296 |
+| screen 32, finish 200 | 446 | 370 = 82.2% | 0.348 | 1166 |
+| **screen 64, finish 200** | 448 | 382 = 84.9% | 0.312 | **2328** |
+| screen ALL, finish 200 | 449 | 386 = 85.8% | 0.298 | 5126 |
+| screen ALL, finish 800 | **450** | 388 = **86.2%** | **0.284** | 12081 |
+
+**450 of 450 solved**, which no recorded system except the supervised forward
+planner achieves, with no learned component anywhere.
+
+### The residual is NOT finish depth, and that kills the obvious next idea
+
+64 puzzles are not solved optimally at full screen width. Running only those,
+with the same full screen and a deeper finish:
+
+| finish per prefix | of the 64, now optimal | mean extra | mean iters |
+|---|---|---|---|
+| 200 (the base run) | 0 | 2.03 | 5126 |
+| 800 | **2** | 2.000 | 39,449 |
+| 3200 | **2** | 1.969 | 90,091 |
+
+Quadrupling the finish converts two puzzles. Quadrupling again converts **none**.
+A 16x deeper finish is worth 2 of 64. So the remaining gap is not how hard each
+prefix is worked, and it is not how many prefixes are screened (every one
+already is).
+
+**By elimination it is the prefix LENGTH.** These 64 need more than one macro
+move before the old vocabulary can finish, which is exactly the H-T-H-T family
+the Stage 0 decomposition found and which a one-move head start cannot reach.
+That makes two-move prefixes the next experiment, and it is now a measured
+hypothesis rather than a guess.
+
+### Configuration frozen for the out-of-sample test
+
+Everything above chose settings by looking at the benchmark, so it is
+**exploratory**. Before any 24x24 number is quoted, the configuration is frozen
+here, by the knee of the curve rather than by its best point:
+**screen 64, finish 200, `b0` 400, structural ranking.** Screen ALL is 0.9
+points better for 2.2x the cost, so 64 is the honest operating point.
+
+The 24x24 run under that frozen configuration is the confirmatory test.
