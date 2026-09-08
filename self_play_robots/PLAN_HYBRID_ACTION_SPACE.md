@@ -717,3 +717,84 @@ Compute is not comparable, so "better and cheaper" is NOT claimed; only "better,
 at a cost measured in a different currency". The 4 unsolved puzzles are a real
 deficit against the flagship. And the residual analysis at 16x16 says the
 remaining gap is prefix LENGTH, which two-move prefixes would test.
+
+# STAGE 3b RESULT (2026-09-08/09, 16x16 bench450, ~40 GPU-minutes total)
+
+The FINISH-HERE action inside the real macro search: at a popped node the search
+may hand the position to the old sub-goal vocabulary and take whatever it
+certifies. Ten configurations, every pair differing by one flag.
+
+**Three independent harness checks passed.** `fin_cap 0` with the supervised net
+reproduces the recorded Part A row (404 solved, 80.9%, 0.248) and matches it row
+for row on 20 instances including exact move sequences; `fin_cap 0` with the
+self-play net reproduces the recorded Part C round-3 row (444 solved, 95.3%,
+0.113) exactly.
+
+| guide | finisher calls | solved | optimal of 450 | extra | fin calls | sec/inst |
+|---|---|---|---|---|---|---|
+| relaxation | 0 | 354 | 67.8% | 0.370 | 0 | 10.6 |
+| relaxation | 4 | 434 | 82.4% | 0.336 | 1,513 | 48.0 |
+| relaxation | 24 | 446 | 86.0% | 0.280 | 7,984 | 272.2 |
+| supervised net | 0 | 404 | 80.9% | 0.248 | 0 | 71.0 |
+| supervised net | 4 | 444 | 90.9% | 0.191 | 1,511 | 65.7 |
+| supervised net | 8 | 444 | 91.3% | 0.167 | 2,876 | 106.6 |
+| supervised net | 16 | 446 | 91.6% | 0.175 | 5,507 | 186.7 |
+| supervised net | 24 | 446 | 92.4% | 0.139 | 7,957 | 270.8 |
+| supervised net | 48 | 448 | 93.8% | 0.127 | 14,595 | 527.5 |
+| **self-play net** | **0** | 444 | 95.3% | 0.113 | 0 | 27.4 |
+| **self-play net** | **4** | **448** | **97.1%** | **0.078** | 1,506 | 67.1 |
+| **self-play net** | **24** | **450** | **97.1%** | 0.080 | 7,921 | 283.4 |
+
+Recorded, same 450: self-play alone 95.3% (444), forward move planner 94.2%
+(450), Part A 80.9% (404).
+
+### The headline
+
+**450 of 450 solved and 97.1% move-optimal.** No recorded system reaches both:
+the forward planner solves all 450 but is 94.2% optimal; self-play is 95.3% but
+solves 444. This is the first arm that is best on both axes at once.
+
+### The finisher's value shrinks as the guide improves, but it never becomes zero
+
+| guide | finisher worth |
+|---|---|
+| relaxation | **+18.2** points |
+| supervised net | **+11.5** |
+| self-play net | **+1.8** |
+
+My pre-registered worry was that the finisher would be redundant once the guide
+was good. It is **partly right**: its marginal quality contribution collapses
+from 18 points to under 2. What survives is more interesting.
+
+### It closes the coverage gap, which was the project's stated open problem
+
+FINDINGS 33 closed by naming coverage, not quality, as what separates the
+self-play planner from the forward one: 444 of 450 solved, with 0/6 discordant,
+"so C's six unsolved cap it at 98.7% before quality". **The finisher solves all
+six.** 444 to 450. That is the specific open problem the previous plan handed
+forward, and it is closed by an action-space change with no retraining.
+
+### Cost, in one currency
+
+Same hardware, same guide, wall clock per instance. Four finisher calls on the
+self-play net cost **2.4x** (27.4 to 67.1 s) and buy +1.8 points and 4 solves.
+Twenty-four cost **10x** and buy the last 2 solves and nothing else. **Four is
+the operating point**; the expensive configuration was never necessary, which
+also retires the 10x cost worry raised when the arm was first built.
+
+Depth of each finish remains nearly irrelevant, now measured a fourth time:
+quartering it costs 0.2-0.4 points and halves the time.
+
+### A network-free system beats the tuned network one
+
+`relaxation + 4 finisher calls` reaches **82.4%** against Part A's 80.9%, which
+uses a trained network and a tuned beam. Not the headline, but it means the
+cheap end of this design is competitive with the project's pre-self-play state
+of the art while needing no GPU, no training and no checkpoint.
+
+### What this does not settle
+
+All 16x16. The comparison that decides anything is 24x24 against the v07
+flagship, and the search hardcodes the board size, so that is the next build.
+The self-play net was trained at 16x16 and is architecturally size-free but has
+never been run larger, so it may simply fail there.

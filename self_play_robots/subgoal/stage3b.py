@@ -36,6 +36,11 @@ def main(argv=None):
     p.add_argument("--fin-iters", type=int, default=200)
     p.add_argument("--vocab", choices=["base", "b1", "b2"], default="b2")
     p.add_argument("--limit", type=int, default=None)
+    p.add_argument("--shards", type=int, default=1,
+                   help="split the bench into contiguous shards; the\n"
+                        "FINISH-HERE arm is ~10x slower per instance than the\n"
+                        "control and does not fit one qgpu_exp hour")
+    p.add_argument("--shard", type=int, default=0)
     p.add_argument("--name", default=None)
     p.add_argument("--out", default=None)
     a = p.parse_args(argv)
@@ -43,6 +48,10 @@ def main(argv=None):
     bench = load_bench(a.bench)
     if a.limit:
         bench = bench[:a.limit]
+    if a.shards > 1:
+        import math
+        w = math.ceil(len(bench) / a.shards)
+        bench = bench[a.shard * w:(a.shard + 1) * w]
     env_ids = sorted({int(r["env_id"]) for r in bench})
     if a.arm == "relaxed":
         heur = P.RelaxedHeuristic()
