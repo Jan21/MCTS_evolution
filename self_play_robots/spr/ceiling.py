@@ -67,7 +67,10 @@ def _plan_key(p):
 
 
 def probe(env, state, solver, vocab, max_iters, max_frontier, time_cap,
-          park_cap=2, max_open=None, slack=0.0):
+          park_cap=2, max_open=None, slack=0.0, moves_out=None):
+    # `moves_out` (optional list): on return, the realized [color, direction]
+    # sequence of the plan behind `best_realizable_moves`. Additive and
+    # observational; default None reproduces every recorded row exactly.
     from skeleton.astar import _initial_plan, park_repairs
     from eval.realize import strict_moves
     from simulate import wall_sets, _board_size
@@ -106,12 +109,16 @@ def probe(env, state, solver, vocab, max_iters, max_frontier, time_cap,
             abstract_found = True
             complete_tested += 1
             fi = {} if b1 else None
-            m = strict_moves(env, state, cur, log=None, fail_info=fi)
+            mo = [] if moves_out is not None else None
+            m = strict_moves(env, state, cur, log=None, fail_info=fi,
+                             moves_out=mo)
             if m is not None:
                 if first_real is None:
                     first_real, first_abs = m, float(cost)
                 if best_real is None or m < best_real:
                     best_real, best_abs = m, float(cost)
+                    if moves_out is not None:
+                        moves_out[:] = mo
             elif b1 and fi:
                 for child in park_repairs(env, state, cur, fi, wr, wd, size,
                                           max_parks=park_cap, pairwise=b2,

@@ -266,7 +266,7 @@ def blocker_cells(goal, wr, wd, n=SIZE):
 class Search:
     def __init__(self, inst, idx, k, max_expansions, size=SIZE,
                  bound="weak", noise=0.0, rng=None, collect=False,
-                 refine_cap=48, clamp=False):
+                 refine_cap=48, clamp=False, finisher=None, fin_cap=0):
         self.inst = inst
         self.idx = idx
         self.k = k
@@ -280,6 +280,14 @@ class Search:
         # exploratory (Stage 4 section E): a learned h can never truthfully be
         # BELOW an admissible bound, so rank by max(h, h_adm) instead of h
         self.clamp = clamp
+        # FINISH-HERE action: `finisher(positions_xy, tidx, target_xy)` returns
+        # (strict_moves, move_seq) or None. Called on at most `fin_cap` popped
+        # nodes. fin_cap=0 disables it and reproduces the recorded rows exactly.
+        self.fin = finisher
+        self.fin_cap = int(fin_cap)
+        self.fin_calls = 0
+        self.fin_hits = 0
+        self.fin_best = None          # (total, prefix_seq, suffix_seq, g)
         self.env_id = int(inst["env_id"])
         self.RAY, self.PIR = rays(self.env_id, size)
         wr, wd = board(self.env_id)
@@ -446,6 +454,20 @@ class Search:
                             g + self._h2(st) >= self.best_cost:
                         self.bound_skips += 1
                         continue
+            # --- FINISH HERE: delegate the remainder to the old vocabulary ---
+            if self.fin is not None and self.fin_calls < self.fin_cap:
+                self.fin_calls += 1
+                pos_xy = tuple((c % self.n, c // self.n) for c in st)
+                tgt_xy = (self.goal % self.n, self.goal // self.n)
+                got = self.fin(self.env_id, pos_xy, self.tidx, tgt_xy)
+                if got is not None:
+                    m, suffix = got
+                    total = g + m
+                    if self.best_cost is None or total < self.best_cost:
+                        self.fin_hits += 1
+                        prefix, _steps = self._path(st)
+                        self.best_cost = total
+                        self.fin_best = (total, prefix, suffix, g)
             groups = []
             for i in range(len(st)):
                 blockers = st[:i] + st[i + 1:]
@@ -545,6 +567,10 @@ class Search:
         return seq, steps
 
     def sequence(self):
+        # the finisher's answer wins whenever it IS the incumbent; it is a
+        # certified move list, not a path through the search graph
+        if self.fin_best is not None and self.fin_best[0] == self.best_cost:
+            return list(self.fin_best[1]) + list(self.fin_best[2])
         if self.best_state is None:
             return None
         return self._path(self.best_state)[0]
@@ -571,6 +597,12 @@ class Search:
                  h_candidates=self.h_cands, seconds=round(self.seconds, 3),
                  stop_reason=self.reason, bound_skips=self.bound_skips,
                  bound_refines=self.bound_refines,
+                 fin_calls=self.fin_calls, fin_hits=self.fin_hits,
+                 answer_from_finisher=(self.fin_best is not None
+                                       and self.fin_best[0] == self.best_cost),
+                 finisher_prefix_cost=(self.fin_best[3]
+                                       if (self.fin_best is not None and
+                                           self.fin_best[0] == self.best_cost) else None),
                  proved_optimal_in_pruned_graph=(self.reason ==
                                                  "proved optimal in the pruned graph"))
         if seq is None:
@@ -706,9 +738,55 @@ class ExactHeuristic:
 # the lockstep driver
 # ---------------------------------------------------------------------------
 
+def make_finisher(vocab="b2", iters=200, frontier=100_000, cache_size=24):
+    """Build the FINISH-HERE callable: the old sub-goal vocabulary, bounded.
+
+    Returns (strict_moves, move_seq) for a certified plan, or None. The plan is
+    realized under the real joint-game rules by `spr.ceiling.probe` before it is
+    returned, so the cost handed back is a true move count, never an estimate.
+    The board id is an argument because `run()` interleaves up to
+    `concurrency` instances in lockstep, so several boards are live at once;
+    the cache holds `cache_size` of them."""
+    from skeleton.astar import AStar
+    from skeleton import heuristics
+    from spr.ceiling import probe
+    from GridEnv import GridEnv, State, Robot_at
+    solver = AStar(propose=heuristics.propose_b1 if vocab in ("b1", "b2")
+                   else heuristics.propose,
+                   max_iters=iters, max_frontier=frontier, beam=None,
+                   by_reference=(vocab == "b2"))
+    cache = {}
+
+    def finish(eid, positions_xy, tidx, target_xy):
+        env = cache.get(eid)
+        if env is None:
+            env, _ = GridEnv.from_env(eid)
+            if len(cache) >= cache_size:
+                cache.pop(next(iter(cache)))
+            cache[eid] = env
+        st = State(target=target_xy,
+                   target_robot=Robot_at(position=positions_xy[tidx],
+                                         color=COLOR_ORDER[tidx]),
+                   helpers=[Robot_at(position=positions_xy[j],
+                                     color=COLOR_ORDER[j])
+                            for j in range(len(positions_xy)) if j != tidx])
+        mo = []
+        try:
+            r = probe(env, st, solver, vocab, iters, frontier, time_cap=1e9,
+                      moves_out=mo)
+        except Exception:
+            return None
+        m = r.get("best_realizable_moves")
+        if m is None or len(mo) != m:
+            return None       # no plan, or the move list did not come back whole
+        return m, mo
+
+    return finish
+
+
 def run(instances, heuristic, k, max_expansions, concurrency=64, log_every=50,
         bound="weak", noise=0.0, seed=0, collect=False, on_done=None,
-        clamp=False):
+        clamp=False, finisher=None, fin_cap=0):
     """Run one search per instance; returns the payload rows in bench order.
 
     `on_done(search)` is called once per finished search before its state is
@@ -724,6 +802,7 @@ def run(instances, heuristic, k, max_expansions, concurrency=64, log_every=50,
             i, inst = todo.pop(0)
             pool.append(Search(inst, i, k, max_expansions, bound=bound,
                                noise=noise, collect=collect, clamp=clamp,
+                               finisher=finisher, fin_cap=fin_cap,
                                rng=_random.Random(seed * 1000003 + i)
                                if noise else None))
         qs, spans = [], []
