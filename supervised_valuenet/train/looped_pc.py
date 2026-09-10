@@ -103,6 +103,14 @@ def collate(batch):
     return dict(x=x, A_all=A_all, A_ind=A_ind, key=key, ctg=ctg, opt=opt, group=grp)
 
 
+import os as _os
+try:
+    from torch.nn.attention import sdpa_kernel as _sdpa_kernel, SDPBackend as _SDPB
+    _USE_SDPA = _os.environ.get("RR_SDPA", "1") != "0"
+except Exception:                       # old torch: keep the dense path
+    _USE_SDPA = False
+
+
 class LoopedLayer(nn.Module):
     """One weight-tied block: global + all-edge + indep-edge attention heads."""
     def __init__(self, d, heads=4, use_global=True):
@@ -120,6 +128,17 @@ class LoopedLayer(nn.Module):
         q = q.view(B, K, self.h, self.dk).transpose(1, 2)      # [B,h,K,dk]
         k = k.view(B, K, self.h, self.dk).transpose(1, 2)
         v = v.view(B, K, self.h, self.dk).transpose(1, 2)
+        if _USE_SDPA and X.is_cuda:
+            # fused kernel: same masked softmax, no [B,h,K,K] fp32 tensor.
+            # Boolean mask is 1 byte/entry and broadcasts over heads. A row
+            # with no neighbours yields NaN in the dense path and is mapped
+            # to zero here, which downstream code already tolerates.
+            m = None if A is None else (A != 0)[:, None]
+            with _sdpa_kernel([_SDPB.EFFICIENT_ATTENTION, _SDPB.FLASH_ATTENTION,
+                               _SDPB.MATH]):
+                o = F.scaled_dot_product_attention(q, k, v, attn_mask=m)
+            o = torch.nan_to_num(o, nan=0.0)
+            return o.transpose(1, 2).reshape(B, K, d)
         s = q @ k.transpose(-1, -2) / math.sqrt(self.dk)        # [B,h,K,K]
         if A is not None:                                       # EDGE-MASKED attention:
             s = s.masked_fill((A == 0)[:, None], float("-inf"))  # attend only to neighbors

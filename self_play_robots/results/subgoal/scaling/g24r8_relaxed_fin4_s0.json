@@ -1,0 +1,4062 @@
+{
+ "protocol": {
+  "expansions": 1200,
+  "k": 100,
+  "instances_file": "supervised_valuenet/eval/data/bench450.jsonl",
+  "search": "subgoal/planner.py best-first over state subgoals, physics edges, f = g + c + h",
+  "heuristic": "relaxed any-stop distance (no network)",
+  "arm": "relaxed",
+  "bound": "tight",
+  "fin_cap": 4,
+  "fin_iters": 200,
+  "vocab": "b2",
+  "wall_seconds": 260.0,
+  "slurm_job_id": "5027154",
+  "date": "2026-09-09T13:53:10"
+ },
+ "systems": {
+  "relaxed_k100_fin4": {
+   "rows": [
+    {
+     "idx": 0,
+     "env_id": 900,
+     "d_star": 6,
+     "expansions": 25,
+     "h_queries": 200,
+     "h_candidates": 23691,
+     "seconds": 63.622,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 22,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 1,
+     "env_id": 901,
+     "d_star": 6,
+     "expansions": 28,
+     "h_queries": 224,
+     "h_candidates": 21353,
+     "seconds": 63.919,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 7,
+     "bound_refines": 392,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 2,
+     "env_id": 902,
+     "d_star": 3,
+     "expansions": 1,
+     "h_queries": 8,
+     "h_candidates": 739,
+     "seconds": 14.854,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 8,
+     "fin_calls": 1,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ]
+     ],
+     "realized_strict": 3,
+     "search_cost": 3,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 3,
+     "env_id": 902,
+     "d_star": 4,
+     "expansions": 10,
+     "h_queries": 80,
+     "h_candidates": 5574,
+     "seconds": 55.587,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 28,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ]
+     ],
+     "realized_strict": 4,
+     "search_cost": 4,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 4,
+     "env_id": 904,
+     "d_star": 4,
+     "expansions": 407,
+     "h_queries": 3256,
+     "h_candidates": 339130,
+     "seconds": 173.037,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 584,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ]
+     ],
+     "realized_strict": 4,
+     "search_cost": 4,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 5,
+     "env_id": 905,
+     "d_star": 6,
+     "expansions": 83,
+     "h_queries": 664,
+     "h_candidates": 58281,
+     "seconds": 112.76,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 17,
+     "bound_refines": 1151,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 6,
+     "env_id": 908,
+     "d_star": 6,
+     "expansions": 52,
+     "h_queries": 416,
+     "h_candidates": 51382,
+     "seconds": 82.924,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 6,
+     "bound_refines": 689,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 7,
+     "env_id": 910,
+     "d_star": 1,
+     "expansions": 1,
+     "h_queries": 8,
+     "h_candidates": 530,
+     "seconds": 16.159,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 1,
+     "fin_calls": 1,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Yellow",
+       "left"
+      ]
+     ],
+     "realized_strict": 1,
+     "search_cost": 1,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 8,
+     "env_id": 911,
+     "d_star": 6,
+     "expansions": 565,
+     "h_queries": 4520,
+     "h_candidates": 508985,
+     "seconds": 202.278,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 5,
+     "bound_refines": 288,
+     "fin_calls": 4,
+     "fin_hits": 0,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "right"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 9,
+     "env_id": 912,
+     "d_star": 7,
+     "expansions": 317,
+     "h_queries": 2536,
+     "h_candidates": 202555,
+     "seconds": 163.037,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 49,
+     "bound_refines": 2737,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ]
+     ],
+     "realized_strict": 7,
+     "search_cost": 7,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 10,
+     "env_id": 914,
+     "d_star": 4,
+     "expansions": 57,
+     "h_queries": 456,
+     "h_candidates": 31475,
+     "seconds": 83.365,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 5,
+     "bound_refines": 470,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ]
+     ],
+     "realized_strict": 4,
+     "search_cost": 4,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 11,
+     "env_id": 914,
+     "d_star": 7,
+     "expansions": 120,
+     "h_queries": 960,
+     "h_candidates": 69979,
+     "seconds": 134.49,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 18,
+     "bound_refines": 1803,
+     "fin_calls": 4,
+     "fin_hits": 2,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 2,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ]
+     ],
+     "realized_strict": 7,
+     "search_cost": 7,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 12,
+     "env_id": 914,
+     "d_star": 6,
+     "expansions": 54,
+     "h_queries": 432,
+     "h_candidates": 31967,
+     "seconds": 82.578,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 8,
+     "bound_refines": 581,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "down"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 13,
+     "env_id": 915,
+     "d_star": 8,
+     "expansions": 1200,
+     "h_queries": 9600,
+     "h_candidates": 798065,
+     "seconds": 249.216,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 1782,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "realized_strict": 8,
+     "search_cost": 8,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 14,
+     "env_id": 915,
+     "d_star": 6,
+     "expansions": 43,
+     "h_queries": 344,
+     "h_candidates": 34707,
+     "seconds": 79.939,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 518,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 15,
+     "env_id": 916,
+     "d_star": 6,
+     "expansions": 6,
+     "h_queries": 48,
+     "h_candidates": 7088,
+     "seconds": 52.335,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 44,
+     "bound_refines": 2,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 16,
+     "env_id": 917,
+     "d_star": 7,
+     "expansions": 1162,
+     "h_queries": 9296,
+     "h_candidates": 876464,
+     "seconds": 247.367,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 117,
+     "bound_refines": 11023,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ]
+     ],
+     "realized_strict": 7,
+     "search_cost": 7,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 17,
+     "env_id": 917,
+     "d_star": 9,
+     "expansions": 1200,
+     "h_queries": 9599,
+     "h_candidates": 983589,
+     "seconds": 248.922,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 5125,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ]
+     ],
+     "realized_strict": 10,
+     "search_cost": 10,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 18,
+     "env_id": 919,
+     "d_star": 6,
+     "expansions": 423,
+     "h_queries": 3384,
+     "h_candidates": 334420,
+     "seconds": 173.639,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 49,
+     "bound_refines": 4174,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 19,
+     "env_id": 920,
+     "d_star": 3,
+     "expansions": 1,
+     "h_queries": 8,
+     "h_candidates": 401,
+     "seconds": 17.764,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 24,
+     "fin_calls": 1,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ]
+     ],
+     "realized_strict": 3,
+     "search_cost": 3,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 20,
+     "env_id": 921,
+     "d_star": 8,
+     "expansions": 1200,
+     "h_queries": 9600,
+     "h_candidates": 1042961,
+     "seconds": 248.484,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 5167,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ]
+     ],
+     "realized_strict": 9,
+     "search_cost": 9,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 21,
+     "env_id": 921,
+     "d_star": 6,
+     "expansions": 398,
+     "h_queries": 3184,
+     "h_candidates": 371715,
+     "seconds": 170.098,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 72,
+     "bound_refines": 3858,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 22,
+     "env_id": 923,
+     "d_star": 4,
+     "expansions": 8,
+     "h_queries": 64,
+     "h_candidates": 6817,
+     "seconds": 52.821,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 32,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ]
+     ],
+     "realized_strict": 4,
+     "search_cost": 4,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 23,
+     "env_id": 923,
+     "d_star": 6,
+     "expansions": 1200,
+     "h_queries": 9600,
+     "h_candidates": 1094545,
+     "seconds": 248.325,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 3283,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ]
+     ],
+     "realized_strict": 7,
+     "search_cost": 7,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 24,
+     "env_id": 923,
+     "d_star": 8,
+     "expansions": 1200,
+     "h_queries": 9600,
+     "h_candidates": 1051151,
+     "seconds": 248.321,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 4459,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "realized_strict": 9,
+     "search_cost": 9,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 25,
+     "env_id": 924,
+     "d_star": 6,
+     "expansions": 103,
+     "h_queries": 824,
+     "h_candidates": 99487,
+     "seconds": 130.903,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 1,
+     "bound_refines": 95,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 26,
+     "env_id": 925,
+     "d_star": 4,
+     "expansions": 1,
+     "h_queries": 8,
+     "h_candidates": 1119,
+     "seconds": 17.349,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 26,
+     "fin_calls": 1,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "realized_strict": 4,
+     "search_cost": 4,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 27,
+     "env_id": 925,
+     "d_star": 6,
+     "expansions": 96,
+     "h_queries": 768,
+     "h_candidates": 114101,
+     "seconds": 130.195,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 503,
+     "bound_refines": 0,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 28,
+     "env_id": 927,
+     "d_star": 7,
+     "expansions": 1200,
+     "h_queries": 9599,
+     "h_candidates": 1002828,
+     "seconds": 247.894,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 1978,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ]
+     ],
+     "realized_strict": 9,
+     "search_cost": 9,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 29,
+     "env_id": 929,
+     "d_star": 7,
+     "expansions": 1200,
+     "h_queries": 9600,
+     "h_candidates": 1204544,
+     "seconds": 247.739,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 51,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "realized_strict": 16,
+     "search_cost": 16,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 30,
+     "env_id": 929,
+     "d_star": 6,
+     "expansions": 1099,
+     "h_queries": 8790,
+     "h_candidates": 1004022,
+     "seconds": 241.034,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 928,
+     "bound_refines": 2701,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 31,
+     "env_id": 930,
+     "d_star": 6,
+     "expansions": 372,
+     "h_queries": 2976,
+     "h_candidates": 379337,
+     "seconds": 165.774,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 64,
+     "bound_refines": 3486,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 32,
+     "env_id": 930,
+     "d_star": 7,
+     "expansions": 220,
+     "h_queries": 1760,
+     "h_candidates": 224619,
+     "seconds": 132.948,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 1396,
+     "bound_refines": 0,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "realized_strict": 7,
+     "search_cost": 7,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 33,
+     "env_id": 931,
+     "d_star": 3,
+     "expansions": 1,
+     "h_queries": 8,
+     "h_candidates": 459,
+     "seconds": 23.704,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 25,
+     "fin_calls": 1,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ]
+     ],
+     "realized_strict": 3,
+     "search_cost": 3,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 34,
+     "env_id": 932,
+     "d_star": 7,
+     "expansions": 881,
+     "h_queries": 7048,
+     "h_candidates": 661504,
+     "seconds": 208.367,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 138,
+     "bound_refines": 8920,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "right"
+      ]
+     ],
+     "realized_strict": 7,
+     "search_cost": 7,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 35,
+     "env_id": 933,
+     "d_star": 7,
+     "expansions": 1200,
+     "h_queries": 9600,
+     "h_candidates": 827898,
+     "seconds": 228.412,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 3669,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ]
+     ],
+     "realized_strict": 7,
+     "search_cost": 7,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 36,
+     "env_id": 934,
+     "d_star": 7,
+     "expansions": 1200,
+     "h_queries": 9600,
+     "h_candidates": 976438,
+     "seconds": 202.878,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 4174,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ]
+     ],
+     "realized_strict": 8,
+     "search_cost": 8,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 37,
+     "env_id": 934,
+     "d_star": 5,
+     "expansions": 3,
+     "h_queries": 24,
+     "h_candidates": 2479,
+     "seconds": 1.582,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 79,
+     "fin_calls": 3,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "down"
+      ]
+     ],
+     "realized_strict": 5,
+     "search_cost": 5,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 38,
+     "env_id": 935,
+     "d_star": 7,
+     "expansions": 1152,
+     "h_queries": 9216,
+     "h_candidates": 894438,
+     "seconds": 192.757,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 89,
+     "bound_refines": 0,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ]
+     ],
+     "realized_strict": 7,
+     "search_cost": 7,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 39,
+     "env_id": 935,
+     "d_star": 4,
+     "expansions": 1,
+     "h_queries": 8,
+     "h_candidates": 798,
+     "seconds": 6.219,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 27,
+     "fin_calls": 1,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ]
+     ],
+     "realized_strict": 4,
+     "search_cost": 4,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 40,
+     "env_id": 936,
+     "d_star": 5,
+     "expansions": 2,
+     "h_queries": 16,
+     "h_candidates": 1897,
+     "seconds": 6.459,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 53,
+     "fin_calls": 2,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "right"
+      ]
+     ],
+     "realized_strict": 5,
+     "search_cost": 5,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 41,
+     "env_id": 938,
+     "d_star": 3,
+     "expansions": 22,
+     "h_queries": 176,
+     "h_candidates": 18464,
+     "seconds": 16.749,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 22,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "down"
+      ]
+     ],
+     "realized_strict": 3,
+     "search_cost": 3,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 42,
+     "env_id": 938,
+     "d_star": 5,
+     "expansions": 29,
+     "h_queries": 232,
+     "h_candidates": 22285,
+     "seconds": 18.642,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 7,
+     "bound_refines": 423,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ]
+     ],
+     "realized_strict": 5,
+     "search_cost": 5,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 43,
+     "env_id": 938,
+     "d_star": 7,
+     "expansions": 98,
+     "h_queries": 784,
+     "h_candidates": 79213,
+     "seconds": 74.047,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 412,
+     "bound_refines": 32,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ]
+     ],
+     "realized_strict": 7,
+     "search_cost": 7,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 44,
+     "env_id": 939,
+     "d_star": 7,
+     "expansions": 1200,
+     "h_queries": 9600,
+     "h_candidates": 899647,
+     "seconds": 188.675,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 1090,
+     "fin_calls": 4,
+     "fin_hits": 0,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ]
+     ],
+     "realized_strict": 10,
+     "search_cost": 10,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 45,
+     "env_id": 940,
+     "d_star": 5,
+     "expansions": 20,
+     "h_queries": 160,
+     "h_candidates": 17079,
+     "seconds": 3.871,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 77,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "realized_strict": 5,
+     "search_cost": 5,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 46,
+     "env_id": 940,
+     "d_star": 4,
+     "expansions": 1,
+     "h_queries": 8,
+     "h_candidates": 653,
+     "seconds": 0.432,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 11,
+     "fin_calls": 1,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "down"
+      ]
+     ],
+     "realized_strict": 4,
+     "search_cost": 4,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 47,
+     "env_id": 941,
+     "d_star": 6,
+     "expansions": 427,
+     "h_queries": 3416,
+     "h_candidates": 271589,
+     "seconds": 111.422,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 78,
+     "bound_refines": 4277,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 48,
+     "env_id": 941,
+     "d_star": 5,
+     "expansions": 1,
+     "h_queries": 8,
+     "h_candidates": 486,
+     "seconds": 0.105,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 27,
+     "fin_calls": 1,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ]
+     ],
+     "realized_strict": 5,
+     "search_cost": 5,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 49,
+     "env_id": 942,
+     "d_star": 5,
+     "expansions": 13,
+     "h_queries": 104,
+     "h_candidates": 8657,
+     "seconds": 19.289,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 22,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ]
+     ],
+     "realized_strict": 5,
+     "search_cost": 5,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 50,
+     "env_id": 942,
+     "d_star": 7,
+     "expansions": 511,
+     "h_queries": 4088,
+     "h_candidates": 404676,
+     "seconds": 119.287,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 4,
+     "bound_refines": 400,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "right"
+      ]
+     ],
+     "realized_strict": 7,
+     "search_cost": 7,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 51,
+     "env_id": 945,
+     "d_star": 5,
+     "expansions": 29,
+     "h_queries": 232,
+     "h_candidates": 22299,
+     "seconds": 29.463,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 31,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "realized_strict": 5,
+     "search_cost": 5,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 52,
+     "env_id": 947,
+     "d_star": 2,
+     "expansions": 1,
+     "h_queries": 8,
+     "h_candidates": 770,
+     "seconds": 0.774,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 1,
+     "fin_calls": 1,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "left"
+      ]
+     ],
+     "realized_strict": 2,
+     "search_cost": 2,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 53,
+     "env_id": 947,
+     "d_star": 6,
+     "expansions": 485,
+     "h_queries": 3880,
+     "h_candidates": 416946,
+     "seconds": 116.756,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 31,
+     "bound_refines": 3228,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Blue",
+       "up"
+      ],
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 54,
+     "env_id": 948,
+     "d_star": 6,
+     "expansions": 622,
+     "h_queries": 4976,
+     "h_candidates": 366877,
+     "seconds": 125.789,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 25,
+     "fin_calls": 4,
+     "fin_hits": 2,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 55,
+     "env_id": 948,
+     "d_star": 4,
+     "expansions": 29,
+     "h_queries": 232,
+     "h_candidates": 13881,
+     "seconds": 20.862,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 8,
+     "bound_refines": 423,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ]
+     ],
+     "realized_strict": 4,
+     "search_cost": 4,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 56,
+     "env_id": 950,
+     "d_star": 6,
+     "expansions": 1200,
+     "h_queries": 9600,
+     "h_candidates": 763123,
+     "seconds": 142.691,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 4724,
+     "fin_calls": 4,
+     "fin_hits": 2,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 2,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ]
+     ],
+     "realized_strict": 7,
+     "search_cost": 7,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 57,
+     "env_id": 951,
+     "d_star": 6,
+     "expansions": 31,
+     "h_queries": 248,
+     "h_candidates": 22244,
+     "seconds": 18.549,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 5,
+     "bound_refines": 366,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 58,
+     "env_id": 955,
+     "d_star": 7,
+     "expansions": 1200,
+     "h_queries": 9600,
+     "h_candidates": 686443,
+     "seconds": 127.328,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 3255,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "down"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ]
+     ],
+     "realized_strict": 7,
+     "search_cost": 7,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 59,
+     "env_id": 955,
+     "d_star": 8,
+     "expansions": 1200,
+     "h_queries": 9600,
+     "h_candidates": 761759,
+     "seconds": 123.959,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 4521,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "left"
+      ],
+      [
+       "Orange",
+       "up"
+      ],
+      [
+       "Orange",
+       "right"
+      ],
+      [
+       "Orange",
+       "down"
+      ]
+     ],
+     "realized_strict": 8,
+     "search_cost": 8,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 60,
+     "env_id": 956,
+     "d_star": 3,
+     "expansions": 26,
+     "h_queries": 208,
+     "h_candidates": 21190,
+     "seconds": 12.121,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 26,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ]
+     ],
+     "realized_strict": 3,
+     "search_cost": 3,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 61,
+     "env_id": 956,
+     "d_star": 8,
+     "expansions": 1200,
+     "h_queries": 9579,
+     "h_candidates": 1163343,
+     "seconds": 121.665,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 3133,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "right"
+      ]
+     ],
+     "realized_strict": 8,
+     "search_cost": 8,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 62,
+     "env_id": 957,
+     "d_star": 8,
+     "expansions": 1200,
+     "h_queries": 9600,
+     "h_candidates": 874212,
+     "seconds": 121.257,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 5214,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ]
+     ],
+     "realized_strict": 8,
+     "search_cost": 8,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 63,
+     "env_id": 958,
+     "d_star": 8,
+     "expansions": 1200,
+     "h_queries": 9600,
+     "h_candidates": 604646,
+     "seconds": 118.65,
+     "stop_reason": "expansion budget",
+     "bound_skips": 17,
+     "bound_refines": 26,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ]
+     ],
+     "realized_strict": 8,
+     "search_cost": 8,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 64,
+     "env_id": 960,
+     "d_star": 7,
+     "expansions": 141,
+     "h_queries": 1128,
+     "h_candidates": 120831,
+     "seconds": 13.684,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 19,
+     "bound_refines": 2004,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "up"
+      ]
+     ],
+     "realized_strict": 7,
+     "search_cost": 7,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 65,
+     "env_id": 961,
+     "d_star": 8,
+     "expansions": 30,
+     "h_queries": 240,
+     "h_candidates": 23950,
+     "seconds": 2.032,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 5,
+     "bound_refines": 454,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "down"
+      ]
+     ],
+     "realized_strict": 8,
+     "search_cost": 8,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 66,
+     "env_id": 961,
+     "d_star": 3,
+     "expansions": 1,
+     "h_queries": 8,
+     "h_candidates": 658,
+     "seconds": 0.113,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 1,
+     "fin_calls": 1,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ]
+     ],
+     "realized_strict": 3,
+     "search_cost": 3,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 67,
+     "env_id": 962,
+     "d_star": 7,
+     "expansions": 900,
+     "h_queries": 7200,
+     "h_candidates": 817317,
+     "seconds": 90.241,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 116,
+     "bound_refines": 9074,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Green",
+       "up"
+      ]
+     ],
+     "realized_strict": 7,
+     "search_cost": 7,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 68,
+     "env_id": 963,
+     "d_star": 8,
+     "expansions": 564,
+     "h_queries": 4512,
+     "h_candidates": 364376,
+     "seconds": 66.949,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 52,
+     "bound_refines": 6183,
+     "fin_calls": 4,
+     "fin_hits": 2,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 1,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "down"
+      ],
+      [
+       "Yellow",
+       "left"
+      ],
+      [
+       "Yellow",
+       "up"
+      ]
+     ],
+     "realized_strict": 8,
+     "search_cost": 8,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 69,
+     "env_id": 964,
+     "d_star": 6,
+     "expansions": 1200,
+     "h_queries": 9600,
+     "h_candidates": 967143,
+     "seconds": 94.46,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 4623,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Blue",
+       "right"
+      ],
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ]
+     ],
+     "realized_strict": 7,
+     "search_cost": 7,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 70,
+     "env_id": 964,
+     "d_star": 6,
+     "expansions": 614,
+     "h_queries": 4912,
+     "h_candidates": 544126,
+     "seconds": 67.63,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 3783,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Blue",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 71,
+     "env_id": 964,
+     "d_star": 8,
+     "expansions": 430,
+     "h_queries": 3440,
+     "h_candidates": 372943,
+     "seconds": 53.364,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 53,
+     "bound_refines": 4343,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "up"
+      ],
+      [
+       "Green",
+       "left"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ]
+     ],
+     "realized_strict": 8,
+     "search_cost": 8,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 72,
+     "env_id": 965,
+     "d_star": 3,
+     "expansions": 16,
+     "h_queries": 128,
+     "h_candidates": 10216,
+     "seconds": 2.214,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 36,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Yellow",
+       "right"
+      ],
+      [
+       "Yellow",
+       "up"
+      ]
+     ],
+     "realized_strict": 3,
+     "search_cost": 3,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 73,
+     "env_id": 966,
+     "d_star": 8,
+     "expansions": 1200,
+     "h_queries": 9600,
+     "h_candidates": 1031422,
+     "seconds": 83.581,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 3614,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ]
+     ],
+     "realized_strict": 12,
+     "search_cost": 12,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 74,
+     "env_id": 967,
+     "d_star": 8,
+     "expansions": 827,
+     "h_queries": 6616,
+     "h_candidates": 607172,
+     "seconds": 76.799,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 144,
+     "bound_refines": 8144,
+     "fin_calls": 4,
+     "fin_hits": 3,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 1,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "up"
+      ],
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Cyan",
+       "right"
+      ]
+     ],
+     "realized_strict": 8,
+     "search_cost": 8,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 75,
+     "env_id": 968,
+     "d_star": 4,
+     "expansions": 2,
+     "h_queries": 16,
+     "h_candidates": 1578,
+     "seconds": 0.668,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 1,
+     "bound_refines": 56,
+     "fin_calls": 2,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Cyan",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "realized_strict": 4,
+     "search_cost": 4,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 76,
+     "env_id": 970,
+     "d_star": 7,
+     "expansions": 1200,
+     "h_queries": 9600,
+     "h_candidates": 1100428,
+     "seconds": 65.314,
+     "stop_reason": "expansion budget",
+     "bound_skips": 0,
+     "bound_refines": 3021,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": false,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Blue",
+       "down"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "left"
+      ]
+     ],
+     "realized_strict": 9,
+     "search_cost": 9,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 77,
+     "env_id": 970,
+     "d_star": 5,
+     "expansions": 702,
+     "h_queries": 5616,
+     "h_candidates": 609849,
+     "seconds": 52.181,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 137,
+     "bound_refines": 3382,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": false,
+     "finisher_prefix_cost": null,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Green",
+       "down"
+      ],
+      [
+       "Green",
+       "right"
+      ],
+      [
+       "Magenta",
+       "down"
+      ],
+      [
+       "Magenta",
+       "right"
+      ]
+     ],
+     "realized_strict": 5,
+     "search_cost": 5,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 78,
+     "env_id": 972,
+     "d_star": 5,
+     "expansions": 2,
+     "h_queries": 16,
+     "h_candidates": 1624,
+     "seconds": 0.915,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 0,
+     "bound_refines": 46,
+     "fin_calls": 2,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Purple",
+       "down"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ],
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Purple",
+       "up"
+      ]
+     ],
+     "realized_strict": 5,
+     "search_cost": 5,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 79,
+     "env_id": 973,
+     "d_star": 6,
+     "expansions": 54,
+     "h_queries": 432,
+     "h_candidates": 42218,
+     "seconds": 5.708,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 2,
+     "bound_refines": 50,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Cyan",
+       "down"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "down"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    },
+    {
+     "idx": 80,
+     "env_id": 973,
+     "d_star": 6,
+     "expansions": 32,
+     "h_queries": 256,
+     "h_candidates": 21166,
+     "seconds": 3.766,
+     "stop_reason": "proved optimal in the pruned graph",
+     "bound_skips": 9,
+     "bound_refines": 515,
+     "fin_calls": 4,
+     "fin_hits": 1,
+     "answer_from_finisher": true,
+     "finisher_prefix_cost": 0,
+     "proved_optimal_in_pruned_graph": true,
+     "solved": true,
+     "moves_seq": [
+      [
+       "Purple",
+       "left"
+      ],
+      [
+       "Red",
+       "left"
+      ],
+      [
+       "Red",
+       "down"
+      ],
+      [
+       "Magenta",
+       "up"
+      ],
+      [
+       "Red",
+       "right"
+      ],
+      [
+       "Red",
+       "up"
+      ]
+     ],
+     "realized_strict": 6,
+     "search_cost": 6,
+     "replay_ok": true,
+     "replay_reason": "ok",
+     "length_matches_g": true
+    }
+   ],
+   "aggregate": {
+    "n": 81,
+    "solved": 81,
+    "pct_optimal": 85.18518518518519,
+    "pct_optimal_of_n": 85.18518518518519,
+    "mean_regret": 0.3333333333333333,
+    "expansions_mean": 458.6666666666667,
+    "h_queries_total": 297191,
+    "h_candidates_total": 29421031,
+    "proved_optimal_in_pruned_graph": 62,
+    "budget_limited": 19,
+    "bound_skips_total": 4616,
+    "bound_refines_total": 154168
+   }
+  }
+ }
+}

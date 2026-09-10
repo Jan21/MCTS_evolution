@@ -50,6 +50,14 @@ CLASS_WEIGHT = 1.0
 # --- copied from train/looped_pc.py:106-134; kept self-contained to avoid
 # import-time GRID freezing (importing train.looped_pc pulls in train.encode,
 # which reads RR_GRID at module import and pins one grid size per process).
+import os as _os
+try:
+    from torch.nn.attention import sdpa_kernel as _sdpa_kernel, SDPBackend as _SDPB
+    _USE_SDPA = _os.environ.get("RR_SDPA", "1") != "0"
+except Exception:                       # old torch: keep the dense path
+    _USE_SDPA = False
+
+
 class LoopedLayer(nn.Module):
     """One weight-tied block: global + all-edge + indep-edge attention heads."""
     def __init__(self, d, heads=4, use_global=True):
@@ -67,6 +75,17 @@ class LoopedLayer(nn.Module):
         q = q.view(B, K, self.h, self.dk).transpose(1, 2)      # [B,h,K,dk]
         k = k.view(B, K, self.h, self.dk).transpose(1, 2)
         v = v.view(B, K, self.h, self.dk).transpose(1, 2)
+        if _USE_SDPA and X.is_cuda:
+            # fused kernel: same masked softmax, no [B,h,K,K] fp32 tensor.
+            # Boolean mask is 1 byte/entry and broadcasts over heads. A row
+            # with no neighbours yields NaN in the dense path and is mapped
+            # to zero here, which downstream code already tolerates.
+            m = None if A is None else (A != 0)[:, None]
+            with _sdpa_kernel([_SDPB.EFFICIENT_ATTENTION, _SDPB.FLASH_ATTENTION,
+                               _SDPB.MATH]):
+                o = F.scaled_dot_product_attention(q, k, v, attn_mask=m)
+            o = torch.nan_to_num(o, nan=0.0)
+            return o.transpose(1, 2).reshape(B, K, d)
         s = q @ k.transpose(-1, -2) / math.sqrt(self.dk)        # [B,h,K,K]
         if A is not None:                                       # EDGE-MASKED attention:
             s = s.masked_fill((A == 0)[:, None], float("-inf"))  # attend only to neighbors
@@ -334,3 +353,187 @@ def collate_groups(batch_groups, featurize_fn, adjacency_fn, key_fn,
         opt=torch.tensor(opt, dtype=torch.bool),             # [R]
         group=torch.tensor(grp, dtype=torch.long),           # [R] -> group 0..B-1
         n=int(n), configs=configs, clamped=int(clamped))
+
+
+# ---------------------------------------------------------------------------
+# sparse neighbour attention (2026-09-10)
+# ---------------------------------------------------------------------------
+
+def adj_to_index(A, max_deg=None):
+    """Dense 0/1 adjacency [B,K,K] -> (idx [B,K,D], mask [B,K,D]).
+
+    D is the largest out-degree in the batch. Padded slots point at column 0 and
+    are masked. Built once per batch; the per-layer attention then never touches
+    a K x K tensor again."""
+    import torch
+    B, K, _ = A.shape
+    deg = A.sum(-1).long()                      # [B,K]
+    D = int(deg.max().item()) if max_deg is None else max_deg
+    D = max(D, 1)
+    order = torch.argsort(A, dim=-1, descending=True, stable=True)   # [B,K,K]
+    idx = order[..., :D]                                             # [B,K,D]
+    ar = torch.arange(D, device=A.device).view(1, 1, D)
+    mask = ar < deg.unsqueeze(-1)                                    # [B,K,D]
+    idx = torch.where(mask, idx, torch.zeros_like(idx))
+    return idx, mask
+
+
+def sparse_head(qkv_lin, X, idx, mask, heads, dk):
+    """One attention family over a neighbour index instead of a dense mask."""
+    import math, torch
+    import torch.nn.functional as F
+    B, K, d = X.shape
+    D = idx.shape[-1]
+    q, k, v = qkv_lin(X).chunk(3, -1)
+    q = q.view(B, K, heads, dk)                                   # [B,K,h,dk]
+    k = k.view(B, K, heads, dk)
+    v = v.view(B, K, heads, dk)
+    # advanced indexing, never a K x K intermediate of any kind
+    b = torch.arange(B, device=X.device).view(B, 1, 1)
+    kn = k[b, idx]                                                # [B,K,D,h,dk]
+    vn = v[b, idx]
+    s = (q.unsqueeze(2) * kn).sum(-1) / math.sqrt(dk)             # [B,K,D,h]
+    s = s.masked_fill(~mask.unsqueeze(-1), float("-inf"))
+    w = F.softmax(s, dim=2)
+    w = torch.nan_to_num(w, nan=0.0)          # a node with no neighbours
+    o = (w.unsqueeze(-1) * vn).sum(2)                             # [B,K,h,dk]
+    return o.reshape(B, K, heads * dk)
+
+
+def axial_head(qkv_lin, X, A, n, heads, dk, masks=None):
+    """Attention over the same neighbour set as the masked-dense head, computed
+    as a row pass and a column pass and merged EXACTLY.
+
+    Every edge in these boards lies within a row or a column (measured: 0 of
+    140,892 off-axis at 64x64), so the two passes together visit exactly the
+    dense head's neighbour set. They cannot simply be averaged, because softmax
+    over a union is not a mixture of softmaxes over the parts; the two are
+    merged by the standard log-sum-exp rule instead, which is exact.
+
+    A cell lies in its own row AND its own column, so the diagonal is dropped
+    from the column pass to avoid counting it twice.
+    """
+    import math, torch
+    import torch.nn.functional as F
+    B, K, d = X.shape
+    N = n * n
+    q, k, v = qkv_lin(X).chunk(3, -1)
+
+    def pass_(qq, kk, vv, m):
+        """-> (o, mx, z): the unnormalised output, the score max, and the
+        exp-sum, so two passes can be merged without renormalising twice."""
+        s = (qq.unsqueeze(-3) * kk.unsqueeze(-4)).sum(-1) / math.sqrt(dk)
+        s = s.masked_fill(~m.unsqueeze(-1), float("-inf"))       # [.., L, L, h]
+        mx = s.max(dim=-2, keepdim=True).values                  # [.., L, 1, h]
+        e = torch.exp(s - torch.nan_to_num(mx, neginf=0.0))
+        e = torch.where(torch.isfinite(s), e, torch.zeros_like(e))
+        z = e.sum(dim=-2)                                        # [.., L, h]
+        o = (e.unsqueeze(-1) * vv.unsqueeze(-4)).sum(-3)         # [.., L, h, dk]
+        return o, mx.squeeze(-2), z
+
+    def split(t):
+        return t[:, :N].view(B, n, n, heads, dk)
+
+    qb, kb, vb = split(q), split(k), split(v)
+    if masks is None:
+        masks = axial_masks(A, n)
+    mrow, mcol = masks
+    orow, mxr, zr = pass_(qb, kb, vb, mrow)
+    qc, kc, vc = (t.transpose(1, 2) for t in (qb, kb, vb))
+    ocol, mxc, zc = pass_(qc, kc, vc, mcol)
+    ocol, mxc, zc = ocol.transpose(1, 2), mxc.transpose(1, 2), zc.transpose(1, 2)
+
+    # exact merge of two softmaxes over disjoint sets
+    M = torch.maximum(mxr, mxc)
+    M = torch.nan_to_num(M, neginf=0.0)
+    ar = torch.exp(torch.nan_to_num(mxr, neginf=-1e30) - M).unsqueeze(-1)
+    ac = torch.exp(torch.nan_to_num(mxc, neginf=-1e30) - M).unsqueeze(-1)
+    num = orow * ar + ocol * ac
+    den = (zr * ar.squeeze(-1) + zc * ac.squeeze(-1)).clamp(min=1e-30)
+    o = (num / den.unsqueeze(-1)).reshape(B, N, heads * dk)
+    o = torch.nan_to_num(o, nan=0.0)
+
+    # the global scratchpad token is genuinely all-to-all; keep it dense
+    gq = q[:, N:].view(B, 1, heads, dk)
+    gk = k.view(B, K, heads, dk)
+    gv = v.view(B, K, heads, dk)
+    gm = A[:, N:, :].bool()
+    gs = (gq.unsqueeze(2) * gk.unsqueeze(1)).sum(-1) / math.sqrt(dk)
+    gs = gs.masked_fill(~gm.unsqueeze(-1), float("-inf"))
+    gw = torch.nan_to_num(F.softmax(gs, dim=2), nan=0.0)
+    go = (gw.unsqueeze(-1) * gv.unsqueeze(1)).sum(2).reshape(B, 1, heads * dk)
+    return torch.cat([o, go], 1)
+
+
+def axial_masks(A, n):
+    """(row_mask [B,n,x,x], col_mask [B,n,y,y]) from the dense adjacency, built
+    ONCE per board rather than once per attention call.
+
+    The column mask drops the diagonal, since a cell lies in its own row and its
+    own column and must not be attended to twice.
+    """
+    import torch
+    B = A.shape[0]
+    N = n * n
+    Ab = A[:, :N, :N].view(B, n, n, n, n)
+    # rows: y1 == y2, gathered without a python loop over y
+    ar = torch.arange(n, device=A.device)
+    mrow = Ab[:, ar, :, ar, :]                     # [n, B, x1, x2]
+    mrow = mrow.permute(1, 0, 2, 3).bool()         # [B, y, x1, x2]
+    mcol = Ab[:, :, ar, :, ar]                     # [n, B, y1, y2]
+    mcol = mcol.permute(1, 0, 2, 3).bool()         # [B, x, y1, y2]
+    mcol = mcol & ~torch.eye(n, dtype=torch.bool, device=A.device)
+    return mrow, mcol
+
+
+# ---------------------------------------------------------------------------
+# flex_attention path (2026-09-10)
+# ---------------------------------------------------------------------------
+
+def segment_bounds(A, n):
+    """From the dense adjacency, the four wall-bounded reach limits per cell.
+
+    Returns int32 [4, n*n]: xlo, xhi, ylo, yhi, inclusive. Built once per board.
+    This is the LAST time the dense adjacency is needed; everything downstream
+    uses these 4n^2 numbers.
+    """
+    import torch
+    N = n * n
+    Ab = A[0, :N, :N].view(n, n, n, n)          # [y1, x1, y2, x2]
+    ar = torch.arange(n, device=A.device)
+    row = Ab[ar, :, ar, :]                      # [y, x1, x2]
+    col = Ab[:, ar, :, ar]                      # [x, y1, y2]
+    big = torch.full_like(row, n, dtype=torch.long)
+    idx = ar.view(1, 1, n).expand_as(row)
+    xlo = torch.where(row > 0, idx, big).amin(-1)                     # [y, x1]
+    xhi = torch.where(row > 0, idx, torch.full_like(big, -1)).amax(-1)
+    ylo = torch.where(col > 0, idx, big).amin(-1)                     # [x, y1]
+    yhi = torch.where(col > 0, idx, torch.full_like(big, -1)).amax(-1)
+    # to [cell] order, cell = y*n + x
+    xlo = xlo.reshape(N); xhi = xhi.reshape(N)
+    ylo = ylo.transpose(0, 1).reshape(N); yhi = yhi.transpose(0, 1).reshape(N)
+    return torch.stack([xlo, xhi, ylo, yhi]).to(torch.int32)
+
+
+def make_flex_mask(bounds, n, N, K, device):
+    """A mask_mod closing over `bounds`; no K x K tensor is ever formed."""
+    xlo, xhi, ylo, yhi = bounds[0], bounds[1], bounds[2], bounds[3]
+
+    def mask_mod(b, h, q, kv):
+        import torch
+        q_board = q < N
+        kv_board = kv < N
+        qc = torch.clamp(q, max=N - 1)
+        qx, qy = qc % n, qc // n
+        kx, ky = torch.clamp(kv, max=N - 1) % n, torch.clamp(kv, max=N - 1) // n
+        same_row = (ky == qy) & (kx >= xlo[qc]) & (kx <= xhi[qc])
+        same_col = (kx == qx) & (ky >= ylo[qc]) & (ky <= yhi[qc])
+        board = q_board & kv_board & (same_row | same_col)
+        # in the edge-masked families the trailing scratchpad token is
+        # ISOLATED: a self-loop only (measured: A[N,:] and A[:,N] each have
+        # exactly one nonzero). The all-to-all family has A=None and never
+        # comes through this mask.
+        glob = (~q_board) & (~kv_board)
+        return board | glob
+
+    return mask_mod

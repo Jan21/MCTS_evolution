@@ -67,7 +67,8 @@ def _plan_key(p):
 
 
 def probe(env, state, solver, vocab, max_iters, max_frontier, time_cap,
-          park_cap=2, max_open=None, slack=0.0, moves_out=None):
+          park_cap=2, max_open=None, slack=0.0, moves_out=None,
+          park_depth=None):
     # `moves_out` (optional list): on return, the realized [color, direction]
     # sequence of the plan behind `best_realizable_moves`. Additive and
     # observational; default None reproduces every recorded row exactly.
@@ -122,7 +123,7 @@ def probe(env, state, solver, vocab, max_iters, max_frontier, time_cap,
             elif b1 and fi:
                 for child in park_repairs(env, state, cur, fi, wr, wd, size,
                                           max_parks=park_cap, pairwise=b2,
-                                          multi_slide=b2):
+                                          multi_slide=b2, park_depth=park_depth):
                     heapq.heappush(frontier, (child.cost(), tie, child))
                     tie += 1
             continue

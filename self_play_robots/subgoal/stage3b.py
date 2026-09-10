@@ -17,13 +17,15 @@ from __future__ import annotations
 import argparse, json, os, time
 from pathlib import Path
 
-from subgoal.table import BENCH, ENV_DIR, SIZE, load_bench
-import subgoal.planner as P
 
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("--bench", default=str(BENCH))
+    p.add_argument("--config", default="g16r4",
+                   help="board configuration; sets the RR_* env, the board\n"
+                        "directory and the board size BEFORE the planner is\n"
+                        "imported, because it binds SIZE as a default argument")
+    p.add_argument("--bench", default=None)
     p.add_argument("--arm", choices=["relaxed", "net"], default="net")
     p.add_argument("--ckpt", default=None)
     p.add_argument("--k", type=int, default=100)
@@ -45,7 +47,40 @@ def main(argv=None):
     p.add_argument("--out", default=None)
     a = p.parse_args(argv)
 
-    bench = load_bench(a.bench)
+    # ---- configure, THEN import ------------------------------------------
+    import sys, importlib
+    from spr import SV
+    sys.path.insert(0, str(SV))
+    from scaling.configs import get, env as cfg_env
+    cfg = get(a.config)
+    for k in ("RR_GRID", "RR_ROBOTS", "RR_WALLS", "RR_ENV_DIR"):
+        os.environ.pop(k, None)
+    if not cfg.legacy:
+        os.environ.update(cfg_env(cfg))
+
+    import subgoal.table as T
+    if not cfg.legacy:
+        T.SIZE = int(os.environ["RR_GRID"])
+        T.ENV_DIR = Path(os.environ["RR_ENV_DIR"])
+    # subgoal/table.py hardcodes four robot colours, but the project derives the
+    # list from RR_ROBOTS at import time, so an 8-robot configuration needs the
+    # real list. Set it before space/planner import their copies from table.
+    from move_planner.state import COLOR_ORDER as _CO
+    T.COLOR_ORDER = list(_CO)
+    import subgoal.space as SP
+    SP.SIZE, SP.ENV_DIR = T.SIZE, T.ENV_DIR          # space.py holds its own copies
+    SP.COLOR_ORDER = T.COLOR_ORDER
+    import subgoal.planner as P                       # binds SIZE at import time
+    importlib.reload(P) if getattr(P, "SIZE", None) != T.SIZE else None
+    SIZE, ENV_DIR = T.SIZE, T.ENV_DIR
+    print(f"[3b] config={a.config} size={SIZE} env_dir={ENV_DIR}", flush=True)
+
+    # bench paths are quoted SV-relative in the project's docs and jobs,
+    # but the driver runs from self_play_robots/, so resolve them here
+    bp = Path(a.bench) if a.bench else Path(T.BENCH)
+    if not bp.is_absolute() and not bp.exists():
+        bp = SV / bp
+    bench = T.load_bench(bp)
     if a.limit:
         bench = bench[:a.limit]
     if a.shards > 1:

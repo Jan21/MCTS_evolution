@@ -425,31 +425,37 @@ def apply_park(env, plan, robot, park_pos, before_edge):
     return out
 
 
-def _park_dests(xpos, wr, wd, size, multi_slide=False):
-    """Walls-only slide destinations for a parking robot: the <= 4 one-slide
-    cells and, with `multi_slide`, the cells one further slide away.
-    Deterministic order (direction order, then first-layer order)."""
+def _park_dests(xpos, wr, wd, size, multi_slide=False, depth=None):
+    """Walls-only slide destinations for a parking robot, breadth-first by
+    number of slides. Deterministic order (layer, then direction order).
+
+    `depth` is how many slides the robot may take to get out of the way.
+    depth=1 is the historical default and depth=2 is the historical
+    `multi_slide=True`; both reproduce the old output layer for layer. A
+    larger depth lifts what was an arbitrary cap on "step aside", since a
+    robot whose only escape takes three slides could not be used as a repair
+    at all."""
     from simulate import slide, DIRECTIONS
-    layer1 = []
-    for d in DIRECTIONS:
-        dest = slide(xpos, d, frozenset(), wr, wd, size)
-        if dest != xpos and dest not in layer1:
-            layer1.append(dest)
-    if not multi_slide:
-        return layer1
-    seen = set(layer1) | {xpos}
-    layer2 = []
-    for c in layer1:
-        for d in DIRECTIONS:
-            dest = slide(c, d, frozenset(), wr, wd, size)
-            if dest not in seen:
-                seen.add(dest)
-                layer2.append(dest)
-    return layer1 + layer2
+    if depth is None:
+        depth = 2 if multi_slide else 1
+    out, seen, frontier = [], {xpos}, [xpos]
+    for _ in range(max(1, int(depth))):
+        nxt = []
+        for c in frontier:
+            for d in DIRECTIONS:
+                dest = slide(c, d, frozenset(), wr, wd, size)
+                if dest not in seen:
+                    seen.add(dest)
+                    out.append(dest)
+                    nxt.append(dest)
+        if not nxt:
+            break
+        frontier = nxt
+    return out
 
 
 def park_repairs(env, state, plan, fail_info, wr, wd, size, max_parks=1,
-                 pairwise=False, multi_slide=False):
+                 pairwise=False, multi_slide=False, park_depth=None):
     """Park-augmented variants of a complete plan whose strict realization
     failed. `fail_info` is the dict filled by `eval.realize.strict_moves`.
 
@@ -493,13 +499,15 @@ def park_repairs(env, state, plan, fail_info, wr, wd, size, max_parks=1,
                        if c not in (mover_color, x_color))
         if _slide_bfs(mover_cur, end, bl, wr, wd, size) is None:
             continue
-        dests1 = _park_dests(xpos, wr, wd, size)
+        dests1 = _park_dests(xpos, wr, wd, size,
+                             depth=(1 if park_depth is None else park_depth))
         survivors = [dest for dest in dests1
                      if _slide_bfs(mover_cur, end, bl | {dest},
                                    wr, wd, size) is not None]
         if not survivors and multi_slide:
-            survivors = [dest for dest in _park_dests(xpos, wr, wd, size,
-                                                      multi_slide=True)
+            survivors = [dest for dest in _park_dests(
+                             xpos, wr, wd, size,
+                             depth=(2 if park_depth is None else park_depth + 1))
                          if dest not in dests1
                          and _slide_bfs(mover_cur, end, bl | {dest},
                                         wr, wd, size) is not None]
@@ -518,9 +526,9 @@ def park_repairs(env, state, plan, fail_info, wr, wd, size, max_parks=1,
                             if c not in (mover_color, xc, yc))
             if _slide_bfs(mover_cur, end, bl2, wr, wd, size) is None:
                 continue
-            for dx in _park_dests(xpos, wr, wd, size, multi_slide=multi_slide):
-                for dy in _park_dests(ypos, wr, wd, size,
-                                      multi_slide=multi_slide):
+            _dep = park_depth if park_depth is not None else (2 if multi_slide else 1)
+            for dx in _park_dests(xpos, wr, wd, size, depth=_dep):
+                for dy in _park_dests(ypos, wr, wd, size, depth=_dep):
                     if dx == dy:
                         continue
                     if _slide_bfs(mover_cur, end, bl2 | {dx, dy},

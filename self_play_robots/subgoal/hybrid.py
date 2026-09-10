@@ -49,13 +49,19 @@ from spr import RESULTS, SV
 _G = {}
 
 
-def _init(config, vocab, b0, b_sub, top_m, hmode, frontier):
+def _init(config, vocab, b0, b_sub, top_m, hmode, frontier, park_cap=2,
+          time_cap=1e9, park_depth=None, lean=False, slack=0.0):
     sys.path.insert(0, str(SV))
     from GridEnv import GridEnv
+    loader = GridEnv.from_env
+    if lean:
+        from nn_labeler import leanboard
+        loader = leanboard.from_env      # same (env, _) shape, lazy tables
     from skeleton.astar import AStar
     from skeleton import heuristics
-    _G.update(GridEnv=GridEnv, vocab=vocab, b0=b0, b_sub=b_sub, top_m=top_m,
-              hmode=hmode, envs={}, frontier=frontier,
+    _G.update(GridEnv=GridEnv, loader=loader, vocab=vocab, b0=b0, b_sub=b_sub, top_m=top_m,
+              hmode=hmode, envs={}, frontier=frontier, park_cap=park_cap,
+              time_cap=time_cap, park_depth=park_depth, slack=slack,
               solver=AStar(propose=heuristics.propose_b1 if vocab in ("b1", "b2")
                            else heuristics.propose,
                            max_iters=max(b0, b_sub), max_frontier=frontier,
@@ -76,7 +82,8 @@ def _finish(env, st, iters):
     """Old vocabulary, bounded. Returns (strict_moves or None, iterations spent)."""
     from spr.ceiling import probe
     r = probe(env, st, _G["solver"], _G["vocab"], iters, _G["frontier"],
-              time_cap=1e9, park_cap=2)
+              time_cap=_G["time_cap"], park_cap=_G["park_cap"],
+              park_depth=_G["park_depth"], slack=_G["slack"])
     return r["best_realizable_moves"], r["iters"]
 
 
@@ -89,7 +96,7 @@ def _work(item):
 
     env = _G["envs"].get(inst["env_id"])
     if env is None:
-        env, _ = _G["GridEnv"].from_env(inst["env_id"])
+        env, _ = _G["loader"](inst["env_id"])
         _G["envs"].clear(); _G["envs"][inst["env_id"]] = env
     size = _board_size(env.grid_data, None)
     wr, wd = wall_sets(env.grid_data, size)
@@ -103,9 +110,11 @@ def _work(item):
     best = (m0, 0, None, None) if m0 is not None else None
 
     # 2. enumerate macro moves, 3. rank them
-    H = relaxed_h(goal, wr, wd, size) if _G["hmode"] == "relaxed" else None
     cands = []
-    for r in range(len(pos)):
+    H = None
+    if _G["top_m"] > 0:
+        H = relaxed_h(goal, wr, wd, size) if _G["hmode"] == "relaxed" else None
+    for r in (range(len(pos)) if _G["top_m"] > 0 else ()):
         blockers = frozenset(pos[j] for j in range(len(pos)) if j != r)
         for cell, (cost, _d, _p) in rest_cells(pos[r], blockers, wr, wd, size).items():
             child = pos[:r] + (cell,) + pos[r + 1:]
@@ -154,7 +163,18 @@ def main(argv=None):
     p.add_argument("--b0", type=int, default=400, help="iterations for the start-position finish")
     p.add_argument("--b-sub", type=int, default=200, help="iterations per prefix finish")
     p.add_argument("--top-m", type=int, default=8, help="how many prefixes get a finish")
-    p.add_argument("--frontier", type=int, default=100_000)
+    p.add_argument("--frontier", type=int, default=100_000,
+                   help="plans held per search; the dominant memory cost, and\n                        the reason a large board needs this lowered")
+    p.add_argument("--slack", type=float, default=0.0,
+                   help="keep popping until the abstract cost exceeds the best\n                        realized count by this much. 0 stops at the first plan\n                        that plays out, which is why repairs rarely fire.")
+    p.add_argument("--lean", action="store_true",
+                   help="load boards through nn_labeler.leanboard, whose lazy\n                        distance oracle avoids GridEnv.from_env's O(G^4) table\n                        build. Measured: 749 s to load one 40x40 board the\n                        eager way, against 0.01 s to search it.")
+    p.add_argument("--park-depth", type=int, default=None,
+                   help="how many slides a blocking robot may take to step out\n                        of the way. None reproduces the recorded behaviour\n                        (1 slide, or 2 where the vocabulary enables it).")
+    p.add_argument("--time-cap", type=float, default=1e9,
+                   help="seconds per finish call. Without this one hard instance\n                        can hold a worker until the job is killed.")
+    p.add_argument("--park-cap", type=int, default=2,
+                   help="how many park repairs one plan may carry. The repair\n                        machinery already finds robots whose removal unblocks a\n                        failing slide and parks them out of the way; 2 is the\n                        recorded B2 setting and this raises the ceiling on it.")
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--idx-list", default=None,
                    help="comma-separated instance indices; runs only those, "
@@ -188,7 +208,9 @@ def main(argv=None):
     t0 = time.time(); rows = []
     ctx = mp.get_context("fork")
     with ctx.Pool(a.workers, initializer=_init,
-                  initargs=(a.config, a.vocab, a.b0, a.b_sub, a.top_m, a.h, a.frontier)) as pool:
+                  initargs=(a.config, a.vocab, a.b0, a.b_sub, a.top_m, a.h,
+                            a.frontier, a.park_cap, a.time_cap,
+                            a.park_depth, a.lean, a.slack)) as pool:
         for i, r in enumerate(pool.imap_unordered(_work, items, chunksize=2)):
             rows.append(r)
             if (i + 1) % 50 == 0 or i + 1 == len(items):
@@ -198,18 +220,23 @@ def main(argv=None):
     rows.sort(key=lambda r: r["idx"])
 
     graded = [r for r in rows if r["d_star"] is not None]
+    all_solved = [r for r in rows if r["solved"]]
     solved = [r for r in graded if r["solved"]]
     base = [r for r in graded if r["baseline_moves"] is not None]
     helped = [r for r in solved if (r["prefix_cost"] or 0) > 0]
     summary = dict(
-        n=len(rows), solved=len(solved),
+        n=len(rows),
+        # solve rate is the ladder's metric and must not depend on d* existing
+        solved=len(all_solved),
+        solve_rate=100.0 * len(all_solved) / max(1, len(rows)),
+        n_graded=len(graded), solved_graded=len(solved),
         optimal=sum(1 for r in solved if r["extra"] == 0),
-        pct_optimal_of_all=100.0 * sum(1 for r in solved if r["extra"] == 0) / max(1, len(graded)),
+        pct_optimal_of_graded=(100.0 * sum(1 for r in solved if r["extra"] == 0) / len(graded)) if graded else None,
         mean_extra=(sum(r["extra"] for r in solved) / len(solved)) if solved else None,
         baseline_solved=len(base),
         baseline_optimal=sum(1 for r in base if r["baseline_moves"] == r["d_star"]),
         baseline_mean_extra=(sum(r["baseline_moves"] - r["d_star"] for r in base) / len(base)) if base else None,
-        n_helped_by_prefix=len(helped),
+        n_helped_by_prefix=sum(1 for r in all_solved if (r["prefix_cost"] or 0) > 0),
         mean_iters=sum(r["iters"] for r in rows) / len(rows),
         median_iters=sorted(r["iters"] for r in rows)[len(rows) // 2],
         mean_subsearches=sum(r["subsearches"] for r in rows) / len(rows),
@@ -224,6 +251,8 @@ def main(argv=None):
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(dict(
         config=a.config, vocab=a.vocab, h=a.h, b0=a.b0, b_sub=a.b_sub,
+        park_cap=a.park_cap, time_cap=a.time_cap, park_depth=a.park_depth,
+        lean=a.lean, slack=a.slack,
         top_m=a.top_m, instances=str(ip), slurm_job_id=os.environ.get("SLURM_JOB_ID"),
         date=time.strftime("%Y-%m-%dT%H:%M:%S"), summary=summary, rows=rows), indent=1) + "\n")
     print(f"SPR HYBRID DONE {out}")

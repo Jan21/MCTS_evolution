@@ -592,7 +592,9 @@ class Search:
     def row(self):
         seq = self.sequence()
         r = dict(idx=self.idx, env_id=self.env_id,
-                 d_star=int(self.inst.get("d_star", -1)),
+                 # ladder instances carry d_star=None (present, not absent),
+                 # so the .get default never fired and int(None) raised
+                 d_star=int(self.inst.get("d_star") or -1),
                  expansions=self.expansions, h_queries=self.h_queries,
                  h_candidates=self.h_cands, seconds=round(self.seconds, 3),
                  stop_reason=self.reason, bound_skips=self.bound_skips,
