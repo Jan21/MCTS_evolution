@@ -3,7 +3,7 @@
 #SBATCH --partition=qgpu_exp
 #SBATCH --nodes=1
 #SBATCH --gpus=1
-#SBATCH --time=00:50:00
+#SBATCH --time=00:58:00
 #SBATCH --output=/scratch/project/open-37-42/janhula/mcts_stage5_probe/runs/scale-%x-s%a-%A.out
 #SBATCH --array=0-0
 set -uo pipefail

@@ -208,7 +208,10 @@ def main(argv=None):
             row["realized_abstract"] = ab
             row["realized_strict"] = stx
             row["solved"] = stx is not None
-            row["regret"] = None if stx is None or placeholder else stx - d_star
+            # per instance, not per file: ladder files mix a few graded
+            # instances with many ungraded ones (d_star None)
+            row["regret"] = (None if stx is None or placeholder or d_star is None
+                             else stx - d_star)
         if a.dump_moves and row["solved"]:
             row["moves"] = moves_cache[id(plan)]
         row["accounting"] = acct

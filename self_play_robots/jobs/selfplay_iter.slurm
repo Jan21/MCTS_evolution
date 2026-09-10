@@ -22,11 +22,11 @@
 #SBATCH --gpus 1
 #SBATCH --nodes=1
 #SBATCH --time=16:00:00
-#SBATCH --output=/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/%x-%j.out
+#SBATCH --output=/scratch/project/open-37-42/janhula/mcts_stage5_probe/runs/%x-%j.out
 set -uo pipefail
 ml purge
 ml Python/3.11.5-GCCcore-13.2.0
-REPO=/scratch/project/open-37-42/petrhyner/MCTS_evolution
+REPO=/scratch/project/open-37-42/janhula/mcts_stage5_probe
 source /scratch/project/open-37-42/petrhyner/venv/bin/activate
 cd "$REPO/self_play_robots"
 export PYTHONPATH="$REPO/supervised_valuenet:$REPO/self_play_robots" PYTHONUNBUFFERED=1 OMP_NUM_THREADS=2
