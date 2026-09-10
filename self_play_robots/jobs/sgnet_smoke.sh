@@ -18,9 +18,9 @@ from scaling.configs import get, env
 for k,v in env(get('$CFG')).items(): print(f'export {k}={v}')")"
 export RR_GRID RR_ROBOTS RR_WALLS RR_ENV_DIR
 echo "RR_GRID=$RR_GRID RR_ROBOTS=$RR_ROBOTS RR_ENV_DIR=$RR_ENV_DIR"
-head -${LIM:-8} "$REPO/supervised_valuenet/scaling/data/$CFG/ladder.jsonl" > /tmp/sg_${CFG}_${LIM}.jsonl
+OFF=${OFF:-0}; sed -n "$((OFF+1)),$((OFF+LIM))p" "$REPO/supervised_valuenet/scaling/data/$CFG/ladder.jsonl" > /tmp/sg_${CFG}_${LIM}_${OFF}.jsonl
 mkdir -p results/subgoal/sgnet
-python -m spr.bench --instances /tmp/sg_${CFG}_${LIM}.jsonl --policy "$POL" --value "$VAL" \
+python -m spr.bench --instances /tmp/sg_${CFG}_${LIM}_${OFF}.jsonl --policy "$POL" --value "$VAL" \
   --search arena_astar --vocab b2 --anytime --expansions 1200 --k 5 \
   --boards lean --device cuda --dump-moves \
-  --out results/subgoal/sgnet/${CFG}_${LIM}.json 2>&1 | grep -vE "^W0|UserWarning" | tail -12
+  --out results/subgoal/sgnet/${CFG}_${LIM}_${OFF}.json 2>&1 | grep -vE "^W0|UserWarning" | tail -12
