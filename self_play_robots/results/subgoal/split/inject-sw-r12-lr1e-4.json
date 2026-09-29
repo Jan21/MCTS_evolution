@@ -1,0 +1,44 @@
+{
+ "variant": "inject",
+ "steps": 25000,
+ "d": 192,
+ "static_rec": 12,
+ "head_layers": 2,
+ "train_decisions": 2038,
+ "train_seconds": 993.6,
+ "params": 1725216,
+ "val": {
+  "mae": 5.115334615182295,
+  "spearman": 0.36954903762850494,
+  "top1": 0.4811320754716981,
+  "decisions": 318
+ },
+ "baseline": {
+  "mae": 3.4531647879223115,
+  "spearman": 0.6624695587811373,
+  "top1": 0.7735849056603774,
+  "decisions": 318
+ },
+ "timing": {
+  "16": {
+   "static_once_s": 0.0118,
+   "head_per_decision_s": 0.0012,
+   "tokens": 257
+  },
+  "32": {
+   "static_once_s": 0.0151,
+   "head_per_decision_s": 0.0039,
+   "tokens": 1025
+  },
+  "64": {
+   "static_once_s": 0.1069,
+   "head_per_decision_s": 0.0411,
+   "tokens": 4097
+  },
+  "96": {
+   "static_once_s": 0.4806,
+   "head_per_decision_s": 0.197,
+   "tokens": 9217
+  }
+ }
+}

@@ -60,7 +60,7 @@ def main(argv=None):
     p.add_argument("--vocab", choices=["base", "b1", "b2"], default="base",
                    help="plan language: b2 = propose_b1 + by-reference + park repairs "
                         "(the arena's --backward-anytime --backward-b2 --backward-byref)")
-    p.add_argument("--arch", choices=["sizefree", "persize"], default="sizefree",
+    p.add_argument("--arch", choices=["sizefree", "persize", "split"], default="sizefree",
                    help="net family: spr.nets size-free ckpts, or the per-size "
                         "PolicyTF/LoopedValueNet ckpts (train/*.py)")
     p.add_argument("--variant", default=None,

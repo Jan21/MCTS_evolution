@@ -377,13 +377,84 @@ class PerSizeValue:
 
 
 def load_policy(path, device="cpu", arch="sizefree"):
+    if str(path).endswith(".pt"):
+        return load_policy_student(path, device)
+    if arch == "split":            # split applies to the value net only
+        arch = "sizefree"
     if arch == "persize":
         from train.policy_tf import PolicyTF
         return PerSizePolicy(PolicyTF.load_from_checkpoint(path, map_location=device).to(device).eval())
     return SizeFreePolicyNet.load_from_checkpoint(path, map_location=device).to(device).eval()
 
 
+class SplitValue:
+    """spr.split_value's per-decision net (dec0 family) behind SizeFreeValueNet's
+    positional signature. One decision = one call: the shared context (every
+    channel but the candidate's own 2,3,4) is encoded once, each candidate is
+    a readout. `x` is the full 9-channel node_features of every candidate."""
+
+    def __init__(self, path, device="cpu"):
+        from spr.split_value import SplitValueNet, CAND_CH, SHARED_CH
+        sd = torch.load(path, map_location="cpu", weights_only=False)
+        variant = "dec0"
+        for k in sd:
+            if k.startswith("feat."): variant = "dec0f"
+        rec = 12
+        try:                                   # the harness writes <stem>.json next to the .pt
+            import json
+            from pathlib import Path
+            rec = int(json.load(open(Path(path).with_suffix(".json"))).get("static_rec", 12))
+        except Exception:
+            pass
+        print(f"[nets] split value {path.split('/')[-1]}: {variant}, {rec} rounds", flush=True)
+        self.net = SplitValueNet(variant, static_rec=rec).to(device).eval()
+        self.net.load_state_dict(sd)
+        self.cand = list(CAND_CH); self.shared = list(SHARED_CH)
+        self.bins = self.net.bins
+
+    @torch.no_grad()
+    def __call__(self, x, A_all, A_ind, n, key):
+        shared = x[:1].clone(); shared[:, :, self.cand] = 0.0
+        roles = x.clone(); roles[:, :, self.shared] = 0.0
+        return self.net(None, roles, A_all, A_ind, key, shared=shared)
+
+    def _value(self, logits):
+        return (F.softmax(logits, -1) * self.bins).sum(-1)
+
+    def to(self, dev):
+        self.net.to(dev); self.bins = self.net.bins
+        return self
+
+    def eval(self):
+        self.net.eval()
+        return self
+
+
+def load_policy_student(path, device="cpu"):
+    """A distilled proposer from spr.distill_policy (`policy_<s>+<k>.pt` with
+    its sidecar json): the teacher's shape with `k` rounds. Students with a
+    static part (s > 0) are not supported here (they need a per-board cache
+    in the search); the plain-k students showed the static part adds nothing."""
+    import json
+    from pathlib import Path
+    meta = json.load(open(Path(path).with_suffix(".json")))
+    if int(meta.get("s", 0)) != 0:
+        raise ValueError(f"{path}: student has {meta['s']} static rounds; only plain students load here")
+    k = int(meta["k"])
+    net = SizeFreePolicyNet(d_model=192, recurrence=k, heads=4, pe="none")
+    sd = torch.load(path, map_location="cpu", weights_only=False)
+    own = net.state_dict(); n = 0
+    for key in own:
+        if key in sd and sd[key].shape == own[key].shape:
+            own[key] = sd[key]; n += 1
+    net.load_state_dict(own)
+    print(f"[nets] proposer student {Path(path).name}: {k} rounds, {n}/{len(own)} tensors loaded", flush=True)
+    return net.to(device).eval()
+
+
 def load_value(path, device="cpu", arch="sizefree"):
+    if arch == "split" or str(path).endswith(".pt"):
+        return SplitValue(path, device)
     if arch == "persize":
         from train.looped_pc import LoopedValueNet
         return PerSizeValue(LoopedValueNet.load_from_checkpoint(path, map_location=device).to(device).eval())

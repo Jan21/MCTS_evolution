@@ -79,6 +79,14 @@ def geometry_features(A_all, A_ind, n):
 # the models
 # ---------------------------------------------------------------------------
 
+# node_features channels: 0 seg_start, 1 seg_end, 2 cand_bottleneck, 3 cand_support,
+# 4 cand_helper, 5 all helper robots, 6-8 partial-plan context. Within ONE decision
+# every candidate shares 0,1,5,6,7,8 and differs only in 2,3,4.
+CAND_CH = (2, 3, 4)
+SHARED_CH = (0, 1, 5, 6, 7, 8)
+_shared_mismatch = [0]
+
+
 class StaticEncoder(nn.Module):
     """Looped transformer over the slide graph, geometry channels in, one
     embedding per cell out. Run ONCE per board."""
@@ -96,17 +104,23 @@ class StaticEncoder(nn.Module):
 
 
 class Readout(nn.Module):
-    def __init__(self, d):
+    """The reference net's readout: gather the 5 decision-defining cells (the
+    project's `encode.key_indices`: segment start/end, candidate bottleneck,
+    support, helper) and concatenate. A pooled readout dilutes the candidate
+    among every marked cell and was measurably worse."""
+    def __init__(self, d, extra=0):
         super().__init__()
-        self.mlp = nn.Sequential(nn.Linear(2 * d, d), nn.GELU(), nn.Linear(d, d),
+        self.mlp = nn.Sequential(nn.Linear(5 * d + extra, d), nn.GELU(), nn.Linear(d, d),
                                  nn.GELU(), nn.Linear(d, NUM_BINS))
+        if extra:   # the extra input columns start at zero: step 0 ignores them
+            with torch.no_grad():
+                self.mlp[0].weight[:, 5 * d:].zero_()
 
-    def forward(self, tok, mask):
-        # mean + max over valid tokens
-        m = mask.unsqueeze(-1).float()
-        mean = (tok * m).sum(1) / m.sum(1).clamp(min=1)
-        mx = tok.masked_fill(~mask.unsqueeze(-1), -1e4).max(1).values
-        return self.mlp(torch.cat([mean, mx], -1))
+    def forward(self, five, extra=None):                          # [B,5,d], [B,extra]
+        h = five.reshape(five.shape[0], -1)
+        if extra is not None:
+            h = torch.cat([h, extra], -1)
+        return self.mlp(h)
 
 
 class SmallTransformer(nn.Module):
@@ -120,35 +134,132 @@ class SmallTransformer(nn.Module):
         return self.tf(tok, src_key_padding_mask=~mask)
 
 
+PAIR_H = 8   # BFS horizon in slide moves; beyond it a pair is "unreached"
+
+
+def slide_pair_features(key, A, H=PAIR_H):
+    """[B,5] key cells, [N+1,N+1] slide adjacency (rows: from, cols: to) ->
+    [B, 40]: for the 20 ordered pairs (i != j) of key cells, the directed
+    slide-graph distance from key_i to key_j as d/H (clipped) and an
+    unreached flag. Exact BFS in H masked matmuls, shared by every candidate."""
+    B, K = key.shape
+    N1 = A.shape[0]
+    Ab = (A > 0).to(A.dtype)
+    reach = F.one_hot(key, N1).to(A.dtype)                        # [B,K,N1]
+    dist = torch.full((B, K, N1), float(H + 1), device=A.device, dtype=A.dtype)
+    dist = torch.where(reach > 0, torch.zeros_like(dist), dist)
+    for h in range(1, H + 1):
+        nxt = (torch.matmul(reach, Ab) > 0).to(A.dtype)
+        newly = (nxt > 0) & (dist > H)
+        dist = torch.where(newly, torch.full_like(dist, float(h)), dist)
+        reach = nxt
+    idx = key.unsqueeze(1).expand(B, K, K)                          # [B,K,K]: dist[b,i,key[b,j]]
+    dp = dist.gather(2, idx)                                        # [B,K,K]
+    off = ~torch.eye(K, dtype=torch.bool, device=A.device)
+    dp = dp[:, off].reshape(B, K * (K - 1))                         # [B,20]
+    return torch.cat([(dp / H).clamp(max=1.0), (dp > H).to(A.dtype)], -1)
+
+
 class SplitValueNet(nn.Module):
     """variant in {sparse, reach, inject}."""
-    def __init__(self, variant, d=192, heads=4, static_rec=4, head_layers=2):
+    def __init__(self, variant, d=192, heads=4, static_rec=4, head_layers=2, dyn_steps=1):
         super().__init__()
         self.variant = variant
-        self.static = StaticEncoder(d, heads, static_rec)
+        self.dyn_steps = dyn_steps            # dec1: candidate-aware masked hops after the shared encoding
+        # dec0 / dec1: PER-DECISION encode once. The shared context (segment,
+        # robots, plan context; the same channels the policy reads) goes through
+        # the full looped encoder once per decision; each candidate then costs a
+        # readout (dec0) or one masked looped step with its 3 candidate channels
+        # injected (dec1). No per-board static encoder at all.
+        self.static = None if variant.startswith("dec") else StaticEncoder(d, heads, static_rec)
         self.role = nn.Linear(ROLE_CH, d)
-        if variant == "inject":
+        if variant in ("mono", "dec0", "dec0f", "dec0g", "dec1"):
+            # the reference net's encoder: roles in, looped layer over all cells
+            self.mono_enc = nn.Linear(ROLE_CH, d)
+            self.mono_layer = LoopedLayer(d, heads, use_global=True)
+            self.mono_rec = static_rec
+        if variant in ("inject", "dec1"):
             self.dyn = LoopedLayer(d, heads, use_global=True)     # ONE masked step
-        else:
+        elif variant in ("sparse", "reach"):
             self.dyn = SmallTransformer(d, heads, head_layers)
-        self.readout = Readout(d)
+        else:
+            self.dyn = None
+        self.readout = Readout(d, extra=40 if variant == "dec0g" else 0)
+        if variant == "dec0f":
+            # candidate geometry side path: zero-init last layer, so step 0 == dec0
+            self.feat = nn.Sequential(nn.Linear(40, d), nn.GELU(), nn.Linear(d, NUM_BINS))
+            nn.init.zeros_(self.feat[-1].weight); nn.init.zeros_(self.feat[-1].bias)
         self.register_buffer("bins", torch.arange(NUM_BINS, dtype=torch.float32))
 
-    def forward(self, G, roles, A_all, A_ind, tok_idx=None, tok_mask=None):
-        """G: static embeddings [B,N+1,d] (precomputed once per board).
-        roles: [B,N+1,ROLE_CH]. tok_idx/tok_mask: [B,T] token selection for the
-        sparse/reach variants."""
+    def forward(self, G, roles, A_all, A_ind, key, tok_idx=None, tok_mask=None, shared=None):
+        """G: static embeddings [B,N+1,d] (once per board). roles: [B,N+1,9].
+        key: [B,5] the readout cells. tok_idx/tok_mask: [B,T] token selection for
+        sparse/reach, whose first five tokens ARE the key cells."""
+        b = torch.arange(roles.shape[0], device=roles.device).unsqueeze(1)
+        if self.variant in ("dec0", "dec0f", "dec0g", "dec1"):
+            X = self.mono_enc(shared)                             # [1,N+1,d], once per decision
+            for _ in range(self.mono_rec):
+                X = self.mono_layer(X, A_all[:1], A_ind[:1])
+            X = X.expand(roles.shape[0], -1, -1)
+            if self.variant == "dec1":
+                H = X + self.role(roles)                          # roles: candidate channels only
+                for _ in range(self.dyn_steps):
+                    H = self.dyn(H, A_all, A_ind)
+                return self.readout(H[b, key])
+            if self.variant == "dec0f":
+                return self.readout(X[b, key]) + self.feat(slide_pair_features(key, A_all[0]))
+            if self.variant == "dec0g":
+                return self.readout(X[b, key], slide_pair_features(key, A_all[0]))
+            return self.readout(X[b, key])
+        if self.variant == "mono":
+            X = self.mono_enc(roles)
+            for _ in range(self.mono_rec):
+                X = self.mono_layer(X, A_all, A_ind)
+            return self.readout(X[b, key])
         H = G + self.role(roles)
         if self.variant == "inject":
             H = self.dyn(H, A_all, A_ind)
-            return self.readout(H, torch.ones(H.shape[:2], dtype=torch.bool, device=H.device))
-        b = torch.arange(H.shape[0], device=H.device).unsqueeze(1)
+            return self.readout(H[b, key])
         tok = H[b, tok_idx]                                       # [B,T,d]
         tok = self.dyn(tok, tok_mask)
-        return self.readout(tok, tok_mask)
+        return self.readout(tok[:, :5])
+
+    def warm_start(self, ckpt):
+        """Copy the baseline's weights into every component with a matching shape:
+        the looped layer (static encoder and the inject/mono layers), the 9->d
+        role/input encoder, and the 5-cell readout head, which is the same shape.
+        Cold training of this family collapses to the label marginal (the
+        project's FINDINGS 50/57: 7 of 8 cold runs); its own loop always warm-starts."""
+        sd = torch.load(ckpt, map_location="cpu", weights_only=False)["state_dict"]
+        own = self.state_dict(); n_copied = 0
+        for k, v in own.items():
+            src = None
+            if k.startswith("static.layer."):      src = "layer." + k[len("static.layer."):]
+            elif k.startswith("mono_layer."):      src = "layer." + k[len("mono_layer."):]
+            elif k.startswith("dyn.") and self.variant in ("inject", "dec1"): src = "layer." + k[len("dyn."):]
+            elif k.startswith("role."):            src = "enc." + k[len("role."):]
+            elif k.startswith("mono_enc."):        src = "enc." + k[len("mono_enc."):]
+            elif k.startswith("readout.mlp."):     src = "head." + k[len("readout.mlp."):]
+            if src in sd and sd[src].shape == v.shape:
+                own[k] = sd[src].clone(); n_copied += 1
+            elif src in sd and k == "readout.mlp.0.weight" and sd[src].shape[0] == v.shape[0]:
+                w = torch.zeros_like(v); w[:, :sd[src].shape[1]] = sd[src]      # dec0g: widened first layer
+                own[k] = w; n_copied += 1
+        self.load_state_dict(own)
+        return n_copied
 
     def ctg_hat(self, logits):
         return (F.softmax(logits, -1) * self.bins).sum(-1)
+
+
+def rank_loss(cost, opt):
+    """The reference net's `_rank` for ONE group: a softmax over -cost across the
+    candidates, with the target mass spread over the optimal ones. This is what
+    trains within-group ORDER, which the classification loss alone does not."""
+    o = opt.float()
+    if o.sum() == 0:
+        return cost.sum() * 0
+    return -(o / o.sum() * F.log_softmax(-cost, 0)).sum()
 
 
 def hl_gauss(ctg, sigma=1.0):
@@ -163,17 +274,21 @@ def hl_gauss(ctg, sigma=1.0):
 # data: reuse the project's corpus loader; add geometry + token selection
 # ---------------------------------------------------------------------------
 
-def token_indices(roles_np, A_all, n, variant, cap=512):
-    """Which cells the per-decision head sees. sparse: marked cells. reach: marked
-    cells plus their one-slide walls-only neighbours. Always includes the global
-    row (index n*n)."""
+def token_indices(key, roles_np, A_all, n, variant, cap=512):
+    """Which cells the per-decision head sees, with the 5 readout cells FIRST so
+    the readout can take tok[:, :5]. sparse: + the other marked cells. reach: +
+    every cell one walls-only slide from any marked cell. Global row last."""
     N = n * n
-    marked = np.flatnonzero(roles_np[:N].sum(1) > 0)
+    key = [int(k) for k in key]
+    marked = [int(i) for i in np.flatnonzero(roles_np[:N].sum(1) > 0) if int(i) not in key]
+    extra = []
     if variant == "reach":
-        nb = np.flatnonzero(A_all[marked, :N].sum(0) > 0) if len(marked) else np.array([], int)
-        marked = np.unique(np.concatenate([marked, nb]))
-    idx = np.concatenate([marked, [N]])[:cap]
-    return idx
+        seeds = np.array(key + marked, int)
+        seeds = seeds[seeds < N]
+        nb = np.flatnonzero(A_all[seeds, :N].sum(0) > 0) if len(seeds) else np.array([], int)
+        extra = [int(i) for i in nb if int(i) not in key and int(i) not in marked]
+    idx = key + marked + extra + [N]
+    return np.array(idx[:cap], np.int64)
 
 
 def load_groups(data_specs, splits_spec, split):
@@ -220,15 +335,25 @@ def make_batch(group, variant, geo: GeoCache, max_per_group=32, rng=None):
     g = [r for r in g if r["_env_dir"] == env_dir]          # one board per decision
     A_all, A_ind, gf = geo.get(env_dir, g[0]["env_id"], n)
     roles = np.stack([nn_encode.node_features(r, n) for r in g])            # [B,N+1,9]
+    keys = np.array([[int(i) for i in nn_encode.key_indices(r, n)] for r in g], np.int64)  # [B,5]
     ctg = np.array([float(r["cost_to_go"]) for r in g], np.float32)
     opt = np.array([bool(r.get("is_optimal", False)) for r in g])
-    out = dict(n=n, env_id=int(g[0]["env_id"]),
+    shared = roles[:1].copy(); shared[:, :, list(CAND_CH)] = 0.0                 # [1,N+1,9]
+    if (roles[:, :, list(SHARED_CH)] != roles[:1, :, list(SHARED_CH)]).any():
+        _shared_mismatch[0] += 1
+        if _shared_mismatch[0] in (1, 10, 100):
+            print(f"[split] WARNING shared channels differ within a decision ({_shared_mismatch[0]} groups so far)", flush=True)
+    roles_in = roles
+    if variant.startswith("dec"):
+        roles_in = roles.copy(); roles_in[:, :, list(SHARED_CH)] = 0.0             # candidate channels only
+    out = dict(n=n, env_id=int(g[0]["env_id"]), shared=torch.from_numpy(shared),
                geo=torch.from_numpy(gf).unsqueeze(0),                        # [1,N+1,6]
                A_all=torch.from_numpy(A_all).unsqueeze(0), A_ind=torch.from_numpy(A_ind).unsqueeze(0),
-               roles=torch.from_numpy(roles), ctg=torch.from_numpy(ctg),
+               roles=torch.from_numpy(roles_in), roles_full=torch.from_numpy(roles),
+               key=torch.from_numpy(keys), ctg=torch.from_numpy(ctg),
                opt=torch.from_numpy(opt))
-    if variant != "inject":
-        idxs = [token_indices(roles[i], A_all, n, variant) for i in range(len(g))]
+    if variant in ("sparse", "reach"):
+        idxs = [token_indices(keys[i], roles[i], A_all, n, variant) for i in range(len(g))]
         T = max(len(i) for i in idxs)
         ti = np.zeros((len(g), T), np.int64); tm = np.zeros((len(g), T), bool)
         for i, ix in enumerate(idxs):
@@ -244,6 +369,10 @@ def make_batch(group, variant, geo: GeoCache, max_per_group=32, rng=None):
 def run_model(net, b, dev, G_cache):
     """Static encoder once per board (cached), head per candidate."""
     key = (b["env_id"], b["n"])
+    if net.variant in ("dec0", "dec0f", "dec0g", "dec1"):
+        B = b["roles"].shape[0]
+        A_all = b["A_all"].to(dev).expand(B, -1, -1); A_ind = b["A_ind"].to(dev).expand(B, -1, -1)
+        return net(None, b["roles"].to(dev), A_all, A_ind, b["key"].to(dev), shared=b["shared"].to(dev))
     if key not in G_cache:
         with torch.set_grad_enabled(net.training):
             G_cache[key] = net.static(b["geo"].to(dev), b["A_all"].to(dev), b["A_ind"].to(dev))
@@ -253,9 +382,10 @@ def run_model(net, b, dev, G_cache):
     B = b["roles"].shape[0]
     G = G.expand(B, -1, -1)
     A_all = b["A_all"].to(dev).expand(B, -1, -1); A_ind = b["A_ind"].to(dev).expand(B, -1, -1)
-    if net.variant == "inject":
-        return net(G, b["roles"].to(dev), A_all, A_ind)
-    return net(G, b["roles"].to(dev), A_all, A_ind, b["tok_idx"].to(dev), b["tok_mask"].to(dev))
+    key = b["key"].to(dev)
+    if net.variant in ("inject", "mono"):
+        return net(G, b["roles"].to(dev), A_all, A_ind, key)
+    return net(G, b["roles"].to(dev), A_all, A_ind, key, b["tok_idx"].to(dev), b["tok_mask"].to(dev))
 
 
 def group_metrics(pred, ctg, opt):
@@ -290,23 +420,21 @@ def evaluate(net, groups, variant, geo, dev):
 
 
 def evaluate_baseline(ckpt, groups, geo, dev):
-    """The current size-free value net on the same groups, same metrics."""
+    """The current size-free value net on the same groups, same metrics, built
+    with the project's own collate (5-cell readout key included) so it is called
+    exactly as training and the planner call it."""
     from spr.nets import load_value
-    from nn_labeler.model import LoopedValueNet  # noqa
+    from nn_labeler.model import collate_groups
     vn = load_value(ckpt, dev, "sizefree")
-    net = getattr(vn, "net", vn)
-    net.eval(); maes, rhos, top1s = [], [], []
+    net = getattr(vn, "net", vn); net.eval()
+    maes, rhos, top1s = [], [], []
     with torch.no_grad():
         for g in groups:
-            n = g[0]["_n"]; A_all, A_ind, _ = geo.get(g[0]["_env_dir"], g[0]["env_id"], n)
-            x = torch.from_numpy(np.stack([nn_encode.node_features(r, n) for r in g])).to(dev)
-            Aa = torch.from_numpy(A_all).unsqueeze(0).expand(len(g), -1, -1).to(dev)
-            Ai = torch.from_numpy(A_ind).unsqueeze(0).expand(len(g), -1, -1).to(dev)
-            try:
-                logits = net(x, Aa, Ai, n)
-            except TypeError:
-                logits = net(x, Aa, Ai)
-            pred = net.ctg_hat(logits).float().cpu().numpy() if hasattr(net, "ctg_hat") else \
+            n = g[0]["_n"]
+            b = collate_groups([g], nn_encode.node_features, nn_encode.adjacency,
+                               nn_encode.key_indices)
+            logits = net(b["x"].to(dev), b["A_all"].to(dev), b["A_ind"].to(dev), n, b["key"].to(dev))
+            pred = net._value(logits).float().cpu().numpy() if hasattr(net, "_value") else \
                 (F.softmax(logits, -1) * torch.arange(logits.shape[-1], device=dev)).sum(-1).cpu().numpy()
             ctg = np.array([float(r["cost_to_go"]) for r in g]); opt = np.array([bool(r.get("is_optimal", False)) for r in g])
             m, r_, t = group_metrics(pred, ctg, opt)
@@ -317,16 +445,23 @@ def evaluate_baseline(ckpt, groups, geo, dev):
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("--variant", choices=["sparse", "reach", "inject"], required=True)
+    p.add_argument("--variant", choices=["sparse", "reach", "inject", "mono", "dec0", "dec0f", "dec0g", "dec1"], required=True)
     p.add_argument("--data", action="append", required=True, metavar="CONFIG=PATH")
     p.add_argument("--splits", action="append", required=True)
+    p.add_argument("--extra-train", action="append", default=[], metavar="CONFIG=PATH",
+                   help="corpora added to TRAIN only (val stays the same decisions)")
     p.add_argument("--steps", type=int, default=3000)
     p.add_argument("--lr", type=float, default=3e-4)
     p.add_argument("--d", type=int, default=192)
     p.add_argument("--static-rec", type=int, default=4)
     p.add_argument("--head-layers", type=int, default=2)
+    p.add_argument("--dyn-steps", type=int, default=1, help="dec1: candidate-aware looped steps")
     p.add_argument("--eval-groups", type=int, default=400)
     p.add_argument("--baseline", default=None, help="current size-free value ckpt to compare against")
+    p.add_argument("--warm", action="store_true", help="warm-start matching components from --baseline")
+    p.add_argument("--rank-weight", type=float, default=1.0)
+    p.add_argument("--distill", type=float, default=0.0,
+                   help="weight of KL(student || baseline teacher logits) on every candidate")
     p.add_argument("--out", required=True)
     p.add_argument("--seed", type=int, default=0)
     a = p.parse_args(argv)
@@ -336,14 +471,30 @@ def main(argv=None):
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     geo = GeoCache()
     train = load_groups(a.data, a.splits, "train")
+    if a.extra_train:
+        extra = load_groups(a.extra_train, a.splits, "train")
+        print(f"[split:{a.variant}] extra train decisions {len(extra)} from {a.extra_train}", flush=True)
+        train = train + extra
     val = load_groups(a.data, a.splits, "val")
     rng.shuffle(val); val = val[:a.eval_groups]
     print(f"[split:{a.variant}] train decisions {len(train)}, val decisions {len(val)}, "
           f"sizes {sorted({g[0]['_n'] for g in train})}", flush=True)
 
-    net = SplitValueNet(a.variant, a.d, static_rec=a.static_rec, head_layers=a.head_layers).to(dev)
-    opt = torch.optim.AdamW(net.parameters(), lr=a.lr, weight_decay=1e-4)
-    sched = torch.optim.lr_scheduler.OneCycleLR(opt, a.lr, total_steps=a.steps, pct_start=0.1)
+    net = SplitValueNet(a.variant, a.d, static_rec=a.static_rec, head_layers=a.head_layers, dyn_steps=a.dyn_steps)
+    if a.warm and a.baseline:
+        print(f"[split:{a.variant}] warm-started {net.warm_start(a.baseline)} tensors from the baseline", flush=True)
+    net = net.to(dev)
+    teacher = None
+    if a.distill > 0:
+        from spr.nets import load_value
+        teacher = load_value(a.baseline, dev, "sizefree"); teacher = getattr(teacher, "net", teacher).eval()
+        for q in teacher.parameters(): q.requires_grad_(False)
+        print(f"[split:{a.variant}] distilling from the baseline, weight {a.distill}", flush=True)
+    # --steps 0: evaluate the (warm-started) net as built, no optimizer, no
+    # schedule. The step-0 check that the control reproduces the baseline.
+    if a.steps > 0:
+        opt = torch.optim.AdamW(net.parameters(), lr=a.lr, weight_decay=1e-4)
+        sched = torch.optim.lr_scheduler.OneCycleLR(opt, a.lr, total_steps=a.steps, pct_start=0.1)
     t0 = time.time(); losses = []
     net.train(); G_cache = {}
     for step in range(a.steps):
@@ -351,7 +502,15 @@ def main(argv=None):
         b = make_batch(g, a.variant, geo, rng=rng)
         G_cache.clear()                     # static encoder is trained, so no stale cache
         logits = run_model(net, b, dev, G_cache)
-        loss = -(hl_gauss(b["ctg"].to(dev)) * F.log_softmax(logits, -1)).sum(-1).mean()
+        ce = -(hl_gauss(b["ctg"].to(dev)) * F.log_softmax(logits, -1)).sum(-1).mean()
+        loss = a.rank_weight * rank_loss(net.ctg_hat(logits), b["opt"].to(dev)) + ce
+        if teacher is not None:
+            with torch.no_grad():
+                Bn = b["roles_full"].shape[0]
+                t_logits = teacher(b["roles_full"].to(dev), b["A_all"].to(dev).expand(Bn, -1, -1),
+                                   b["A_ind"].to(dev).expand(Bn, -1, -1), b["n"], b["key"].to(dev))
+            loss = loss + a.distill * F.kl_div(F.log_softmax(logits, -1), F.softmax(t_logits, -1),
+                                               reduction="batchmean")
         opt.zero_grad(); loss.backward()
         torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
         opt.step(); sched.step(); losses.append(loss.item())
@@ -359,7 +518,8 @@ def main(argv=None):
             print(f"[split:{a.variant}] step {step+1}/{a.steps} loss {np.mean(losses[-250:]):.4f} "
                   f"{time.time()-t0:.0f}s", flush=True)
 
-    res = dict(variant=a.variant, steps=a.steps, d=a.d, static_rec=a.static_rec,
+    res = dict(variant=a.variant, steps=a.steps, d=a.d, static_rec=a.static_rec, dyn_steps=a.dyn_steps,
+               distill=a.distill, extra_train=a.extra_train,
                head_layers=a.head_layers, train_decisions=len(train),
                train_seconds=round(time.time() - t0, 1),
                params=sum(p.numel() for p in net.parameters()))
@@ -399,7 +559,7 @@ def main(argv=None):
                 torch.cuda.synchronize() if dev == "cuda" else None
                 t_head = (time.time() - t0) / 5
                 timing[n] = dict(static_once_s=round(t_static, 4), head_per_decision_s=round(t_head, 4),
-                                 tokens=int(b["tok_mask"].sum(1).float().mean().item()) if "tok_mask" in b else N + 1)
+                                 tokens=int(b["tok_mask"].sum(1).float().mean().item()) if "tok_mask" in b else (5 if a.variant in ("dec0", "dec0f", "dec0g") else N + 1))
             except Exception as e:
                 timing[n] = dict(error=repr(e)[:80])
     res["timing"] = timing

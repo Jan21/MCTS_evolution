@@ -18,5 +18,6 @@ python -m spr.split_value --variant "$VARIANT" \
   --data g24r4=$B/buffer_g24r4.jsonl --data g32r4=$B/buffer_g32r4.jsonl \
   --splits "$(grep ^g24r4 $B/buffer_g24r4.jsonl.splits.txt)" \
   --splits "$(grep ^g32r4 $B/buffer_g32r4.jsonl.splits.txt)" \
-  --steps "${STEPS:-2500}" --eval-groups 400 --baseline "$VAL" \
-  --out results/subgoal/split/${VARIANT}.json
+  ${EXTRA8:+--extra-train g24r8=$B/buffer_g24r8.jsonl --splits "$(grep ^g24r8 $B/buffer_g24r8.jsonl.splits.txt)"} \
+  --steps "${STEPS:-2500}" --eval-groups 400 --baseline "$VAL" ${WARM:+--warm} ${EXTRA:-} \
+  --out results/subgoal/split/${VARIANT}${TAG:-}.json

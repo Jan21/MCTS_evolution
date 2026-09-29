@@ -1,0 +1,44 @@
+{
+ "variant": "dec0",
+ "steps": 25000,
+ "d": 192,
+ "static_rec": 12,
+ "head_layers": 2,
+ "train_decisions": 2038,
+ "train_seconds": 853.4,
+ "params": 984864,
+ "val": {
+  "mae": 4.174665680661114,
+  "spearman": 0.5474163643581687,
+  "top1": 0.6320754716981132,
+  "decisions": 318
+ },
+ "baseline": {
+  "mae": 3.4531647879223115,
+  "spearman": 0.6624695587811373,
+  "top1": 0.7735849056603774,
+  "decisions": 318
+ },
+ "timing": {
+  "16": {
+   "static_once_s": 0.0109,
+   "head_per_decision_s": 0.0105,
+   "tokens": 5
+  },
+  "32": {
+   "static_once_s": 0.0115,
+   "head_per_decision_s": 0.011,
+   "tokens": 5
+  },
+  "64": {
+   "static_once_s": 0.0658,
+   "head_per_decision_s": 0.0649,
+   "tokens": 5
+  },
+  "96": {
+   "static_once_s": 0.2828,
+   "head_per_decision_s": 0.2824,
+   "tokens": 5
+  }
+ }
+}

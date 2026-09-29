@@ -1,0 +1,49 @@
+{
+ "variant": "dec0",
+ "steps": 55000,
+ "d": 192,
+ "static_rec": 12,
+ "dyn_steps": 1,
+ "distill": 1.0,
+ "extra_train": [
+  "g24r8=/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/selfplay/mix_b2mix_iter3/buffer_g24r8.jsonl"
+ ],
+ "head_layers": 2,
+ "train_decisions": 3214,
+ "train_seconds": 3040.1,
+ "params": 984864,
+ "val": {
+  "mae": 4.015622425170642,
+  "spearman": 0.5423751089682208,
+  "top1": 0.6477987421383647,
+  "decisions": 318
+ },
+ "baseline": {
+  "mae": 3.4531647879223115,
+  "spearman": 0.6624695587811373,
+  "top1": 0.7735849056603774,
+  "decisions": 318
+ },
+ "timing": {
+  "16": {
+   "static_once_s": 0.011,
+   "head_per_decision_s": 0.0103,
+   "tokens": 5
+  },
+  "32": {
+   "static_once_s": 0.0114,
+   "head_per_decision_s": 0.0107,
+   "tokens": 5
+  },
+  "64": {
+   "static_once_s": 0.0655,
+   "head_per_decision_s": 0.065,
+   "tokens": 5
+  },
+  "96": {
+   "static_once_s": 0.2823,
+   "head_per_decision_s": 0.2818,
+   "tokens": 5
+  }
+ }
+}
