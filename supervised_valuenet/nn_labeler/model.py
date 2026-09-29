@@ -54,8 +54,12 @@ import os as _os
 try:
     from torch.nn.attention import sdpa_kernel as _sdpa_kernel, SDPBackend as _SDPB
     _USE_SDPA = _os.environ.get("RR_SDPA", "1") != "0"
+    _USE_AXIAL = _os.environ.get("RR_AXIAL", "0") == "1"   # exact row+column attention for the masked families
+    _AXIAL_MIN_N = int(_os.environ.get("RR_AXIAL_MIN_N", "48"))
 except Exception:                       # old torch: keep the dense path
     _USE_SDPA = False
+    _USE_AXIAL = False
+    _AXIAL_MIN_N = 48
 
 
 class LoopedLayer(nn.Module):
@@ -75,6 +79,10 @@ class LoopedLayer(nn.Module):
         q = q.view(B, K, self.h, self.dk).transpose(1, 2)      # [B,h,K,dk]
         k = k.view(B, K, self.h, self.dk).transpose(1, 2)
         v = v.view(B, K, self.h, self.dk).transpose(1, 2)
+        if _USE_AXIAL and A is not None and X.is_cuda:
+            n = int(round((K - 1) ** 0.5))
+            if n * n + 1 == K and n >= _AXIAL_MIN_N:   # below 48 the dense fused kernel is faster
+                return axial_head_fast(self.qkv[which], X, A, n, self.h, self.dk, _axial_masks_cached(A, n))
         if _USE_SDPA and X.is_cuda:
             # fused kernel: same masked softmax, no [B,h,K,K] fp32 tensor.
             # Boolean mask is 1 byte/entry and broadcasts over heads. A row
@@ -489,6 +497,80 @@ def axial_masks(A, n):
 # ---------------------------------------------------------------------------
 # flex_attention path (2026-09-10)
 # ---------------------------------------------------------------------------
+
+_AXIAL_CACHE = {}
+
+
+def _axial_masks_cached(A, n):
+    """Row/column masks per board, built once. Keyed by the adjacency tensor's
+    storage (the search caches A on the device per board) and kept alive
+    alongside it."""
+    import torch
+    if torch.is_grad_enabled():
+        # training: every step brings a fresh copy of A to the device; caching
+        # would pin those copies (1.4 GB each at 96x96) until the card is full
+        return axial_masks(A, n)
+    key = (A.data_ptr(), A.shape[0], n, str(A.device))
+    hit = _AXIAL_CACHE.get(key)
+    if hit is None or hit[0] is not A:
+        if len(_AXIAL_CACHE) > 16:
+            _AXIAL_CACHE.clear()
+        hit = _AXIAL_CACHE[key] = (A, axial_masks(A, n))
+    return hit[1]
+
+
+def axial_head_fast(qkv_lin, X, A, n, heads, dk, masks):
+    """`axial_head` with the scores as batched matrix products instead of a
+    broadcast product (which materialised [B,n,n,n,h,dk]). Same neighbour set,
+    same exact log-sum-exp merge of the row and column passes, same dense
+    treatment of the global token."""
+    import math, torch
+    import torch.nn.functional as F
+    B, K, d = X.shape
+    N = n * n
+    q, k, v = qkv_lin(X).chunk(3, -1)
+    scale = 1.0 / math.sqrt(dk)
+
+    def pass_(qq, kk, vv, m):
+        # qq, kk, vv: [B, L, n, h, dk] (L lines of n cells); m: [B, L, n, n] bool
+        s = torch.einsum("blqhd,blkhd->blhqk", qq, kk) * scale         # [B, L, h, q, k]
+        s = s.masked_fill(~m.unsqueeze(2), float("-inf"))
+        mx = s.amax(dim=-1, keepdim=True)                              # [B, L, h, q, 1]
+        e = torch.exp(s - torch.nan_to_num(mx, neginf=0.0))
+        e = torch.where(torch.isfinite(s), e, torch.zeros_like(e))
+        z = e.sum(dim=-1)                                              # [B, L, h, q]
+        o = torch.einsum("blhqk,blkhd->blqhd", e, vv)                  # [B, L, q, h, dk]
+        return o, mx.squeeze(-1), z
+
+    def split(t):
+        return t[:, :N].view(B, n, n, heads, dk)                       # [B, y, x, h, dk]
+
+    qb, kb, vb = split(q), split(k), split(v)
+    mrow, mcol = masks
+    orow, mxr, zr = pass_(qb, kb, vb, mrow)                            # rows: lines = y
+    qc, kc, vc = (t.transpose(1, 2) for t in (qb, kb, vb))             # columns: lines = x
+    ocol, mxc, zc = pass_(qc, kc, vc, mcol)
+    ocol = ocol.transpose(1, 2)                                        # [B, y, x, h, dk]
+    mxc = mxc.permute(0, 3, 1, 2); zc = zc.permute(0, 3, 1, 2)         # [B, x, h, y] -> [B, y, x, h]
+    # bring row stats to [B, y, x, h] as well
+    mxr = mxr.permute(0, 1, 3, 2); zr = zr.permute(0, 1, 3, 2)         # [B, y, h, x] -> [B, y, x, h]
+    M = torch.nan_to_num(torch.maximum(mxr, mxc), neginf=0.0)
+    ar = torch.exp(torch.nan_to_num(mxr, neginf=-1e30) - M)
+    ac = torch.exp(torch.nan_to_num(mxc, neginf=-1e30) - M)
+    num = orow * ar.unsqueeze(-1) + ocol * ac.unsqueeze(-1)
+    den = (zr * ar + zc * ac).clamp(min=1e-30)
+    o = (num / den.unsqueeze(-1)).reshape(B, N, heads * dk)
+    o = torch.nan_to_num(o, nan=0.0)
+    # the global scratchpad token: dense over everything it is allowed to see
+    gq = q[:, N:].view(B, 1, heads, dk)
+    gk = k.view(B, K, heads, dk); gv = v.view(B, K, heads, dk)
+    gm = A[:, N:, :].bool()
+    gs = torch.einsum("bqhd,bkhd->bhqk", gq, gk) * scale               # [B, h, 1, K]
+    gs = gs.masked_fill(~gm.unsqueeze(1), float("-inf"))
+    gw = torch.nan_to_num(F.softmax(gs, dim=-1), nan=0.0)
+    go = torch.einsum("bhqk,bkhd->bqhd", gw, gv).reshape(B, 1, heads * dk)
+    return torch.cat([o, go], 1)
+
 
 def segment_bounds(A, n):
     """From the dense adjacency, the four wall-bounded reach limits per cell.

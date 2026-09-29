@@ -64,20 +64,27 @@ def _hidx(state, helper_pos, helper_color=None):
     return None
 
 
-def _policy_logp(policy, group, dev, byref=False):
-    """{(bn,sp,helper_idx): AR logprob} for the decision's candidates.
+import os as _os
+from functools import lru_cache as _lru
 
-    `byref=True` propagates to `_meta`, which then keys helpers by robot
-    identity so by-reference candidates keep an entry in the returned map
-    instead of being silently dropped (they would otherwise fall to the
-    caller's -1e9 default and always rank last).
-    """
+@_lru(maxsize=64)
+def _adj_dev(env_id, dev):
+    """The board's two adjacency masks already on `dev`. The search used to
+    expand them to the candidate batch on the CPU and copy the expanded tensor
+    (5 x 9218 x 9218 floats, 1.7 GB, per value call at 96x96); expanding a
+    device tensor is a free view."""
+    A_all, A_ind = _adj(env_id)
+    return A_all.to(dev), A_ind.to(dev)
+
+
+def _policy_logp_loop(policy, group, dev, byref=False):
+    """The original readout, kept as the reference for RR_POLICY_CHECK."""
     m = _meta(group, byref=byref)
     if m is None:
         return None, None
     x = _pol_x(group[0]).unsqueeze(0).to(dev)
-    A_all, A_ind = _adj(group[0]["env_id"])
-    h = policy._encode(x, A_all.unsqueeze(0).to(dev), A_ind.unsqueeze(0).to(dev))[0]
+    A_all, A_ind = _adj_dev(group[0]["env_id"], dev)
+    h = policy._encode(x, A_all.unsqueeze(0), A_ind.unsqueeze(0))[0]
     g = policy.seg(torch.cat([h[m["seg_start"]], h[m["seg_end"]], h.mean(0)]))
     vbn = m["valid_bn"]
     bn_lp = torch.log_softmax(h[torch.tensor(vbn, device=dev)] @ policy.q_bn(g), 0)
@@ -94,13 +101,75 @@ def _policy_logp(policy, group, dev, byref=False):
     return out, m
 
 
+_CHECK = [int(_os.environ.get("RR_POLICY_CHECK", "0"))]
+
+
+def _policy_logp(policy, group, dev, byref=False):
+    """{(bn,sp,helper_idx): AR logprob} for the decision's candidates.
+
+    Same arithmetic as `_policy_logp_loop` (the three chained softmaxes read
+    off the cell embeddings), computed for every (bottleneck, support) pair in
+    a few batched products and brought to the CPU once, instead of one small
+    product and one device sync per candidate. RR_POLICY_CHECK=n compares the
+    two on the first n calls and prints the largest difference.
+
+    `byref=True` propagates to `_meta`, which then keys helpers by robot
+    identity so by-reference candidates keep an entry in the returned map
+    instead of being silently dropped (they would otherwise fall to the
+    caller's -1e9 default and always rank last).
+    """
+    m = _meta(group, byref=byref)
+    if m is None:
+        return None, None
+    x = _pol_x(group[0]).unsqueeze(0).to(dev)
+    A_all, A_ind = _adj_dev(group[0]["env_id"], dev)
+    h = policy._encode(x, A_all.unsqueeze(0), A_ind.unsqueeze(0))[0]        # [N+1, d]
+    g = policy.seg(torch.cat([h[m["seg_start"]], h[m["seg_end"]], h.mean(0)]))
+    vbn = m["valid_bn"]
+    pairs = [(bn, sp) for bn in vbn for sp in m["sup_by_bn"][bn]]
+    keys = [k for k in m["ctg_map"]]                                         # (bn, sp, hi)
+    if not keys:
+        return {}, m
+    bn_t = torch.tensor(vbn, device=dev)
+    Hb = h[bn_t]                                                              # [B, d]
+    bn_lp = torch.log_softmax(Hb @ policy.q_bn(g), 0)                         # [B]
+    # support log-probs: one product per bottleneck over its own support list
+    # (variable length), no host syncs inside the loop
+    sup_lp = {}
+    gB = g.unsqueeze(0).expand(len(vbn), -1)
+    Qs = policy.q_sup(torch.cat([gB, Hb], -1))                                # [B, d]
+    for i, bn in enumerate(vbn):
+        sl = m["sup_by_bn"][bn]
+        sup_lp[bn] = torch.log_softmax(h[torch.tensor(sl, device=dev)] @ Qs[i], 0)
+    # helper log-probs for every (bn, sp) pair at once
+    pb = torch.tensor([p[0] for p in pairs], device=dev)
+    ps = torch.tensor([p[1] for p in pairs], device=dev)
+    gP = g.unsqueeze(0).expand(len(pairs), -1)
+    Qh = policy.q_help(torch.cat([gP, h[pb], h[ps]], -1))                     # [P, d]
+    Hh = h[torch.tensor(m["helper_cells"], device=dev)]                       # [H, d]
+    hl = torch.log_softmax(Qh @ Hh.T, -1)                                     # [P, H]
+    pair_index = {p: i for i, p in enumerate(pairs)}
+    bn_index = {bn: i for i, bn in enumerate(vbn)}
+    sp_index = {bn: {sp: j for j, sp in enumerate(m["sup_by_bn"][bn])} for bn in vbn}
+    tot = torch.stack([bn_lp[bn_index[b]] + sup_lp[b][sp_index[b][sp]] + hl[pair_index[(b, sp)], hi]
+                       for (b, sp, hi) in keys])
+    vals = tot.tolist()                                                        # one host sync
+    out = {k: float(v) for k, v in zip(keys, vals)}
+    if _CHECK[0] > 0:
+        _CHECK[0] -= 1
+        ref, _ = _policy_logp_loop(policy, group, dev, byref)
+        diff = max(abs(out[k] - ref[k]) for k in ref) if ref else 0.0
+        print(f"[policy-check] {len(ref)} candidates, keys equal {set(out) == set(ref)}, max |diff| {diff:.2e}", flush=True)
+    return out, m
+
+
 def _value_cost(value, recs, dev):
     """Predicted cost-to-go per candidate record (masked looped value net)."""
     x = torch.stack([_val_x(r) for r in recs]).to(dev)
-    A_all, A_ind = _adj(recs[0]["env_id"])
+    A_all, A_ind = _adj_dev(recs[0]["env_id"], dev)
     B = x.shape[0]
-    b = dict(x=x, A_all=A_all.unsqueeze(0).expand(B, -1, -1).to(dev),
-             A_ind=A_ind.unsqueeze(0).expand(B, -1, -1).to(dev),
+    b = dict(x=x, A_all=A_all.unsqueeze(0).expand(B, -1, -1),
+             A_ind=A_ind.unsqueeze(0).expand(B, -1, -1),
              key=torch.stack([torch.tensor([_ix(r["cand_bottleneck"]), _ix(r["cand_support"]),
                                             _ix(r["cand_helper"][0]), _ix(r["seg_start"]),
                                             _ix(r["seg_end"])]) for r in recs]).to(dev))
