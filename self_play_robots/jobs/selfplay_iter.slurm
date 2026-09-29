@@ -29,7 +29,7 @@ ml Python/3.11.5-GCCcore-13.2.0
 REPO=/scratch/project/open-37-42/janhula/mcts_stage5_probe
 source /scratch/project/open-37-42/petrhyner/venv/bin/activate
 cd "$REPO/self_play_robots"
-export PYTHONPATH="$REPO/supervised_valuenet:$REPO/self_play_robots" PYTHONUNBUFFERED=1 OMP_NUM_THREADS=2
+export PYTHONPATH="$REPO/supervised_valuenet:$REPO/self_play_robots" PYTHONUNBUFFERED=1 OMP_NUM_THREADS=2 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 CFG="$1"; K="$2"; PPREV="$3"; VPREV="$4"; PREV_BENCH="${5:-}"
 BOARDS=${BOARDS:-120}; PER_BOARD=${PER_BOARD:-8}; EXP=${EXP:-600}; STOP=${STOP:-150}
 WORKERS=${WORKERS:-8}; WINDOW=${WINDOW:-3}; ANCHOR=${ANCHOR:-1}; EP_P=${EP_P:-6}; EP_V=${EP_V:-6}
@@ -38,6 +38,7 @@ VOCAB=${VOCAB:-base}          # base | b2 (extended language; FINDINGS §11): se
                               # run/result dirs, board ids from 8000, b2 arena flags,
                               # policy trained with --byref, NO base-vocab anchors
 TAGV=""; ID_BASE=5000; [ "$VOCAB" = b2 ] && { TAGV="_b2"; ID_BASE=8000; ANCHOR=0; }
+TAGV=${TAGV_OVERRIDE:-$TAGV}     # e.g. _b2c: a B2 round whose starting pair is another round (curriculum arm)
 IT="$REPO/runs/spr/selfplay/${CFG}${TAGV}_iter${K}"; RES="$REPO/self_play_robots/results/selfplay/${CFG}${TAGV}_iter${K}"
 mkdir -p "$IT" "$RES" "$REPO/runs/spr/boards"
 ID0=$((ID_BASE + BOARDS * (K - 1))); ID1=$((ID0 + BOARDS - 1))
@@ -104,12 +105,12 @@ train_one() {  # train_one <policy|value> <init> <epochs>
   if [ -f "$dir/DONE" ]; then echo "SPR ITER SKIP train $sys"; return 0; fi
   local resume=0; ls "$dir"/lightning_logs/version_*/checkpoints/last.ckpt >/dev/null 2>&1 && resume=1
   local extra=""
-  [ "$sys" = value ] && extra="--batch-size 4 --max-per-group 8"
-  [ "$sys" = policy ] && extra="--batch-size 8 --grad-clip 1.0"     # FINDINGS §4 recipe
+  [ "$sys" = value ] && extra="--batch-size ${VBS:-4} --max-per-group ${VMPG:-8}"   # VBS=2 at 64x64: 32 boards OOM on 40 GB
+  [ "$sys" = policy ] && extra="--batch-size ${PBS:-8} --grad-clip 1.0"     # FINDINGS §4 recipe; PBS=2 at 96x96 (memory)
   [ "$sys" = policy ] && [ "$VOCAB" = b2 ] && extra="$extra --byref"  # keep by-reference records
   local t0=$SECONDS
   RR_RESUME=$resume OMP_NUM_THREADS=16 python -m spr.train --system "$sys" $DATA --splits "$SPLITS" \
-      --init "$init" --epochs "$ep" --lr "$LR" $extra --torch-seed $((21 + K)) --num-workers 4 \
+      --init "$init" --epochs "$ep" --lr "$LR" $extra --torch-seed $((21 + K)) --num-workers ${NW:-4} \
       --device cuda --out-dir "$dir" || { echo "SPR ITER FAILED train $sys"; return 1; }
   touch "$dir/DONE"; echo "SPR ITER train $sys took $((SECONDS-t0))s"
 }

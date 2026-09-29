@@ -1,0 +1,294 @@
+{
+  "protocol": {
+    "expansions": 1200,
+    "k": 5,
+    "instances_file": "/tmp/sg_g96r4_2_6.jsonl",
+    "instances_sha256": "e9b2ae4b9230e73203feb14364c0edcb6c629554454eb30fd6f35fa427cc2f97",
+    "n_instances": 2,
+    "instances_meta": null,
+    "checkpoints": {
+      "/scratch/project/open-37-42/janhula/mcts_stage5_probe/runs/spr/selfplay/g64r4_b2_iter1/policy/lightning_logs/version_0/checkpoints/epoch=0-step=85.ckpt": "2026-09-11T14:42:36",
+      "/scratch/project/open-37-42/janhula/mcts_stage5_probe/runs/spr/selfplay/g64r4_b2_iter1/value/lightning_logs/version_6/checkpoints/epoch=5-step=4050.ckpt": "2026-09-11T16:28:28"
+    },
+    "device": "cuda",
+    "d_star_placeholder": true,
+    "count_slides": false,
+    "dump_moves": true,
+    "byref": true,
+    "byref_pool": null,
+    "date": "2026-09-11T19:33:25",
+    "results_file": "results/subgoal/sgnet/g96r4_2_6_sp64.json",
+    "search": "arena_astar",
+    "arch": "sizefree",
+    "vocab": "b2",
+    "search_options": {
+      "prefix_check": false,
+      "anytime": true,
+      "best_at_budget": false,
+      "f_mode": "child",
+      "mcts_c": 1.5,
+      "mcts_backup": "min"
+    },
+    "command": "python -m spr.bench --instances /tmp/sg_g96r4_2_6.jsonl --policy /scratch/project/open-37-42/janhula/mcts_stage5_probe/runs/spr/selfplay/g64r4_b2_iter1/policy/lightning_logs/version_0/checkpoints/epoch=0-step=85.ckpt --value /scratch/project/open-37-42/janhula/mcts_stage5_probe/runs/spr/selfplay/g64r4_b2_iter1/value/lightning_logs/version_6/checkpoints/epoch=5-step=4050.ckpt --search arena_astar --vocab b2 --anytime --expansions 1200 --k 5 --boards lean --device cuda --dump-moves --arch sizefree --out results/subgoal/sgnet/g96r4_2_6_sp64.json",
+    "expansion_definition": "one popped/expanded search node whose children are generated (= 1 policy pass + 1 batched value pass over <= k children)"
+  },
+  "systems": {
+    "spr arena_astar size-free planner [B2 vocabulary] (anytime)": {
+      "kind": "backward",
+      "aggregate": {
+        "n": 2,
+        "solved": 1,
+        "solve_rate": 0.5,
+        "d_star_placeholder": true,
+        "mean_regret": null,
+        "pct_optimal": null,
+        "mean_moves": 42.0,
+        "mean_expansions": 621.5,
+        "mean_seconds": 764.8847972234944,
+        "plan_found": 1,
+        "plan_found_rate": 0.5,
+        "mean_plan_cost_abstract": 35.0,
+        "mean_realized_abstract": 35.0,
+        "mean_realized_strict": 42.0,
+        "n_negative_abstract_regret": null,
+        "mean_children_pruned": 0.0,
+        "accounting": {
+          "nn_policy_calls": 446.5,
+          "nn_value_calls": 446.5,
+          "free_exact_fix_expands": 0.0,
+          "rejected_plan_pops": 0.0,
+          "physics_calls_prefix_check": 0.0,
+          "physics_calls_strict_realize": 0.5,
+          "physics_calls_park_repair": 0.0,
+          "park_plans_pushed": 0.0,
+          "byref_cands_ranked": 30593.5,
+          "byref_cands_topk": 1823.0
+        }
+      },
+      "rows": [
+        {
+          "env_id": 0,
+          "d_star": null,
+          "plan_found": false,
+          "plan_cost_abstract": null,
+          "realized_abstract": null,
+          "realized_strict": null,
+          "solved": false,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 1453.822123060003,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "accounting": {
+            "nn_policy_calls": 853,
+            "nn_value_calls": 853,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 0,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "byref_cands_ranked": 57625,
+            "byref_cands_topk": 3505
+          }
+        },
+        {
+          "env_id": 0,
+          "d_star": null,
+          "plan_found": true,
+          "plan_cost_abstract": 35.0,
+          "realized_abstract": 35,
+          "realized_strict": 42,
+          "solved": true,
+          "regret": null,
+          "expansions": 43,
+          "seconds": 75.94747138698585,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "moves": [
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_policy_calls": 40,
+            "nn_value_calls": 40,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "byref_cands_ranked": 3562,
+            "byref_cands_topk": 141
+          }
+        }
+      ]
+    }
+  }
+}

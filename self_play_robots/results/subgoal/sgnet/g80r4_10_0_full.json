@@ -1,0 +1,964 @@
+{
+  "protocol": {
+    "expansions": 1200,
+    "k": 5,
+    "instances_file": "/tmp/sg_g80r4_10_0.jsonl",
+    "instances_sha256": "2c8c465afaae6428a70aa17f553b810dd2879a325def68e34a84dd88db2ce826",
+    "n_instances": 10,
+    "instances_meta": null,
+    "checkpoints": {
+      "/scratch/project/open-37-42/janhula/mcts_stage5_probe/self_play_robots/results/subgoal/distill/policy_0+6.pt": "2026-09-12T18:51:02",
+      "/scratch/project/open-37-42/janhula/mcts_stage5_probe/self_play_robots/results/subgoal/split/dec0-sw-r6-lr1e-4-x8-distill.pt": "2026-09-12T19:32:08"
+    },
+    "device": "cuda",
+    "d_star_placeholder": true,
+    "count_slides": false,
+    "dump_moves": true,
+    "byref": true,
+    "byref_pool": null,
+    "date": "2026-09-12T20:39:28",
+    "results_file": "results/subgoal/sgnet/g80r4_10_0_full.json",
+    "search": "arena_astar",
+    "arch": "split",
+    "vocab": "b2",
+    "search_options": {
+      "prefix_check": false,
+      "anytime": true,
+      "best_at_budget": false,
+      "f_mode": "child",
+      "mcts_c": 1.5,
+      "mcts_backup": "min"
+    },
+    "command": "python -m spr.bench --instances /tmp/sg_g80r4_10_0.jsonl --policy /scratch/project/open-37-42/janhula/mcts_stage5_probe/self_play_robots/results/subgoal/distill/policy_0+6.pt --value /scratch/project/open-37-42/janhula/mcts_stage5_probe/self_play_robots/results/subgoal/split/dec0-sw-r6-lr1e-4-x8-distill.pt --search arena_astar --vocab b2 --anytime --expansions 1200 --k 5 --boards lean --device cuda --dump-moves --arch split --out results/subgoal/sgnet/g80r4_10_0_full.json",
+    "expansion_definition": "one popped/expanded search node whose children are generated (= 1 policy pass + 1 batched value pass over <= k children)"
+  },
+  "systems": {
+    "spr arena_astar size-free planner [B2 vocabulary] (anytime)": {
+      "kind": "backward",
+      "aggregate": {
+        "n": 10,
+        "solved": 8,
+        "solve_rate": 0.8,
+        "d_star_placeholder": true,
+        "mean_regret": null,
+        "pct_optimal": null,
+        "mean_moves": 19.25,
+        "mean_expansions": 253.7,
+        "mean_seconds": 16.042225683596918,
+        "plan_found": 8,
+        "plan_found_rate": 0.8,
+        "mean_plan_cost_abstract": 19.25,
+        "mean_realized_abstract": 19.25,
+        "mean_realized_strict": 19.25,
+        "n_negative_abstract_regret": null,
+        "mean_children_pruned": 0.0,
+        "accounting": {
+          "nn_policy_calls": 157.0,
+          "nn_value_calls": 157.0,
+          "free_exact_fix_expands": 0.2,
+          "rejected_plan_pops": 0.0,
+          "physics_calls_prefix_check": 0.0,
+          "physics_calls_strict_realize": 0.8,
+          "physics_calls_park_repair": 0.0,
+          "park_plans_pushed": 0.0,
+          "byref_cands_ranked": 11439.0,
+          "byref_cands_topk": 660.9
+        }
+      },
+      "rows": [
+        {
+          "env_id": 0,
+          "d_star": null,
+          "plan_found": false,
+          "plan_cost_abstract": null,
+          "realized_abstract": null,
+          "realized_strict": null,
+          "solved": false,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 72.97611906891689,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "accounting": {
+            "nn_policy_calls": 648,
+            "nn_value_calls": 648,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 0,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "byref_cands_ranked": 70107,
+            "byref_cands_topk": 2684
+          }
+        },
+        {
+          "env_id": 0,
+          "d_star": null,
+          "plan_found": true,
+          "plan_cost_abstract": 11.0,
+          "realized_abstract": 11,
+          "realized_strict": 11,
+          "solved": true,
+          "regret": null,
+          "expansions": 0,
+          "seconds": 0.011078451992943883,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "moves": [
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_policy_calls": 0,
+            "nn_value_calls": 0,
+            "free_exact_fix_expands": 1,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "byref_cands_ranked": 0,
+            "byref_cands_topk": 0
+          }
+        },
+        {
+          "env_id": 0,
+          "d_star": null,
+          "plan_found": true,
+          "plan_cost_abstract": 12.0,
+          "realized_abstract": 12,
+          "realized_strict": 12,
+          "solved": true,
+          "regret": null,
+          "expansions": 1,
+          "seconds": 0.08963431511074305,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "moves": [
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_policy_calls": 1,
+            "nn_value_calls": 1,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "byref_cands_ranked": 0,
+            "byref_cands_topk": 0
+          }
+        },
+        {
+          "env_id": 0,
+          "d_star": null,
+          "plan_found": true,
+          "plan_cost_abstract": 21.0,
+          "realized_abstract": 21,
+          "realized_strict": 21,
+          "solved": true,
+          "regret": null,
+          "expansions": 108,
+          "seconds": 5.607115865917876,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "moves": [
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_policy_calls": 38,
+            "nn_value_calls": 38,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "byref_cands_ranked": 1663,
+            "byref_cands_topk": 148
+          }
+        },
+        {
+          "env_id": 0,
+          "d_star": null,
+          "plan_found": true,
+          "plan_cost_abstract": 19.0,
+          "realized_abstract": 19,
+          "realized_strict": 19,
+          "solved": true,
+          "regret": null,
+          "expansions": 4,
+          "seconds": 0.7411352330818772,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "moves": [
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ]
+          ],
+          "accounting": {
+            "nn_policy_calls": 4,
+            "nn_value_calls": 4,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "byref_cands_ranked": 68,
+            "byref_cands_topk": 0
+          }
+        },
+        {
+          "env_id": 0,
+          "d_star": null,
+          "plan_found": true,
+          "plan_cost_abstract": 36.0,
+          "realized_abstract": 36,
+          "realized_strict": 36,
+          "solved": true,
+          "regret": null,
+          "expansions": 11,
+          "seconds": 1.9920688399579376,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "moves": [
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_policy_calls": 11,
+            "nn_value_calls": 11,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "byref_cands_ranked": 48,
+            "byref_cands_topk": 0
+          }
+        },
+        {
+          "env_id": 0,
+          "d_star": null,
+          "plan_found": true,
+          "plan_cost_abstract": 12.0,
+          "realized_abstract": 12,
+          "realized_strict": 12,
+          "solved": true,
+          "regret": null,
+          "expansions": 1,
+          "seconds": 0.09174974891357124,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "moves": [
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_policy_calls": 1,
+            "nn_value_calls": 1,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "byref_cands_ranked": 0,
+            "byref_cands_topk": 0
+          }
+        },
+        {
+          "env_id": 0,
+          "d_star": null,
+          "plan_found": true,
+          "plan_cost_abstract": 8.0,
+          "realized_abstract": 8,
+          "realized_strict": 8,
+          "solved": true,
+          "regret": null,
+          "expansions": 0,
+          "seconds": 0.008007485885173082,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "moves": [
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_policy_calls": 0,
+            "nn_value_calls": 0,
+            "free_exact_fix_expands": 1,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "byref_cands_ranked": 0,
+            "byref_cands_topk": 0
+          }
+        },
+        {
+          "env_id": 1,
+          "d_star": null,
+          "plan_found": false,
+          "plan_cost_abstract": null,
+          "realized_abstract": null,
+          "realized_strict": null,
+          "solved": false,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 78.12669502501376,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "accounting": {
+            "nn_policy_calls": 855,
+            "nn_value_calls": 855,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 0,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "byref_cands_ranked": 42504,
+            "byref_cands_topk": 3777
+          }
+        },
+        {
+          "env_id": 1,
+          "d_star": null,
+          "plan_found": true,
+          "plan_cost_abstract": 35.0,
+          "realized_abstract": 35,
+          "realized_strict": 35,
+          "solved": true,
+          "regret": null,
+          "expansions": 12,
+          "seconds": 0.7786528011783957,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "moves": [
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ]
+          ],
+          "accounting": {
+            "nn_policy_calls": 12,
+            "nn_value_calls": 12,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "byref_cands_ranked": 0,
+            "byref_cands_topk": 0
+          }
+        }
+      ]
+    }
+  }
+}

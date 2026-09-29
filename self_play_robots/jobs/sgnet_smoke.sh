@@ -6,8 +6,9 @@ source /scratch/project/open-37-42/petrhyner/venv/bin/activate
 cd "$REPO/self_play_robots"
 export PYTHONPATH="$REPO/supervised_valuenet:$REPO/self_play_robots" PYTHONUNBUFFERED=1 OMP_NUM_THREADS=4
 NETS=/scratch/project/open-37-42/petrhyner/MCTS_evolution/runs/spr/selfplay/mix_b2mix_iter3
-POL=$NETS/policy/lightning_logs/version_0/checkpoints/epoch=2-step=2361.ckpt
-VAL=$NETS/value/lightning_logs/version_0/checkpoints/epoch=0-step=1573.ckpt
+POL=${POLICY:-$NETS/policy/lightning_logs/version_0/checkpoints/epoch=2-step=2361.ckpt}
+VAL=${VALUE:-$NETS/value/lightning_logs/version_0/checkpoints/epoch=0-step=1573.ckpt}
+ARCH=${ARCH:-sizefree}; TAG=${TAG:-}
 CFG=${CFG:-g40r4}
 # the config's RR_* env, exactly as the project's own jobs set it
 eval "$(python -c "
@@ -22,5 +23,5 @@ OFF=${OFF:-0}; sed -n "$((OFF+1)),$((OFF+LIM))p" "$REPO/supervised_valuenet/scal
 mkdir -p results/subgoal/sgnet
 python -m spr.bench --instances /tmp/sg_${CFG}_${LIM}_${OFF}.jsonl --policy "$POL" --value "$VAL" \
   --search arena_astar --vocab b2 --anytime --expansions 1200 --k 5 \
-  --boards lean --device cuda --dump-moves \
-  --out results/subgoal/sgnet/${CFG}_${LIM}_${OFF}.json 2>&1 | grep -vE "^W0|UserWarning" | tail -12
+  --boards lean --device cuda --dump-moves --arch "$ARCH" \
+  --out results/subgoal/sgnet/${CFG}_${LIM}_${OFF}${TAG}.json 2>&1 | grep -vE "^W0|UserWarning" | tail -12

@@ -1,0 +1,27 @@
+{
+  "protocol": {
+    "sampler": "eval.bench_instances sampling loop (one random.Random(seed) consumed sequentially over boards, per_board draws per board); oracle failures keep the instance with d_star=null instead of resampling",
+    "config": "g32r4",
+    "env": {
+      "RR_GRID": "32",
+      "RR_ROBOTS": "4",
+      "RR_WALLS": "192",
+      "RR_ENV_DIR": "/scratch/project/open-37-42/janhula/mcts_stage5_probe/supervised_valuenet/environments_g32r4"
+    },
+    "boards": "900-1049",
+    "per_board": 1,
+    "seed": 1,
+    "d_star": "exact move-optimal cost (move_planner.oracle.solve) or null when the oracle exceeded its caps; reference only, never used at inference",
+    "oracle_caps": {
+      "max_expansions": 2000,
+      "wall_time_s": 2.0
+    }
+  },
+  "n_instances": 150,
+  "n_oracle_failed": 125,
+  "oracle_failure_rate": 0.8333333333333334,
+  "sha256": "c91516077ebc74226bade42bf16ce6de4b8ff568e95b76c238e05ef5b1d85b2a",
+  "solved_file": "scaling/data/g32r4/ladder.solved.jsonl",
+  "solved_sha256": "318952b6804cd2b44a22b77ad399a86da1287188f43368384e1e1af9988b00b8",
+  "generated": "2026-09-11T04:51:29"
+}

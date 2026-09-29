@@ -1,0 +1,274 @@
+{
+  "protocol": {
+    "expansions": 1200,
+    "k": 5,
+    "instances_file": "/tmp/sg_g96r4_2_10.jsonl",
+    "instances_sha256": "99e8a4f2138b923bb7e513c51d3f6c91f3cca362a7299692ecb2ea4a35593246",
+    "n_instances": 2,
+    "instances_meta": null,
+    "checkpoints": {
+      "/scratch/project/open-37-42/janhula/mcts_stage5_probe/runs/spr/selfplay/g64r4_b2_iter1/policy/lightning_logs/version_0/checkpoints/epoch=0-step=85.ckpt": "2026-09-11T14:42:36",
+      "/scratch/project/open-37-42/janhula/mcts_stage5_probe/runs/spr/selfplay/g64r4_b2_iter1/value/lightning_logs/version_6/checkpoints/epoch=5-step=4050.ckpt": "2026-09-11T16:28:28"
+    },
+    "device": "cuda",
+    "d_star_placeholder": true,
+    "count_slides": false,
+    "dump_moves": true,
+    "byref": true,
+    "byref_pool": null,
+    "date": "2026-09-11T19:40:31",
+    "results_file": "results/subgoal/sgnet/g96r4_2_10_sp64.json",
+    "search": "arena_astar",
+    "arch": "sizefree",
+    "vocab": "b2",
+    "search_options": {
+      "prefix_check": false,
+      "anytime": true,
+      "best_at_budget": false,
+      "f_mode": "child",
+      "mcts_c": 1.5,
+      "mcts_backup": "min"
+    },
+    "command": "python -m spr.bench --instances /tmp/sg_g96r4_2_10.jsonl --policy /scratch/project/open-37-42/janhula/mcts_stage5_probe/runs/spr/selfplay/g64r4_b2_iter1/policy/lightning_logs/version_0/checkpoints/epoch=0-step=85.ckpt --value /scratch/project/open-37-42/janhula/mcts_stage5_probe/runs/spr/selfplay/g64r4_b2_iter1/value/lightning_logs/version_6/checkpoints/epoch=5-step=4050.ckpt --search arena_astar --vocab b2 --anytime --expansions 1200 --k 5 --boards lean --device cuda --dump-moves --arch sizefree --out results/subgoal/sgnet/g96r4_2_10_sp64.json",
+    "expansion_definition": "one popped/expanded search node whose children are generated (= 1 policy pass + 1 batched value pass over <= k children)"
+  },
+  "systems": {
+    "spr arena_astar size-free planner [B2 vocabulary] (anytime)": {
+      "kind": "backward",
+      "aggregate": {
+        "n": 2,
+        "solved": 1,
+        "solve_rate": 0.5,
+        "d_star_placeholder": true,
+        "mean_regret": null,
+        "pct_optimal": null,
+        "mean_moves": 37.0,
+        "mean_expansions": 623.0,
+        "mean_seconds": 568.6890805779258,
+        "plan_found": 2,
+        "plan_found_rate": 1.0,
+        "mean_plan_cost_abstract": 40.5,
+        "mean_realized_abstract": 32.0,
+        "mean_realized_strict": 37.0,
+        "n_negative_abstract_regret": null,
+        "mean_children_pruned": 0.0,
+        "accounting": {
+          "nn_policy_calls": 353.5,
+          "nn_value_calls": 353.5,
+          "free_exact_fix_expands": 0.0,
+          "rejected_plan_pops": 4.0,
+          "physics_calls_prefix_check": 0.0,
+          "physics_calls_strict_realize": 4.5,
+          "physics_calls_park_repair": 4.0,
+          "park_plans_pushed": 0.0,
+          "byref_cands_ranked": 5481.0,
+          "byref_cands_topk": 1290.5
+        }
+      },
+      "rows": [
+        {
+          "env_id": 1,
+          "d_star": null,
+          "plan_found": true,
+          "plan_cost_abstract": 32.0,
+          "realized_abstract": 32,
+          "realized_strict": 37,
+          "solved": true,
+          "regret": null,
+          "expansions": 46,
+          "seconds": 58.396413968876004,
+          "plans_rejected": 7,
+          "children_pruned": 0,
+          "moves": [
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "left"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_policy_calls": 36,
+            "nn_value_calls": 36,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 7,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 8,
+            "physics_calls_park_repair": 7,
+            "park_plans_pushed": 0,
+            "byref_cands_ranked": 91,
+            "byref_cands_topk": 30
+          }
+        },
+        {
+          "env_id": 1,
+          "d_star": null,
+          "plan_found": true,
+          "plan_cost_abstract": 49.0,
+          "realized_abstract": null,
+          "realized_strict": null,
+          "solved": false,
+          "regret": null,
+          "expansions": 1200,
+          "seconds": 1078.9817471869756,
+          "plans_rejected": 1,
+          "children_pruned": 0,
+          "accounting": {
+            "nn_policy_calls": 671,
+            "nn_value_calls": 671,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 1,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 1,
+            "park_plans_pushed": 0,
+            "byref_cands_ranked": 10871,
+            "byref_cands_topk": 2551
+          }
+        }
+      ]
+    }
+  }
+}

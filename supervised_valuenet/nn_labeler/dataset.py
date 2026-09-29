@@ -131,6 +131,11 @@ class GroupDataset(Dataset):
             k = max(0, self.max_per_group - len(opt))
             rest = random.sample(rest, min(k, len(rest))) if self.sample else rest[:k]
             g = opt + rest
+            # RR_GROUP_HARD_CAP=1: never exceed the cap, even when the optimal
+            # records alone do (the frozen quirk above). At 96x96 a group of
+            # 30 boards is 20 GB of adjacency masks in one batch.
+            if os.environ.get("RR_GROUP_HARD_CAP") == "1" and len(g) > self.max_per_group:
+                g = (random.sample(g, self.max_per_group) if self.sample else g[:self.max_per_group])
         return g
 
 

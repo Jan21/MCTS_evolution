@@ -1,0 +1,348 @@
+{
+  "protocol": {
+    "expansions": 1200,
+    "k": 5,
+    "instances_file": "/tmp/sg_g96r4_2_22.jsonl",
+    "instances_sha256": "4feb93e9090ca679e1970f1ce81c3f928f5c5eb3c839f120bb13df9e175de1d2",
+    "n_instances": 2,
+    "instances_meta": null,
+    "checkpoints": {
+      "/scratch/project/open-37-42/janhula/mcts_stage5_probe/self_play_robots/results/subgoal/distill/policy_0+6.pt": "2026-09-12T18:51:02",
+      "/scratch/project/open-37-42/janhula/mcts_stage5_probe/self_play_robots/results/subgoal/split/dec0-sw-r6-lr1e-4-x8-distill.pt": "2026-09-12T19:32:08"
+    },
+    "device": "cuda",
+    "d_star_placeholder": true,
+    "count_slides": false,
+    "dump_moves": true,
+    "byref": true,
+    "byref_pool": null,
+    "date": "2026-09-12T19:41:16",
+    "results_file": "results/subgoal/sgnet/g96r4_2_22_p6v6.json",
+    "search": "arena_astar",
+    "arch": "split",
+    "vocab": "b2",
+    "search_options": {
+      "prefix_check": false,
+      "anytime": true,
+      "best_at_budget": false,
+      "f_mode": "child",
+      "mcts_c": 1.5,
+      "mcts_backup": "min"
+    },
+    "command": "python -m spr.bench --instances /tmp/sg_g96r4_2_22.jsonl --policy /scratch/project/open-37-42/janhula/mcts_stage5_probe/self_play_robots/results/subgoal/distill/policy_0+6.pt --value /scratch/project/open-37-42/janhula/mcts_stage5_probe/self_play_robots/results/subgoal/split/dec0-sw-r6-lr1e-4-x8-distill.pt --search arena_astar --vocab b2 --anytime --expansions 1200 --k 5 --boards lean --device cuda --dump-moves --arch split --out results/subgoal/sgnet/g96r4_2_22_p6v6.json",
+    "expansion_definition": "one popped/expanded search node whose children are generated (= 1 policy pass + 1 batched value pass over <= k children)"
+  },
+  "systems": {
+    "spr arena_astar size-free planner [B2 vocabulary] (anytime)": {
+      "kind": "backward",
+      "aggregate": {
+        "n": 2,
+        "solved": 2,
+        "solve_rate": 1.0,
+        "d_star_placeholder": true,
+        "mean_regret": null,
+        "pct_optimal": null,
+        "mean_moves": 27.5,
+        "mean_expansions": 18.5,
+        "mean_seconds": 2.365103512769565,
+        "plan_found": 2,
+        "plan_found_rate": 1.0,
+        "mean_plan_cost_abstract": 24.0,
+        "mean_realized_abstract": 24.0,
+        "mean_realized_strict": 27.5,
+        "n_negative_abstract_regret": null,
+        "mean_children_pruned": 0.0,
+        "accounting": {
+          "nn_policy_calls": 11.0,
+          "nn_value_calls": 11.0,
+          "free_exact_fix_expands": 0.0,
+          "rejected_plan_pops": 0.0,
+          "physics_calls_prefix_check": 0.0,
+          "physics_calls_strict_realize": 1.0,
+          "physics_calls_park_repair": 0.0,
+          "park_plans_pushed": 0.0,
+          "byref_cands_ranked": 13.5,
+          "byref_cands_topk": 5.0
+        }
+      },
+      "rows": [
+        {
+          "env_id": 2,
+          "d_star": null,
+          "plan_found": true,
+          "plan_cost_abstract": 11.0,
+          "realized_abstract": 11,
+          "realized_strict": 18,
+          "solved": true,
+          "regret": null,
+          "expansions": 1,
+          "seconds": 1.3461491158232093,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "moves": [
+            [
+              "Red",
+              "down"
+            ],
+            [
+              "Red",
+              "right"
+            ],
+            [
+              "Red",
+              "up"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_policy_calls": 1,
+            "nn_value_calls": 1,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "byref_cands_ranked": 0,
+            "byref_cands_topk": 0
+          }
+        },
+        {
+          "env_id": 2,
+          "d_star": null,
+          "plan_found": true,
+          "plan_cost_abstract": 37.0,
+          "realized_abstract": 37,
+          "realized_strict": 37,
+          "solved": true,
+          "regret": null,
+          "expansions": 36,
+          "seconds": 3.3840579097159207,
+          "plans_rejected": 0,
+          "children_pruned": 0,
+          "moves": [
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ],
+            [
+              "Yellow",
+              "right"
+            ],
+            [
+              "Yellow",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "down"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "right"
+            ],
+            [
+              "Blue",
+              "up"
+            ],
+            [
+              "Blue",
+              "left"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "down"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "right"
+            ],
+            [
+              "Green",
+              "up"
+            ],
+            [
+              "Green",
+              "left"
+            ],
+            [
+              "Yellow",
+              "up"
+            ]
+          ],
+          "accounting": {
+            "nn_policy_calls": 21,
+            "nn_value_calls": 21,
+            "free_exact_fix_expands": 0,
+            "rejected_plan_pops": 0,
+            "physics_calls_prefix_check": 0,
+            "physics_calls_strict_realize": 1,
+            "physics_calls_park_repair": 0,
+            "park_plans_pushed": 0,
+            "byref_cands_ranked": 27,
+            "byref_cands_topk": 10
+          }
+        }
+      ]
+    }
+  }
+}

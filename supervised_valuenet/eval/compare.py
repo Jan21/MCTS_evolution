@@ -521,6 +521,7 @@ def aggregate(rows, moves_key="moves"):
         agg["n_negative_abstract_regret"] = None if placeholder else sum(
             1 for r in found
             if r["realized_abstract"] is not None
+            and r.get("d_star") is not None                  # ladder shards mix graded and ungraded instances
             and r["realized_abstract"] - r["d_star"] < 0)
         if "children_pruned" in rows[0]:
             agg["mean_children_pruned"] = _mean(
